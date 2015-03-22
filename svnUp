@@ -1,9 +1,0 @@
-bin/MOS.aout
-runqemu
-floppy/mosgrubstage
-floppy/create_diskimage.txt
-floppy/create_diskimage
-floppy/GrubFloppy_mos.img
-drivers/floppy/Floppy.h
-drivers/floppy/Floppy.cpp
-drivers/DeviceDrive.cpp
