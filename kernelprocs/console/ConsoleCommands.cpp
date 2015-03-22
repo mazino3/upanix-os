@@ -1,0 +1,1257 @@
+/*
+ *	Mother Operating System - An x86 based Operating System
+ *  Copyright (C) 2011 'Prajwala Prabhakar' 'srinivasa_prajwal@yahoo.co.in'
+ *                                                                          
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *                                                                          
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *                                                                          
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/
+ */
+# include <ConsoleCommands.h>
+# include <CommandLineParser.h>
+
+#include <Display.h>
+#include <Keyboard.h>
+#include <String.h>
+#include <Floppy.h>
+#include <MemUtil.h>
+#include <ProcessManager.h>
+#include <FileSystem.h>
+#include <Directory.h>
+#include <FSCommand.h>
+#include <MemManager.h>
+#include <DMM.h>
+#include <DSUtil.h>
+#include <ATADrive.h>
+#include <ATADeviceController.h>
+#include <PartitionManager.h>
+#include <ProcFileManager.h>
+#include <FileOperations.h>
+#include <UserManager.h>
+#include <GenericUtil.h>
+#include <SessionManager.h>
+#include <KBDriver.h>
+#include <DeviceDrive.h>
+#include <RTC.h>
+#include <MultiBoot.h>
+#include <SystemUtil.h>
+#include <MountManager.h>
+#include <UHCIController.h>
+#include <EHCIController.h>
+#include <BTree.h>
+#include <BinaryTree.h>
+#include <TestSuite.h>
+#include <video.h>
+#include <VM86.h>
+#include <MouseDriver.h>
+
+#include <stdio.h>
+
+/**** Command Fucntion Declarations  *****/
+static void ConsoleCommands_ChangeDrive() ;
+static void ConsoleCommands_ShowDrive() ;
+static void ConsoleCommands_MountDrive() ;
+static void ConsoleCommands_UnMountDrive() ;
+static void ConsoleCommands_FormatDrive() ;
+
+static void ConsoleCommands_ClearScreen() ;
+
+static void ConsoleCommands_CreateDirectory() ;
+static void ConsoleCommands_RemoveFile() ;
+static void ConsoleCommands_ListDirContent() ;
+static void ConsoleCommands_ReadFileContent() ;
+static void ConsoleCommands_ChangeDirectory() ;
+static void ConsoleCommands_PresentWorkingDir() ;
+static void ConsoleCommands_CopyFile() ;
+
+static void ConsoleCommands_InitUser() ;
+static void ConsoleCommands_ListUser() ;
+static void ConsoleCommands_AddUser() ;
+static void ConsoleCommands_DeleteUser() ;
+
+static void ConsoleCommands_OpenSession() ;
+
+static void ConsoleCommands_ShowPartitionTable() ;
+static void ConsoleCommands_ClearPartitionTable() ;
+static void ConsoleCommands_SetSysIdForPartition() ;
+static void ConsoleCommands_CreatePrimaryPartition() ;
+static void ConsoleCommands_CreateExtendedPartitionEntry() ;
+static void ConsoleCommands_CreateExtendedPartition() ;
+static void ConsoleCommands_DeletePrimaryPartition() ;
+static void ConsoleCommands_DeleteExtendedPartition() ;
+
+static void ConsoleCommands_LoadExe() ;
+static void ConsoleCommands_WaitPID() ;
+static void ConsoleCommands_Clone() ;
+static void ConsoleCommands_Exit() ;
+static void ConsoleCommands_Reboot() ;
+static void ConsoleCommands_Date() ;
+static void ConsoleCommands_MultiBootHeader() ;
+static void ConsoleCommands_ListCommands() ;
+static void ConsoleCommands_ListProcess() ;
+static void ConsoleCommands_ChangeRootDrive() ;
+static void ConsoleCommands_Echo() ;
+static void ConsoleCommands_Export() ;
+static void ConsoleCommands_ProbeUHCIUSB() ;
+static void ConsoleCommands_PerformECHIHandoff() ;
+static void ConsoleCommands_ProbeEHCIUSB() ;
+static void ConsoleCommands_ShowRawDiskList() ;
+static void ConsoleCommands_InitFloppyController() ;
+static void ConsoleCommands_InitATAController() ;
+static void ConsoleCommands_InitMountManager() ;
+static void ConsoleCommands_Test() ;
+static void ConsoleCommands_Testd() ;
+static void ConsoleCommands_Testv() ;
+static void ConsoleCommands_TestNet() ;
+
+/*****************************************/
+
+int ConsoleCommands_NoOfInterCommands ;
+
+static const ConsoleCommand ConsoleCommands_CommandList[] = {
+	{ "chd",		&ConsoleCommands_ChangeDrive },
+	{ "shd",		&ConsoleCommands_ShowDrive },
+	{ "mount",		&ConsoleCommands_MountDrive },
+	{ "umount",		&ConsoleCommands_UnMountDrive },
+	{ "format",		&ConsoleCommands_FormatDrive },
+
+	{ "clear",		&ConsoleCommands_ClearScreen },
+
+	{ "mkdir",		&ConsoleCommands_CreateDirectory },
+	{ "rm",			&ConsoleCommands_RemoveFile },
+	{ "ls",			&ConsoleCommands_ListDirContent },
+	{ "read",		&ConsoleCommands_ReadFileContent },
+	{ "cd",			&ConsoleCommands_ChangeDirectory },
+	{ "pwd",		&ConsoleCommands_PresentWorkingDir },
+	{ "cp",			&ConsoleCommands_CopyFile },
+
+	{ "init_usr",	&ConsoleCommands_InitUser },
+	{ "list_usr",	&ConsoleCommands_ListUser },
+	{ "add_usr",	&ConsoleCommands_AddUser },
+	{ "del_usr",	&ConsoleCommands_DeleteUser },
+
+	{ "session",	&ConsoleCommands_OpenSession },
+
+	{ "show_pt",	&ConsoleCommands_ShowPartitionTable },
+	{ "clear_pt",	&ConsoleCommands_ClearPartitionTable },
+	{ "setsid_pt",	&ConsoleCommands_SetSysIdForPartition },
+	{ "create_ppt",	&ConsoleCommands_CreatePrimaryPartition },
+	{ "create_xpt",	&ConsoleCommands_CreateExtendedPartitionEntry },
+	{ "create_ept",	&ConsoleCommands_CreateExtendedPartition },
+	{ "delete_ppt",	&ConsoleCommands_DeletePrimaryPartition },
+	{ "delete_ept",	&ConsoleCommands_DeleteExtendedPartition },
+
+	{ "load",		&ConsoleCommands_LoadExe },
+	{ "wait",		&ConsoleCommands_WaitPID },
+	{ "clone",		&ConsoleCommands_Clone },
+	{ "exit",		&ConsoleCommands_Exit },
+	{ "reboot",		&ConsoleCommands_Reboot },
+	{ "date",		&ConsoleCommands_Date },
+	{ "mtbt",		&ConsoleCommands_MultiBootHeader },
+
+	{ "help",		&ConsoleCommands_ListCommands },
+	{ "ps",			&ConsoleCommands_ListProcess },
+	{ "crd",		&ConsoleCommands_ChangeRootDrive },
+	{ "echo",		&ConsoleCommands_Echo },
+	{ "export",		&ConsoleCommands_Export },
+	{ "usbprobe",	&ConsoleCommands_ProbeUHCIUSB },
+	{ "ehcihoff",	&ConsoleCommands_PerformECHIHandoff },
+	{ "eusbprobe",	&ConsoleCommands_ProbeEHCIUSB },
+	{ "showdisk",	&ConsoleCommands_ShowRawDiskList },
+	{ "initfdc",	&ConsoleCommands_InitFloppyController },
+	{ "initata",	&ConsoleCommands_InitATAController },
+	{ "initmntmgr",	&ConsoleCommands_InitMountManager },
+	{ "test",		&ConsoleCommands_Test },
+	{ "testd",		&ConsoleCommands_Testd },
+	{ "testv",		&ConsoleCommands_Testv },
+	{ "testn",		&ConsoleCommands_TestNet },
+	{ "\0",			NULL }
+} ;
+
+void ConsoleCommands_Init()
+{
+	for(ConsoleCommands_NoOfInterCommands = 0; 
+		ConsoleCommands_CommandList[ConsoleCommands_NoOfInterCommands].szCommand[0] != '\0';
+		ConsoleCommands_NoOfInterCommands++) ;
+}
+
+bool ConsoleCommands_ExecuteInternalCommand(const char* szCommand)
+{
+	int i ;
+	for(i = 0; i < ConsoleCommands_NoOfInterCommands; i++)
+	{
+		if(strcmp(szCommand, ConsoleCommands_CommandList[i].szCommand) == 0)
+		{
+			ConsoleCommands_CommandList[i].cmdFunc() ;
+			return true ;
+		}
+	}
+
+	return false ;
+}
+
+void ConsoleCommands_ChangeDrive()
+{
+	DriveInfo* pDriveInfo = DeviceDrive_GetByDriveName(CommandLineParser_GetParameterAt(0), false) ;
+	if(pDriveInfo == NULL)
+	{
+		KC::MDisplay().Message("\n Invalid Drive", ' ') ;
+		return ;
+	}
+
+	ProcessManager_processAddressSpace[ProcessManager_iCurrentProcessID].iDriveID = pDriveInfo->drive.iID ;
+
+	MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&(pDriveInfo->FSMountInfo.FSpwd), 
+	MemUtil_GetDS(), 
+	(unsigned)&ProcessManager_processAddressSpace[ProcessManager_iCurrentProcessID].processPWD, 
+	sizeof(FileSystem_PresentWorkingDirectory)) ;
+}
+
+void ConsoleCommands_ShowDrive()
+{
+	DeviceDrive_DisplayList() ;
+}
+
+void ConsoleCommands_MountDrive()
+{
+	DriveInfo* pDriveInfo = DeviceDrive_GetByDriveName(CommandLineParser_GetParameterAt(0), false) ;
+	if(pDriveInfo == NULL)
+	{
+		KC::MDisplay().Message("\n Invalid Drive", ' ') ;
+		return ;
+	}
+	if(FSCommand_Mounter(pDriveInfo, FS_MOUNT) != FSCommand_SUCCESS)
+		KC::MDisplay().Message("\nFailed to Mount Drive", Display::WHITE_ON_BLACK()) ;
+	else
+		KC::MDisplay().Message("\nDrive Mounted", Display::WHITE_ON_BLACK()) ;
+}
+
+void ConsoleCommands_UnMountDrive()
+{
+	DriveInfo* pDriveInfo = DeviceDrive_GetByDriveName(CommandLineParser_GetParameterAt(0), false) ;
+	if(pDriveInfo == NULL)
+	{
+		KC::MDisplay().Message("\n Invalid Drive", ' ') ;
+		return ;
+	}
+	if(FSCommand_Mounter(pDriveInfo, FS_UNMOUNT) != FSCommand_SUCCESS)
+		KC::MDisplay().Message("\nFailed to UnMount Drive", Display::WHITE_ON_BLACK()) ;
+	else
+		KC::MDisplay().Message("\nDrive UnMounted", Display::WHITE_ON_BLACK()) ;
+}
+
+void ConsoleCommands_FormatDrive()
+{
+	if(DeviceDrive_FormatDrive(CommandLineParser_GetParameterAt(0)) != DeviceDrive_SUCCESS)
+		KC::MDisplay().Message("\nFailed to Format Drive", Display::WHITE_ON_BLACK()) ;
+	else
+		KC::MDisplay().Message("\nDrive Formated", Display::WHITE_ON_BLACK()) ;
+}
+
+void ConsoleCommands_ClearScreen()
+{
+	KC::MDisplay().ClearScreen() ;
+}
+
+void ConsoleCommands_CreateDirectory()
+{
+	byte bStatus = FileOperations_Create((char*)(CommandLineParser_GetParameterAt(0)), ATTR_TYPE_DIRECTORY, ATTR_DIR_DEFAULT) ;
+
+	if(bStatus != FileOperations_SUCCESS)
+	{
+		KC::MDisplay().Address("\n DIR Create Err: ", bStatus) ;
+	}
+	else
+	{
+		KC::MDisplay().Message("\n DIR Created\n", Display::WHITE_ON_BLACK()) ;
+	}
+}
+
+void ConsoleCommands_RemoveFile()
+{
+	byte bStatus = FileOperations_Delete((char*)(CommandLineParser_GetParameterAt(0))) ;
+
+	if(bStatus != FileOperations_SUCCESS)
+	{
+		KC::MDisplay().Address("\n DIR Delete Err: ", bStatus) ;
+	}
+	else
+	{
+		KC::MDisplay().Message("\n DIR Deleted\n", Display::WHITE_ON_BLACK()) ;
+	}
+}
+
+void ConsoleCommands_ListDirContent()
+{
+	FileSystem_DIR_Entry* pDirList ;
+
+	int iListSize = 0 ;
+	const char* szListDirName = "." ;
+
+	if(CommandLineParser_GetNoOfParameters())
+		szListDirName = CommandLineParser_GetParameterAt(0) ;
+
+	if(FileOperations_GetDirectoryContent(szListDirName, &pDirList, &iListSize) != FileOperations_SUCCESS)
+	{
+		KC::MDisplay().Message("\n Failed", ' ') ;
+		return ;
+	}
+
+	int i ;
+	for(i = 0; i < iListSize; i++)
+	{
+		if(!(i % 3))
+			KC::MDisplay().NextLine() ;
+		printf("%-20s", pDirList[i].Name) ;
+	}
+
+	DMM_DeAllocateForKernel((unsigned)pDirList) ;
+}
+
+void ConsoleCommands_ReadFileContent()
+{
+	unsigned n = 0 ;
+	char bDataBuffer[513] ;
+	
+	const char* szFileName = CommandLineParser_GetParameterAt(0) ;
+	int fd ;
+
+	if(FileOperations_Open(&fd, szFileName, O_RDONLY) != FileOperations_SUCCESS)
+	{
+		KC::MDisplay().Message("\n File Open Failed", Display::WHITE_ON_BLACK()) ;
+		return ;
+	}
+
+	KC::MDisplay().Character('\n', ' ') ;
+	while(true)
+	{
+		byte bStatus = FileOperations_Read(fd, bDataBuffer, 512, &n) ;
+
+		bDataBuffer[n] = '\0' ;
+
+		if(bStatus == Directory_ERR_EOF || (bStatus == Directory_SUCCESS && n < 512))
+		{
+			KC::MDisplay().Message(bDataBuffer, Display::WHITE_ON_BLACK()) ;
+			break ;
+		}
+		
+		if(bStatus != Directory_SUCCESS)
+		{
+			KC::MDisplay().Address("\n File Read Error: ", bStatus) ;
+			break ;
+		}
+
+		KC::MDisplay().Message(bDataBuffer, Display::WHITE_ON_BLACK()) ;
+	}
+
+	if(FileOperations_Close(fd) != FileOperations_SUCCESS)
+	{	
+		KC::MDisplay().Message("\n File Close Failed", Display::WHITE_ON_BLACK()) ;
+		return ;
+	}
+}
+
+void ConsoleCommands_ChangeDirectory()
+{
+	byte bStatus ;
+	if((bStatus = FileOperations_ChangeDir(CommandLineParser_GetParameterAt(0))) != Directory_SUCCESS)
+	{
+		KC::MDisplay().Address("\n Directory Change Failed: ", bStatus) ;	
+	}
+}
+
+void ConsoleCommands_PresentWorkingDir()
+{
+	char* szPWD ;
+	Directory_PresentWorkingDirectory(
+	&ProcessManager_processAddressSpace[ ProcessManager_iCurrentProcessID],
+	&szPWD) ;
+	KC::MDisplay().Message("\n", ' ') ;
+	KC::MDisplay().Message(szPWD, Display::WHITE_ON_BLACK()) ;
+	DMM_DeAllocateForKernel((unsigned)szPWD) ;
+}
+
+void ConsoleCommands_CopyFile()
+{
+	unsigned n = 0 ;
+	const int iBufSize = 512 ;
+	char bDataBuffer[iBufSize] ;
+
+	const char* szFileName = CommandLineParser_GetParameterAt(0) ;
+	int fd ;
+
+	if(FileOperations_Open(&fd, szFileName, O_RDONLY) != FileOperations_SUCCESS)
+	{
+		KC::MDisplay().Message("\n File Open Failed - Src", Display::WHITE_ON_BLACK()) ;
+		return ;
+	}
+
+	char* szDestFile = CommandLineParser_GetParameterAt(1) ;
+
+	if(FileOperations_Create(szDestFile, ATTR_TYPE_FILE, ATTR_FILE_DEFAULT) != FileOperations_SUCCESS)
+	{
+		KC::MDisplay().Message("\n File Creation Failed", Display::WHITE_ON_BLACK()) ;
+		return ;
+	}
+
+	int fd1 ;
+	if(FileOperations_Open(&fd1, szDestFile, O_RDWR) != FileOperations_SUCCESS)
+	{
+		KC::MDisplay().Message("\n File1 Open Failed - Dest", Display::WHITE_ON_BLACK()) ;
+		return ;
+	}
+
+	KC::MDisplay().Message("\n Progress = ", Display::WHITE_ON_BLACK()) ;
+	int cr = KC::MDisplay().GetCursor() ;
+	int i = 0 ;
+	FileSystem_FileStat fStat ;	
+	FileOperations_GetStatFD(fd, &fStat) ;
+	unsigned fsize = fStat.st_size ;
+	if(fsize == 0)
+	{
+		KC::MDisplay().Message("\n F Size = 0 !!!", ' ') ;
+		fsize = 1 ;
+		//return ;
+	}	
+
+	while(true)
+	{
+		byte bStatus = FileOperations_Read(fd, bDataBuffer, iBufSize, &n) ;
+		int w ;
+
+		if(bStatus == Directory_ERR_EOF || (bStatus == Directory_SUCCESS && n < 512))
+		{
+			if(n > 0)
+			{
+				if(FileOperations_Write(fd1, bDataBuffer, n, &w) != FileOperations_SUCCESS)
+				{
+					KC::MDisplay().Message("\n File Write Error", ' ') ;
+				}
+			}
+			KC::MDisplay().ShowProgress("", cr, 100) ;
+			break ;
+		}
+		
+		if(bStatus != Directory_SUCCESS)
+		{
+			KC::MDisplay().Address("\n File Read Error: ", bStatus) ;
+			break ;
+		}
+		
+		if(FileOperations_Write(fd1, bDataBuffer, 512, &w) != FileOperations_SUCCESS)
+		{
+			KC::MDisplay().Message("\n File Write Error", ' ') ;
+			break ;
+		}
+
+		i++ ;
+		KC::MDisplay().ShowProgress("", cr, (i * iBufSize * 100) / fsize) ;
+	}
+
+	if(FileOperations_Close(fd) != FileOperations_SUCCESS)
+	{	
+		KC::MDisplay().Message("\n File Close Failed", Display::WHITE_ON_BLACK()) ;
+		return ;
+	}
+
+	if(FileOperations_Close(fd1) != FileOperations_SUCCESS)
+	{	
+		KC::MDisplay().Message("\n File1 Close Failed", Display::WHITE_ON_BLACK()) ;
+		return ;
+	}
+}
+
+void ConsoleCommands_InitUser()
+{
+	byte bStatus ;
+	if((bStatus = UserManager_Initialize()) != UserManager_SUCCESS)
+	{
+		KC::MDisplay().Address("\n User Manager Init Failed: ", bStatus) ;
+	}
+}
+
+void ConsoleCommands_ListUser()
+{
+	UserTabEntry* pUserTabList = NULL ;
+	int n = 0 ;
+
+	if(UserManager_GetUserList(&pUserTabList, &n) != UserManager_SUCCESS)
+	{
+		KC::MDisplay().Message("\n Failed to get User List", ' ') ;
+		return ;
+	}
+
+	int i ;
+	for(i = 0; i < n; i++)
+	{
+		KC::MDisplay().Message("\n", Display::WHITE_ON_BLACK()) ;
+		KC::MDisplay().Message(pUserTabList[i].szUserName, Display::WHITE_ON_BLACK()) ;
+	}
+
+	DMM_DeAllocateForKernel((unsigned)pUserTabList) ;
+}
+
+void ConsoleCommands_AddUser()
+{
+	char szUserName[MAX_USER_LENGTH + 1] ;
+	char szPassword[MAX_USER_LENGTH + 1] ;
+	char szHomeDirPath[MAX_HOME_DIR_LEN + 1] ;
+
+	KC::MDisplay().Message("\n User Name: ", Display::WHITE_ON_BLACK()) ;
+	GenericUtil_ReadInput(szUserName, MAX_USER_LENGTH, true) ;
+
+	KC::MDisplay().Message("\n Password: ", Display::WHITE_ON_BLACK()) ;
+	GenericUtil_ReadInput(szPassword, MAX_USER_LENGTH, false) ;
+
+	KC::MDisplay().Message("\n Home Dir Path: ", Display::WHITE_ON_BLACK()) ;
+	GenericUtil_ReadInput(szHomeDirPath, MAX_HOME_DIR_LEN, true) ;
+
+	byte bStatus ;
+	if((bStatus = UserManager_Create(szUserName, szPassword, szHomeDirPath, NORMAL_USER))
+		!= UserManager_SUCCESS)
+	{	
+		KC::MDisplay().Address("\n User Creation Failed: ", bStatus) ;
+		return ;	
+	}
+
+	KC::MDisplay().Message("\n User Created", Display::WHITE_ON_BLACK()) ;
+}
+
+void ConsoleCommands_DeleteUser()
+{
+	char szUserName[MAX_USER_LENGTH + 1] ;
+
+	KC::MDisplay().Message("\n User Name: ", Display::WHITE_ON_BLACK()) ;
+	GenericUtil_ReadInput(szUserName, MAX_USER_LENGTH, true) ;
+
+	byte bStatus ;
+	if((bStatus = UserManager_Delete(szUserName)) != UserManager_SUCCESS)
+	{	
+		KC::MDisplay().Address("\n User Deletion Failed: ", bStatus) ;
+		return ;	
+	}
+
+	KC::MDisplay().Message("\n User Deleted", Display::WHITE_ON_BLACK()) ;
+}
+
+void ConsoleCommands_OpenSession()
+{
+	int pid ;
+	ProcessManager_CreateKernelImage((unsigned)&SessionManager_StartSession, NO_PROCESS_ID, true, NULL, NULL, &pid, "session") ;
+	ProcessManager_WaitOnChild(pid) ;
+}
+
+RawDiskDrive* ConsoleCommands_CheckDiskParam()
+{
+	if(CommandLineParser_GetNoOfParameters() < 1)
+	{
+		printf("\n Disk name parameter missing") ;
+		return NULL ;
+	}
+
+	RawDiskDrive* pDisk = DeviceDrive_GetRawDiskByName(CommandLineParser_GetParameterAt(0)) ;
+
+	if(!pDisk)
+	{
+		printf("\n '%s' no such disk", CommandLineParser_GetParameterAt(0)) ;
+		return NULL ;
+	}
+
+	return pDisk ;
+}
+
+void ConsoleCommands_ShowPartitionTable()
+{
+	RawDiskDrive* pDisk = ConsoleCommands_CheckDiskParam() ;
+
+	if(!pDisk)
+		return ;
+
+	PartitionTable partitionTable ;
+	byte bStatus ;
+
+	printf("\n Total Sectors = %d", pDisk->uiSizeInSectors) ;
+
+	bStatus = PartitionManager_ReadPartitionInfo(pDisk, &partitionTable) ;
+	if(bStatus == PartitionManager_FAILURE)
+	{
+		KC::MDisplay().Message("\n Fatal Error:- Reading Partition Table", ' ') ;
+		return ;
+	}
+	else if(bStatus == PartitionManager_ERR_NOT_PARTITIONED)
+	{
+		KC::MDisplay().Message("\n Disk Not Partitioned", ' ') ;
+		return ;
+	}
+
+	PartitionInfo* pPartitionInfo ;
+	unsigned i ;
+	byte bPFirst = true, bEFirst = true ;
+	for(i = 0; i < partitionTable.uiNoOfPrimaryPartitions + partitionTable.uiNoOfExtPartitions + partitionTable.bIsExtPartitionPresent; i++)
+	{
+		if(i < partitionTable.uiNoOfPrimaryPartitions)
+		{
+			if(bPFirst)
+			{
+				KC::MDisplay().Message("\n Primary Partitions\n", ' ') ;
+				bPFirst = false ;
+			}
+			pPartitionInfo = &partitionTable.PrimaryParitions[i] ;
+		}
+		else
+		{
+			if(bEFirst)
+			{
+				KC::MDisplay().Message("\n Extended Partitions\n", ' ') ;
+				bEFirst = false ;
+				pPartitionInfo = &partitionTable.ExtPartitionEntry ;
+			}
+			else
+				pPartitionInfo = &partitionTable.ExtPartitions[i - partitionTable.uiNoOfPrimaryPartitions - 1].CurrentPartition ;
+		}
+
+		printf("\n%-4d %-4d %-4d %-4d %-4d %-4d %-4d %-4d %-10d %-10d", 
+				pPartitionInfo->BootIndicator,
+				pPartitionInfo->StartHead,
+				pPartitionInfo->StartSector,
+				pPartitionInfo->StartCylinder,
+				pPartitionInfo->SystemIndicator,
+				pPartitionInfo->EndHead,
+				pPartitionInfo->EndSector,
+				pPartitionInfo->EndCylinder,
+				pPartitionInfo->LBAStartSector,
+				pPartitionInfo->LBANoOfSectors) ;
+	}
+}
+
+void ConsoleCommands_ClearPartitionTable()
+{
+	RawDiskDrive* pDisk = ConsoleCommands_CheckDiskParam() ;
+
+	if(!pDisk)
+		return ;
+
+	PartitionManager_ClearPartitionTable(pDisk) ;
+}
+
+void ConsoleCommands_SetSysIdForPartition()
+{
+	RawDiskDrive* pDisk = ConsoleCommands_CheckDiskParam() ;
+
+	if(!pDisk)
+		return ;
+
+	PartitionManager_UpdateSystemIndicator(pDisk, 63, 0x83) ;
+}
+
+void ConsoleCommands_CreatePrimaryPartition()
+{
+	RawDiskDrive* pDisk = ConsoleCommands_CheckDiskParam() ;
+
+	if(!pDisk)
+		return ;
+
+	PartitionTable partitionTable ;
+	byte bStatus ;
+
+	bStatus = PartitionManager_ReadPartitionInfo(pDisk, &partitionTable) ;
+	if(bStatus == PartitionManager_FAILURE)
+	{
+		KC::MDisplay().Message("\n Fatal Error:- Reading Partition Table", ' ') ;
+		return ;
+	}
+	else if(bStatus == PartitionManager_ERR_NOT_PARTITIONED)
+	{
+		PartitionManager_InitializePartitionTable(&partitionTable) ;
+	}
+
+	char szSizeInSectors[11] ;
+	unsigned uiSizeInSectors ;
+
+	KC::MDisplay().Message("\n Size in Sector = ", Display::WHITE_ON_BLACK()) ;
+	GenericUtil_ReadInput(szSizeInSectors, 10, true) ;
+
+	if(!String_ConvertStringToNumber(&uiSizeInSectors, szSizeInSectors))
+	{
+		KC::MDisplay().Message("\n Invalid Number", ' ') ;
+		return ;
+	}
+
+	bStatus = PartitionManager_CreatePrimaryPartitionEntry(pDisk, &partitionTable, uiSizeInSectors, false, false) ;
+
+	if(bStatus != PartitionManager_SUCCESS)
+	{
+		KC::MDisplay().Address("\n Failed to Create Parition: ", bStatus) ;
+		return ;
+	}
+
+	KC::MDisplay().Message("\n Partition Created", ' ') ;
+}
+
+void ConsoleCommands_CreateExtendedPartitionEntry()
+{
+	RawDiskDrive* pDisk = ConsoleCommands_CheckDiskParam() ;
+
+	if(!pDisk)
+		return ;
+
+	PartitionTable partitionTable ;
+	byte bStatus ;
+
+	bStatus = PartitionManager_ReadPartitionInfo(pDisk, &partitionTable) ;
+	if(bStatus == PartitionManager_FAILURE)
+	{
+		KC::MDisplay().Message("\n Fatal Error:- Reading Partition Table", ' ') ;
+		return ;
+	}
+	else if(bStatus == PartitionManager_ERR_NOT_PARTITIONED)
+	{
+		KC::MDisplay().Message("\n No Primary Partitions", ' ') ;
+		return ;
+	}
+
+	char szSizeInSectors[11] ;
+	unsigned uiSizeInSectors ;
+
+	KC::MDisplay().Message("\n Size in Sector = ", Display::WHITE_ON_BLACK()) ;
+	GenericUtil_ReadInput(szSizeInSectors, 10, true) ;
+
+	if(!String_ConvertStringToNumber(&uiSizeInSectors, szSizeInSectors))
+	{
+		KC::MDisplay().Message("\n Invalid Number", ' ') ;
+		return ;
+	}
+
+	bStatus = PartitionManager_CreatePrimaryPartitionEntry(pDisk, &partitionTable, uiSizeInSectors, false, true) ;
+
+	if(bStatus != PartitionManager_SUCCESS)
+	{
+		KC::MDisplay().Address("\n Failed to Create Parition: ", bStatus) ;
+		return ;
+	}
+
+	KC::MDisplay().Message("\n Partition Created", ' ') ;
+}
+
+void ConsoleCommands_CreateExtendedPartition()
+{
+	RawDiskDrive* pDisk = ConsoleCommands_CheckDiskParam() ;
+
+	if(!pDisk)
+		return ;
+
+	PartitionTable partitionTable ;
+	byte bStatus ;
+
+	bStatus = PartitionManager_ReadPartitionInfo(pDisk, &partitionTable) ;
+	if(bStatus == PartitionManager_FAILURE)
+	{
+		KC::MDisplay().Message("\n Fatal Error:- Reading Partition Table", ' ') ;
+		return ;
+	}
+	else if(bStatus == PartitionManager_ERR_NOT_PARTITIONED)
+	{
+		KC::MDisplay().Message("\n No Primary Partitions", ' ') ;
+		return ;
+	}
+
+	char szSizeInSectors[11] ;
+	unsigned uiSizeInSectors ;
+
+	KC::MDisplay().Message("\n Size in Sector = ", Display::WHITE_ON_BLACK()) ;
+	GenericUtil_ReadInput(szSizeInSectors, 10, true) ;
+
+	if(!String_ConvertStringToNumber(&uiSizeInSectors, szSizeInSectors))
+	{
+		KC::MDisplay().Message("\n Invalid Number", ' ') ;
+		return ;
+	}
+
+	bStatus = PartitionManager_CreateExtPartitionEntry(pDisk, &partitionTable, uiSizeInSectors) ;
+
+	if(bStatus != PartitionManager_SUCCESS)
+	{
+		KC::MDisplay().Address("\n Failed to Create Parition: ", bStatus) ;
+		return ;
+	}
+
+	KC::MDisplay().Message("\n Partition Created", ' ') ;
+}
+
+void ConsoleCommands_DeletePrimaryPartition()
+{
+	RawDiskDrive* pDisk = ConsoleCommands_CheckDiskParam() ;
+
+	if(!pDisk)
+		return ;
+
+	PartitionTable partitionTable ;
+	byte bStatus ;
+
+	bStatus = PartitionManager_ReadPartitionInfo(pDisk, &partitionTable) ;
+	if(bStatus == PartitionManager_FAILURE)
+	{
+		KC::MDisplay().Message("\n Fatal Error:- Reading Partition Table", ' ') ;
+		return ;
+	}
+	else if(bStatus == PartitionManager_ERR_NOT_PARTITIONED)
+	{
+		KC::MDisplay().Message("\n Disk Not Partitioned", ' ') ;
+		return ;
+	}
+
+	bStatus = PartitionManager_DeletePrimaryPartition(pDisk, &partitionTable) ;
+
+	if(bStatus != PartitionManager_SUCCESS)
+		KC::MDisplay().Message("\n Failed to Delete Partition", ' ') ;
+	else
+		KC::MDisplay().Message("\n Partition Deleted", ' ') ;
+}
+
+void ConsoleCommands_DeleteExtendedPartition()
+{
+	RawDiskDrive* pDisk = ConsoleCommands_CheckDiskParam() ;
+
+	if(!pDisk)
+		return ;
+
+	PartitionTable partitionTable ;
+	byte bStatus ;
+
+	bStatus = PartitionManager_ReadPartitionInfo(pDisk, &partitionTable) ;
+	if(bStatus == PartitionManager_FAILURE)
+	{
+		KC::MDisplay().Message("\n Fatal Error:- Reading Partition Table", ' ') ;
+		return ;
+	}
+	else if(bStatus == PartitionManager_ERR_NOT_PARTITIONED)
+	{
+		KC::MDisplay().Message("\n Disk Not Partitioned", ' ') ;
+		return ;
+	}
+
+	bStatus = PartitionManager_DeleteExtPartition(pDisk, &partitionTable) ;
+
+	if(bStatus != PartitionManager_SUCCESS)
+		KC::MDisplay().Message("\n Failed to Delete Partition", ' ') ;
+	else
+		KC::MDisplay().Message("\n Partition Deleted", ' ') ;
+}
+
+void ConsoleCommands_LoadExe()
+{
+	byte bStatus ;
+	int iChildProcessID ;
+	char a1[14], a2[40] ;
+	String_Copy(a1, "100") ;
+	String_Copy(a2, "200") ;
+	char* argv[2] ;
+	argv[0] = (char*)&a1 ;
+	argv[1] = (char*)&a2 ;
+
+	if((bStatus = ProcessManager_Create(CommandLineParser_GetParameterAt(0), ProcessManager_iCurrentProcessID, true, &iChildProcessID, DERIVE_FROM_PARENT, 2, argv)) != ProcessManager_SUCCESS)
+	{
+		KC::MDisplay().Address("\n Load User Process Failed: ", bStatus) ;
+		KC::MDisplay().Character('\n', Display::WHITE_ON_BLACK()) ;
+	}
+	else
+	{
+		ProcessManager_WaitOnChild(iChildProcessID) ;
+	}
+}
+
+void ConsoleCommands_WaitPID()
+{
+	unsigned pid ;
+
+	String_ConvertStringToNumber(&pid, CommandLineParser_GetParameterAt(0)) ;
+
+	ProcessManager_WaitOnChild(pid) ;
+}
+
+void ConsoleCommands_Exit()
+{
+	ProcessManager_Exit() ;
+}
+
+void ConsoleCommands_Clone()
+{
+	int pid ;
+
+	extern void Console_StartMOSConsole() ;
+	
+	ProcessManager_CreateKernelImage((unsigned)&Console_StartMOSConsole, ProcessManager_iCurrentProcessID, true, NULL, NULL, &pid, "console_1") ;
+	
+	ProcessManager_WaitOnChild(pid) ;
+}
+
+void ConsoleCommands_Reboot()
+{
+	SystemUtil_Reboot() ;
+}
+
+void ConsoleCommands_Date()
+{
+	RTCDateTime rtcDateTime ;
+	RTC::GetDateTime(rtcDateTime) ;
+	
+	printf("\n %d/%d/%d - %d:%d:%d", rtcDateTime.bDayOfMonth, rtcDateTime.bMonth, 
+		rtcDateTime.bCentury * 100 + rtcDateTime.bYear, rtcDateTime.bHour, rtcDateTime.bMinute, 
+		rtcDateTime.bSecond) ;
+}
+
+void ConsoleCommands_MultiBootHeader()
+{
+	KC::MDisplay().Address("\n Mem Size = ", MultiBoot_GetRamSize()) ;
+	KC::MDisplay().Address("\n Boot Device ID = ", MultiBoot_GetBootDeviceID()) ;
+	KC::MDisplay().Address("\n Boot Partition ID = ", MultiBoot_GetBootPartitionID()) ;
+}
+
+void ConsoleCommands_ListCommands()
+{
+	for(int i = 0; i < ConsoleCommands_NoOfInterCommands; i++)
+	{
+		if(!(i % 3))
+			KC::MDisplay().NextLine() ;
+		printf("%-20s", ConsoleCommands_CommandList[i].szCommand) ;
+	}
+}
+
+void ConsoleCommands_ListProcess()
+{
+	PS* pPS ;
+	unsigned uiSize ;
+	
+	if(ProcessManager_GetProcList(&pPS, &uiSize) == ProcessManager_FAILURE)
+	{
+		KC::MDisplay().Message("\n Error\n", ' ') ;
+		return ;
+	}
+	
+	unsigned i ;
+	for(i = 0; i < uiSize; i++)
+	{
+		printf("\n %-7d%-5d%-5d%-5d%-5d%-10s", pPS[i].pid, pPS[i].iParentProcessID, pPS[i].iProcessGroupID, pPS[i].status, pPS[i].iUserID,
+					pPS[i].pname) ;
+	}
+	KC::MDisplay().NextLine() ;
+
+	ProcessManager_FreeProcListMem(pPS, uiSize) ;
+}
+
+void ConsoleCommands_ChangeRootDrive()
+{
+	DriveInfo* pDriveInfo = DeviceDrive_GetByDriveName(CommandLineParser_GetParameterAt(0), false) ;
+	if(pDriveInfo == NULL)
+	{
+		KC::MDisplay().Message("\n Invalid Drive", ' ') ;
+		return ;
+	}
+
+	MountManager_SetRootDrive(pDriveInfo) ;
+}
+
+void ConsoleCommands_Echo()
+{
+	if(CommandLineParser_GetNoOfParameters())
+		printf("\n%s", CommandLineParser_GetParameterAt(0)) ;
+}
+
+void ConsoleCommands_Export()
+{
+    if(CommandLineParser_GetNoOfParameters() < 1)
+        return ;
+
+    char* szExp = CommandLineParser_GetParameterAt(0) ;
+    char* var = szExp ;
+    char* val = strchr(szExp, '=') ;
+
+    if(val == NULL)
+    {
+		KC::MDisplay().Message("\n Incorrect syntax", Display::WHITE_ON_BLACK()) ;
+        return ;
+    }
+
+    val[0] = '\0' ;
+    val = val + 1 ;
+
+    if(setenv(var, val) < 0)
+    {
+        printf("\n Failed to set env variable\n") ;
+        return ;
+    }
+}
+
+void ConsoleCommands_ProbeUHCIUSB()
+{
+	RTCDateTime rtcStartTime, rtcStopTime ;
+	RTC::GetDateTime(rtcStartTime) ;
+	UHCIController_ProbeDevice() ;
+	RTC::GetDateTime(rtcStopTime) ;
+
+	printf("\n %d/%d/%d - %d:%d:%d", rtcStartTime.bDayOfMonth, rtcStartTime.bMonth, 
+		rtcStartTime.bCentury * 100 + rtcStartTime.bYear, rtcStartTime.bHour, rtcStartTime.bMinute, 
+		rtcStartTime.bSecond) ;
+	
+	printf("\n %d/%d/%d - %d:%d:%d", rtcStopTime.bDayOfMonth, rtcStopTime.bMonth, 
+		rtcStopTime.bCentury * 100 + rtcStopTime.bYear, rtcStopTime.bHour, rtcStopTime.bMinute, 
+		rtcStopTime.bSecond) ;
+}
+
+void ConsoleCommands_PerformECHIHandoff()
+{
+	EHCIController_RouteToCompanionController() ;
+}
+
+void ConsoleCommands_ProbeEHCIUSB()
+{
+	EHCIController_ProbeDevice() ;
+}
+
+void ConsoleCommands_ShowRawDiskList()
+{
+	unsigned uiCount = CommandLineParser_GetNoOfParameters() ;
+	RawDiskDrive* pDisk = NULL ;
+
+	printf("\n%-15s %-18s %-10s %-15s %-10s", "Name", "Type", "Sec-Size", "Tot-Sectors", "Size (MB)") ;
+	printf("\n-----------------------------------------------------------------------") ;
+
+	class LamdaDisplay
+	{
+		public:
+			void operator()(const RawDiskDrive* pParamDisk)
+			{
+				static const char szTypes[2][32] = { "ATA Hard Disk", "USB SCSI Disk" } ;
+
+				printf("\n%-15s %-18s %-10d %-15d %-10d", pParamDisk->szNameID, szTypes[pParamDisk->iType - ATA_HARD_DISK], 
+						pParamDisk->uiSectorSize, pParamDisk->uiSizeInSectors, pParamDisk->uiSectorSize * pParamDisk->uiSizeInSectors / (1024 * 1024)) ;
+			}
+
+	} lamdaDisplay ;
+
+	if(uiCount)
+	{
+		for(unsigned i = 0; i < uiCount; i++)
+		{
+			char* szName = CommandLineParser_GetParameterAt(i) ;
+			pDisk = DeviceDrive_GetRawDiskByName(szName) ;
+			lamdaDisplay(pDisk) ;
+		}
+	}
+	else
+	{
+		pDisk = DeviceDrive_GetFirstRawDiskEntry() ;
+		for(; pDisk != NULL; pDisk = pDisk->pNext)
+			lamdaDisplay(pDisk) ;
+	}
+}
+
+void ConsoleCommands_InitFloppyController()
+{
+	if(!Floppy_GetInitStatus())
+		Floppy_Initialize() ;
+	else
+		printf("\n Floppy Controller already initialized") ;
+}
+
+void ConsoleCommands_InitATAController()
+{
+	if(!ATADeviceController_GetInitStatus())
+		ATADeviceController_Initialize() ;
+	else
+		printf("\n ATA Controller already initialized") ;
+}
+
+void ConsoleCommands_InitMountManager()
+{
+	if(!MountManager_GetInitStatus())
+		MountManager_Initialize() ;
+	else
+		printf("\n MountManager already initialized") ;
+}
+
+void ConsoleCommands_Test()
+{
+	TestSuite t ;
+	t.Run() ;
+}
+
+extern void TestMTerm() ;
+extern void DiskCache_ShowTotalDiskReads() ;
+
+class DisplayCache : public BTree::InOrderVisitor
+{
+	public:
+		DisplayCache(DriveInfo* pDriveInfo) : m_pDriveInfo(pDriveInfo), m_iCount(0), m_bAbort(false) { }
+
+		void operator()(const BTreeKey& rKey, BTreeValue* pValue) const
+		{
+			if(!pValue)
+				return ;
+
+			const DiskCacheKey& key = static_cast<const DiskCacheKey&>(rKey) ;
+		//	DiskCacheValue* pCacheValue = static_cast<DiskCacheValue*>(pValue) ;
+
+		//	printf(", %d ", key.GetSectorID()) ;
+			if(key.GetSectorID() % 20344)
+				m_iCount++ ;
+		}
+
+		bool Abort() const { return m_bAbort ; }
+
+	private:
+		DriveInfo* m_pDriveInfo ;
+		mutable int m_iCount ;
+		mutable bool m_bAbort ;
+} ;
+
+extern unsigned DMM_uiTotalKernelAllocation ;
+
+class RankInOrderVisitor : public BTree::InOrderVisitor
+{
+	private:
+		unsigned m_uiSectorID ;
+		double m_dRank ;
+		const unsigned m_uiCurrent ;
+
+	public:
+		RankInOrderVisitor() : m_uiSectorID(0), m_dRank(0), m_uiCurrent(PIT_GetClockCount()) { }
+
+		void operator()(const BTreeKey& rKey, BTreeValue* pValue) 
+		{
+			const DiskCacheKey& key = static_cast<const DiskCacheKey&>(rKey) ;
+			const DiskCacheValue* value = static_cast<const DiskCacheValue*>(pValue) ;
+
+			unsigned uiTimeDiff = m_uiCurrent - value->GetLastAccess() ;
+			double dRank = 	(double)uiTimeDiff / (double)value->GetHitCount() ;
+			if(dRank > m_dRank)
+			{
+				m_uiSectorID = key.GetSectorID() ;
+				m_dRank = dRank ;
+			}
+		}
+
+		inline unsigned GetSectorID() { return m_uiSectorID ; }
+		inline double GetRank() { return m_dRank ; }
+
+		bool Abort() const { return false ; }
+} ;
+
+void ConsoleCommands_Testd()
+{
+//	printf("\n Total Kernel Heap Used: %d", DMM_uiTotalKernelAllocation) ;
+
+	DiskCache_ShowTotalDiskReads() ;
+	DriveInfo* pDriveInfo = DeviceDrive_GetByDriveName(CommandLineParser_GetParameterAt(0), false) ;
+	if(pDriveInfo == NULL)
+	{
+		KC::MDisplay().Message("\n Invalid Drive", ' ') ;
+		return ;
+	}
+
+	printf("\n Total Sectors cached: %d", pDriveInfo->mCache.m_pTree->GetTotalElements()) ;
+	//DisplayCache dc(pDriveInfo) ;
+	//pDriveInfo->mCache.m_pTree->InOrderTraverse(dc) ;
+	
+	RankInOrderVisitor r ;
+	pDriveInfo->mCache.m_pTree->InOrderTraverse(r) ;
+	printf("\n Cache Replace Sector: %u, Rank: %lf", r.GetSectorID(), r.GetRank()) ;
+}
+
+typedef struct
+{
+	unsigned len ;
+	unsigned cnt ;
+	unsigned time ;
+	unsigned begin ;
+} ReadStat ;
+
+ReadStat read_stat[256] ;
+void _UpdateReadStat(unsigned len, bool bFirst)
+{
+	unsigned uiTime = PIT_GetClockCount() ;
+	static bool bInit = false ;
+	if(!bInit)
+	{
+		bInit = true ;
+		for(int i = 0; i < 256; i++)
+		{
+			read_stat[i].len = -1 ;
+			read_stat[i].cnt = 0 ;
+			read_stat[i].time = 0 ;
+			read_stat[i].begin = 0 ;
+		}
+	}
+
+	if(!bFirst)
+	{
+		for(int i = 0; i < 256; i++)
+		{
+			if(read_stat[i].len == len)
+			{
+				read_stat[i].time += (uiTime - read_stat[i].begin) ;
+				break ;
+			}
+		}
+		return ;
+	}
+
+	int free = -1 ;
+	bool bUpdated = false ;
+	for(int i = 0; i < 256; i++)
+	{
+		if(read_stat[i].len == len)
+		{
+			read_stat[i].cnt++ ;
+			read_stat[i].begin = uiTime ;
+			bUpdated = true ;
+			break ;
+		}
+
+		if(free == -1 && read_stat[i].len == -1)
+			free = i ;
+	}
+
+	if(!bUpdated)
+	{
+		if(free >= 0 && free < 256)
+		{
+			read_stat[free].len = len ;
+	   		read_stat[free].cnt	= 1 ;
+			read_stat[free].begin = uiTime ;
+			read_stat[free].time = 0 ;
+		}
+	}
+}
+
+void _DisplayReadStat()
+{
+	for(int i = 0 ; i < 256; i++)
+	{
+		if(read_stat[i].len != -1)
+			printf("\n Len: %u, ReadCount: %u, TickCount: %u", read_stat[i].len, read_stat[i].cnt, read_stat[i].time) ;
+	}
+}
+
+void ConsoleCommands_Testv()
+{
+	//_DisplayReadStat() ;
+	//printf("\n RAM SIZE: %u", KC::MMemManager().GetRamSize()) ;
+	//VM86_Test() ;
+	KC::MMouseDriver() ;
+	//KC::MDisplay().SetMouseCursorPos(KC::MDisplay().GetMouseCursorPos() + 70) ;
+}
+
+void ConsoleCommands_TestNet()
+{
+	PIC::DisplayIRQList() ;
+	//KC::MNetworkManager() ;
+}

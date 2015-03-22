@@ -1,0 +1,181 @@
+/*
+ *	Mother Operating System - An x86 based Operating System
+ *  Copyright (C) 2011 'Prajwala Prabhakar' 'srinivasa_prajwal@yahoo.co.in'
+ *                                                                          
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *                                                                          
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *                                                                          
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/
+ */
+# include <SysCall.h>
+# include <SysCallDisplay.h>
+
+byte SysCallProc_IsPresent(unsigned uiSysCallID)
+{
+	return (uiSysCallID > SYS_CALL_PROC_START && uiSysCallID < SYS_CALL_PROC_END) ;
+}
+
+void SysCallProc_Handle(
+__volatile__ int* piRetVal,
+__volatile__ unsigned uiSysCallID, 
+__volatile__ bool bDoAddrTranslation,
+__volatile__ unsigned uiP1, 
+__volatile__ unsigned uiP2, 
+__volatile__ unsigned uiP3, 
+__volatile__ unsigned uiP4, 
+__volatile__ unsigned uiP5, 
+__volatile__ unsigned uiP6, 
+__volatile__ unsigned uiP7, 
+__volatile__ unsigned uiP8, 
+__volatile__ unsigned uiP9)
+{
+	switch(uiSysCallID)
+	{
+		case SYS_CALL_DLL_RELOCATE :
+			// P8 => Second Entry in GOT
+			// P9 => Relocation Table Offset
+			{
+				//ProcessManager_DisableTaskSwitch() ;
+
+				byte bStatus ;
+				if((bStatus = DynamicLinkLoader_DoRelocation(
+					&ProcessManager_processAddressSpace[ProcessManager_iCurrentProcessID], 
+					(int)uiP8, uiP9, piRetVal)) != DynamicLinkLoader_SUCCESS) 
+				{
+					KC::MDisplay().Address("\n Dynamic Relocation Failed: ", bStatus) ;
+				}
+
+				//ProcessManager_EnableTaskSwitch() ;
+			}
+			break ;
+
+		case SYS_CALL_PROCESS_EXEC :
+			// P1 => Address of File Name Char Array
+			// P2 => Number Of Args
+			// P3 => Arg Vector Address
+			{
+				//ProcessManager_DisableTaskSwitch() ;
+				
+				char* szFile = KERNEL_ADDR(bDoAddrTranslation, char*, uiP1) ;
+				char** szArgList = KERNEL_ADDR(bDoAddrTranslation, char**, uiP3) ;
+
+				for(int i = 0; i < uiP2; i++)
+					szArgList[i] = KERNEL_ADDR(bDoAddrTranslation, char*, szArgList[i]) ;
+
+				*piRetVal = KC::MKernelService().RequestProcessExec(szFile, uiP2, (const char**)szArgList) ;
+
+				//ProcessManager_EnableTaskSwitch() ;
+			}
+			break ;
+
+		case SYS_CALL_PROCESS_WAIT_PID :
+			// P1 => PID	
+			{
+				ProcessManager_WaitOnChild((int)uiP1) ;
+			}
+			break ;
+
+		case SYS_CALL_PROCESS_EXIT :
+			// P1 => Exit Status
+			{
+				ProcessManager_Exit() ;
+			}
+			break ;
+
+		case SYS_CALL_PROCESS_SLEEP :
+			// P1 => Exit Status
+			{
+				ProcessManager_Sleep((unsigned)uiP1) ;
+			}
+			break ;
+
+		case SYS_CALL_PROCESS_PID :
+			{
+				*piRetVal = ProcessManager_iCurrentProcessID ;
+			}
+			break ;
+
+		case SYS_CALL_PROCESS_GET_ENV:
+			//P1 - Env Var
+			{
+				char* szVar = KERNEL_ADDR(bDoAddrTranslation, char*, uiP1) ;
+				char* szVal = ProcessEnv_Get(szVar) ;
+
+				if(szVal != NULL)
+				{
+					if(bDoAddrTranslation)
+						szVal = (char*)((unsigned)szVal + GLOBAL_DATA_SEGMENT_BASE - PROCESS_BASE) ;
+				}
+				
+				*piRetVal = (volatile int)szVal ;
+			}
+			break ;
+
+		case SYS_CALL_PROCESS_SET_ENV:
+			//P1 - Env Var
+			//P2 - Env Val
+			{
+				char* szVar = KERNEL_ADDR(bDoAddrTranslation, char*, uiP1) ;
+				char* szVal = KERNEL_ADDR(bDoAddrTranslation, char*, uiP2) ;
+
+				*piRetVal = 0 ;
+				if(ProcessEnv_Set(szVar, szVal) != ProcessEnv_SUCCESS)
+				{
+					*piRetVal = -1 ;
+				}
+			}
+			break ;
+
+		case SYS_CALL_PROCESS_GET_PS_LIST:
+			//P1 - Proc List Ptr
+			//P2 - List Size Ptr
+			{
+				PS** pProcList = KERNEL_ADDR(bDoAddrTranslation, PS**, uiP1) ;
+				unsigned* uiListSize = KERNEL_ADDR(bDoAddrTranslation, unsigned*, uiP2) ;
+
+				*piRetVal = 0 ;
+				if(ProcessManager_GetProcList(pProcList, uiListSize) != ProcessManager_SUCCESS)
+				{
+					*piRetVal = -1 ;
+				}
+			}
+			break ;
+
+		case SYS_CALL_PROCESS_FREE_PS_LIST:
+			//P1 - Proc List Ptr
+			//P2 - List size
+			{
+				PS* pProcList = KERNEL_ADDR(bDoAddrTranslation, PS*, uiP1) ;
+				ProcessManager_FreeProcListMem(pProcList, uiP2) ;
+			}
+			break ;
+
+		case SYS_CALL_DISABLE_TASK_SWITCH:
+			{
+				ProcessManager_DisableTaskSwitch() ;
+			}
+			break ;
+
+		case SYS_CALL_ENABLE_TASK_SWITCH:
+			{
+				ProcessManager_EnableTaskSwitch() ;
+			}
+			break ;
+
+		case SYS_CALL_PROCESS_CHILD_ALIVE :
+			// P1 => PID	
+			{
+				*piRetVal = ProcessManager_IsChildAlive((int)uiP1) ;
+			}
+			break ;
+	}
+}
+

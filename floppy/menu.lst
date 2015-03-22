@@ -1,0 +1,5 @@
+timeout 10
+default 0
+
+title MOS_FLOPPY
+    kernel (fd0)/boot/MOS.aout

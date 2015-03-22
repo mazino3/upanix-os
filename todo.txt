@@ -1,0 +1,344 @@
+Date: 10 Jan 2011
+1. PIC IRQ framework changed. After this reboot not hangs on sleep and also load msh hangs... 
+strongly doubt the changes made to PIC IRQ to be the cause. Need to fix this before proceeding any further
+
+Date: 6 Nov 2010
+
+1. Delete old cache entries to accommodate new cache entries when cache is full
+"One possible solution" -> When cache size reaches 95% (or some threshold) identify the top 20% of cache entries which
+are least accessed and maintain that in a list called "LASL" (Least accessed Sector List)
+Now, LASL is built, maintained and updated regularly by DiskCache CleanUp task in background.
+When cache becomes full, simply remove the sector which is at the bottom of LASL. 
+LASL can be used once it is completely built for the first time after cache reaches 95%. 
+If LASL is empty, then direct disk i/o will be done
+--> Done
+
+2. Thorough cleanup of filesystem Directory.cpp 
+a -> removing unwanted buffered read/write there - as it is completely handled by diskcache system. 
+b -> allowing bulk reads/writes avoiding the limitation to  MAX_SECTORS_PER_RW
+--> 
+
+3. MOS crashes upon first task switch on my new dell laptop
+--> Fixed
+--> Details: I raised a post in osdev forum. obviously this was very hard problem to debug
+because it works on any other pcs including the latest laptops (quad core). osdev response wasn't helpful
+Now, I did some debugging to confirm it is not because of gdt/ldt limit, using gdt instead of ldt,eflags changed
+from 0x200 to 0x202. nothing helped. And then the page alignment of tss caught my eye.
+It wasn't, so I aligned GDT, LDT, SYS, USER, INT TSS to page boundary... and yeah that worked!!
+
+4. Stack pages are mapped to fixed 1022 PDE entry. This should be made dynamic or mapped to lower address
+because it is observed that the EHCI mmio address also lies somewhere around same address.
+Still this cannot be attributed as cause for EHCI not working on new laptop
+-->
+
+**********************************************************************************************************************************
+
+Date: 24 Oct 2010
+
+1. KernelService -> make it as a Master Kernel Process in Schedule List
+- Avoid or infact strictly eliminate the need to disable task switch
+- Make process creation and destuction a KernelService request job, including (not limited to) other existing kernelservices
+--> Done
+
+2. Use of Mutexs appropriately so if multiple kernelservice threads(processes) are running that should run in sync
+--> Done. Main stuff seems like done. But as conversion to C++ continues, this will be taken care along
+
+3. Use Mutex while Allocate/DeAlloc page in MemManager
+--> Has to use disable/enable task switch because it can be called by kernel itself!
+--> Done
+
+4. BTree Node deletion logic
+--> Done
+
+5. Bring Pause/continue into BTree InOrderTraverse. OR better come up with a different approach for Flush and Release Cache
+--> Done Flush Cache -> maintain a list of dirty cache entries (secid, cache value ptr). Flush entries in this list. No need to access the BTree at all. 
+--> TODO: Release Cache
+
+6. Make MemPool allocate memory in chunks instead of allocating entire memory once
+--> Done.
+
+7. Maintain the List of all Mutexs which the process has acquired. Which should be released upon process termination
+
+8. Session Manager Login Succeeds but Load Shell fails randomly.
+---> Done. This was because the DriveID of the Session Process was set as ROOT DRIVE ID = CURRENT_DRIVE (by default)
+and this would get the DriveID of the process forking the Session (child) process.
+Session process is created when F<n> key is hit and the current process running at the time when F<n> key is hit
+will be the Current Process of the Session process. Now this current process could be random not necessarily the
+console whose DriveID is properly set. If the current process happens to be one of the background kernel process
+then it's current drive will be "-1" (def root drive = current drive ID = -1) and hence the issue
+
+9. A hang in SysCall of one process is stalling the entire system -> seems like task switch itself is not happening. ??
+
+10. IMPORTANT. 2 Kernel Service processes -> Simultaneous load of "cc" from 2 different msh sessions hangs!!
+--> Done. ElfParser was still not converted to C++ and was using global variables to hold ElfHeaders... Converted ElfParser to a class
+Now, every processLoader uses a local instance of ElfParser and hence no sharing conflict
+
+**********************************************************************************************************************************
+
+Date: 30 Sept 2010
+
+Started converting the entire MOS source to C++
+
+Later corrections/changes
+1. FileOperations_ParseFilePathWithDrive -> change signature to avoid (unsigned*) conversion
+
+2. __uclibc_locale_struct commented out
+
+3. After implementing BTree and using it for DiskCache, load bin/cc hangs after couple of loads
+This was because loading cc starts ProcessManager_Create() which disables task switch and then goes on to access disk via drive mutex
+The inordertrave Disk CleanUp Task acquires the same drive mutex and if there is a context switch and kernel service starts creating 
+this bin/cc task then it enters into a deadlock
+Solution thought is to use mutex on every shared resources and make KernelService as a Master Kernel Process which works as a server
+listening to request queue
+
+4. Yet to implement Node Delete in BTree and use it in DiskCache Cleanup procedure
+
+**********************************************************************************************************************************
+
+Date: 07 Aug 2010
+
+** New requirements
+
+1. DiskCache enhancement
+Current CleanUpCache process should do cleanup of dirty cache only
+There should be a separate process which will calculate top 10% sectors which are ideal candidates for removing from cache
+These top 10% nodes should be maintained in a queue
+The trigger for calculating this number will be whenever there is a cache read/cache write into a sector which is present in this top 10% queue
+Further when there is a cache miss and the cache is full then the nodes(aka sectors) in top 10% should be removed from cache
+(it is stored in a queue in the order of removal weightage)
+removal weightage shall be calculated from HitCount, first Access clock tick and the current clock tick.
+Status: Partially complete. still need to tune the algorith to use HitCount and weightage properly
+
+2. Make the binary tree balanced
+Status: This is Done - AVL tree implemented
+
+3. Auto attach/dettach of USB devices (mass storage disk)
+Status: Yet to be done. Would be better to design solution to this requirement/problem after C++ conversion
+
+**********************************************************************************************************************************
+
+Date: 05 July 2010
+
+Diskcache implemented.
+Unmount will now flush disk cache
+TODO: A separate process which will keep flushing diskcache on a timely basis
+
+Issue1: Upon implementation of disk cache when msh is loaded twice i.e, load bin/msh from MOS kernel console 
+and then ./msh from loaded msh. the process was hanging. Though I was able to open a different session (F1, F2 etc...) 
+
+This was because of heap mem corruption. In DLLLoader, Release Memory was being called even if DLL header information was not 
+afresh allocated. Fixing that resolved this issue
+
+Issue2: randonmly load bin/msh or any further load would hang the system.
+This was because during the process load task switch must be disabled. But while loading, disk read will be performed
+ata disk read/write does an interrupt wait for disk read to complete. Now, this interrupt wait simply enables task switch.
+This was causing system hang as partially setup task starts execution before it is complete
+
+Fix was to do a tight KernelWait upon WaitOnInterrupt if task switch is disabled
+
+**********************************************************************************************************************************
+
+Date: 14 June 2010
+Bug: Loading "edit" from "msh" on ide ata drive hangs
+Fix: loading "edit" from "msh" mainly happens in KernelService Mode during which time context switch is disabled 
+and wait on interrupt is done in poll mode. But during the ata init time, the global interrupt array which is used by
+kernelservice_wait is never cleared as the interrupt raised was waited using process_waitInterrupt which just clears
+interrupt read from the global process interrupt queue. This was causing a race condition in that when the kernel service waits 
+for the int to occur it reads it as if it has occured (not cleared from previous occurance) and proceeds.
+
+Clearing the interrupt from global interrupt queue whenever process interrupt queue is being cleared is the solution
+
+**********************************************************************************************************************************
+Date: 11 April 2010
+
+1. Just look at all the below bug fix and important change requests and prioratize
+
+2. Process Synchronization
+Process, Resource and Interrupt synchronization is at its worst design and status
+SAFE_INT_DISABLE/ENABLE sematic is terrible in that any h/w interrupt that comes up during the interrupt disable time will be lost !
+If there is a process waiting on that either in pool mode/signal mode -> it simply hangs
+Worst if the process is using KernelService as Task Switch is disabled when loading a new process via KernelService
+
+Context Switch Disabling is used lavishly whereever sync is required. This definitely should not be the case and requires a re-design
+
+TIMER_IRQ should never be disable for the purpose of Sync
+
+cli and sti should never be used for the purpose of Sync
+
+Ultimately, current method of Sync using context switch disable, timer irq disable, other irq disable and cli/sti should be
+completely removed and an entire clean new sync mechanism should be brought in place. This has to be taken with a very high
+priority as this is very much a foundation for further system build out
+
+Using some CPU level constructs like "Test and Set", "Lock/Wait" instructions which are meant for synchronization shall be
+used as builing blocks of the new sync system.
+
+**********************************************************************************************************************************
+
+******> Fix Up Free Pool Cache Disable Case :- Mainly in FSManager_Allocate
+******> Fix Up Table Cache Disable Case :- Not started yet
+
+
+**) Re-Structure entire Kernel Mem Layout --- CAUTION: Make sure to back up modified files
+**) Extend Free Pool Size from 1024 to 2048
+
+a) Make Floppy Read fast and efficient so that it can work on real floppy driver ---> not too much time shall be spent on this... probably some sort of sector data caching would help here
+1) Flush based on access count
+
+2) FS Flush -> System Crash recovery or independent\
+
+3) One mcc c compiler binary which does cc, as and ld like how gcc does
+
+4) make sure (3) now works for multiple files -> compile multiple files in one shot.
+Atleast -c option of mcc works which creates .o files and then
+multiple .o files link in one shot with ld
+
+5) Make Process Enviroment Dynamic Size ---> Proc Env variable value should be made dynamic on heap
+a) Deallocated on process termination
+b) Implement unsetenv
+
+6) USB driver
+
+7) SATA driver
+
+8) 
+
+/*************************************************************************************************/
+1. Bug: after running cc, running as fails with segfault, even after reboot it fails. Only way is to 
+exit qemu and bring it up again. Same is the case with ld. But cc will still run successfully for second time
+This is a problem specifically observed with as and ld. Even edit which loads 2 dlls runs fine after running cc w/o reboot
+
+Resolved:- This was a problem because of not initializing the ".bss" section to 0s while loading the process.
+Particularly, after running hdda@/cc, the bss pages which were getting allocated for other processed were filled with non-zero values.
+Initializing this entire bss section at the time of loading the process into memory resolved the problem because
+these processes were expecting the uninitialized global variables to be assigned to value 0 --> which is not too much
+to expect from a OS program loader though !!
+
+2. cp file either on a harddisk (even from harddisk to floppy) becomes extermely slow after copying some sectors
+Particularly for larger files with size greater then .25MB.
+
+3. Remove file and copy it again fails terribly. FSTable sector caching and FreePool Queue logic to be doubted
+
+Update: FS Table Size for floppy is 23 which implies that the size of floppy comes to around 1.45 MB = (1 + 2 + 23 + 23  * 128) * 512 / (1024 * 1024)
+This clearly is greater than standard floppy size of 1.44 MB. Need to check the way FS Table size is calculated
+Looks like CalculateFileSystemSize has a problem. A minor tweek to formula required !
+
+4. In general, Copy file which extensively uses almost all corners of a FileSystem flows, is a mess. It is strongly doubted to corrupt FS tables and also data on disk... 
+
+5. While copying cc from hdda@/ to hdda@/bin/, it become dead slow when progress indicator was @ around 12 ---> because as mentioned in (2)
+At this time, when F<key> pressed caused seg fault and entire system hung. hdda file system was compeletly in corrupted state
+
+Update: Uptill 5, the slowelss problem. Copy, remove and re-copy on floppya problem has been resolved. But on hdda, copy of cc happens fast but after that hdda filesystem is gone !. ls fails. and try to change to hdda@/ hangs the system. If on msh, after copy any next access to hdda (ls) crashes msh. 
+
+Update: Problem with hdda is fixed. There was problem with Flush logic. But need to do Flush based on access count of the
+corresponding sector block
+
+6. when a wrong input file (non-existing) was provided as input for as, it threw lots of error line outputs (all reading same words) and finally it hung the system
+Update: This is done. Read from STDIN not implemented yet -> suitable error message is displayed when "as" is run
+w/o arg
+
+7. when cc is run w/o parameter, it failed with seg fault instead of throwing "no input file" error
+Update: This is fixed
+
+---------------------
+
+A. DUP and DUP2 -> Requires FD Table at Kernel and Per Process Level
+
+B. KILL
+
+=============== =============== =============== =============== =============== ===============
+EE. TestFile.txt --- KkY PLACES : 10 --- Changed to KEY PLACES : 10. Is not saving to disk. Next time when the file is opened, it's still KkY 
+k - E not happening
+
+|********************************************************************************************************************************************************|
+1. Reboot in msh is causing a Seg Fault and msh exits
+Resolved:- This was an issue with Sys Call happening within Sys Call!!... Now, within Kernel, Sys Call is totally bypassed to direct function call for few 
+sys calls (FS and Display) and not doing Address Translation if its sys call within kernel
+
+2. Edit - After 5 and half lines of entry causes all the edit screen to fill in with same last character entered...
+Problem Resolved:- This was an issue with DMM. When a Page Fault happend as part of DMM Alloc, the statement/instruction
+which caused Page Fault was not completed successfully.... This was because the Page Fault Error code was poped into
+edx. I knew this is not very correct because before page fault edx would have been in use. I knew this would cause some problem
+in future and that's this.... :(. But Good news, I just added value 0x4 to esp register with a add instruction to suppliment pop instruction
+so that no register/memory is accessed for this error code pop.
+
+3. Edit - Every character press causes lot of cursor flickers.... !
+Resolved:- Implemented Non-On-Screen Cursor Update Function and Functions kDisplay.RawCharacter aka putrawc
+and kDisplay.SetCursor aka set_cursor (now a new additional set_cursor_val) are modified to use this feature
+This new feature will just update the Cursor Position on book (i.e, in Display Buffer) but not actually (physically) On Screen
+
+4. Kernel Sys Call - Convert all other Kernel Sys Calls int Kernel libc to direct function call.
+Done:- Driver, KB, Process, Util, Memory,		 FS, Display
+
+|********************************************************************************************************************************************************|
+
+1. Process Env - getenv and setenv as per standard
+2. Implement Calendar 
+Status:-
+	Implemented Calendar library libmcal which can add/subtract days, weeks, months and years to mdate
+	Subtract 2 days
+	Find the day of week of given date
+	Date:- Implemented when I was in London April 2008
+
+3. port "time" part of libc
+
+Status:-
+	Implemented time() in libc.
+	Currently its calling stub gettimeofday syscall.
+	Date:- Implemented when I was in London Heathrow Airport on May 3rd. Waiting for Boarding BA119 to Bangalore
+
+4. Strong error handling system
+5. co-processor support
+6. port gcc compiler
+
+NOTE: OS was crashing with Seg Fault @ wierd addresses outside RAM range and sometimes with Exception "D" - General Protection Fault
+The code was very much refactored to correct this but still had problems while Timer Interrupts
+Finally, this was resolved by compiling the kernel source code with NO Optimization aka -O0 (O Zero).
+
+|********************************************************************************************************************************************************|
+
+1. Bug:-
+	Chain boot from hddc,
+
+	load bin/msh
+	edit
+	exit
+	shd
+	Now, this shows the drive hddc name as hddc@/ !!!
+
+Investigation Status:-
+Display is not happening properly in Kernel Service Exec Call. Check how ds and other sys reg are set in Kernel Service
+
+Fixed:- (took lot of effort to find. Spent nearly 3 week days. worked late night for 2 days after office hours)
+Kernel Service Stack was getting overlapped with FDT memory area. This was because kernel service stack was defined as 4 MB + 16 PAGE and FDT area was defined as 4 MB + 33 KB. PAGE and KB were confused as same and hence resulted in this problem.
+Mem area is suitably re-arranged to resolve this issue.
+
+2. Bug:-
+	In floppya, cp MOS.aout boot/MOS.aout return "File Write Error" at progress point 33
+
+Fix: This was because the drive was becoming full size
+
+3. Bug:-
+	In hddc, if you cp MOS.aout from floppya drive into hddc@/boot/MOS.aout, Copy operations shows success with Progress reaching to 100%
+	But, menu.lst in hddc@/boot/grub/ gets totally corrupted!!!
+
+Fix: Got fixed as part of Fix (1) above
+
+|********************************************************************************************************************************************************|
+
+1. Change "unsigned" to "unsigned long" for variables addressing disk size in bytes
+	a - Not proper even after changing to unsigned long... in MOS Console "shd" command
+
+2. Hard Disk Boot Test (Real Scenario) - Chain Loading...
+
+|********************************************************************************************************************************************************|
+
+1.	Error:- "Failed to Delete From Process List Data Structure"
+	Sequence:- load msh -> exit -> load msh -> exit
+
+|********************************************************************************************************************************************************|
+
+1. Change uiDriveID to iDriveID (unsigned to int)
+2. Create Kernel and User Process should use Parent Process ID for Drive and other stuff determination (check on) instead of Current Process ID
+3. PWD Sys Call Change
+
+|********************************************************************************************************************************************************|

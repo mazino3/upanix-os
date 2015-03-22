@@ -1,0 +1,104 @@
+#	 Mother Operating System - An x86 based Operating System
+#	 Copyright (C) 2011 'Prajwala Prabhakar' 'srinivasa_prajwal@yahoo.co.in'
+#																			 
+#	 This program is free software: you can redistribute it and/or modify
+#	 it under the terms of the GNU General Public License as published by
+#	 the Free Software Foundation, either version 3 of the License, or
+#	 (at your option) any later version.
+#																			 
+#	 This program is distributed in the hope that it will be useful,
+#	 but WITHOUT ANY WARRANTY; without even the implied warranty of
+#	 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#	 GNU General Public License for more details.
+#																			 
+#	 You should have received a copy of the GNU General Public License
+#	 along with this program.  If not, see <http://www.gnu.org/licenses/
+#!/bin/bash
+
+#Customized Qemu Run Script -- Self Written
+
+clear
+
+MOS_HOME=`pwd`
+export MOS_HOME
+
+BootFileType=$1
+
+if [ "$#" -eq "0" -o "$1" = "image" ]
+then
+
+	BootFileType="image"
+	FDA=$MOS_HOME/floppy/1.44M-FLOPPY.img
+	FDB=$MOS_HOME/floppy/DRV1.FDD.img
+	
+elif [ "$1" = "BT" ]
+then
+
+	FDA=$MOS_HOME/floppy/BootTest.img
+	FDB=$MOS_HOME/floppy/DRV1.FDD.img
+
+
+elif [ "$1" = "floppy" ]
+then
+
+	FDA=/dev/fd0
+	FDB=$MOS_HOME/floppy/DRV1.FDD.img
+
+elif [ "$1" = "grub_ext" ]
+then
+
+	FDA=$MOS_HOME/floppy/GrubFloppy_ext.img
+	FDB=$MOS_HOME/floppy/DRV1.FDD.img
+
+elif [ "$1" = "grub_mos" ]
+then
+
+	FDA=$MOS_HOME/floppy/GrubFloppy_mos.img
+	FDB=$MOS_HOME/floppy/DRV1.FDD.img
+
+elif [ "$1" = "setup_ext" ]
+then
+
+	FDA=$MOS_HOME/floppy/RawGrubFloppy.img
+	FDB=$MOS_HOME/floppy/GrubFloppy_ext.img
+
+elif [ "$1" = "install_mos" ]
+then
+
+	FDA=$MOS_HOME/floppy/RawGrubFloppy.img
+	FDB=$MOS_HOME/floppy/GrubFloppy_mos.img
+
+elif [ "$1" = "setup_mos" ]
+then
+
+	FDA=$MOS_HOME/floppy/GrubFloppy_ext.img
+	FDB=$MOS_HOME/floppy/GrubFloppy_mos.img
+
+fi
+
+SUDO=""
+if [ "$2" = "sudo" ]
+then
+	SUDO=sudo
+fi
+
+echo "\n\n*****************************************************************************\n\n"
+echo "					Booting From $BootFileType File"
+echo "\n\n*****************************************************************************\n\n"
+
+sleep 1
+
+#-hda $MOS_HOME/USBImage/30MUSB.img
+#-usbdevice disk:$MOS_HOME/USBImage/30MUSB.img
+#-hda /dev/sda \
+
+QEMU_PATH=
+$SUDO qemu \
+-fda $FDA \
+-fdb $FDB \
+-boot a \
+-m 128 \
+-smp 1 \
+-net none \
+-usbdevice disk:$MOS_HOME/USBImage/30MUSB.img \
+-hda $MOS_HOME/HDImage/30MHD.img 
