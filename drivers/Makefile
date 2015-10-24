@@ -29,7 +29,7 @@ drivers:
 	cd net && make
 
 clean:
-	rm *.o
+	rm -f *.o
 	cd floppy && make clean
 	cd keyboard && make clean
 	cd mouse && make clean
@@ -39,7 +39,7 @@ clean:
 	cd net && make clean
 
 distclean:
-	rm *.o
+	rm -f *.o
 	cd floppy && make distclean
 	cd keyboard && make distclean
 	cd mouse && make distclean
