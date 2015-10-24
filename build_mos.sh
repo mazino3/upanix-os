@@ -1,4 +1,4 @@
-#	 Mother Operating System - An x86 based Operating System
+#	other Operating System - An x86 based Operating System
 #	 Copyright (C) 2011 'Prajwala Prabhakar' 'srinivasa_prajwal@yahoo.co.in'
 #																			 
 #	 This program is free software: you can redistribute it and/or modify

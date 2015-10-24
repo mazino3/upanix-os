@@ -60,7 +60,7 @@ INCLUDE = -I./ \
 -I${MOS_HOME}/libmcpp/ds \
 -I${MOS_HOME}/libmcpp/mem
 
-CPP_FLAGS =  -c -O0 -Wall -ffreestanding -nodefaultlibs -nostdlib -nostartfiles -nostdinc \
+CPP_FLAGS =  -c -m32 -O0 -Wall -ffreestanding -nodefaultlibs -nostdlib -nostartfiles -nostdinc \
 -nostdinc++ -fno-default-inline -fno-common -fno-non-call-exceptions -fno-exceptions -fno-rtti \
 -fno-threadsafe-statics ${INCLUDE}
 export CPP_FLAGS

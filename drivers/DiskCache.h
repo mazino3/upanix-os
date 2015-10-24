@@ -124,7 +124,7 @@ class LFUSectorManager : public BTree::InOrderVisitor
 
 class DestroyDiskCacheKeyValue ;
 
-typedef struct 
+struct DiskCache
 {
 	public:
 		class SecKeyCacheValue
@@ -163,7 +163,7 @@ typedef struct
 		DriveInfo* pDriveInfo ;
 		int iMaxCacheSectors ;
 		int bStopReleaseCacheTask ;
-} DiskCache ;
+};
 
 class DestroyDiskCacheKeyValue : public BTree::DestroyKeyValue
 {

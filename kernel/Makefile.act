@@ -16,10 +16,9 @@
 CC = ${COMPILER}
 INCLUDE = ${INCLUDES}
 CPPFLAGS = ${CPP_FLAGS} ${INCLUDE}
-CPPFLAGS = ${CPP_FLAGS} ${INCLUDE}
+
 
 OBJS := $(patsubst %.cpp,%.o,$(wildcard *.cpp))
 
 kernel: ${OBJS}
 include depend.d
-

@@ -68,8 +68,9 @@ export COMPILER
 
 CPP_FLAGS=" -c -O0 -Wall -ffreestanding -nodefaultlibs -nostdlib -nostartfiles -nostdinc \
 -nostdinc++ -fno-default-inline -fno-common -fno-non-call-exceptions -fno-exceptions -fno-rtti \
--fno-threadsafe-statics "
+-fno-threadsafe-statics -m32 "
 export CPP_FLAGS
+
 #C_FLAGS=" -c -O2 -Wall -ffreestanding -pedantic "
 #C_FLAGS=" -c -O1 -mtune=i386 -Wall -ffreestanding -nodefaultlibs -nostdlib -nostartfiles -nostdinc "  # For compiling with gcc 4. & above
 
