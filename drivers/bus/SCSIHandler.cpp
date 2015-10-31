@@ -447,7 +447,7 @@ static byte SCSIHandler_ReadCapacity(SCSIDevice* pDevice)
 
 void SCSIHandler_Initialize()
 {
-	KC::MDisplay().LoadMessage("SCSI Driver Initialization", SUCCESS) ;
+	KC::MDisplay().LoadMessage("SCSI Driver Initialization", Success) ;
 }
 
 byte SCSIHandler_GenericOpen(SCSIDevice* pDevice) 

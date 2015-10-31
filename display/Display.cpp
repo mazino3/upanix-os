@@ -323,7 +323,7 @@ void Display::ClearLine(int iStartPos)
 	}
 }
 
-void Display::LoadMessage(const char* loadMessage, bool bStatus)
+void Display::LoadMessage(const char* loadMessage, Result result)
 {
 	byte width = 50 ;
 	unsigned int i ;
@@ -341,7 +341,7 @@ void Display::LoadMessage(const char* loadMessage, bool bStatus)
 	Message(loadMessage, WHITE_ON_BLACK()) ;
 	Message(spaces, WHITE_ON_BLACK()) ; 
 
-	if(bStatus)
+	if(result == Success)
 		Message("[ OK ]", Display::Attribute(DisplayManager::FG_BLACK, DisplayManager::BG_GREEN)) ;
 	else
 		Message("[ FAILED ]", Display::Attribute(DisplayManager::FG_RED, DisplayManager::BG_WHITE)) ;

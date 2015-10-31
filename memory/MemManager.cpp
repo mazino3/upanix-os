@@ -98,31 +98,18 @@ void MemManager::PageFaultHandlerTaskGate()
 	__asm__ __volatile__("iret") ;
 }
 
-MemManager::MemManager() : RAM_SIZE(MultiBoot_GetRamSize()), m_bIsInitialized(false), m_uiKernelAUTAddress(NULL)
+MemManager::MemManager() : RAM_SIZE(MultiBoot::Instance().GetRamSize()), m_uiKernelAUTAddress(NULL)
 {
-	Initialize() ;
-}
-
-void MemManager::Initialize()
-{
-	if(m_bIsInitialized)
-	{
-		KC::MDisplay().Message("\n MemManager is already Initialized!") ;
-		return ;
-	}
-
-	m_bIsInitialized = true ;
-
 	if(BuildRawPageMap())
 	{
 		if(BuildPageTable())
 		{
 			Mem_EnablePaging() ;
-			
-			KC::MDisplay().LoadMessage("Memory Manager Initialization", true) ;
-			KC::MDisplay().Address("\n\tRAM SIZE = ", RAM_SIZE) ;
-			KC::MDisplay().Address("\n\tNo. of Pages = ", m_uiNoOfPages) ;
-			KC::MDisplay().Address("\n\tNo. of Resv Pages = ", m_uiNoOfResvPages) ;
+	
+			KC::MDisplay().LoadMessage("Memory Manager Initialization", Success) ;
+			printf("\n\tRAM SIZE = %d", RAM_SIZE) ;
+			printf("\n\tNo. of Pages = %d", m_uiNoOfPages) ;
+			printf("\n\tNo. of Resv Pages = %d", m_uiNoOfResvPages) ;
 			return ;
 		}
 	}

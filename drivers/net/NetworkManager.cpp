@@ -30,7 +30,7 @@ NetworkManager::NetworkManager()
 	unsigned uiPCIIndex ;
 	for(uiPCIIndex = 0; uiPCIIndex < PCIBusHandler_uiDeviceCount; uiPCIIndex++)
 	{
-		if(PCIBusHandler_GetPCIEntry(&pPCIEntry, uiPCIIndex) != PCIBusHandler_SUCCESS)
+		if(PCIBusHandler_GetPCIEntry(&pPCIEntry, uiPCIIndex) != Success)
 			break ;
 	
 		if(pPCIEntry->bHeaderType & PCI_HEADER_BRIDGE)
@@ -44,9 +44,6 @@ NetworkManager::NetworkManager()
 		}
 	}
 	
-	if(bControllerFound)
-		KC::MDisplay().LoadMessage("Network controller setup", SUCCESS) ;
-	else
-		KC::MDisplay().LoadMessage("Network controller setup", FAILURE) ;
+	KC::MDisplay().LoadMessage("Network controller setup", bControllerFound ? Success : Failure);
 }
 

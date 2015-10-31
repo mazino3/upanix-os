@@ -13,12 +13,12 @@
 #																			 
 #	 You should have received a copy of the GNU General Public License
 #	 along with this program.  If not, see <http://www.gnu.org/licenses/
-CC = ${COMPILER}
+CXX = ${COMPILER}
 
 INCLUDE = ${INCLUDES}
 
 util: 
-	@${CC} ${INCLUDE} -M *.cpp > depend.d
+	@${CXX} ${INCLUDE} -M *.cpp > depend.d
 	@make -f Makefile.act
 
 clean:

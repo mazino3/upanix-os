@@ -199,7 +199,7 @@ static byte EHCIController_AddEntry(PCIEntry* pPCIEntry)
 	((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPTEIndex] = (uiIOAddr & 0xFFFFF000) | 0x5 ;
 	Mem_FlushTLB();
 	
-	if(KC::MMemManager().MarkPageAsAllocated(uiIOAddr / PAGE_SIZE) != MEM_SUCCESS)
+	if(MemManager::Instance().MarkPageAsAllocated(uiIOAddr / PAGE_SIZE) != MEM_SUCCESS)
 	{
 	}
 
@@ -319,7 +319,7 @@ static void EHCIController_SetupInterrupts(EHCIController* pController)
 static byte EHCIController_SetupPeriodicFrameList(EHCIController* pController)
 {
 	unsigned uiFreePageNo ;
-	RETURN_X_IF_NOT(KC::MMemManager().AllocatePhysicalPage(&uiFreePageNo), MEM_SUCCESS, EHCIController_FAILURE) ;
+	RETURN_X_IF_NOT(MemManager::Instance().AllocatePhysicalPage(&uiFreePageNo), MEM_SUCCESS, EHCIController_FAILURE) ;
 
 	unsigned* pFrameList = (unsigned*)(uiFreePageNo * PAGE_SIZE - GLOBAL_DATA_SEGMENT_BASE) ;
 	
@@ -1574,7 +1574,7 @@ byte EHCIController_Initialize()
 	unsigned uiPCIIndex ;
 	for(uiPCIIndex = 0; uiPCIIndex < PCIBusHandler_uiDeviceCount; uiPCIIndex++)
 	{
-		if(PCIBusHandler_GetPCIEntry(&pPCIEntry, uiPCIIndex) != PCIBusHandler_SUCCESS)
+		if(PCIBusHandler_GetPCIEntry(&pPCIEntry, uiPCIIndex) != Success)
 			break ;
 	
 		if(pPCIEntry->bHeaderType & PCI_HEADER_BRIDGE)
@@ -1595,9 +1595,9 @@ byte EHCIController_Initialize()
 	}
 	
 	if(bControllerFound)
-		KC::MDisplay().LoadMessage("USB EHCI Controller Found", SUCCESS) ;
+		KC::MDisplay().LoadMessage("USB EHCI Controller Found", Success) ;
 	else
-		KC::MDisplay().LoadMessage("No USB EHCI Controller Found", FAILURE) ;
+		KC::MDisplay().LoadMessage("No USB EHCI Controller Found", Failure) ;
 
 	return EHCIController_SUCCESS ;
 }

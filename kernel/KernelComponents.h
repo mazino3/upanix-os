@@ -18,7 +18,7 @@
 #ifndef _KERNEL_COMP_H_
 #define _KERNEL_COMP_H_
 
-class Display ;
+class Display;
 class MemManager ;
 class KernelService ;
 class MouseDriver ;
@@ -28,10 +28,9 @@ class KC
 {
 	public:
 		static Display& MDisplay() ; 
-		static MemManager& MMemManager() ;
 		static KernelService& MKernelService() ;
 		static MouseDriver& MMouseDriver() ;
 		static NetworkManager& MNetworkManager() ;
-} ;
+};
 
 #endif

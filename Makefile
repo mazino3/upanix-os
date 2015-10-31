@@ -13,8 +13,7 @@
 #																			 
 #	 You should have received a copy of the GNU General Public License
 #	 along with this program.  If not, see <http://www.gnu.org/licenses/
-CC = g++
-LD = ld
+CXX = i686-elf-g++
 
 MOS_HOME = $(shell pwd)
 
@@ -60,12 +59,13 @@ INCLUDE = -I./ \
 -I${MOS_HOME}/libmcpp/ds \
 -I${MOS_HOME}/libmcpp/mem
 
-CPP_FLAGS =  -c -m32 -O0 -Wall -ffreestanding -nodefaultlibs -nostdlib -nostartfiles -nostdinc \
+#CPP_FLAGS =  -c -O2 -Wall -Wextra -ffreestanding -nodefaultlibs -nostdlib -nostartfiles \
+#						-fno-threadsafe-statics -fno-exceptions -fno-rtti -fpermissive ${INCLUDE}
+CPP_FLAGS= -c -O0 -std=c++11 -Wall -Wextra -ffreestanding -nodefaultlibs -nostdlib -nostartfiles -nostdinc \
 -nostdinc++ -fno-default-inline -fno-common -fno-non-call-exceptions -fno-exceptions -fno-rtti \
--fno-threadsafe-statics ${INCLUDE}
+-fno-threadsafe-statics -fpermissive ${INCLUDE}
 export CPP_FLAGS
-export CC
-export LD
+export CXX
 export MOS_HOME
 
 BIN = ${MOS_HOME}/bin

@@ -39,13 +39,19 @@ extern "C"
 
 class MemManager
 {
+	private:
+		MemManager();
 	public:
+		static MemManager& Instance()
+		{
+			static MemManager instance;
+			return instance;
+		}
 		byte MarkPageAsAllocated(unsigned uiPageNumber) ;
 		byte AllocatePhysicalPage(unsigned* uiPageNumber) ;
 		void DeAllocatePhysicalPage(const unsigned uiPageNumber) ;
 		byte AllocatePage(int iProcessID, unsigned uiFaultyAddress) ;
 		byte DeAllocatePage(const unsigned uiAddress) ;
-		//void MemManager::PageFaultHandlerTask() ;
 		void DisplayNoOfFreePages() ;
 		unsigned GetFlatAddress(unsigned uiVirtualAddress) ;
 		int GetFreeKernelProcessStackBlockID() ;
@@ -76,9 +82,6 @@ class MemManager
 		}
 
 	private:
-		MemManager() ;
-		void Initialize() ;
-
 		bool BuildRawPageMap() ;
 		bool BuildPageTable() ;
 
@@ -102,10 +105,6 @@ class MemManager
 		bool m_bAllocationMapForKernelProcessStackBlock[PAGE_TABLE_ENTRIES / PROCESS_KERNEL_STACK_PAGES] ;
 
 		const unsigned RAM_SIZE ;
-
-		bool m_bIsInitialized ;
-
-	friend class KC ;
-} ;
+};
 
 #endif

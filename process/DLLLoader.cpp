@@ -188,7 +188,7 @@ byte DLLLoader_LoadELFDLL(const char* szDLLName, const char* szJustDLLName, Proc
 
 	unsigned uiDLLImageSize = ProcessLoader_GetCeilAlignedAddress(uiMaxMemAddr - uiMinMemAddr, 4) ;
 	unsigned uiMemImageSize = uiDLLImageSize + uiDLLSectionSize ;
-	unsigned uiNoOfPagesForDLL = KC::MMemManager().GetProcessSizeInPages(uiMemImageSize) + DLL_ELF_SEC_HEADER_PAGE ;
+	unsigned uiNoOfPagesForDLL = MemManager::Instance().GetProcessSizeInPages(uiMemImageSize) + DLL_ELF_SEC_HEADER_PAGE ;
 
 	if(uiNoOfPagesForDLL > MAX_PAGES_PER_PROCESS)
 	{
@@ -204,7 +204,7 @@ byte DLLLoader_LoadELFDLL(const char* szDLLName, const char* szJustDLLName, Proc
 
 		unsigned i ;
 		for(i = 0; i < pProcessSharedObjectList[iProcessDLLEntryIndex].uiNoOfPages; i++)
-			KC::MMemManager().DeAllocatePhysicalPage(pProcessSharedObjectList[iProcessDLLEntryIndex].uiAllocatedPageNumbers[i]) ;
+			MemManager::Instance().DeAllocatePhysicalPage(pProcessSharedObjectList[iProcessDLLEntryIndex].uiAllocatedPageNumbers[i]) ;
 
 		return DLLLoader_FAILURE ;
 	}
@@ -229,7 +229,7 @@ byte DLLLoader_LoadELFDLL(const char* szDLLName, const char* szJustDLLName, Proc
 
 		unsigned i ;
 		for(i = 0; i < pProcessSharedObjectList[iProcessDLLEntryIndex].uiNoOfPages; i++)
-			KC::MMemManager().DeAllocatePhysicalPage(pProcessSharedObjectList[iProcessDLLEntryIndex].uiAllocatedPageNumbers[i]) ;
+			MemManager::Instance().DeAllocatePhysicalPage(pProcessSharedObjectList[iProcessDLLEntryIndex].uiAllocatedPageNumbers[i]) ;
 
 		return DLLLoader_FAILURE ;
 	}
@@ -307,7 +307,7 @@ void DLLLoader_DeAllocateProcessDLLPTEPages(ProcessAddressSpace* processAddressS
 		uiPTEAddress = uiPDEAddress[i + processAddressSpace->uiStartPDEForDLL] & 0xFFFFF000 ;
 
 		if(uiPresentBit && uiPDEAddress != 0)
-			KC::MMemManager().DeAllocatePhysicalPage(uiPTEAddress / PAGE_SIZE) ;
+			MemManager::Instance().DeAllocatePhysicalPage(uiPTEAddress / PAGE_SIZE) ;
 	}
 }
 
@@ -328,7 +328,7 @@ byte DLLLoader_MapDLLPagesToProcess(ProcessAddressSpace* processAddressSpace,
 												unsigned uiAllocatedPagesCount)
 {
 	unsigned uiNoOfPagesAllocatedForDLL = uiAllocatedPagesCount + pProcessSharedObjectList->uiNoOfPages ;
-	unsigned uiNoOfPagesForDLLPTE = KC::MMemManager().GetPTESizeInPages(uiNoOfPagesAllocatedForDLL) ;
+	unsigned uiNoOfPagesForDLLPTE = MemManager::Instance().GetPTESizeInPages(uiNoOfPagesAllocatedForDLL) ;
 	
 	unsigned uiPDEAddress = processAddressSpace->taskState.CR3_PDBR ;
 	unsigned i, uiFreePageNo, uiPDEIndex, uiPTEIndex ;
@@ -337,7 +337,7 @@ byte DLLLoader_MapDLLPagesToProcess(ProcessAddressSpace* processAddressSpace,
 	{
 		for(i = processAddressSpace->uiNoOfPagesForDLLPTE; i < uiNoOfPagesForDLLPTE; i++)
 		{
-			RETURN_X_IF_NOT(KC::MMemManager().AllocatePhysicalPage(&uiFreePageNo), MEM_SUCCESS, DLLLoader_FAILURE) ;
+			RETURN_X_IF_NOT(MemManager::Instance().AllocatePhysicalPage(&uiFreePageNo), MEM_SUCCESS, DLLLoader_FAILURE) ;
 			
 			uiPDEIndex = processAddressSpace->uiStartPDEForDLL + i ;
 			((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPDEIndex] = 

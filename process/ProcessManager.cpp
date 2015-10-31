@@ -112,14 +112,14 @@ static void ProcessManager_DeAllocateProcessInitDockMem(ProcessAddressSpace* pPA
 	// We are strongly assuming that this PTE and page are allocated solely for ProcInit docking
 	// Meaning, we are not expecting any page faults to happen in this region of Process Strict Base of 16 MB
 	// and actual process start address - which again is expected to fall beyond 20 MB page
-	// In a way this is also controlled in KC::MMemManager().AllocatePage() by monitoring faulty address !
+	// In a way this is also controlled in MemManager::Instance().AllocatePage() by monitoring faulty address !
 	
 	unsigned uiPTEAddress = ((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPDEIndex] & 0xFFFFF000 ;
 	
 	unsigned uiPageNumber = (((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPTEIndex] & 0xFFFFF000) / PAGE_SIZE ;
 	
-	KC::MMemManager().DeAllocatePhysicalPage(uiPageNumber) ;
-	KC::MMemManager().DeAllocatePhysicalPage(uiPTEAddress/PAGE_SIZE) ;
+	MemManager::Instance().DeAllocatePhysicalPage(uiPageNumber) ;
+	MemManager::Instance().DeAllocatePhysicalPage(uiPTEAddress/PAGE_SIZE) ;
 }
 
 static void ProcessManager_DeAllocateResources(int iProcessID)
@@ -229,9 +229,7 @@ void ProcessManager_Initialize()
 
 	DSUtil_InitializeSLL(&ProcessManager_ProcessList) ;
 
-	ProcFileManager_InitForKernel();
-
-	KC::MDisplay().LoadMessage("Process Manager Initialization", bStatus) ;
+	KC::MDisplay().LoadMessage("Process Manager Initialization", bStatus ? Success : Failure);
 }
 
 void ProcessManager_BuildCallGate(unsigned short usGateSelector, unsigned uiOffset, unsigned short usSelector, byte bParameterCount)
@@ -500,8 +498,8 @@ void ProcessManager_Destroy(int iDeleteProcessID)
 
 	Atomic::Swap((__volatile__ int&)(pPAS->status), static_cast<int>(TERMINATED)) ;
 
-	//KC::MMemManager().DisplayNoOfFreePages();
-	//KC::MMemManager().DisplayNoOfAllocPages(0,0);
+	//MemManager::Instance().DisplayNoOfFreePages();
+	//MemManager::Instance().DisplayNoOfAllocPages(0,0);
 	
 	// Deallocate Resources
 	ProcessManager_DeAllocateResources(iDeleteProcessID) ;
@@ -544,8 +542,8 @@ void ProcessManager_Destroy(int iDeleteProcessID)
 	if(iParentProcessID == NO_PROCESS_ID)
 		ProcessManager_Release(iDeleteProcessID) ;
 	
-	//KC::MMemManager().DisplayNoOfFreePages();
-	//KC::MMemManager().DisplayNoOfAllocPages(0,0);
+	//MemManager::Instance().DisplayNoOfFreePages();
+	//MemManager::Instance().DisplayNoOfAllocPages(0,0);
 }
 
 void ProcessManager_Load(int iProcessID)
@@ -910,7 +908,7 @@ byte ProcessManager_CreateKernelImage(const unsigned uiTaskAddress, int iParentP
 
 byte ProcessManager_Create(const char* szProcessName, int iParentProcessID, byte bIsFGProcess, int* iProcessID, int iUserID, int iNumberOfParameters, char** szArgumentList)
 {
-	//KC::MMemManager().DisplayNoOfFreePages();
+	//MemManager::Instance().DisplayNoOfFreePages();
 	byte bStatus ;
 
 	int iNewProcessID ;
@@ -1016,7 +1014,7 @@ byte ProcessManager_Create(const char* szProcessName, int iParentProcessID, byte
 
 	ProcessManager_AddToSchedulerList(iNewProcessID) ;
 
-	//KC::MMemManager().DisplayNoOfFreePages() ;
+	//MemManager::Instance().DisplayNoOfFreePages() ;
 	return ProcessManager_SUCCESS ;
 }
 

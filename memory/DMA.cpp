@@ -117,7 +117,7 @@ DMA_Initialize()
 	}
 
 	DMA_ClearMaskReg() ;
-	KC::MDisplay().LoadMessage("DMA Initialization", SUCCESS) ;
+	KC::MDisplay().LoadMessage("DMA Initialization", Success) ;
 }
 
 byte

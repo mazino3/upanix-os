@@ -69,7 +69,7 @@ byte ProcFileManager_Initialize(__volatile__ unsigned uiPDEAddress, __volatile__
 {
 	unsigned uiFreePageNo ;
 
-	RETURN_X_IF_NOT(KC::MMemManager().AllocatePhysicalPage(&uiFreePageNo), MEM_SUCCESS, ProcFileManager_FAILURE) ;
+	RETURN_X_IF_NOT(MemManager::Instance().AllocatePhysicalPage(&uiFreePageNo), MEM_SUCCESS, ProcFileManager_FAILURE) ;
 
 	unsigned uiPDEIndex = ((PROCESS_FD_PAGE >> 22) & 0x3FF) ;
 	unsigned uiPTEIndex = ((PROCESS_FD_PAGE >> 12) & 0x3FF) ;
@@ -132,7 +132,7 @@ void ProcFileManager_UnInitialize(ProcessAddressSpace* processAddressSpace)
 		fdTable[i].iDriveID = PROC_FREE_FD ;
 	}
 
-	KC::MMemManager().DeAllocatePhysicalPage(uiPageNumber) ;
+	MemManager::Instance().DeAllocatePhysicalPage(uiPageNumber) ;
 }
 
 void ProcFileManager_InitForKernel()

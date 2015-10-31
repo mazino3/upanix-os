@@ -111,7 +111,7 @@ byte DynamicLinkLoader_Initialize(unsigned* pRealELFSectionHeadeAddr, unsigned u
 {
 	unsigned uiFreePageNo ;
 
-	RETURN_X_IF_NOT(KC::MMemManager().AllocatePhysicalPage(&uiFreePageNo), MEM_SUCCESS, DynamicLinkLoader_FAILURE) ;
+	RETURN_X_IF_NOT(MemManager::Instance().AllocatePhysicalPage(&uiFreePageNo), MEM_SUCCESS, DynamicLinkLoader_FAILURE) ;
 	ProcessSharedObjectList* pSharedObjectList = (ProcessSharedObjectList*)(uiFreePageNo * PAGE_SIZE - GLOBAL_DATA_SEGMENT_BASE) ;
 
 	for(int i = 0; i < DLLLoader_iNoOfProcessSharedObjectList; i++)
@@ -124,7 +124,7 @@ byte DynamicLinkLoader_Initialize(unsigned* pRealELFSectionHeadeAddr, unsigned u
 
 	((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPTEIndex] = ((uiFreePageNo * PAGE_SIZE) & 0xFFFFF000) | 0x3 ;
 
-	RETURN_X_IF_NOT(KC::MMemManager().AllocatePhysicalPage(&uiFreePageNo), MEM_SUCCESS, DynamicLinkLoader_FAILURE) ;
+	RETURN_X_IF_NOT(MemManager::Instance().AllocatePhysicalPage(&uiFreePageNo), MEM_SUCCESS, DynamicLinkLoader_FAILURE) ;
 	*pRealELFSectionHeadeAddr = (uiFreePageNo * PAGE_SIZE - GLOBAL_DATA_SEGMENT_BASE) ;
 
 	uiPDEIndex = ((PROCESS_SEC_HEADER_ADDR >> 22) & 0x3FF) ;
@@ -155,20 +155,20 @@ void DynamicLinkLoader_UnInitialize(ProcessAddressSpace* processAddressSpace)
 		{
 			for(j = 0; j < pSharedObjectList[i].uiNoOfPages; j++)
 			{
-				KC::MMemManager().DeAllocatePhysicalPage(pSharedObjectList[i].uiAllocatedPageNumbers[j]) ;
+				MemManager::Instance().DeAllocatePhysicalPage(pSharedObjectList[i].uiAllocatedPageNumbers[j]) ;
 			}
 			DMM_DeAllocateForKernel((unsigned)pSharedObjectList[i].uiAllocatedPageNumbers) ;
 		}
 		else
 			break ;
 	}
-	KC::MMemManager().DeAllocatePhysicalPage(uiPageNumber) ;
+	MemManager::Instance().DeAllocatePhysicalPage(uiPageNumber) ;
 
 	uiPDEIndex = ((PROCESS_SEC_HEADER_ADDR >> 22) & 0x3FF) ;
 	uiPTEIndex = ((PROCESS_SEC_HEADER_ADDR >> 12) & 0x3FF) ;
 	uiPTEAddress = ((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPDEIndex] & 0xFFFFF000 ;
 	uiPageNumber = (((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPTEIndex] & 0xFFFFF000) / PAGE_SIZE ;
-	KC::MMemManager().DeAllocatePhysicalPage(uiPageNumber) ;
+	MemManager::Instance().DeAllocatePhysicalPage(uiPageNumber) ;
 }
 
 byte DynamicLinkLoader_DoRelocation(ProcessAddressSpace* processAddressSpace, int iID, unsigned uiRelocationOffset, __volatile__ int* iDynamicSymAddress)

@@ -65,9 +65,9 @@ static unsigned DMM_AllocateAlignForKernel_Act(unsigned uiSizeInBytes, unsigned 
 	unsigned uiHeapStartAddress ;
 	unsigned* uiAUTAddress ;
 
-	uiAUTAddress = KC::MMemManager().GetKernelAUTAddress() ;
+	uiAUTAddress = MemManager::Instance().GetKernelAUTAddress() ;
 
-	uiHeapStartAddress = KC::MMemManager().GetKernelHeapStartAddr() - GLOBAL_DATA_SEGMENT_BASE ;
+	uiHeapStartAddress = MemManager::Instance().GetKernelHeapStartAddr() - GLOBAL_DATA_SEGMENT_BASE ;
 	AllocationUnitTracker *aut, *prevAut ;
 	unsigned uiAddress ;
 	
@@ -152,7 +152,7 @@ static unsigned DMM_AllocateAlignForKernel_Act(unsigned uiSizeInBytes, unsigned 
 static byte DMM_DeAllocateForKernel_Act(unsigned uiAddress)
 {
 	unsigned* uiAUTAddress ;
-	unsigned uiHeapStartAddress = KC::MMemManager().GetKernelHeapStartAddr() - GLOBAL_DATA_SEGMENT_BASE ;
+	unsigned uiHeapStartAddress = MemManager::Instance().GetKernelHeapStartAddr() - GLOBAL_DATA_SEGMENT_BASE ;
 
 	if(uiAddress == NULL)
 		return DMM_SUCCESS ;
@@ -160,7 +160,7 @@ static byte DMM_DeAllocateForKernel_Act(unsigned uiAddress)
 	if(uiAddress == uiHeapStartAddress)
 		return DMM_BAD_DEALLOC ;
 
-	uiAUTAddress = KC::MMemManager().GetKernelAUTAddress() ;
+	uiAUTAddress = MemManager::Instance().GetKernelAUTAddress() ;
 
 	AllocationUnitTracker* curAUT = (AllocationUnitTracker*)(*uiAUTAddress) ;
 	AllocationUnitTracker* prevAUT = NULL ;
@@ -406,14 +406,14 @@ void DMM_DeAllocatePhysicalPages(ProcessAddressSpace* processAddressSpace)
 				
 				if(uiPresentBit && uiPageNumber != 0)
 				{
-					KC::MMemManager().DeAllocatePhysicalPage(uiPageNumber);
+					MemManager::Instance().DeAllocatePhysicalPage(uiPageNumber);
 				}
 				else
 					break;
 			}
 		
 			uiPageNumber = uiPTEAddress / PAGE_SIZE;
-			KC::MMemManager().DeAllocatePhysicalPage(uiPageNumber);
+			MemManager::Instance().DeAllocatePhysicalPage(uiPageNumber);
 			
 			uiPTEIndex = 0;
 		}
@@ -424,7 +424,7 @@ void DMM_DeAllocatePhysicalPages(ProcessAddressSpace* processAddressSpace)
 
 unsigned DMM_KernelHeapAllocSize()
 {
-	unsigned uiHeapStartAddress = KC::MMemManager().GetKernelHeapStartAddr() - GLOBAL_DATA_SEGMENT_BASE ;
+	unsigned uiHeapStartAddress = MemManager::Instance().GetKernelHeapStartAddr() - GLOBAL_DATA_SEGMENT_BASE ;
 	AllocationUnitTracker *aut ;
 	unsigned uiSize = 0 ;
 

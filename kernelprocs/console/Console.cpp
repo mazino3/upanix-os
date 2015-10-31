@@ -40,7 +40,7 @@ void Console_Initialize()
 	String_Copy(Console_PROMPT, "\nMOS:") ;
 	Console_currentCommandPos = 0 ;
 	ConsoleCommands_Init() ;
-	KC::MDisplay().LoadMessage("Console Initialization", SUCCESS) ;
+	KC::MDisplay().LoadMessage("Console Initialization", Success);
 }
 
 void Console_ClearCommandLine()
@@ -75,6 +75,11 @@ void Console_StartMOSConsole()
 //	}
 
 	Console_DisplayCommandLine() ;
+
+	//Default init code
+	Console_ProcessCommand("eusbprobe");
+	Console_ProcessCommand("mount usdb");
+	Console_ProcessCommand("chd usdb");
 
 	while(SUCCESS)
 	{
@@ -134,14 +139,17 @@ void Console_StartMOSConsole()
 	}
 }
 
+void Console_ProcessCommand(char* cmd)
+{
+	if(!Console_ExecuteCommand(cmd))
+		puts("\n No Such Command\n") ;
+}
+
 void Console_ProcessCommand()
 {
 	Console_commandLine[Console_currentCommandPos] = '\0' ;
 	Console_currentCommandPos = 0 ;
-
-	if(!Console_ExecuteCommand(Console_commandLine))
-		puts("\n No Such Command\n") ;
-
+	Console_ProcessCommand(Console_commandLine);
 	Console_ClearCommandLine() ;
 }
 

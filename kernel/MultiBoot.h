@@ -18,7 +18,7 @@
 #ifndef _MULTI_BOOT_H_
 #define _MULTI_BOOT_H_
 
-# include <Global.h>
+#include <Global.h>
 
 /**** These Multi boot structures are taken from GRUB multiboot.h ****/
 
@@ -95,11 +95,23 @@ typedef struct memory_map
 
 /********************** These are MOS Specific declarations ***********************/
 
-void MultiBoot_Initialize() ;
-unsigned MultiBoot_GetRamSizeInKB() ;
-unsigned MultiBoot_GetRamSizeInMB() ;
-unsigned MultiBoot_GetRamSize() ;
-byte MultiBoot_GetBootDeviceID() ;
-byte MultiBoot_GetBootPartitionID() ;
+class MultiBoot
+{
+	private:
+		MultiBoot();
+	public:
+		static MultiBoot& Instance()
+		{
+			static MultiBoot instance;
+			return instance;
+		}
+		unsigned GetRamSizeInKB();
+		unsigned GetRamSizeInMB();
+		unsigned GetRamSize();
+		byte GetBootDeviceID();
+		byte GetBootPartitionID();
+	private:
+		multiboot_info_t* _pInfo;
+};
 
 #endif 

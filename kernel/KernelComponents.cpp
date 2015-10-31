@@ -28,12 +28,6 @@ Display& KC::MDisplay()
 	return kDisplay ;
 }
 
-MemManager& KC::MMemManager()
-{
-	static MemManager kMemManager ;
-	return kMemManager ;
-}
-
 KernelService& KC::MKernelService()
 {
 	static KernelService kKernelService ;

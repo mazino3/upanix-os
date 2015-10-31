@@ -59,23 +59,23 @@ static byte ATAAMD_SetPortSpeed(AMDIDE* pAMDIDE, PCIEntry* pPCIEntry, ATAPort* p
 	byte bTemp ;
 
 	RETURN_X_IF_NOT(PCIBusHandler_ReadPCIConfig(pPCIEntry->uiBusNumber, pPCIEntry->uiDeviceNumber, pPCIEntry->uiFunction,
-		AMD_ADDRESS_SETUP, 1, &bTemp), PCIBusHandler_SUCCESS, ATAAMD_FAILURE) ;
+		AMD_ADDRESS_SETUP, 1, &bTemp), Success, ATAAMD_FAILURE) ;
 	
 	bTemp = (bTemp & ~(3 << ((3 - uiDriveNumber) << 1))) | 
 			((FIT(pATATiming->usSetup, 1, 4) - 1) << ((3 - uiDriveNumber) << 1)) ;
 
 	RETURN_X_IF_NOT(PCIBusHandler_WritePCIConfig(pPCIEntry->uiBusNumber, pPCIEntry->uiDeviceNumber, pPCIEntry->uiFunction,
-			AMD_ADDRESS_SETUP, 1, bTemp), PCIBusHandler_SUCCESS, ATAAMD_FAILURE) ;
+			AMD_ADDRESS_SETUP, 1, bTemp), Success, ATAAMD_FAILURE) ;
 	
 	RETURN_X_IF_NOT(PCIBusHandler_WritePCIConfig(pPCIEntry->uiBusNumber, pPCIEntry->uiDeviceNumber, pPCIEntry->uiFunction,
 			AMD_8BIT_TIMING + (1 - (uiDriveNumber >> 1)), 1, 
 			((FIT(pATATiming->usAct8b, 1, 16) - 1) << 4) | 
-			(FIT(pATATiming->usRec8b, 1, 16) - 1)), PCIBusHandler_SUCCESS, ATAAMD_FAILURE) ;
+			(FIT(pATATiming->usRec8b, 1, 16) - 1)), Success, ATAAMD_FAILURE) ;
 
 	RETURN_X_IF_NOT(PCIBusHandler_WritePCIConfig(pPCIEntry->uiBusNumber, pPCIEntry->uiDeviceNumber, pPCIEntry->uiFunction,
 			AMD_DRIVE_TIMING + (3 - uiDriveNumber), 1, 
 			((FIT(pATATiming->usAct, 1, 16) - 1) << 4) | 
-			(FIT(pATATiming->usRec, 1, 16) - 1)), PCIBusHandler_SUCCESS, ATAAMD_FAILURE) ;
+			(FIT(pATATiming->usRec, 1, 16) - 1)), Success, ATAAMD_FAILURE) ;
 
 	switch(pAMDIDE->usFlags & AMD_UDMA)
 	{
@@ -100,7 +100,7 @@ static byte ATAAMD_SetPortSpeed(AMDIDE* pAMDIDE, PCIEntry* pPCIEntry, ATAPort* p
 	}
 	
 	RETURN_X_IF_NOT(PCIBusHandler_WritePCIConfig(pPCIEntry->uiBusNumber, pPCIEntry->uiDeviceNumber, pPCIEntry->uiFunction,
-		AMD_UDMA_TIMING + (3 - uiDriveNumber), 1, bTemp), PCIBusHandler_SUCCESS, ATAAMD_FAILURE) ;		
+		AMD_UDMA_TIMING + (3 - uiDriveNumber), 1, bTemp), Success, ATAAMD_FAILURE) ;		
 
 	return ATAAMD_SUCCESS ;
 }
@@ -215,7 +215,7 @@ void ATAAMD_InitController(const PCIEntry* pPCIEntry, ATAController* pController
 
 	for(uiPCIIndex = 0; uiPCIIndex < PCIBusHandler_uiDeviceCount; uiPCIIndex++)
 	{
-		if(PCIBusHandler_GetPCIEntry(&pIDE, uiPCIIndex) != PCIBusHandler_SUCCESS)
+		if(PCIBusHandler_GetPCIEntry(&pIDE, uiPCIIndex) != Success)
 			break ;
 	
 		if(pIDE->bHeaderType & PCI_HEADER_BRIDGE)
@@ -272,7 +272,7 @@ void ATAAMD_InitController(const PCIEntry* pPCIEntry, ATAController* pController
 	{
 		case AMD_UDMA_66:
 			if(PCIBusHandler_ReadPCIConfig(pIDE->uiBusNumber, pIDE->uiDeviceNumber, pIDE->uiFunction,
-				AMD_UDMA_TIMING, 4, &uiUDMATiming) != PCIBusHandler_SUCCESS)
+				AMD_UDMA_TIMING, 4, &uiUDMATiming) != Success)
 			{
 				KC::MDisplay().Message("\n\tFailed to Init AMD Controller", Display::WHITE_ON_BLACK()) ;
 				return ;
@@ -288,14 +288,14 @@ void ATAAMD_InitController(const PCIEntry* pPCIEntry, ATAController* pController
 		case AMD_UDMA_100:
 		case AMD_UDMA_133:
 			if(PCIBusHandler_ReadPCIConfig(pIDE->uiBusNumber, pIDE->uiDeviceNumber, pIDE->uiFunction,
-					AMD_CABLE_DETECT, 1, &bTemp) != PCIBusHandler_SUCCESS)
+					AMD_CABLE_DETECT, 1, &bTemp) != Success)
 			{
 				KC::MDisplay().Message("\n\tFailed to Init AMD Controller", Display::WHITE_ON_BLACK()) ;
 				return ;
 			}
 
 			if(PCIBusHandler_ReadPCIConfig(pIDE->uiBusNumber, pIDE->uiDeviceNumber, pIDE->uiFunction,
-				AMD_UDMA_TIMING, 4, &uiUDMATiming) != PCIBusHandler_SUCCESS)
+				AMD_UDMA_TIMING, 4, &uiUDMATiming) != Success)
 			{
 				KC::MDisplay().Message("\n\tFailed to Init AMD Controller", Display::WHITE_ON_BLACK()) ;
 				return ;
@@ -318,7 +318,7 @@ void ATAAMD_InitController(const PCIEntry* pPCIEntry, ATAController* pController
 		(ui80W & 0x02) ? ATA_CABLE_PATA80 : ATA_CABLE_PATA40 ;
 
 	if(PCIBusHandler_ReadPCIConfig(pIDE->uiBusNumber, pIDE->uiDeviceNumber, pIDE->uiFunction,
-			AMD_IDE_CONFIG, 1, &bTemp) != PCIBusHandler_SUCCESS)
+			AMD_IDE_CONFIG, 1, &bTemp) != Success)
 	{
 		KC::MDisplay().Message("\n\tFailed to Init AMD Controller", Display::WHITE_ON_BLACK()) ;
 		return ;
@@ -326,7 +326,7 @@ void ATAAMD_InitController(const PCIEntry* pPCIEntry, ATAController* pController
 
 	if(PCIBusHandler_WritePCIConfig(pIDE->uiBusNumber, pIDE->uiDeviceNumber, pIDE->uiFunction,
 			AMD_IDE_CONFIG, 1, (pAMDIDE->usFlags & AMD_BAD_FIFO) ? (bTemp & 0x0F) : (bTemp | 0xF0)) != 
-			PCIBusHandler_SUCCESS)
+			Success)
 	{
 		KC::MDisplay().Message("\n\tFailed to Init AMD Controller", Display::WHITE_ON_BLACK()) ;
 		return ;

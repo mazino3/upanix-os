@@ -17,36 +17,33 @@
  */
 #include <MultiBoot.h>
 #include <MemConstants.h>
-#include <Display.h>
 
-static multiboot_info_t* MultiBoot_pInfo ;
-
-void MultiBoot_Initialize()
+MultiBoot::MultiBoot()
 {
-	MultiBoot_pInfo = (multiboot_info_t*)(&MULTIBOOT_INFO_ADDR) ;
+	_pInfo = (multiboot_info_t*)(&MULTIBOOT_INFO_ADDR) ;
 }
 
-unsigned MultiBoot_GetRamSizeInKB()
+unsigned MultiBoot::GetRamSizeInKB()
 {
-	return (MultiBoot_pInfo->mem_lower + MultiBoot_pInfo->mem_upper) ;
+	return (_pInfo->mem_lower + _pInfo->mem_upper) ;
 }
 
-unsigned MultiBoot_GetRamSizeInMB()
+unsigned MultiBoot::GetRamSizeInMB()
 {
-	return MultiBoot_GetRamSizeInKB() / 1024 ;
+	return MultiBoot::GetRamSizeInKB() / 1024 ;
 }
 
-unsigned MultiBoot_GetRamSize()
+unsigned MultiBoot::GetRamSize()
 {
-	return MultiBoot_GetRamSizeInKB() * 1024 ;
+	return MultiBoot::GetRamSizeInKB() * 1024 ;
 }
 
-byte MultiBoot_GetBootDeviceID()
+byte MultiBoot::GetBootDeviceID()
 {
-	return MultiBoot_pInfo->boot_device[3] ;
+	return _pInfo->boot_device[3] ;
 }
 
-byte MultiBoot_GetBootPartitionID()
+byte MultiBoot::GetBootPartitionID()
 {
-	return MultiBoot_pInfo->boot_device[2] ;
+	return _pInfo->boot_device[2] ;
 }

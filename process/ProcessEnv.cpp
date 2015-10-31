@@ -36,7 +36,7 @@ byte ProcessEnv_Initialize(__volatile__ unsigned uiPDEAddress, __volatile__ int 
 {
 	unsigned uiFreePageNo, i ;
 
-	RETURN_X_IF_NOT(KC::MMemManager().AllocatePhysicalPage(&uiFreePageNo), MEM_SUCCESS, ProcessEnv_FAILURE) ;
+	RETURN_X_IF_NOT(MemManager::Instance().AllocatePhysicalPage(&uiFreePageNo), MEM_SUCCESS, ProcessEnv_FAILURE) ;
 
 	char* pEnv =(char*)(uiFreePageNo * PAGE_SIZE - GLOBAL_DATA_SEGMENT_BASE) ;
 	for(i = 0; i < PAGE_SIZE; i += ENV_VAR_LENGTH)
@@ -80,7 +80,7 @@ void ProcessEnv_InitializeForKernelProcess()
 
 void ProcessEnv_UnInitialize(ProcessAddressSpace* processAddressSpace)
 {
-	KC::MMemManager().DeAllocatePhysicalPage(ProcessEnv_GetProcessEnvPageNumber(processAddressSpace)) ;
+	MemManager::Instance().DeAllocatePhysicalPage(ProcessEnv_GetProcessEnvPageNumber(processAddressSpace)) ;
 }
 
 char* ProcessEnv_Get(const char* szEnvVar)

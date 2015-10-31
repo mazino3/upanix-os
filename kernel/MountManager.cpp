@@ -33,8 +33,8 @@ static bool MountManager_bInitStatus = false ;
 /*************************** static *****************************************/
 static void MountManager_GetBootMountDrive(char* szBootDriveName)
 {
-	byte bBootDevice = MultiBoot_GetBootDeviceID() ;
-	byte bBootPartitionID = MultiBoot_GetBootPartitionID() ;
+	byte bBootDevice = MultiBoot::Instance().GetBootDeviceID() ;
+	byte bBootPartitionID = MultiBoot::Instance().GetBootPartitionID() ;
 
 	switch(bBootDevice)
 	{
@@ -150,7 +150,7 @@ void MountManager_Initialize()
 		MountManager_iRootDriveID = CURRENT_DRIVE ;
 	}
 
-	KC::MDisplay().LoadMessage("Mount Manager Initialization", MountManager_bInitStatus) ;
+	KC::MDisplay().LoadMessage("Mount Manager Initialization", MountManager_bInitStatus ? Success : Failure);
 }
 
 bool MountManager_GetInitStatus()

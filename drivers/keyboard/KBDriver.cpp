@@ -46,7 +46,7 @@ void KBDriver_Initialize()
 
 	PortCom_ReceiveByte(KB_DATA_PORT) ;	
 
-	KC::MDisplay().LoadMessage("Keyboard Initialization", SUCCESS) ;
+	KC::MDisplay().LoadMessage("Keyboard Initialization", Success) ;
 }
 
 void KBDriver_Handler()

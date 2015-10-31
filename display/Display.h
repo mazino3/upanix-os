@@ -71,7 +71,7 @@ class Display
 		void	DDNumberInDec(const char *message, DDWORD ddNumber) ;
 		void	Character(char ch, const Display::Attribute& attr = WHITE_ON_BLACK()) ;
 		int		NextLine() ;
-		void	LoadMessage(const char* loadMessage, bool bStatus) ;
+		void	LoadMessage(const char* loadMessage, Result result);
 		void	ScrollDown() ;
 		void	ClearLine(int iStartPos) ;
 		void	MoveCursor(int iOffSet) ; 

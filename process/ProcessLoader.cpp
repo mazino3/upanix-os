@@ -112,14 +112,14 @@ byte ProcessLoader_LoadELFExe(const char* szProcessName, ProcessAddressSpace* pP
 	unsigned uiProcessImageSize = ProcessLoader_GetCeilAlignedAddress(uiMaxMemAddr - uiMinMemAddr, 4) ;
 	unsigned uiMemImageSize = uiProcessImageSize + uiStartUpSectionSize	+ uiDLLSectionSize ;
 
-	*uiNoOfPagesForProcess = KC::MMemManager().GetProcessSizeInPages(uiMemImageSize) + PROCESS_STACK_PAGES + PROCESS_CG_STACK_PAGES ;
+	*uiNoOfPagesForProcess = MemManager::Instance().GetProcessSizeInPages(uiMemImageSize) + PROCESS_STACK_PAGES + PROCESS_CG_STACK_PAGES ;
 
 	if(*uiNoOfPagesForProcess > MAX_PAGES_PER_PROCESS)
 		return ProcessLoader_ERR_HUGE_PROCESS_SIZE ;
 
 	*uiProcessBase = uiMinMemAddr ;
 	unsigned uiPageOverlapForProcessBase = ((*uiProcessBase / PAGE_SIZE) % PAGE_TABLE_ENTRIES) ;
-	*uiNoOfPagesForPTE = KC::MMemManager().GetPTESizeInPages(*uiNoOfPagesForProcess + uiPageOverlapForProcessBase) + PROCESS_SPACE_FOR_OS ;
+	*uiNoOfPagesForPTE = MemManager::Instance().GetPTESizeInPages(*uiNoOfPagesForProcess + uiPageOverlapForProcessBase) + PROCESS_SPACE_FOR_OS ;
 
 	if(ProcessAllocator_AllocateAddressSpace(*uiNoOfPagesForProcess, *uiNoOfPagesForPTE, uiPDEAddress, uiStartPDEForDLL, *uiProcessBase) != ProcessAllocator_SUCCESS)
 	{
@@ -263,7 +263,7 @@ void ProcessLoader_CopyElfImage(unsigned uiPDEAddr, byte* bProcessImage, unsigne
 	unsigned uiProcessPageBase = ( uiProcessBase / PAGE_SIZE ) % PAGE_TABLE_ENTRIES ;
 
 	unsigned uiCopySize = uiMemImageSize ;
-	unsigned uiNoOfPagesForProcess = KC::MMemManager().GetProcessSizeInPages(uiMemImageSize) ;
+	unsigned uiNoOfPagesForProcess = MemManager::Instance().GetProcessSizeInPages(uiMemImageSize) ;
 
 	for(i = 0; i < uiNoOfPagesForProcess; i++)
 	{

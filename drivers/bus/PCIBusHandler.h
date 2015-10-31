@@ -18,12 +18,7 @@
 #ifndef _PCI_BUS_HANDLER_H_
 #define _PCI_BUS_HANDLER_H_
 
-# include <Global.h>
-
-#define PCIBusHandler_SUCCESS					0
-#define PCIBusHandler_ERR_NO_PCI_INSTALLED		1
-#define PCIBusHandler_ERR_INVALID_DEVICE_INDEX	2
-#define PCIBusHandler_FAILURE					3
+#include <Global.h>
 
 #define PCI_TYPE_ONE 1
 #define PCI_TYPE_TWO 2
@@ -75,146 +70,146 @@
 
 typedef struct
 {
-	unsigned uiBusNumber ;
-	unsigned uiDeviceNumber ;
-	unsigned uiFunction ;
+	unsigned uiBusNumber;
+	unsigned uiDeviceNumber;
+	unsigned uiFunction;
 
-	unsigned short usVendorID ;
-	unsigned short usDeviceID ;
-	unsigned short usCommand ;
-	unsigned short usStatus ;
+	unsigned short usVendorID;
+	unsigned short usDeviceID;
+	unsigned short usCommand;
+	unsigned short usStatus;
 
-	byte bRevisionID ;
+	byte bRevisionID;
 
-	byte bInterface ;
-	byte bClassCode ;
-	byte bSubClass ;
+	byte bInterface;
+	byte bClassCode;
+	byte bSubClass;
 
-	byte bCacheLineSize ;
-	byte bLatency ;
-	byte bHeaderType ;
-	byte bSelfTestResult ;
+	byte bCacheLineSize;
+	byte bLatency;
+	byte bHeaderType;
+	byte bSelfTestResult;
 
 	union
 	{
 		struct 
 		{
-			unsigned uiBaseAddress0 ;
-			unsigned uiBaseAddress1 ;
-			unsigned uiBaseAddress2 ;
-			unsigned uiBaseAddress3 ;
-			unsigned uiBaseAddress4 ;
-			unsigned uiBaseAddress5 ;
+			unsigned uiBaseAddress0;
+			unsigned uiBaseAddress1;
+			unsigned uiBaseAddress2;
+			unsigned uiBaseAddress3;
+			unsigned uiBaseAddress4;
+			unsigned uiBaseAddress5;
 
-			unsigned uiCardBusCIS ;
+			unsigned uiCardBusCIS;
 
-			unsigned short usSubsystemVendorID ;
-			unsigned short usSubsystemDeviceID ;
+			unsigned short usSubsystemVendorID;
+			unsigned short usSubsystemDeviceID;
 		
-			unsigned uiExpansionROM ;
+			unsigned uiExpansionROM;
 			
-			byte bCapabilityPointer ;
+			byte bCapabilityPointer;
 			
-			byte bReserved1[3] ;
-			unsigned uiReserved2[1] ;
+			byte bReserved1[3];
+			unsigned uiReserved2[1];
 
-			byte bInterruptLine ;
-			byte bInterruptPin ;
-			byte bMinDMAGrant ;
-			byte bMaxDMALatency ;
+			byte bInterruptLine;
+			byte bInterruptPin;
+			byte bMinDMAGrant;
+			byte bMaxDMALatency;
 
-			unsigned uiDeviceSpecific[48] ;
-		} NonBridge ;
+			unsigned uiDeviceSpecific[48];
+		} NonBridge;
 		
 		struct
 		{
-			unsigned uiBaseAddress0 ;
-			unsigned uiBaseAddress1 ;
+			unsigned uiBaseAddress0;
+			unsigned uiBaseAddress1;
 			
-			byte bPrimaryBus ;
-			byte bSecondaryBus ;
-			byte bSubordinateBus ;
+			byte bPrimaryBus;
+			byte bSecondaryBus;
+			byte bSubordinateBus;
 			
-			byte bSecondaryLatency ;
+			byte bSecondaryLatency;
 
-			byte bIOBaseLow ;
-			byte bIOLimitLow ;
+			byte bIOBaseLow;
+			byte bIOLimitLow;
 	
-			unsigned short usSecondaryStatus ;
+			unsigned short usSecondaryStatus;
 
-			unsigned short usMemoryBaseLow ;
-			unsigned short usMemoryLimitLow ;
-			unsigned short usPrefetchBaseLow ;
-			unsigned short usPrefetchLimitLow ;		
+			unsigned short usMemoryBaseLow;
+			unsigned short usMemoryLimitLow;
+			unsigned short usPrefetchBaseLow;
+			unsigned short usPrefetchLimitLow;		
 
-			unsigned uiPrefetchBaseHigh ;
-			unsigned uiPrefetchLimitHigh ;
+			unsigned uiPrefetchBaseHigh;
+			unsigned uiPrefetchLimitHigh;
 
-			unsigned short usIOBaseHigh ;
-			unsigned short usIOLimitHigh ;
+			unsigned short usIOBaseHigh;
+			unsigned short usIOLimitHigh;
 
-			unsigned uiReserved[1] ;
+			unsigned uiReserved[1];
 
-			byte bInterruptLine ;
-			byte bInterruptPin ;
+			byte bInterruptLine;
+			byte bInterruptPin;
 			
-			unsigned short usBridgeControl ;
-			unsigned uiDeviceSpecifix[48] ;
-		} Bridge ;
+			unsigned short usBridgeControl;
+			unsigned uiDeviceSpecifix[48];
+		} Bridge;
 			
 		struct
 		{
-			unsigned uiExCaBase ;
+			unsigned uiExCaBase;
 
-			byte bCapabilityPointer ;
-			byte bReserved05 ;
+			byte bCapabilityPointer;
+			byte bReserved05;
 			
-			unsigned short usSecondaryStatus ;
+			unsigned short usSecondaryStatus;
 			
-			byte bPCIBus ;
-			byte bCardBus ;
-			byte bSubordinateBus ;
+			byte bPCIBus;
+			byte bCardBus;
+			byte bSubordinateBus;
 
-			byte bLatencyTimer ;
+			byte bLatencyTimer;
 			
-			unsigned uiMemoryBase0 ;
-			unsigned uiMemoryLimit0 ;
-			unsigned uiMemoryBase1 ;
-			unsigned uiMemoryLimit1 ;
+			unsigned uiMemoryBase0;
+			unsigned uiMemoryLimit0;
+			unsigned uiMemoryBase1;
+			unsigned uiMemoryLimit1;
 
-			unsigned short usIOBase0Low ;
-			unsigned short usIOBase0High ;
-			unsigned short usIOLimit0Low ;
-			unsigned short usIOLimit0High ;
+			unsigned short usIOBase0Low;
+			unsigned short usIOBase0High;
+			unsigned short usIOLimit0Low;
+			unsigned short usIOLimit0High;
 
-			unsigned short usIOBase1Low ;
-			unsigned short usIOBase1High ;
-			unsigned short usIOLimit1Low ;
-			unsigned short usIOLimit1High ;
+			unsigned short usIOBase1Low;
+			unsigned short usIOBase1High;
+			unsigned short usIOLimit1Low;
+			unsigned short usIOLimit1High;
 
-			byte bInterruptLine ;
-			byte bInterruptPin ;
+			byte bInterruptLine;
+			byte bInterruptPin;
 	
-			unsigned short usBridgeControl ;
-			unsigned short usSubsystemVendorID ;
-			unsigned short usSubsystemDeviceID ;
+			unsigned short usBridgeControl;
+			unsigned short usSubsystemVendorID;
+			unsigned short usSubsystemDeviceID;
 
-			unsigned uiLegacyBaseAddr ;
-			unsigned uiCardBusReserved[14] ;
-			unsigned uiVendorSpecific[32] ;
-		} CardBus ;
-	} BusEntity ;
-} PCIEntry ; 
+			unsigned uiLegacyBaseAddr;
+			unsigned uiCardBusReserved[14];
+			unsigned uiVendorSpecific[32];
+		} CardBus;
+	} BusEntity;
+} PCIEntry; 
 
-extern unsigned PCIBusHandler_uiDeviceCount ;
+extern unsigned PCIBusHandler_uiDeviceCount;
 
-void PCIBusHandler_Initialize() ;
-byte PCIBusHandler_GetPCIEntry(PCIEntry** pPCIEntry, unsigned uiIndex) ;
-byte PCIBusHandler_ReadPCIConfig(unsigned uiBusNumber, unsigned uiDeviceNumber, unsigned uiFunction, 
-						unsigned uiPCIEntryOffset, unsigned uiPCIEntrySize, void* pValue) ;
-byte PCIBusHandler_WritePCIConfig(unsigned uiBusNumber, unsigned uiDeviceNumber, unsigned uiFunction, 
-				unsigned uiPCIEntryOffset, unsigned uiPCIEntrySize, unsigned uiValue) ;
-unsigned PCIBusHandler_GetPCIMemSize(PCIEntry* pPCIEntry, int iAddressIndex) ;
-void PCIBusHandler_EnableBusMaster(const PCIEntry* pPCIEntry) ;
+void PCIBusHandler_Initialize();
+Result PCIBusHandler_GetPCIEntry(PCIEntry** pPCIEntry, unsigned uiIndex);
+Result PCIBusHandler_ReadPCIConfig(unsigned uiBusNumber, unsigned uiDeviceNumber, unsigned uiFunction, 
+						unsigned uiPCIEntryOffset, unsigned uiPCIEntrySize, void* pValue);
+Result PCIBusHandler_WritePCIConfig(unsigned uiBusNumber, unsigned uiDeviceNumber, unsigned uiFunction, 
+				unsigned uiPCIEntryOffset, unsigned uiPCIEntrySize, unsigned uiValue);
+unsigned PCIBusHandler_GetPCIMemSize(PCIEntry* pPCIEntry, int iAddressIndex);
+void PCIBusHandler_EnableBusMaster(const PCIEntry* pPCIEntry);
 
 #endif

@@ -24,7 +24,7 @@ Memory_Spike()
 	
 	for(i = 0; i < 20; i++)
 	{
-		if((bStatus = KC::MMemManager().AllocatePhysicalPage(&uiPageNumber)) != MEM_SUCCESS)
+		if((bStatus = MemManager::Instance().AllocatePhysicalPage(&uiPageNumber)) != MEM_SUCCESS)
 		{
 			KC::MDisplay().Address("\n Page Allocation Failed: ", bStatus) ;
 			return ;
@@ -33,9 +33,9 @@ Memory_Spike()
 		KC::MDisplay().Address("\nFree Page Number = ", uiPageNumber) ;
 	}
 
-	KC::MMemManager().DeAllocatePage(0x810) ;
+	MemManager::Instance().DeAllocatePage(0x810) ;
 
-	if((bStatus = KC::MMemManager().AllocatePhysicalPage(&uiPageNumber)) != MEM_SUCCESS)
+	if((bStatus = MemManager::Instance().AllocatePhysicalPage(&uiPageNumber)) != MEM_SUCCESS)
 	{
 		KC::MDisplay().Address("\n Page Allocation Failed: ", bStatus) ;
 		return ;

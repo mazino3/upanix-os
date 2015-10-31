@@ -48,7 +48,6 @@ void DisplayBuffer::Initialize(unsigned uiDisplayMemAddr)
 DisplayBuffer& DisplayManager::KernelDisplayBuffer()
 {
 	static DisplayBuffer mKernelDisplayBuffer ;
-
 	return mKernelDisplayBuffer ;
 }
 
@@ -68,7 +67,7 @@ void DisplayManager::Initialize()
 
 		UpdateCursorPosition(0, true) ;
 
-		KC::MDisplay().LoadMessage("Video Initialization", true) ;
+		KC::MDisplay().LoadMessage("Video Initialization", Success) ;
 	}
 	else
 	{

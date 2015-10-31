@@ -63,7 +63,7 @@ void PIT_Initialize()
 	
 	SAFE_INT_ENABLE(uiIntFlag) ;	
 
-	KC::MDisplay().LoadMessage("Timer Initialization", bStatus) ;
+	KC::MDisplay().LoadMessage("Timer Initialization", bStatus ? Success : Failure);
 }
 
 __volatile__ const IRQ* PIT_GetIRQ() { return PIT_pIRQ ; }

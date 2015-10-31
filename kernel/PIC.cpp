@@ -68,7 +68,7 @@ void PIC::Initialize()
 
 	m_IRQMask = 0xFFFF ;
 
-	KC::MDisplay().LoadMessage("PIC Initialization", SUCCESS) ;
+	KC::MDisplay().LoadMessage("PIC Initialization", Success) ;
 }
 
 void PIC::EnableAllInterrupts()

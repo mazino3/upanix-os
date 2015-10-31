@@ -48,7 +48,7 @@ static byte ProcessAllocator_AllocatePDE(unsigned* uiPDEAddress)
 {
 	unsigned uiFreePageNo, i ;
 
-	RETURN_X_IF_NOT(KC::MMemManager().AllocatePhysicalPage(&uiFreePageNo), MEM_SUCCESS, ProcessAllocator_FAILURE) ;
+	RETURN_X_IF_NOT(MemManager::Instance().AllocatePhysicalPage(&uiFreePageNo), MEM_SUCCESS, ProcessAllocator_FAILURE) ;
 	*uiPDEAddress = uiFreePageNo * PAGE_SIZE ;
 
 	for(i = 0; i < PAGE_TABLE_ENTRIES; i++)
@@ -65,7 +65,7 @@ static byte ProcessAllocator_AllocatePTE(unsigned* uiPDEAddress, unsigned* uiSta
 
 	for(i = 0; i < uiNoOfPagesForPTE; i++)
 	{
-		RETURN_X_IF_NOT(KC::MMemManager().AllocatePhysicalPage(&uiFreePageNo), MEM_SUCCESS, ProcessAllocator_FAILURE) ;
+		RETURN_X_IF_NOT(MemManager::Instance().AllocatePhysicalPage(&uiFreePageNo), MEM_SUCCESS, ProcessAllocator_FAILURE) ;
 
 		for(j = 0; j < PAGE_TABLE_ENTRIES; j++)
 			((unsigned*)((uiFreePageNo * PAGE_SIZE) - GLOBAL_DATA_SEGMENT_BASE))[j] = 0x2 ;
@@ -125,7 +125,7 @@ static byte ProcessAllocator_InitializeProcessSpaceForProcess(unsigned* uiPDEAdd
 
 	for(i = 0; i < uiNoOfPagesForProcess; i++)
 	{
-		RETURN_X_IF_NOT(KC::MMemManager().AllocatePhysicalPage(&uiFreePageNo), MEM_SUCCESS, ProcessAllocator_FAILURE) ;
+		RETURN_X_IF_NOT(MemManager::Instance().AllocatePhysicalPage(&uiFreePageNo), MEM_SUCCESS, ProcessAllocator_FAILURE) ;
 		
 		uiPDEIndex = (uiProcessPageBase + i) / PAGE_TABLE_ENTRIES + uiProcessPDEBase + PROCESS_SPACE_FOR_OS ;
 		uiPTEIndex = (uiProcessPageBase + i) % PAGE_TABLE_ENTRIES ;
@@ -162,7 +162,7 @@ void ProcessAllocator_DeAllocateProcessSpace(unsigned uiNoOfPagesForProcess, uns
 
 		uiPTEAddress = (((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPDEIndex]) & 0xFFFFF000 ;
 
-		KC::MMemManager().DeAllocatePhysicalPage(
+		MemManager::Instance().DeAllocatePhysicalPage(
 				(((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPTEIndex] & 0xFFFFF000) / PAGE_SIZE) ;
 	}
 }
@@ -183,7 +183,7 @@ ProcessAllocator_DeAllocatePTE(unsigned uiNoOfPagesForPTE, unsigned uiPDEAddress
 		{
 			uiPTEAddress = ((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[i + uiProcessPDEBase] & 0xFFFFF000 ;
 		}
-		KC::MMemManager().DeAllocatePhysicalPage(uiPTEAddress / PAGE_SIZE) ;
+		MemManager::Instance().DeAllocatePhysicalPage(uiPTEAddress / PAGE_SIZE) ;
 	}
 }
 
@@ -198,7 +198,7 @@ ProcessAllocator_DeAllocateAddressSpace(ProcessAddressSpace* processAddressSpace
 					processAddressSpace->taskState.CR3_PDBR,
 					processAddressSpace->uiProcessBase) ;
 
-	KC::MMemManager().DeAllocatePhysicalPage(processAddressSpace->taskState.CR3_PDBR / PAGE_SIZE) ;
+	MemManager::Instance().DeAllocatePhysicalPage(processAddressSpace->taskState.CR3_PDBR / PAGE_SIZE) ;
 }
 
 byte
@@ -206,7 +206,7 @@ ProcessAllocator_AllocateAddressSpaceForKernel(ProcessAddressSpace* processAddre
 {
 	unsigned i, uiFreePageNo ;
 	
-	int iStackBlockID = KC::MMemManager().GetFreeKernelProcessStackBlockID() ;
+	int iStackBlockID = MemManager::Instance().GetFreeKernelProcessStackBlockID() ;
 	
 	if(iStackBlockID < 0)
 		return ProcessAllocator_FAILURE ;
@@ -217,8 +217,8 @@ ProcessAllocator_AllocateAddressSpaceForKernel(ProcessAddressSpace* processAddre
 
 	for(i = 0; i < PROCESS_KERNEL_STACK_PAGES; i++)
 	{
-		RETURN_X_IF_NOT(KC::MMemManager().AllocatePhysicalPage(&uiFreePageNo), MEM_SUCCESS, ProcessAllocator_FAILURE) ;
-		KC::MMemManager().GetKernelProcessStackPTEBase()[iStackBlockID * PROCESS_KERNEL_STACK_PAGES + i] = ((uiFreePageNo * PAGE_SIZE) & 0xFFFFF000) | 0x3 ;
+		RETURN_X_IF_NOT(MemManager::Instance().AllocatePhysicalPage(&uiFreePageNo), MEM_SUCCESS, ProcessAllocator_FAILURE) ;
+		MemManager::Instance().GetKernelProcessStackPTEBase()[iStackBlockID * PROCESS_KERNEL_STACK_PAGES + i] = ((uiFreePageNo * PAGE_SIZE) & 0xFFFFF000) | 0x3 ;
 	}
 
 	return ProcessAllocator_SUCCESS ;
@@ -232,11 +232,11 @@ ProcessAllocator_DeAllocateAddressSpaceForKernel(ProcessAddressSpace* processAdd
 
 	for(i = 0; i < PROCESS_KERNEL_STACK_PAGES; i++)
 	{
-		KC::MMemManager().DeAllocatePhysicalPage(
-		(KC::MMemManager().GetKernelProcessStackPTEBase()[iStackBlockID * PROCESS_KERNEL_STACK_PAGES + i] & 0xFFFFF000) / PAGE_SIZE) ;
+		MemManager::Instance().DeAllocatePhysicalPage(
+		(MemManager::Instance().GetKernelProcessStackPTEBase()[iStackBlockID * PROCESS_KERNEL_STACK_PAGES + i] & 0xFFFFF000) / PAGE_SIZE) ;
 	}
 
-	KC::MMemManager().FreeKernelProcessStackBlock(iStackBlockID) ;
+	MemManager::Instance().FreeKernelProcessStackBlock(iStackBlockID) ;
 }
 
 byte ProcessAllocator_AllocatePagesForDLL(unsigned uiNoOfPagesForDLL, ProcessSharedObjectList* pProcessSharedObjectList)
@@ -247,7 +247,7 @@ byte ProcessAllocator_AllocatePagesForDLL(unsigned uiNoOfPagesForDLL, ProcessSha
 	pProcessSharedObjectList->uiAllocatedPageNumbers = (unsigned*)DMM_AllocateForKernel(sizeof(unsigned) * uiNoOfPagesForDLL) ;
 	for(i = 0; i < uiNoOfPagesForDLL; i++)
 	{
-		RETURN_X_IF_NOT(KC::MMemManager().AllocatePhysicalPage(&uiFreePageNo), MEM_SUCCESS, ProcessAllocator_FAILURE) ;
+		RETURN_X_IF_NOT(MemManager::Instance().AllocatePhysicalPage(&uiFreePageNo), MEM_SUCCESS, ProcessAllocator_FAILURE) ;
 		pProcessSharedObjectList->uiAllocatedPageNumbers[i] = uiFreePageNo ;	
 	}
 

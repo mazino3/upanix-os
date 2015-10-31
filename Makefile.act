@@ -13,7 +13,7 @@
 #																			 
 #	 You should have received a copy of the GNU General Public License
 #	 along with this program.  If not, see <http://www.gnu.org/licenses/
-LD = ld
+CXX = i686-elf-g++
 
 BIN = ${MOS_HOME}/bin
 BOOT = ${MOS_HOME}/boot
@@ -139,9 +139,9 @@ MOS_OBJS = \
 #${shell find . -name *.o}
 
 flat:
-	${LD} -s -o ${MOS_OUTPUT_FLAT} --oformat=binary -Ttext=0 ${FPU_INIT_OBJ} ${MOS_START_OBJ} ${shell find . -name *.o}
+	${CXX} -s -o ${MOS_OUTPUT_FLAT} --oformat=binary -Ttext=0 ${FPU_INIT_OBJ} ${MOS_START_OBJ} ${shell find . -name *.o}
 
 aout:
-	${LD} -o ${MOS_OUTPUT_AOUT} -Tkernel.ld ${FPU_INIT_OBJ} ${MOS_START_MAIN_OBJ} ${MOS_OBJS} 
-#${LD} -o ${MOS_OUTPUT_AOUT} -Ttext=0x100000 -e _start ${FPU_INIT_OBJ} ${MOS_START_MAIN_OBJ} ${MOS_OBJS} 
+	${CXX} -o ${MOS_OUTPUT_AOUT} -Tkernel.ld -ffreestanding -O2 -nostdlib ${FPU_INIT_OBJ} ${MOS_START_MAIN_OBJ} ${MOS_OBJS}
+#  ${LD} -o ${MOS_OUTPUT_AOUT} -Ttext=0x100000 -e _start ${FPU_INIT_OBJ} ${MOS_START_MAIN_OBJ} ${MOS_OBJS} 
 #${LD} -o ${MOS_OUTPUT_AOUT} --oformat binary -Ttext=0 ${FPU_INIT_OBJ} ${MOS_START_MAIN_OBJ} ${MOS_OBJS}

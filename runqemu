@@ -93,12 +93,18 @@ sleep 1
 #-hda /dev/sda \
 
 QEMU_PATH=
-$SUDO qemu \
+$SUDO qemu-system-x86_64 \
 -fda $FDA \
 -fdb $FDB \
 -boot a \
 -m 128 \
 -smp 1 \
 -net none \
--usbdevice disk:$MOS_HOME/USBImage/30MUSB.img \
+\
+-drive if=none,id=usbdrive,file=$MOS_HOME/USBImage/30MUSB.img \
+\
+-usb \
+-device usb-ehci,id=ehci \
+-device usb-storage,bus=ehci.0,drive=usbdrive \
+\
 -hda $MOS_HOME/HDImage/30MHD.img 

@@ -910,9 +910,9 @@ void ConsoleCommands_Date()
 
 void ConsoleCommands_MultiBootHeader()
 {
-	KC::MDisplay().Address("\n Mem Size = ", MultiBoot_GetRamSize()) ;
-	KC::MDisplay().Address("\n Boot Device ID = ", MultiBoot_GetBootDeviceID()) ;
-	KC::MDisplay().Address("\n Boot Partition ID = ", MultiBoot_GetBootPartitionID()) ;
+	KC::MDisplay().Address("\n Mem Size = ", MultiBoot::Instance().GetRamSize()) ;
+	KC::MDisplay().Address("\n Boot Device ID = ", MultiBoot::Instance().GetBootDeviceID()) ;
+	KC::MDisplay().Address("\n Boot Partition ID = ", MultiBoot::Instance().GetBootPartitionID()) ;
 }
 
 void ConsoleCommands_ListCommands()
@@ -1244,7 +1244,7 @@ void _DisplayReadStat()
 void ConsoleCommands_Testv()
 {
 	//_DisplayReadStat() ;
-	//printf("\n RAM SIZE: %u", KC::MMemManager().GetRamSize()) ;
+	//printf("\n RAM SIZE: %u", MemManager::Instance().GetRamSize()) ;
 	//VM86_Test() ;
 	KC::MMouseDriver() ;
 	//KC::MDisplay().SetMouseCursorPos(KC::MDisplay().GetMouseCursorPos() + 70) ;

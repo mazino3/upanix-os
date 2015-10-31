@@ -84,13 +84,11 @@ void Initialize()
 	KERNEL_MODE = true ;
 	SPECIAL_TASK = false ;
 
-	MultiBoot_Initialize() ;
-
-	DisplayManager::Initialize() ;
+	DisplayManager::Initialize();
 	KC::MDisplay().Message("\n****    Welcome To MOS The Mother Operating System   ****\n", Display::Attribute(' ')) ;
-
-	// RAII
-	KC::MMemManager() ;
+	ProcFileManager_InitForKernel();
+	MultiBoot::Instance();
+	MemManager::Instance();
 
 	IDT::Initialize() ;
 	PIC::Initialize() ;

@@ -25,6 +25,7 @@
 # include <dtime.h>
 # include <stdlib.h>
 # include <KernelComponents.h>
+# include <ReturnHandler.h>
 
 typedef unsigned long long	DDWORD ;
 typedef unsigned			DWORD ;

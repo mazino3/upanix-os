@@ -28,7 +28,7 @@
 # include <Global.h>
 # include <ctype.h>
 
-class DisplayManager ;
+class DisplayManager;
 
 class Cursor
 {
@@ -83,7 +83,7 @@ class DisplayBuffer
 		inline unsigned GetDisplayMemAddr() const { return m_uiDisplayMemRawAddress ; }
 
 	friend class DisplayManager ;
-} ;
+};
 
 class DisplayManager
 {
@@ -94,7 +94,7 @@ class DisplayManager
 		static const int NO_BYTES_PER_CHARACTER = 2 ;
 		
 	private:
-		DisplayManager() ;
+		DisplayManager();
 		
 		static void InitCursor() ;
 
@@ -165,6 +165,6 @@ class DisplayManager
 		static void SetupPageTableForDisplayBuffer(int iProcessGroupID, unsigned uiPDEAddress) ;
 
 	friend class Display ;
-} ;
+};
 
 #endif

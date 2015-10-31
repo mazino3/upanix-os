@@ -63,12 +63,13 @@ export INCLUDES
 GLOBAL_HEADERS="$MOS_HOME/util/Global.h $MOS_HOME/util/AsmUtil.h"
 export GLOBAL_HEADERS
 
-COMPILER=g++
+COMPILER=i686-elf-g++
 export COMPILER
 
-CPP_FLAGS=" -c -O0 -Wall -ffreestanding -nodefaultlibs -nostdlib -nostartfiles -nostdinc \
--nostdinc++ -fno-default-inline -fno-common -fno-non-call-exceptions -fno-exceptions -fno-rtti \
--fno-threadsafe-statics -m32 "
+#CPP_FLAGS=" -c -O2 -Wall -Wextra -ffreestanding -nodefaultlibs -nostdlib -nostartfiles -fno-threadsafe-statics -fno-exceptions -fno-rtti -fpermissive"
+CPP_FLAGS=" -c -O0 -Wall -Wextra -ffreestanding -nodefaultlibs -nostdlib -nostartfiles -nostdinc \
+-std=c++11 -nostdinc++ -fno-default-inline -fno-common -fno-non-call-exceptions -fno-exceptions -fno-rtti \
+-fno-threadsafe-statics -fpermissive"
 export CPP_FLAGS
 
 #C_FLAGS=" -c -O2 -Wall -ffreestanding -pedantic "

@@ -81,7 +81,7 @@ void MouseDriver::Initialize()
 //		printf("\n Mouse ID: %u ", data) ;
 		
 	PIC::EnableInterrupt(PIC::MOUSE_IRQ) ;
-	KC::MDisplay().LoadMessage("Mouse Initialization", bStatus) ;
+	KC::MDisplay().LoadMessage("Mouse Initialization", bStatus ? Success : Failure);
 }
 
 void MouseDriver::Handler()

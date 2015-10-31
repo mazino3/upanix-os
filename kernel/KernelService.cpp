@@ -65,7 +65,7 @@ KernelService::FlatAddress::FlatAddress(unsigned uiVirtualAddress) : m_uiAddress
 
 void KernelService::FlatAddress::Process()
 {
-	m_uiFlatAddress = KC::MMemManager().GetFlatAddress(m_uiAddress) ;
+	m_uiFlatAddress = MemManager::Instance().GetFlatAddress(m_uiAddress) ;
 }
 
 KernelService::PageFault::PageFault(unsigned uiFaultyAddress) : m_uiFaultyAddress(uiFaultyAddress)
@@ -74,7 +74,7 @@ KernelService::PageFault::PageFault(unsigned uiFaultyAddress) : m_uiFaultyAddres
 
 void KernelService::PageFault::Process()
 {
-	if(KC::MMemManager().AllocatePage(GetRequestProcessID(), m_uiFaultyAddress) == MEM_FAILURE)
+	if(MemManager::Instance().AllocatePage(GetRequestProcessID(), m_uiFaultyAddress) == MEM_FAILURE)
 	{
 		//TODO:
 		ProcessManager_Kill(ProcessManager_iCurrentProcessID) ;

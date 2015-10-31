@@ -202,7 +202,7 @@ void IDT::Initialize()
 	}
 
 	LoadIDTR() ;
-	KC::MDisplay().LoadMessage("IDT Initialization", SUCCESS) ;
+	KC::MDisplay().LoadMessage("IDT Initialization", Success) ;
 	bDone = true ;
 }
 

@@ -622,7 +622,7 @@ void Floppy_Initialize()
 	}
 
 	Floppy_bInitStatus = bInitStatus ;
-	KC::MDisplay().LoadMessage("Floppy Initialization", bInitStatus) ;
+	KC::MDisplay().LoadMessage("Floppy Initialization", bInitStatus ? Success : Failure) ;
 }
 
 bool Floppy_GetInitStatus()

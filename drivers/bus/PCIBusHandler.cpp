@@ -29,7 +29,7 @@ PCIEntry* PCIBusHandler_pDevices[MAX_PCI_DEVICES] ;
 
 /************************* static functions ***********************************/
 
-static byte PCIBusHandler_Find()
+static Result PCIBusHandler_Find()
 {
 	unsigned uiData ;
 
@@ -43,7 +43,7 @@ static byte PCIBusHandler_Find()
 	{
 		PortCom_SendDoubleWord(PCI_REG_2, uiData) ;
 		PCIBusHandler_uiType = PCI_TYPE_ONE ;
-		return PCIBusHandler_SUCCESS ;
+		return Success ;
 	}
 
 	PortCom_SendDoubleWord(PCI_REG_2, uiData) ;
@@ -56,13 +56,13 @@ static byte PCIBusHandler_Find()
 	if(PortCom_ReceiveByte(PCI_REG_2) == 0x00 && PortCom_ReceiveByte(PCI_REG_3) == 0x00)
 	{
 		PCIBusHandler_uiType = PCI_TYPE_TWO ;
-		return PCIBusHandler_SUCCESS ;
+		return Success ;
 	}
 
-	return PCIBusHandler_ERR_NO_PCI_INSTALLED ;
+	return NoPCIInstalled;
 }
 
-static byte PCIBusHandler_ReadNonBridgePCIHeader(PCIEntry* pPCIEntry, unsigned uiBusNumber, unsigned uiDeviceNumber, unsigned uiFunction)
+static Result PCIBusHandler_ReadNonBridgePCIHeader(PCIEntry* pPCIEntry, unsigned uiBusNumber, unsigned uiDeviceNumber, unsigned uiFunction)
 {
 	KC::MDisplay().Address("\n PCI: ", (unsigned)(pPCIEntry)) ;
 	pPCIEntry->uiBusNumber = uiBusNumber ;
@@ -71,81 +71,81 @@ static byte PCIBusHandler_ReadNonBridgePCIHeader(PCIEntry* pPCIEntry, unsigned u
 
 	RETURN_X_IF_NOT(
 	PCIBusHandler_ReadPCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, PCI_VENDOR_ID, 2, &pPCIEntry->usVendorID),
-	PCIBusHandler_SUCCESS, PCIBusHandler_FAILURE) ;
+	Success, Failure) ;
 
 	RETURN_X_IF_NOT(
 	PCIBusHandler_ReadPCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, PCI_DEVICE_ID, 2, &pPCIEntry->usDeviceID),
-	PCIBusHandler_SUCCESS, PCIBusHandler_FAILURE) ;
+	Success, Failure) ;
 
 	RETURN_X_IF_NOT(
 	PCIBusHandler_ReadPCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, PCI_COMMAND, 2, &pPCIEntry->usCommand),
-	PCIBusHandler_SUCCESS, PCIBusHandler_FAILURE) ;
+	Success, Failure) ;
 
 	RETURN_X_IF_NOT(
 	PCIBusHandler_ReadPCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, PCI_STATUS, 2, &pPCIEntry->usStatus),
-	PCIBusHandler_SUCCESS, PCIBusHandler_FAILURE) ;
+	Success, Failure) ;
 
 	RETURN_X_IF_NOT(
 	PCIBusHandler_ReadPCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, PCI_REVISION, 1, &pPCIEntry->bRevisionID),
-	PCIBusHandler_SUCCESS, PCIBusHandler_FAILURE) ;
+	Success, Failure) ;
 
 	RETURN_X_IF_NOT(
 	PCIBusHandler_ReadPCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, PCI_INTERFACE, 1, &pPCIEntry->bInterface),
-	PCIBusHandler_SUCCESS, PCIBusHandler_FAILURE) ;
+	Success, Failure) ;
 
 	RETURN_X_IF_NOT(
 	PCIBusHandler_ReadPCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, PCI_CLASS_CODE, 1, &pPCIEntry->bClassCode),
-	PCIBusHandler_SUCCESS, PCIBusHandler_FAILURE) ;
+	Success, Failure) ;
 
 	RETURN_X_IF_NOT(
 	PCIBusHandler_ReadPCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, PCI_SUB_CLASS, 1, &pPCIEntry->bSubClass),
-	PCIBusHandler_SUCCESS, PCIBusHandler_FAILURE) ;
+	Success, Failure) ;
 
 	RETURN_X_IF_NOT(
 	PCIBusHandler_ReadPCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, PCI_HEADER_TYPE, 1, &pPCIEntry->bHeaderType),
-	PCIBusHandler_SUCCESS, PCIBusHandler_FAILURE) ;
+	Success, Failure) ;
 
 	RETURN_X_IF_NOT(
 	PCIBusHandler_ReadPCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, PCI_BASE_REGISTERS + 0, 4, &pPCIEntry->BusEntity.NonBridge.uiBaseAddress0),
-	PCIBusHandler_SUCCESS, PCIBusHandler_FAILURE) ;
+	Success, Failure) ;
 
 	RETURN_X_IF_NOT(
 	PCIBusHandler_ReadPCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, PCI_BASE_REGISTERS + 4, 4, &pPCIEntry->BusEntity.NonBridge.uiBaseAddress1),
-	PCIBusHandler_SUCCESS, PCIBusHandler_FAILURE) ;
+	Success, Failure) ;
 
 	RETURN_X_IF_NOT(
 	PCIBusHandler_ReadPCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, PCI_BASE_REGISTERS + 8, 4, &pPCIEntry->BusEntity.NonBridge.uiBaseAddress2),
-	PCIBusHandler_SUCCESS, PCIBusHandler_FAILURE) ;
+	Success, Failure) ;
 
 	RETURN_X_IF_NOT(
 	PCIBusHandler_ReadPCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, PCI_BASE_REGISTERS + 12, 4, &pPCIEntry->BusEntity.NonBridge.uiBaseAddress3),
-	PCIBusHandler_SUCCESS, PCIBusHandler_FAILURE) ;
+	Success, Failure) ;
 
 	RETURN_X_IF_NOT(
 	PCIBusHandler_ReadPCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, PCI_BASE_REGISTERS + 16, 4, &pPCIEntry->BusEntity.NonBridge.uiBaseAddress4),
-	PCIBusHandler_SUCCESS, PCIBusHandler_FAILURE) ;
+	Success, Failure) ;
 
 	RETURN_X_IF_NOT(
 	PCIBusHandler_ReadPCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, PCI_BASE_REGISTERS + 20, 4, &pPCIEntry->BusEntity.NonBridge.uiBaseAddress5),
-	PCIBusHandler_SUCCESS, PCIBusHandler_FAILURE) ;
+	Success, Failure) ;
 	
 	RETURN_X_IF_NOT(
 	PCIBusHandler_ReadPCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, PCI_INTERRUPT_LINE, 1, &pPCIEntry->BusEntity.NonBridge.bInterruptLine),
-	PCIBusHandler_SUCCESS, PCIBusHandler_FAILURE) ;
+	Success, Failure) ;
 
 	RETURN_X_IF_NOT(
 	PCIBusHandler_ReadPCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, PCI_INTERRUPT_PIN, 1, &pPCIEntry->BusEntity.NonBridge.bInterruptPin),
-	PCIBusHandler_SUCCESS, PCIBusHandler_FAILURE) ;
+	Success, Failure) ;
 
 	RETURN_X_IF_NOT(
 	PCIBusHandler_ReadPCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, PCI_MIN_GRANT, 1, &pPCIEntry->BusEntity.NonBridge.bMinDMAGrant),
-	PCIBusHandler_SUCCESS, PCIBusHandler_FAILURE) ;
+	Success, Failure) ;
 
 	RETURN_X_IF_NOT(
 	PCIBusHandler_ReadPCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, PCI_MAX_LATENCY, 1, &pPCIEntry->BusEntity.NonBridge.bMaxDMALatency),
-	PCIBusHandler_SUCCESS, PCIBusHandler_FAILURE) ;
+	Success, Failure) ;
 
-	return PCIBusHandler_SUCCESS ;
+	return Success ;
 }
 
 static byte PCIBusHandler_ReadBridgePCIHeader(PCIEntry* pPCIEntry, unsigned uiBusNumber, unsigned uiDeviceNumber, unsigned uiFunction)
@@ -156,61 +156,61 @@ static byte PCIBusHandler_ReadBridgePCIHeader(PCIEntry* pPCIEntry, unsigned uiBu
 
 	RETURN_X_IF_NOT(
 	PCIBusHandler_ReadPCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, PCI_VENDOR_ID, 2, &pPCIEntry->usVendorID),
-	PCIBusHandler_SUCCESS, PCIBusHandler_FAILURE) ;
+	Success, Failure) ;
 
 	RETURN_X_IF_NOT(
 	PCIBusHandler_ReadPCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, PCI_DEVICE_ID, 2, &pPCIEntry->usDeviceID),
-	PCIBusHandler_SUCCESS, PCIBusHandler_FAILURE) ;
+	Success, Failure) ;
 
 	RETURN_X_IF_NOT(
 	PCIBusHandler_ReadPCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, PCI_COMMAND, 2, &pPCIEntry->usCommand),
-	PCIBusHandler_SUCCESS, PCIBusHandler_FAILURE) ;
+	Success, Failure) ;
 
 	RETURN_X_IF_NOT(
 	PCIBusHandler_ReadPCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, PCI_STATUS, 2, &pPCIEntry->usStatus),
-	PCIBusHandler_SUCCESS, PCIBusHandler_FAILURE) ;
+	Success, Failure) ;
 
 	RETURN_X_IF_NOT(
 	PCIBusHandler_ReadPCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, PCI_REVISION, 1, &pPCIEntry->bRevisionID),
-	PCIBusHandler_SUCCESS, PCIBusHandler_FAILURE) ;
+	Success, Failure) ;
 
 	RETURN_X_IF_NOT(
 	PCIBusHandler_ReadPCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, PCI_INTERFACE, 1, &pPCIEntry->bInterface),
-	PCIBusHandler_SUCCESS, PCIBusHandler_FAILURE) ;
+	Success, Failure) ;
 
 	RETURN_X_IF_NOT(
 	PCIBusHandler_ReadPCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, PCI_CLASS_CODE, 1, &pPCIEntry->bClassCode),
-	PCIBusHandler_SUCCESS, PCIBusHandler_FAILURE) ;
+	Success, Failure) ;
 
 	RETURN_X_IF_NOT(
 	PCIBusHandler_ReadPCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, PCI_SUB_CLASS, 1, &pPCIEntry->bSubClass),
-	PCIBusHandler_SUCCESS, PCIBusHandler_FAILURE) ;
+	Success, Failure) ;
 
 	RETURN_X_IF_NOT(
 	PCIBusHandler_ReadPCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, PCI_HEADER_TYPE, 1, &pPCIEntry->bHeaderType),
-	PCIBusHandler_SUCCESS, PCIBusHandler_FAILURE) ;
+	Success, Failure) ;
 
 	RETURN_X_IF_NOT(
 	PCIBusHandler_ReadPCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, PCI_BASE_REGISTERS + 0, 4, &pPCIEntry->BusEntity.Bridge.uiBaseAddress0),
-	PCIBusHandler_SUCCESS, PCIBusHandler_FAILURE) ;
+	Success, Failure) ;
 
 	RETURN_X_IF_NOT(
 	PCIBusHandler_ReadPCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, PCI_BASE_REGISTERS + 4, 4, &pPCIEntry->BusEntity.Bridge.uiBaseAddress1),
-	PCIBusHandler_SUCCESS, PCIBusHandler_FAILURE) ;
+	Success, Failure) ;
 
 	RETURN_X_IF_NOT(
 	PCIBusHandler_ReadPCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, PCI_BUS_PRIMARY, 1, &pPCIEntry->BusEntity.Bridge.bPrimaryBus),
-	PCIBusHandler_SUCCESS, PCIBusHandler_FAILURE) ;
+	Success, Failure) ;
 
 	RETURN_X_IF_NOT(
 	PCIBusHandler_ReadPCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, PCI_BUS_SECONDARY, 1, &pPCIEntry->BusEntity.Bridge.bSecondaryBus),
-	PCIBusHandler_SUCCESS, PCIBusHandler_FAILURE) ;
+	Success, Failure) ;
 
 	RETURN_X_IF_NOT(
 	PCIBusHandler_ReadPCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, PCI_BUS_SUBORDINATE, 1, &pPCIEntry->BusEntity.Bridge.bSubordinateBus),
-	PCIBusHandler_SUCCESS, PCIBusHandler_FAILURE) ;
+	Success, Failure) ;
 
-	return PCIBusHandler_SUCCESS ;
+	return Success ;
 }
 
 static byte PCIBusHandler_ScanBus(unsigned uiBusNumber)
@@ -230,7 +230,7 @@ static byte PCIBusHandler_ScanBus(unsigned uiBusNumber)
 		{
 			RETURN_X_IF_NOT(
 			PCIBusHandler_ReadPCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, PCI_VENDOR_ID, 2, &usVendorID),
-			PCIBusHandler_SUCCESS, PCIBusHandler_FAILURE) ;
+			Success, Failure) ;
 		
 			if(usVendorID != 0xFFFF && usVendorID != 0x0000) 
 			{
@@ -238,7 +238,7 @@ static byte PCIBusHandler_ScanBus(unsigned uiBusNumber)
 				{
 					RETURN_X_IF_NOT(
 					PCIBusHandler_ReadPCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, PCI_HEADER_TYPE, 1, &bHeaderType),
-					PCIBusHandler_SUCCESS, PCIBusHandler_FAILURE) ;
+					Success, Failure) ;
 				}
 				else
 				{
@@ -252,43 +252,43 @@ static byte PCIBusHandler_ScanBus(unsigned uiBusNumber)
 				{
 					RETURN_X_IF_NOT(
 					PCIBusHandler_ReadPCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, PCI_COMMAND, 2, &usCommand), 
-					PCIBusHandler_SUCCESS, PCIBusHandler_FAILURE) ;
+					Success, Failure) ;
 
 					RETURN_X_IF_NOT(
 					PCIBusHandler_WritePCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, PCI_COMMAND, 2,
 						(usCommand & ~(PCI_COMMAND_IO | PCI_COMMAND_MEMORY))),
-					PCIBusHandler_SUCCESS, PCIBusHandler_FAILURE) ;
+					Success, Failure) ;
 
 					RETURN_X_IF_NOT(
 					PCIBusHandler_WritePCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, PCI_BUS_PRIMARY, 1, uiBusNumber),
-					PCIBusHandler_SUCCESS, PCIBusHandler_FAILURE) ;
+					Success, Failure) ;
 
 					RETURN_X_IF_NOT(
 					PCIBusHandler_WritePCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, PCI_BUS_SECONDARY, 1, 
 					PCIBusHandler_uiNoOfPCIBusess),
-					PCIBusHandler_SUCCESS, PCIBusHandler_FAILURE) ;
+					Success, Failure) ;
 
 					RETURN_X_IF_NOT(
 					PCIBusHandler_WritePCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, PCI_BUS_SUBORDINATE, 1, 0xFF),
-					PCIBusHandler_SUCCESS, PCIBusHandler_FAILURE) ;
+					Success, Failure) ;
 
 					RETURN_X_IF_NOT(
 					PCIBusHandler_ScanBus(PCIBusHandler_uiNoOfPCIBusess),
-					PCIBusHandler_SUCCESS, PCIBusHandler_FAILURE) ;
+					Success, Failure) ;
 
 					RETURN_X_IF_NOT(
 					PCIBusHandler_WritePCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, PCI_BUS_SUBORDINATE, 1, 
 					PCIBusHandler_uiNoOfPCIBusess - 1),
-					PCIBusHandler_SUCCESS, PCIBusHandler_FAILURE) ;
+					Success, Failure) ;
 	
 					RETURN_X_IF_NOT(
 					PCIBusHandler_ReadPCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, PCI_COMMAND, 2, &usCommand), 
-					PCIBusHandler_SUCCESS, PCIBusHandler_FAILURE) ;
+					Success, Failure) ;
 
 					RETURN_X_IF_NOT(
 					PCIBusHandler_WritePCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, PCI_COMMAND, 2,
 					(usCommand | PCI_COMMAND_IO | PCI_COMMAND_MEMORY)),
-					PCIBusHandler_SUCCESS, PCIBusHandler_FAILURE) ;
+					Success, Failure) ;
 				}
 
 				pPCIEntry = (PCIEntry*)DMM_AllocateForKernel(sizeof(PCIEntry)) ;
@@ -298,13 +298,13 @@ static byte PCIBusHandler_ScanBus(unsigned uiBusNumber)
 					{
 						RETURN_X_IF_NOT(
 						PCIBusHandler_ReadBridgePCIHeader(pPCIEntry, uiBusNumber, uiDeviceNumber, uiFunction),
-						PCIBusHandler_SUCCESS, PCIBusHandler_FAILURE) ;
+						Success, Failure) ;
 					}
 					else
 					{
 						RETURN_X_IF_NOT(
 						PCIBusHandler_ReadNonBridgePCIHeader(pPCIEntry, uiBusNumber, uiDeviceNumber, uiFunction),
-						PCIBusHandler_SUCCESS, PCIBusHandler_FAILURE) ;
+						Success, Failure) ;
 					}
 
 					if(PCIBusHandler_uiDeviceCount < MAX_PCI_DEVICES)
@@ -320,10 +320,10 @@ static byte PCIBusHandler_ScanBus(unsigned uiBusNumber)
 		}
     }
 
-	return PCIBusHandler_SUCCESS ;
+	return Success ;
 }
 
-static  unsigned PCIBusHandler_PCISize(unsigned uiBase, unsigned uiMask)
+static unsigned PCIBusHandler_PCISize(unsigned uiBase, unsigned uiMask)
 {
 	unsigned uiSize = uiBase & uiMask ;
     return uiSize & ~( uiSize - 1 );
@@ -334,18 +334,18 @@ static  unsigned PCIBusHandler_PCISize(unsigned uiBase, unsigned uiMask)
 
 void PCIBusHandler_Initialize()
 {
-	byte bStatus = PCIBusHandler_SUCCESS ;
+	Result result = Success ;
 	
 	PCIBusHandler_uiType = 0 ;
 	PCIBusHandler_uiNoOfPCIBusess = 0 ;
 	PCIBusHandler_uiDeviceCount = 0 ;
 
-	if((bStatus = PCIBusHandler_Find()) == PCIBusHandler_SUCCESS)
+	if((result = PCIBusHandler_Find()) == Success)
 	{
 		KC::MDisplay().Address("\n\tPCI Configuration Mechanism# ", PCIBusHandler_uiType) ;
 		KC::MDisplay().Message("\n\tScanning PCI Bus for Devices...", Display::WHITE_ON_BLACK()) ;
 
-		if((bStatus = PCIBusHandler_ScanBus(0)) == PCIBusHandler_SUCCESS)
+		if((result = PCIBusHandler_ScanBus(0)) == Success)
 		{		
 			KC::MDisplay().Message("\n\tPCI Bus Scan Successfull", Display::WHITE_ON_BLACK()) ;
 			KC::MDisplay().Message("\n\tFollowing Devices are found: ", Display::WHITE_ON_BLACK()) ;
@@ -361,21 +361,19 @@ void PCIBusHandler_Initialize()
 		}
 	}
 
-	bStatus = (bStatus == PCIBusHandler_SUCCESS) ? SUCCESS : FAILURE ;
-
-	KC::MDisplay().LoadMessage("PCI Bus Initialization", bStatus) ;
+	KC::MDisplay().LoadMessage("PCI Bus Initialization", result) ;
 }
 
-byte PCIBusHandler_GetPCIEntry(PCIEntry** pPCIEntry, unsigned uiIndex)
+Result PCIBusHandler_GetPCIEntry(PCIEntry** pPCIEntry, unsigned uiIndex)
 {
 	if(!(uiIndex >= 0 && uiIndex < PCIBusHandler_uiDeviceCount))
-		return PCIBusHandler_ERR_INVALID_DEVICE_INDEX ;
+		return InvalidDeviceIndex;
 
 	*pPCIEntry = (PCIEntry*)(PCIBusHandler_pDevices[uiIndex]) ;
-	return PCIBusHandler_SUCCESS ;
+	return Success;
 }
 
-byte PCIBusHandler_ReadPCIConfig(unsigned uiBusNumber, unsigned uiDeviceNumber, unsigned uiFunction, unsigned uiPCIEntryOffset, unsigned uiPCIEntrySize, void* pValue)
+Result PCIBusHandler_ReadPCIConfig(unsigned uiBusNumber, unsigned uiDeviceNumber, unsigned uiFunction, unsigned uiPCIEntryOffset, unsigned uiPCIEntrySize, void* pValue)
 {
 //TODO: PCI TYPE = 0 => Using BIOS PCI Interface
 	if(PCIBusHandler_uiType == PCI_TYPE_ONE)
@@ -401,10 +399,10 @@ byte PCIBusHandler_ReadPCIConfig(unsigned uiBusNumber, unsigned uiDeviceNumber, 
 				break ;
 
 			default:
-				return PCIBusHandler_FAILURE ;
+				return Failure ;
 		}
 
-		return PCIBusHandler_SUCCESS ;
+		return Success ;
 	}
 	else if(PCIBusHandler_uiType == PCI_TYPE_TWO)
 	{
@@ -426,17 +424,17 @@ byte PCIBusHandler_ReadPCIConfig(unsigned uiBusNumber, unsigned uiDeviceNumber, 
 				break ;
 
 			default:
-				return PCIBusHandler_FAILURE ;
+				return Failure ;
 		}
 
 		PortCom_SendByte(PCI_REG_2, 0x00) ;
-		return PCIBusHandler_SUCCESS ;
+		return Success ;
 	}
 
-	return PCIBusHandler_FAILURE ;
+	return Failure ;
 }
 
-byte PCIBusHandler_WritePCIConfig(unsigned uiBusNumber, unsigned uiDeviceNumber, unsigned uiFunction, 
+Result PCIBusHandler_WritePCIConfig(unsigned uiBusNumber, unsigned uiDeviceNumber, unsigned uiFunction, 
 				unsigned uiPCIEntryOffset, unsigned uiPCIEntrySize, unsigned uiValue)
 {
 //TODO: PCI TYPE = 0 => Using BIOS PCI Interface
@@ -464,10 +462,10 @@ byte PCIBusHandler_WritePCIConfig(unsigned uiBusNumber, unsigned uiDeviceNumber,
 				break ;
 			
 			default:
-				return PCIBusHandler_FAILURE ;
+				return Failure ;
 		}
 
-		return PCIBusHandler_SUCCESS ;
+		return Success ;
 	}
 	else if(PCIBusHandler_uiType == PCI_TYPE_TWO)
 	{
@@ -489,14 +487,14 @@ byte PCIBusHandler_WritePCIConfig(unsigned uiBusNumber, unsigned uiDeviceNumber,
 				break ;
 	
 			default:
-				return PCIBusHandler_FAILURE ;
+				return Failure ;
 		}
 
 		PortCom_SendByte(PCI_REG_2, 0x00) ;
-		return PCIBusHandler_SUCCESS ;
+		return Success ;
 	}
 
-	return PCIBusHandler_FAILURE ;
+	return Failure ;
 }
 
 unsigned PCIBusHandler_GetPCIMemSize(PCIEntry* pPCIEntry, int iAddressIndex)

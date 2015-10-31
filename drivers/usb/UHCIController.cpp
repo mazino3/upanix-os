@@ -1551,7 +1551,7 @@ byte UHCIController_Initialize()
 	unsigned uiPCIIndex ;
 	for(uiPCIIndex = 0; uiPCIIndex < PCIBusHandler_uiDeviceCount; uiPCIIndex++)
 	{
-		if(PCIBusHandler_GetPCIEntry(&pPCIEntry, uiPCIIndex) != PCIBusHandler_SUCCESS)
+		if(PCIBusHandler_GetPCIEntry(&pPCIEntry, uiPCIIndex) != Success)
 			break ;
 	
 		if(pPCIEntry->bHeaderType & PCI_HEADER_BRIDGE)
@@ -1573,9 +1573,9 @@ byte UHCIController_Initialize()
 	}
 	
 	if(bControllerFound)
-		KC::MDisplay().LoadMessage("USB UHCI Controller Found", SUCCESS) ;
+		KC::MDisplay().LoadMessage("USB UHCI Controller Found", Success) ;
 	else
-		KC::MDisplay().LoadMessage("No USB UHCI Controller Found", FAILURE) ;
+		KC::MDisplay().LoadMessage("No USB UHCI Controller Found", Failure) ;
 
 	return UHCIController_SUCCESS ;
 }
