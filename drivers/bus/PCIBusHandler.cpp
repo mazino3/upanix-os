@@ -213,7 +213,7 @@ static byte PCIBusHandler_ReadBridgePCIHeader(PCIEntry* pPCIEntry, unsigned uiBu
 	return Success ;
 }
 
-static byte PCIBusHandler_ScanBus(unsigned uiBusNumber)
+static Result PCIBusHandler_ScanBus(unsigned uiBusNumber)
 {
 	PCIEntry* pPCIEntry ;
 	unsigned uiDevicePerBus = (PCIBusHandler_uiType == PCI_TYPE_ONE) ? 32 : 16 ;

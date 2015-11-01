@@ -32,7 +32,7 @@
 #define QH_TYPE_CONTROL 1
 
 byte EHCIController_Initialize() ;
-byte EHCIController_ProbeDevice() ;
+void EHCIController_ProbeDevice() ;
 byte EHCIController_RouteToCompanionController() ;
 
 #endif

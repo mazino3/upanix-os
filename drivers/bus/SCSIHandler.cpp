@@ -75,7 +75,7 @@ static void SCSIHandler_InitCommand(SCSICommand* pCommand, SCSIDevice* pDevice)
 	pCommand->iRequestLen = 0 ;
 }
 
-static int SCSIHandler_UnitNotReady(SCSIDevice* pDevice, SCSISense* pSense)
+__attribute__((unused)) static int SCSIHandler_UnitNotReady(SCSIDevice* pDevice, SCSISense* pSense)
 {
 	int iStatus ;
 

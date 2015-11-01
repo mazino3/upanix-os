@@ -23,7 +23,7 @@
 #define DEF_DESC_LEN 8
 
 void USBDataHandler_DisplayDevDesc(const USBStandardDeviceDesc* pDevDesc) ;
-void USBDataHandler_CopyDevDesc(void* pDest, const void* pSrc, int iLen) ;
+void USBDataHandler_CopyDevDesc(void* pDest, const void* pSrc, size_t len);
 void USBDataHandler_DisplayConfigDesc(const USBStandardConfigDesc* pConfigDesc) ;
 void USBDataHandler_CopyConfigDesc(void* pDest, const void* pSrc, int iLen) ;
 void USBDataHandler_InitDevDesc(USBStandardDeviceDesc* pDesc) ;

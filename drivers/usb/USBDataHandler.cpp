@@ -62,7 +62,7 @@ void USBDataHandler_InitDevDesc(USBStandardDeviceDesc* pDesc)
 	pDesc->bNumConfigs = 0 ;
 }
 
-void USBDataHandler_CopyDevDesc(void* pDestv, const void* pSrcv, int iLen)
+void USBDataHandler_CopyDevDesc(void* pDestv, const void* pSrcv, size_t iLen)
 {
 	USBStandardDeviceDesc* pDest = (USBStandardDeviceDesc*)pDestv ;
 	USBStandardDeviceDesc* pSrc = (USBStandardDeviceDesc*)pSrcv ;
@@ -87,7 +87,7 @@ void USBDataHandler_CopyDevDesc(void* pDestv, const void* pSrcv, int iLen)
 	}
 	else
 	{
-		int iNextLen = DEF_DESC_LEN ;
+		size_t iNextLen = DEF_DESC_LEN ;
 
 		pDest->sVendorID = -1 ;
 		pDest->sProductID = -1 ;

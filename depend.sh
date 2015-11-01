@@ -42,7 +42,7 @@ INCLUDE="-I./ \
 
 CPPFLAGS="-c -O0 -std=c++11 -Wall -ffreestanding -nodefaultlibs -nostdlib -nostartfiles -nostdinc \
 -nostdinc++ -fno-default-inline -fno-common -fno-non-call-exceptions -fno-exceptions -fno-rtti \
--fno-threadsafe-statics -fpermissive"
+-fno-threadsafe-statics -fpermissive -Wno-unused-but-set-variable"
 
 > depend.d
 for i in `ls *.cpp *.c 2> /dev/null`

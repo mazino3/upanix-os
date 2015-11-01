@@ -22,47 +22,48 @@ template <typename T>
 class Stack
 {
 	private:
-		const int MAX_ELEMENTS ;
-		int m_iTop ;
-		T* m_tArray ;
+		const int MAX_ELEMENTS;
+		int m_iTop;
+		T* m_tArray;
 
 	public:
 		Stack(int iSize) : MAX_ELEMENTS(iSize), m_iTop(0)
 		{
-			m_tArray = new T[MAX_ELEMENTS] ;
+			m_tArray = new T[MAX_ELEMENTS];
 		}
 
 		~Stack()
 		{
-			delete[] m_tArray ;
+			delete[] m_tArray;
 		}
 
-		inline bool IsFull() const { return m_iTop == MAX_ELEMENTS ; }
-		inline bool IsEmpty() const { return m_iTop == 0 ; }
-		inline int Size() const { return m_iTop ; }
-		inline int MaxElements() const { return MAX_ELEMENTS ; }
+		inline bool IsFull() const { return m_iTop == MAX_ELEMENTS; }
+		inline bool IsEmpty() const { return m_iTop == 0; }
+		inline int Size() const { return m_iTop; }
+		inline int MaxElements() const { return MAX_ELEMENTS; }
 
-		bool Push(T a) 
+		bool Push(const T& a) 
 		{
 			// Stack full
 			if(m_iTop == MAX_ELEMENTS)
-				return false ;
+				return false;
 
-			m_tArray[ m_iTop ] = a ;
-			++m_iTop ;
+			m_tArray[ m_iTop ] = a;
+			++m_iTop;
 
-			return true ;
+			return true;
 		}
 
-		T Pop()
+		bool Pop(T& ret)
 		{
 			//Stack Empty
 			if(m_iTop == 0)
-				return false ;
+				return false;
 
-			--m_iTop ;
-			return m_tArray[ m_iTop ] ;
+			--m_iTop;
+			ret = m_tArray[ m_iTop ];
+			return true;
 		}
-} ;
+};
 
 #endif

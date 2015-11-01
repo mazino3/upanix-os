@@ -63,9 +63,9 @@ static void EHCIController_DisplayTransactionState(EHCIQueueHead* pQH, EHCIQTran
 	}
 }
 
-static bool EHCIController_PollWait(unsigned* pValue, int iBitPos, int value)
+static bool EHCIController_PollWait(unsigned* pValue, int iBitPos, unsigned value)
 {
-	value = (value > 0) ? 1 : 0 ;
+	value &= 1;
 	if(iBitPos > 31 || iBitPos < 0)
 		return false ;
 
@@ -373,7 +373,7 @@ static void EHCIController_StartController(EHCIController* pController)
 	pController->pOpRegs->uiUSBCommand |= 1 ;
 }
 
-static void EHCIController_StopController(EHCIController* pController)
+__attribute__((unused)) static void EHCIController_StopController(EHCIController* pController)
 {
 	pController->pOpRegs->uiUSBCommand &= 0xFFFFFFFE ;
 }
@@ -414,7 +414,7 @@ static bool EHCIController_StartAsyncSchedule(EHCIController* pController)
 	return true ;
 }
 
-static bool EHCIController_StopAsyncSchedule(EHCIController* pController)
+__attribute__((unused)) static bool EHCIController_StopAsyncSchedule(EHCIController* pController)
 {
 	EHCIController_SetSchedEnable(pController, ASYNC_SCHEDULE_ENABLE, false) ;
 
@@ -735,12 +735,12 @@ static byte EHCIController_GetDeviceDescriptor(EHCIDevice* pDevice, USBStandardD
 
 	RETURN_IF_NOT(bStatus, EHCIController_GetDescriptor(pDevice, 0x100, 0, -1, pDevDesc), EHCIController_SUCCESS) ;
 
-	int iLen = pDevDesc->bLength ;
+	byte len = pDevDesc->bLength ;
 
-	if(iLen >= sizeof(USBStandardDeviceDesc))
-		iLen = sizeof(USBStandardDeviceDesc) ;
+	if(len >= sizeof(USBStandardDeviceDesc))
+		len = sizeof(USBStandardDeviceDesc) ;
 
-	RETURN_IF_NOT(bStatus, EHCIController_GetDescriptor(pDevice, 0x100, 0, iLen, pDevDesc), EHCIController_SUCCESS) ;
+	RETURN_IF_NOT(bStatus, EHCIController_GetDescriptor(pDevice, 0x100, 0, len, pDevDesc), EHCIController_SUCCESS) ;
 
 	return EHCIController_SUCCESS ;
 }
@@ -1034,7 +1034,7 @@ static byte EHCIController_GetDeviceStringDetails(USBDevice* pUSBDevice)
 	char szPart[ 8 ];
 
 	const int index_size = 3 ; // Make sure to change this with index[] below
-	unsigned short arr_index[] = { pUSBDevice->deviceDesc.indexManufacturer, pUSBDevice->deviceDesc.indexProduct, pUSBDevice->deviceDesc.indexSerialNum } ;
+	char arr_index[] = { pUSBDevice->deviceDesc.indexManufacturer, pUSBDevice->deviceDesc.indexProduct, pUSBDevice->deviceDesc.indexSerialNum } ;
 	char* arr_name[] = { pUSBDevice->szManufacturer, pUSBDevice->szProduct, pUSBDevice->szSerialNum } ;
 
 	int i ;
@@ -1444,11 +1444,11 @@ static byte EHCIController_DoProbe(int iIndex)
 	if(pController->bSetupSuccess == false)
 	{
 		printf("EHCI device with no IRQ. Check BIOS/PCI settings!");
-		EHCIController_FAILURE ;
+		return EHCIController_FAILURE ;
 	}
 
 	if(EHCIController_PerformBiosToOSHandoff(pController) != EHCIController_SUCCESS)
-		EHCIController_FAILURE ;
+		return EHCIController_FAILURE ;
 
 	pController->pOpRegs->uiCtrlDSSegment = 0 ;
 
@@ -1466,7 +1466,7 @@ static byte EHCIController_DoProbe(int iIndex)
 	ProcessManager_Sleep(100) ;
 
 	if(EHCIController_SetConfigFlag(pController, true) != EHCIController_SUCCESS)
-		EHCIController_FAILURE ;
+		return EHCIController_FAILURE ;
 
 	if(!EHCIController_CheckHCActive(pController))
 	{
@@ -1627,11 +1627,9 @@ byte EHCIController_RouteToCompanionController()
 	return EHCIController_SUCCESS ;
 }
 
-byte EHCIController_ProbeDevice()
+void EHCIController_ProbeDevice()
 {
 	for(int i = 0; i < EHCIController_iCount; i++)
-	{
 		EHCIController_DoProbe(i) ;
-	}
 }
 

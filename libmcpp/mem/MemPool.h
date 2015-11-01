@@ -112,15 +112,20 @@ class MemPool
 
 		T* Create()
 		{
-			if(m_mStackMemPool.IsEmpty())
-			{
-				if(!AllocateChunk())
-					return new T() ;
-			}
+			T* buf;
+			//allocate from pool
+			if(m_mStackMemPool.Pop(buf))
+				return new (buf)T();
 
-			T* buf = m_mStackMemPool.Pop() ;
+			//if pool is empty then populate pool
+			AllocateChunk();
 
-			return new (buf)T() ;
+			//allocate from pool
+			if(m_mStackMemPool.Pop(buf))
+				return new (buf)T();
+
+			//if pool AllocateChunk failed then allocate directly from heap
+			return new T();
 		}
 
 		bool Release(T* pAddress)

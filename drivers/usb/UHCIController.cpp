@@ -523,7 +523,7 @@ static byte UHCIController_GetDeviceDescriptor(unsigned uiIOAddr, char devAddr, 
 
 	RETURN_IF_NOT(bStatus, UHCIController_GetDescriptor(uiIOAddr, devAddr, 0x100, 0, -1, pDevDesc), UHCIDataHandler_SUCCESS) ;
 
-	int iLen = pDevDesc->bLength ;
+	byte iLen = pDevDesc->bLength ;
 
 	if(iLen >= sizeof(USBStandardDeviceDesc))
 		iLen = sizeof(USBStandardDeviceDesc) ;
@@ -664,7 +664,7 @@ static byte UHCIController_GetDeviceStringDetails(USBDevice* pUSBDevice)
 	char szPart[ 8 ];
 
 	const int index_size = 3 ; // Make sure to change this with index[] below
-	unsigned short arr_index[] = { pUSBDevice->deviceDesc.indexManufacturer, pUSBDevice->deviceDesc.indexProduct, pUSBDevice->deviceDesc.indexSerialNum } ;
+	char arr_index[] = { pUSBDevice->deviceDesc.indexManufacturer, pUSBDevice->deviceDesc.indexProduct, pUSBDevice->deviceDesc.indexSerialNum } ;
 	char* arr_name[] = { pUSBDevice->szManufacturer, pUSBDevice->szProduct, pUSBDevice->szSerialNum } ;
 
 	int i ;
@@ -1390,8 +1390,7 @@ static byte UHCIController_Alloc(PCIEntry* pPCIEntry, unsigned uiIOAddr, unsigne
 	ProcessManager_Sleep(100) ;
 
 	bool bActivePortFound = false ;
-	unsigned i ;
-	for(i = 0; i < iNumPorts; i++)
+	for(int i = 0; i < iNumPorts; i++)
 	{
 		unsigned uiPortAddr = uiIOAddr + PORTSC_REG + i * 2 ;
 		unsigned short status = PortCom_ReceiveWord(uiPortAddr) ;
@@ -1487,7 +1486,7 @@ static byte UHCIController_Alloc(PCIEntry* pPCIEntry, unsigned uiIOAddr, unsigne
 
 	pUSBDevice->iConfigIndex = 0 ;
 
-	for(i = 0; i < devDesc.bNumConfigs; i++)
+	for(int i = 0; i < devDesc.bNumConfigs; i++)
 	{
 		if(pConfigDesc[ i ].bConfigurationValue == bConfigValue)
 		{

@@ -28,7 +28,7 @@
 static DSUtil_Queue UHCIDataHandler_FrameQueue ;
 static unsigned* UHCIDataHandler_pFrameList = NULL ;
 static DSUtil_SLL* UHCIDataHandler_pLocalFrameList = NULL ;
-static unsigned short UHCIDataHandler_lSupportedLandIds[] = { 0x409, 0 } ;
+__attribute__((unused)) static unsigned short UHCIDataHandler_lSupportedLandIds[] = { 0x409, 0 } ;
 
 /***********************************************************************************************/
 
