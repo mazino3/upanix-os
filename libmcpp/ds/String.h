@@ -24,9 +24,19 @@
 class String
 {
 	public:
+		String() : _pVal(0), _len(0)
+		{
+			_sVal[0] = '\0';
+		}
+
 		String(const char* v) : _pVal(0), _len(0)
 		{
 			Value(v);
+		}
+
+		~String()
+		{
+			DeletePtr();
 		}
 
 		String(const String& r) : _pVal(0)

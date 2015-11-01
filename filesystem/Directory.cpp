@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
 #include <Directory.h>
-#include <String.h>
+#include <StringUtil.h>
 #include <MemUtil.h>
 #include <DeviceDrive.h>
 #include <Display.h>

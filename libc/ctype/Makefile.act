@@ -21,4 +21,3 @@ OBJS := $(patsubst %.cpp,%.o,$(wildcard *.cpp))
 
 ctype_: ${OBJS}
 include depend.d
-

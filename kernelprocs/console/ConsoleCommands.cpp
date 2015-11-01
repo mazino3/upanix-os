@@ -20,7 +20,7 @@
 
 #include <Display.h>
 #include <Keyboard.h>
-#include <String.h>
+#include <StringUtil.h>
 #include <Floppy.h>
 #include <MemUtil.h>
 #include <ProcessManager.h>
@@ -1252,6 +1252,6 @@ void ConsoleCommands_Testv()
 
 void ConsoleCommands_TestNet()
 {
-	PIC::DisplayIRQList() ;
+	PIC::Instance().DisplayIRQList() ;
 	//KC::MNetworkManager() ;
 }

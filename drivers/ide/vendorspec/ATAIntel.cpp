@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
 # include <ATAIntel.h>
-# include <String.h>
+# include <StringUtil.h>
 # include <DMM.h>
 # include <Display.h>
 # include <MemUtil.h>

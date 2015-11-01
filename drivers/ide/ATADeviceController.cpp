@@ -20,7 +20,7 @@
 # include <ATAPortManager.h>
 # include <Display.h>
 # include <DMM.h>
-# include <String.h>
+# include <StringUtil.h>
 # include <PortCom.h>
 # include <ATAIntel.h>
 # include <ATAAMD.h>
@@ -101,9 +101,9 @@ static void ATADeviceController_PrimaryIRQHandler()
 	AsmUtil_STORE_GPR(GPRStack) ;
 	AsmUtil_SET_KERNEL_DATA_SEGMENTS
 
-	ProcessManager_SignalInterruptOccured(HD_PRIMARY_IRQ) ;
+	ProcessManager_SignalInterruptOccured(*HD_PRIMARY_IRQ) ;
 
-	PIC::SendEOI(HD_PRIMARY_IRQ) ;
+	PIC::Instance().SendEOI(*HD_PRIMARY_IRQ) ;
 	
 	AsmUtil_REVOKE_KERNEL_DATA_SEGMENTS
 	AsmUtil_RESTORE_GPR(GPRStack) ;
@@ -118,9 +118,9 @@ static void ATADeviceController_SecondaryIRQHandler()
 	AsmUtil_STORE_GPR(GPRStack) ;
 	AsmUtil_SET_KERNEL_DATA_SEGMENTS
 
-	ProcessManager_SignalInterruptOccured(HD_SECONDARY_IRQ) ;
+	ProcessManager_SignalInterruptOccured(*HD_SECONDARY_IRQ) ;
 	
-	PIC::SendEOI(HD_SECONDARY_IRQ) ;
+	PIC::Instance().SendEOI(*HD_SECONDARY_IRQ) ;
 
 	AsmUtil_REVOKE_KERNEL_DATA_SEGMENTS
 	AsmUtil_RESTORE_GPR(GPRStack) ;
@@ -415,23 +415,23 @@ static byte ATADeviceController_CheckControllerMode(const PCIEntry* pPCIEntry,
 
 	if(bDMAPossible)
 	{
-		HD_PRIMARY_IRQ = PIC::RegisterIRQ(bPrimaryIRQ, (unsigned)&ATADeviceController_PrimaryIRQHandler) ;
+		HD_PRIMARY_IRQ = PIC::Instance().RegisterIRQ(bPrimaryIRQ, (unsigned)&ATADeviceController_PrimaryIRQHandler) ;
 		if(!HD_PRIMARY_IRQ)
 		{
 			printf("\n Failed to register HD Primary IRQ %d", bPrimaryIRQ) ;
 			return ATADeviceController_FAILURE ;
 		}
-		PIC::EnableInterrupt(HD_PRIMARY_IRQ->GetIRQNo()) ;
+		PIC::Instance().EnableInterrupt(*HD_PRIMARY_IRQ);
 
 		if(bPrimaryIRQ != bSecondaryIRQ)
 		{
-			HD_SECONDARY_IRQ = PIC::RegisterIRQ(bSecondaryIRQ, (unsigned)&ATADeviceController_SecondaryIRQHandler) ;
+			HD_SECONDARY_IRQ = PIC::Instance().RegisterIRQ(bSecondaryIRQ, (unsigned)&ATADeviceController_SecondaryIRQHandler) ;
 			if(!HD_SECONDARY_IRQ)
 			{
 				printf("\n Failed to register HD Secondary IRQ %d", bSecondaryIRQ) ;
 				return ATADeviceController_FAILURE ;
 			}
-			PIC::EnableInterrupt(HD_SECONDARY_IRQ->GetIRQNo()) ;
+			PIC::Instance().EnableInterrupt(*HD_SECONDARY_IRQ);
 		}
 	}
 
@@ -762,10 +762,10 @@ unsigned ATADeviceController_GetDeviceSectorLimit(ATAPort* pPort)
 	return (pPort->bLBA48Bit) ? pPort->id.uiLBACapacity48 : pPort->id.uiLBASectors ;
 }
 
-const IRQ* ATADeviceController_GetHDInterruptNo(ATAPort* pPort)
+const IRQ& ATADeviceController_GetHDInterruptNo(ATAPort* pPort)
 {
 	if(pPort->uiDevice == ATA_DEV_ATAPI)
-		return HD_SECONDARY_IRQ ;
-	return HD_PRIMARY_IRQ ;
+		return *HD_SECONDARY_IRQ ;
+	return *HD_PRIMARY_IRQ ;
 }
 

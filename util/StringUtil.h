@@ -15,8 +15,8 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
-#ifndef _STRING_H_
-#define _STRING_H_
+#ifndef _STRING_UTIL_H_
+#define _STRING_UTIL_H_
 
 # include <Global.h>
 # include <string.h>

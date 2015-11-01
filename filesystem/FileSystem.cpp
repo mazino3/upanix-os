@@ -19,7 +19,7 @@
 /* MOS File System Support */
 
 #include <Global.h>
-#include <String.h>
+#include <StringUtil.h>
 #include <FileSystem.h>
 #include <MemConstants.h>
 #include <MemUtil.h>

@@ -24,7 +24,7 @@
 # include <PortCom.h>
 # include <stdio.h>
 # include <string.h>
-# include <String.h>
+# include <StringUtil.h>
 
 # include <USBStructures.h>
 # include <USBDataHandler.h>
@@ -158,7 +158,7 @@ static byte EHCIController_AddEntry(PCIEntry* pPCIEntry)
 
 	if(!pPCIEntry->BusEntity.NonBridge.bInterruptLine)
 	{
-		KC::MDisplay().Message("EHCI device with no IRQ. Check BIOS/PCI settings!", ' ');
+		printf("EHCI device with no IRQ. Check BIOS/PCI settings!");
 		return EHCIController_FAILURE ;
 	}
 
@@ -199,7 +199,7 @@ static byte EHCIController_AddEntry(PCIEntry* pPCIEntry)
 	((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPTEIndex] = (uiIOAddr & 0xFFFFF000) | 0x5 ;
 	Mem_FlushTLB();
 	
-	if(MemManager::Instance().MarkPageAsAllocated(uiIOAddr / PAGE_SIZE) != MEM_SUCCESS)
+	if(MemManager::Instance().MarkPageAsAllocated(uiIOAddr / PAGE_SIZE) != Success)
 	{
 	}
 
@@ -319,7 +319,7 @@ static void EHCIController_SetupInterrupts(EHCIController* pController)
 static byte EHCIController_SetupPeriodicFrameList(EHCIController* pController)
 {
 	unsigned uiFreePageNo ;
-	RETURN_X_IF_NOT(MemManager::Instance().AllocatePhysicalPage(&uiFreePageNo), MEM_SUCCESS, EHCIController_FAILURE) ;
+	RETURN_X_IF_NOT(MemManager::Instance().AllocatePhysicalPage(&uiFreePageNo), Success, EHCIController_FAILURE) ;
 
 	unsigned* pFrameList = (unsigned*)(uiFreePageNo * PAGE_SIZE - GLOBAL_DATA_SEGMENT_BASE) ;
 	
@@ -1443,7 +1443,7 @@ static byte EHCIController_DoProbe(int iIndex)
 
 	if(pController->bSetupSuccess == false)
 	{
-		KC::MDisplay().Message("EHCI device with no IRQ. Check BIOS/PCI settings!", ' ');
+		printf("EHCI device with no IRQ. Check BIOS/PCI settings!");
 		EHCIController_FAILURE ;
 	}
 
@@ -1613,7 +1613,7 @@ byte EHCIController_RouteToCompanionController()
 
 		if(pController->bSetupSuccess == false)
 		{
-			KC::MDisplay().Message("EHCI device with no IRQ. Check BIOS/PCI settings!", ' ');
+			printf("EHCI device with no IRQ. Check BIOS/PCI settings!");
 			continue ;
 		}
 

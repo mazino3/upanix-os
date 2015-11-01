@@ -22,14 +22,20 @@
 
 class IDT
 {
+	private:
+		IDT();
+
 	public:
-		static void Initialize() ;
+		static IDT& Instance()
+		{
+			static IDT instance;
+			return instance;
+		}
 
 	private:
-		static void LoadIDTR() ;
-		static void LoadDefaultHadlers() ;
-		static void LoadInterruptTasks() ;
-		static void LoadEntry(unsigned int uiIDTNO, unsigned int uiOffset, unsigned short int usiSelector, byte bOptions) ;
+		void LoadDefaultHadlers() ;
+		void LoadInterruptTasks() ;
+		void LoadEntry(unsigned int uiIDTNO, unsigned int uiOffset, unsigned short int usiSelector, byte bOptions) ;
 
 		typedef struct
 		{
@@ -47,8 +53,7 @@ class IDT
 							 present:1;	 1 bit		*/
 			unsigned short int upperOffset ;
 		} PACKED IDTEntry ;
-
 	friend class PIC ;
-} ;
+};
 
 #endif

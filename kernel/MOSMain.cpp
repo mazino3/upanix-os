@@ -28,7 +28,7 @@
 # include <Directory.h>
 # include <Floppy.h>
 # include <MemUtil.h>
-# include <String.h>
+# include <StringUtil.h>
 # include <FSCommand.h>
 # include <KernelService.h>
 # include <ATADeviceController.h>
@@ -90,8 +90,8 @@ void Initialize()
 	MultiBoot::Instance();
 	MemManager::Instance();
 
-	IDT::Initialize() ;
-	PIC::Initialize() ;
+	IDT::Instance() ;
+	PIC::Instance() ;
 	DMA_Initialize() ;
 	PIT_Initialize() ;
 
@@ -100,7 +100,7 @@ void Initialize()
 
 	KC::MKernelService() ;
 
-	PIC::EnableInterrupt(PIC::TIMER_IRQ) ;
+	PIC::Instance().EnableInterrupt(PIC::Instance().TIMER_IRQ) ;
 
 /* Start - Peripheral Device Initialization */
 //TODO: An Abstract Bus Handler which should internally take care of different

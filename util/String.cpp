@@ -15,7 +15,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
-# include <String.h>
+# include <StringUtil.h>
 # include <GenericUtil.h>
 
 unsigned String_Copy(char* dest, const char* src)

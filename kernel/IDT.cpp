@@ -191,38 +191,22 @@ namespace {
 	/************ Default Handlers *****************/
 }
 
-void IDT::Initialize()
+IDT::IDT()
 {
-	static bool bDone = false ;
-
-	if(bDone)
-	{
-		KC::MDisplay().Message("\nIDT is already Initialized!") ;
-		return ;
-	}
-
-	LoadIDTR() ;
-	KC::MDisplay().LoadMessage("IDT Initialization", Success) ;
-	bDone = true ;
-}
-
-void IDT::LoadIDTR()
-{
-	unsigned i ;
-	for(i = 0; i < 50; i++)
-	{
+	const int MAX_IDT_ENTRIES = 50;
+	for(unsigned i = 0; i < MAX_IDT_ENTRIES; i++)
 		LoadEntry(i, (unsigned)&DefaultHandler, SYS_CODE_SELECTOR, 0x8E) ;
-	}
 
 	LoadDefaultHadlers() ;
 	LoadInterruptTasks() ;
 
 	IDT::IDTRegister IDTR ;
 
-	IDTR.limit = i * sizeof(IDT::IDTEntry) ;
+	IDTR.limit = MAX_IDT_ENTRIES * sizeof(IDT::IDTEntry) ;
 	IDTR.base = MEM_IDT_START ;
 
 	__asm__ __volatile__("LIDT (%0)" : : "r"(&IDTR)) ;
+	KC::MDisplay().LoadMessage("IDT Initialization", Success) ;
 }
 
 void IDT::LoadInterruptTasks()

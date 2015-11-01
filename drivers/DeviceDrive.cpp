@@ -22,7 +22,7 @@
 # include <PartitionManager.h>
 # include <DMM.h>
 # include <Display.h>
-# include <String.h>
+# include <StringUtil.h>
 # include <MemUtil.h>
 # include <ProcessEnv.h>
 # include <FSCommand.h>

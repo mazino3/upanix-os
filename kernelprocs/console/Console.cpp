@@ -18,7 +18,7 @@
 #include <Console.h>
 #include <Keyboard.h>
 #include <Display.h>
-#include <String.h>
+#include <StringUtil.h>
 #include <Directory.h>
 #include <CommandLineParser.h>
 #include <DMM.h>

@@ -17,7 +17,7 @@
  */
 # include <ATASIS.h>
 # include <Display.h>
-# include <String.h>
+# include <StringUtil.h>
 # include <MemUtil.h>
 # include <DMM.h>
 

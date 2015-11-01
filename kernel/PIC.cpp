@@ -25,27 +25,13 @@
 #include <stdio.h>
 #include <Alloc.h>
 
-unsigned short PIC::m_IRQMask ;
-// Actual constuction is done using in place new operator in Initialize function below
-const IRQ PIC::NO_IRQ(999) ;
-
-const int PIC::TIMER_IRQ(0) ;
-const int PIC::KEYBOARD_IRQ(1) ;
-const int PIC::FLOPPY_IRQ(6) ;
-const int PIC::RTC_IRQ(PIC::SLAVE_IRQNO_START) ;
-const int PIC::MOUSE_IRQ(12) ;
-
-void PIC::Initialize()
+PIC::PIC() : NO_IRQ(999),
+	TIMER_IRQ(0),
+	KEYBOARD_IRQ(1),
+	FLOPPY_IRQ(6),
+	RTC_IRQ(PIC::SLAVE_IRQNO_START),
+	MOUSE_IRQ(12)
 {
-	static bool bDone = false ;
-	if(bDone)
-	{
-		KC::MDisplay().Message("\n PIC is already initialized!") ;
-		return ;
-	}
-
-	bDone = true ;
-	new ((void*)&NO_IRQ)IRQ(999) ;
 	// Sending ICW1 to master and slave PIC 
 	PortCom_SendByte(MASTER_PORTA, 0x11) ;
 	PortCom_SendByte(SLAVE_PORTA, 0x11) ;
@@ -81,26 +67,19 @@ void PIC::DisableAllInterrupts()
 	__asm__ __volatile__("cli") ;
 }
 
-bool PIC::SendEOI(const IRQ* pIRQ)
+void PIC::SendEOI(const IRQ& irq)
 {
-	if(!pIRQ)
-	{
-		KC::MDisplay().Number("\n IRQ is not registered with PIC! = ", pIRQ->GetIRQNo()) ;
-		return false ;
-	}
-
 	PortCom_SendByte(MASTER_PORTA, 0x20) ;
-	if(pIRQ->GetIRQNo() >= SLAVE_IRQNO_START)
+	if(irq.GetIRQNo() >= SLAVE_IRQNO_START)
 		PortCom_SendByte(SLAVE_PORTA, 0x20) ;
-
-	return true ;
 }
 
-void PIC::EnableInterrupt(const int& iIRQNo)
+void PIC::EnableInterrupt(const IRQ& irq)
 {
 	__volatile__ unsigned uiIntFlag ;
 	SAFE_INT_DISABLE(uiIntFlag) ;
 
+	int iIRQNo = irq.GetIRQNo();
 	m_IRQMask &= ~(1 << iIRQNo) ;
 	if(iIRQNo >= SLAVE_IRQNO_START)
 		m_IRQMask &= ~(1 << 2) ;
@@ -111,11 +90,12 @@ void PIC::EnableInterrupt(const int& iIRQNo)
 	SAFE_INT_ENABLE(uiIntFlag) ;
 }
 
-void PIC::DisableInterrupt(const int& iIRQNo)
+void PIC::DisableInterrupt(const IRQ& irq)
 {
 	__volatile__ unsigned uiIntFlag ;
 	SAFE_INT_DISABLE(uiIntFlag) ;
 
+	int iIRQNo = irq.GetIRQNo();
 	m_IRQMask |= (1 << iIRQNo) ;
 	if((m_IRQMask & 0xFF00) == 0xFF00) // All Slave Ints disabled
 		m_IRQMask |= (1 << 2) ;
@@ -129,55 +109,64 @@ void PIC::DisableInterrupt(const int& iIRQNo)
 const IRQ* PIC::RegisterIRQ(const int& iIRQNo, unsigned pHandler)
 {
 	if(iIRQNo < 0 && iIRQNo >= MAX_INTERRUPT)
-		return NULL ;
+		return NULL;
 
-	if(GetIRQ(iIRQNo))
+	IRQ* pIRQ = new IRQ(iIRQNo);
+	if(!RegisterIRQ(*pIRQ, pHandler))
 	{
-		KC::MDisplay().Number("\n IRQ is already registered! = ", iIRQNo) ;
-		return NULL ;
+		delete pIRQ;
+		pIRQ = NULL;
+	}
+	return pIRQ;
+}
+
+bool PIC::RegisterIRQ(const IRQ& irq, unsigned pHandler)
+{
+	if(GetIRQ(irq))
+	{
+		printf("\nIRQ '%d' is already registered!", irq.GetIRQNo());
+		return false;
 	}
 
-	IRQ* pIRQ = new IRQ(iIRQNo) ;
-	GetIRQList().PushBack(pIRQ) ;
+	_irqs.PushBack(&irq);
 
+	int iIRQNo = irq.GetIRQNo();
 	unsigned uiIRQBase = MASTER_IRQ_BASE + iIRQNo ;
 
 	if(iIRQNo >= SLAVE_IRQNO_START)
 		uiIRQBase = SLAVE_IRQ_BASE + iIRQNo - SLAVE_IRQNO_START ;
 
-	IDT::LoadEntry(uiIRQBase, pHandler, SYS_CODE_SELECTOR, 0x8E) ;
+	IDT::Instance().LoadEntry(uiIRQBase, pHandler, SYS_CODE_SELECTOR, 0x8E) ;
 
-	return pIRQ ;
+	return true;
+}
+
+const IRQ* PIC::GetIRQ(const IRQ& irq)
+{
+	return GetIRQ(irq.GetIRQNo());
 }
 
 const IRQ* PIC::GetIRQ(const int& iIRQNo)
 {
-	IRQ* pIRQ ;
+	const IRQ* pIRQ ;
 
-	GetIRQList().Reset() ;
-	for(int i = 0; GetIRQList().GetNext(); i++)
+	_irqs.Reset() ;
+	for(int i = 0; _irqs.GetNext(); i++)
 	{
-		GetIRQList().GetCurrentValue(pIRQ) ;
+		_irqs.GetCurrentValue(pIRQ) ;
 		if(pIRQ->GetIRQNo() == iIRQNo)
 			return pIRQ ;
 	}
-
 	return NULL ;
-}
-
-List<IRQ*>& PIC::GetIRQList()
-{
-	static List<IRQ*> m_mIRQList ;
-	return m_mIRQList ;
 }
 
 void PIC::DisplayIRQList()
 {
-	IRQ* pIRQ ;
-	GetIRQList().Reset() ;
-	for(int i = 0; GetIRQList().GetNext(); i++)
+	const IRQ* pIRQ ;
+	_irqs.Reset() ;
+	for(int i = 0; _irqs.GetNext(); i++)
 	{
-		GetIRQList().GetCurrentValue(pIRQ) ;
-		KC::MDisplay().Number("\n IRQ = ", pIRQ->GetIRQNo()) ;
+		_irqs.GetCurrentValue(pIRQ) ;
+		printf("\n IRQ = ", pIRQ->GetIRQNo()) ;
 	}
 }

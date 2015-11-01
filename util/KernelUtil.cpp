@@ -24,7 +24,7 @@ void KernelUtil::Wait(__volatile__ unsigned uiTimeInMilliSec)
 	uiTimeInMilliSec = PIT_RoundSleepTime(uiTimeInMilliSec) ;
 	__volatile__ unsigned uiStartTime = PIT_GetClockCount() ;
 
-	PIC::EnableInterrupt(PIC::TIMER_IRQ) ;
+	PIC::Instance().EnableInterrupt(PIC::Instance().TIMER_IRQ) ;
 	while((PIT_GetClockCount() - uiStartTime) < uiTimeInMilliSec)
 	{
 		__asm__ __volatile__("nop") ;
@@ -32,15 +32,15 @@ void KernelUtil::Wait(__volatile__ unsigned uiTimeInMilliSec)
 	}
 }
 
-void KernelUtil::WaitOnInterrupt(const IRQ* pIRQ)
+void KernelUtil::WaitOnInterrupt(const IRQ& irq)
 {
-	while(!ProcessManager_ConsumeInterrupt(pIRQ))
+	while(!ProcessManager_ConsumeInterrupt(irq))
 	{	
 		__asm__ __volatile__("nop") ;
 		__asm__ __volatile__("nop") ;
 	}
 
-	ProcessManager_GetFromInterruptQueue(pIRQ) ;
+	ProcessManager_GetFromInterruptQueue(irq) ;
 }
 
 void KernelUtil::ScheduleTimedTask(const char* szName, unsigned uiTimeInMilliSec, unsigned CallBackFunction)

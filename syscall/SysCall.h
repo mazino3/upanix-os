@@ -26,7 +26,7 @@
 #include <Directory.h>
 #include <Keyboard.h>
 #include <PIT.h>
-#include <String.h>
+#include <StringUtil.h>
 #include <KernelService.h>
 #include <FileOperations.h>
 #include <ProcessEnv.h>

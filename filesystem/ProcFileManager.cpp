@@ -18,7 +18,7 @@
 
 # include <ProcFileManager.h>
 # include <DMM.h>
-# include <String.h>
+# include <StringUtil.h>
 # include <Display.h>
 # include <Atomic.h>
 
@@ -69,7 +69,7 @@ byte ProcFileManager_Initialize(__volatile__ unsigned uiPDEAddress, __volatile__
 {
 	unsigned uiFreePageNo ;
 
-	RETURN_X_IF_NOT(MemManager::Instance().AllocatePhysicalPage(&uiFreePageNo), MEM_SUCCESS, ProcFileManager_FAILURE) ;
+	RETURN_X_IF_NOT(MemManager::Instance().AllocatePhysicalPage(&uiFreePageNo), Success, ProcFileManager_FAILURE) ;
 
 	unsigned uiPDEIndex = ((PROCESS_FD_PAGE >> 22) & 0x3FF) ;
 	unsigned uiPTEIndex = ((PROCESS_FD_PAGE >> 12) & 0x3FF) ;

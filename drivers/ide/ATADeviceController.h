@@ -322,7 +322,7 @@ struct ATAPCIDevice
 void ATADeviceController_Initialize() ;
 bool ATADeviceController_GetInitStatus() ;
 unsigned ATADeviceController_GetDeviceSectorLimit(ATAPort* pPort) ;
-const IRQ* ATADeviceController_GetHDInterruptNo(ATAPort* pPort) ;
+const IRQ& ATADeviceController_GetHDInterruptNo(ATAPort* pPort) ;
 
 #define ATA_READ_REG(port, reg, value) \
 { \

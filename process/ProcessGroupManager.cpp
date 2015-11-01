@@ -98,7 +98,7 @@ byte ProcessGroupManager_CreateProcessGroup(byte bIsFGProcessGroup, int* iProces
 		ProcessGroupManager_iFGProcessGroup = iPgid ;
 
 	unsigned uiFreePageNo ;
-	RETURN_X_IF_NOT(MemManager::Instance().AllocatePhysicalPage(&uiFreePageNo), MEM_SUCCESS, ProcessGroupManager_FAILURE) ;
+	RETURN_X_IF_NOT(MemManager::Instance().AllocatePhysicalPage(&uiFreePageNo), Success, ProcessGroupManager_FAILURE) ;
 
 	DisplayManager::InitializeDisplayBuffer(ProcessGroupManager_AddressSpace[iPgid].videoBuffer, uiFreePageNo * PAGE_SIZE) ;
 

@@ -257,7 +257,7 @@ void RealtekNIC::Handler()
 
 bool RealtekNIC::Open()
 {
-	m_pIRQ = PIC::RegisterIRQ(m_bInterrupt, (unsigned)&RealtekNIC::Handler) ;
+	m_pIRQ = PIC::Instance().RegisterIRQ(m_bInterrupt, (unsigned)&RealtekNIC::Handler) ;
 
 //	tp->tx_bufs = pci_alloc_consistent(tp->pci_dev, TX_BUF_TOT_LEN,
 //					   &tp->tx_bufs_dma);

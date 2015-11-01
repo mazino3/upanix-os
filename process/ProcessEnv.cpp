@@ -18,7 +18,7 @@
 #include <ProcessEnv.h>
 #include <MemManager.h>
 #include <MemUtil.h>
-#include <String.h>
+#include <StringUtil.h>
 #include <DMM.h>
 
 #define PROCESS_ENV_LIST ((ProcessEnvEntry*)(PROCESS_ENV_PAGE - GLOBAL_DATA_SEGMENT_BASE))
@@ -36,7 +36,7 @@ byte ProcessEnv_Initialize(__volatile__ unsigned uiPDEAddress, __volatile__ int 
 {
 	unsigned uiFreePageNo, i ;
 
-	RETURN_X_IF_NOT(MemManager::Instance().AllocatePhysicalPage(&uiFreePageNo), MEM_SUCCESS, ProcessEnv_FAILURE) ;
+	RETURN_X_IF_NOT(MemManager::Instance().AllocatePhysicalPage(&uiFreePageNo), Success, ProcessEnv_FAILURE) ;
 
 	char* pEnv =(char*)(uiFreePageNo * PAGE_SIZE - GLOBAL_DATA_SEGMENT_BASE) ;
 	for(i = 0; i < PAGE_SIZE; i += ENV_VAR_LENGTH)

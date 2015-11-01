@@ -26,7 +26,7 @@ class KernelUtil
 
 	public:
 		static void Wait(unsigned uiTimeInMilliSec) ;
-		static void WaitOnInterrupt(const IRQ* pIRQ) ;
+		static void WaitOnInterrupt(const IRQ&);
 		static void ScheduleTimedTask(const char* szName, unsigned uiTimeInMilliSec, unsigned CallBackFunction) ;
 		static void TightLoopWait(unsigned loop) ;
 

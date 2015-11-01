@@ -19,7 +19,7 @@
 # include <ATATimingManager.h>
 # include <DMM.h>
 # include <Display.h>
-# include <String.h>
+# include <StringUtil.h>
 # include <MemUtil.h>
 
 static VIAIDE VIAIDEList[] = {

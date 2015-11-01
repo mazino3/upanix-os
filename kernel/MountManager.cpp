@@ -19,7 +19,7 @@
 # include <DMM.h>
 # include <Display.h>
 # include <MemUtil.h>
-# include <String.h>
+# include <StringUtil.h>
 # include <Directory.h>
 # include <ProcFileManager.h>
 # include <FileOperations.h>

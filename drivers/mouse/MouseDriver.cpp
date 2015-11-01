@@ -31,8 +31,8 @@ MouseDriver::MouseDriver()
 
 void MouseDriver::Initialize()
 {
-	PIC::DisableInterrupt(PIC::MOUSE_IRQ) ;
-	m_pIRQ = PIC::RegisterIRQ(PIC::MOUSE_IRQ, (unsigned)&MouseDriver::Handler) ;
+	PIC::Instance().DisableInterrupt(PIC::Instance().MOUSE_IRQ) ;
+	PIC::Instance().RegisterIRQ(PIC::Instance().MOUSE_IRQ, (unsigned)&MouseDriver::Handler) ;
 
 	bool bStatus = true ;
 	do
@@ -80,7 +80,7 @@ void MouseDriver::Initialize()
 //	if(ReceiveData(data))
 //		printf("\n Mouse ID: %u ", data) ;
 		
-	PIC::EnableInterrupt(PIC::MOUSE_IRQ) ;
+	PIC::Instance().EnableInterrupt(PIC::Instance().MOUSE_IRQ) ;
 	KC::MDisplay().LoadMessage("Mouse Initialization", bStatus ? Success : Failure);
 }
 
@@ -98,7 +98,7 @@ void MouseDriver::Handler()
 	{
 		KC::MMouseDriver().Process(data) ;
 	}
-	PIC::SendEOI(KC::MMouseDriver().GetIRQ()) ;
+	PIC::Instance().SendEOI(PIC::Instance().MOUSE_IRQ);
 
 	AsmUtil_REVOKE_KERNEL_DATA_SEGMENTS
 	AsmUtil_RESTORE_GPR(GPRStack) ;

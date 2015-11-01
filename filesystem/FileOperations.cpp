@@ -25,7 +25,7 @@
 # include <MountManager.h>
 # include <SystemUtil.h>
 # include <DMM.h>
-# include <String.h>
+# include <StringUtil.h>
 # include <Display.h>
 # include <stdio.h>
 

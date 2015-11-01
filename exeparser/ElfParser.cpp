@@ -23,7 +23,7 @@
 #include <ElfSymbolTable.h>
 #include <MemUtil.h>
 #include <DMM.h>
-#include <String.h>
+#include <StringUtil.h>
 #include <Display.h>
 #include <DynamicLinkLoader.h>
 #include <ProcFileManager.h>

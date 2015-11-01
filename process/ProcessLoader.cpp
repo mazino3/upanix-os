@@ -28,7 +28,7 @@
 #include <DMM.h>
 #include <MemUtil.h>
 #include <DynamicLinkLoader.h>
-#include <String.h>
+#include <StringUtil.h>
 #include <ProcFileManager.h>
 #include <FileOperations.h>
 #include <ElfRelocationSection.h>

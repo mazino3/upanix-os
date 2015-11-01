@@ -23,7 +23,6 @@
 # include <DLLLoader.h>
 # include <ProcessAllocator.h>
 # include <UserManager.h>
-# include <String.h>
 # include <GenericUtil.h>
 # include <ProcessEnv.h>
 # include <MemManager.h>
@@ -74,7 +73,7 @@ KernelService::PageFault::PageFault(unsigned uiFaultyAddress) : m_uiFaultyAddres
 
 void KernelService::PageFault::Process()
 {
-	if(MemManager::Instance().AllocatePage(GetRequestProcessID(), m_uiFaultyAddress) == MEM_FAILURE)
+	if(MemManager::Instance().AllocatePage(GetRequestProcessID(), m_uiFaultyAddress) == Failure)
 	{
 		//TODO:
 		ProcessManager_Kill(ProcessManager_iCurrentProcessID) ;
@@ -86,13 +85,8 @@ void KernelService::PageFault::Process()
 }
 
 KernelService::ProcessExec::ProcessExec(int iNoOfArgs, const char* szFile, const char** szArgs)
-   	: m_iNoOfArgs(iNoOfArgs),
-	m_szFile(NULL),
-	m_szArgs(NULL)
+   	: m_iNoOfArgs(iNoOfArgs), _szFile(szFile), m_szArgs(NULL)
 {
-	m_szFile = new char[String_Length(szFile) + 1] ;
-	String_Copy(m_szFile, szFile) ;
-
 	m_szArgs = new char*[iNoOfArgs] ;
 	for(int i = 0; i < iNoOfArgs; i++)
 	{
@@ -103,7 +97,6 @@ KernelService::ProcessExec::ProcessExec(int iNoOfArgs, const char* szFile, const
 
 KernelService::ProcessExec::~ProcessExec()
 {
-	delete[] m_szFile ;
 	for(int i = 0; i < m_iNoOfArgs; i++)
 		delete[] m_szArgs[i] ;
 	delete[] m_szArgs ;
@@ -115,7 +108,7 @@ void KernelService::ProcessExec::Process()
 	FileSystem_PresentWorkingDirectory mOldPWD ;
 	ProcessManager_CopyDriveInfo(GetRequestProcessID(), iOldDDriveID, mOldPWD) ;
 
-	byte bStatus = ProcessManager_Create(m_szFile, GetRequestProcessID(), true, &m_iNewProcId, DERIVE_FROM_PARENT, m_iNoOfArgs, m_szArgs) ;
+	byte bStatus = ProcessManager_Create(_szFile.Value(), GetRequestProcessID(), true, &m_iNewProcId, DERIVE_FROM_PARENT, m_iNoOfArgs, m_szArgs) ;
 	if(bStatus != ProcessManager_SUCCESS)
 		m_iNewProcId = -1 ;
 

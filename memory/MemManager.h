@@ -21,11 +21,7 @@
 #include <Global.h>
 #include <MemConstants.h>
 #include <ProcessConstants.h>
-
-#define MEM_SUCCESS				0
-#define MEM_ERR_OUT_OF_MEMORY	1
-#define MEM_ERR_DUP_DEALLOC		2
-#define MEM_FAILURE				3
+#include <ReturnHandler.h>
 
 #define KERNEL_PROCESS_PDE_ID	1022
 
@@ -47,16 +43,15 @@ class MemManager
 			static MemManager instance;
 			return instance;
 		}
-		byte MarkPageAsAllocated(unsigned uiPageNumber) ;
-		byte AllocatePhysicalPage(unsigned* uiPageNumber) ;
+		Result MarkPageAsAllocated(unsigned uiPageNumber) ;
+		Result AllocatePhysicalPage(unsigned* uiPageNumber) ;
 		void DeAllocatePhysicalPage(const unsigned uiPageNumber) ;
-		byte AllocatePage(int iProcessID, unsigned uiFaultyAddress) ;
-		byte DeAllocatePage(const unsigned uiAddress) ;
+		Result AllocatePage(int iProcessID, unsigned uiFaultyAddress) ;
+		Result DeAllocatePage(const unsigned uiAddress) ;
 		void DisplayNoOfFreePages() ;
 		unsigned GetFlatAddress(unsigned uiVirtualAddress) ;
 		int GetFreeKernelProcessStackBlockID() ;
 		void FreeKernelProcessStackBlock(int id) ;
-		byte DisplayPageMap(unsigned uiStartPageNumber, unsigned uiEndPageNumber) ;
 		void DisplayNoOfAllocPages() ;
 
 		static void InitPage(unsigned uiPage) ;

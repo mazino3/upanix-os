@@ -34,6 +34,4 @@ __volatile__ void PIT_SetTaskSwitch(bool flag) ;
 
 __volatile__ unsigned PIT_RoundSleepTime(__volatile__ unsigned uiSleepTime) ;
 
-__volatile__ const IRQ* PIT_GetIRQ() ;
-
 #endif

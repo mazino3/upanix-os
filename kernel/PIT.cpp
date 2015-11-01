@@ -38,8 +38,6 @@ __volatile__ static unsigned PIT_ClockCountForSleep ;
 __volatile__ static unsigned char Process_bContextSwitch ;
 __volatile__ static int Process_iTaskSwitch ;
 
-static const IRQ* PIT_pIRQ ;
-
 void PIT_Initialize()
 {
 	byte bStatus = SUCCESS ;
@@ -56,17 +54,13 @@ void PIT_Initialize()
 	PortCom_SendByte(PIT_COUNTER_0_PORT, uiTimerRate & 0xFF) ;			// Clock Divisor LSB
 	PortCom_SendByte(PIT_COUNTER_0_PORT, (uiTimerRate >> 8) & 0xFF) ;	// Clock Divisor MSB
 
-	KC::MDisplay().Number("\n TIMER_IRQ = ", PIC::TIMER_IRQ) ;
-	PIT_pIRQ = PIC::RegisterIRQ(PIC::TIMER_IRQ, (unsigned)&PIT_Handler) ;
-	if(!PIT_pIRQ)
+	if(!PIC::Instance().RegisterIRQ(PIC::Instance().TIMER_IRQ, (unsigned)&PIT_Handler) )
 		bStatus = FAILURE ;
 	
 	SAFE_INT_ENABLE(uiIntFlag) ;	
 
 	KC::MDisplay().LoadMessage("Timer Initialization", bStatus ? Success : Failure);
 }
-
-__volatile__ const IRQ* PIT_GetIRQ() { return PIT_pIRQ ; }
 
 __volatile__ unsigned PIT_GetClockCount() { return PIT_ClockCountForSleep ; }
 
@@ -116,7 +110,7 @@ void PIT_Handler()
 			__asm__ __volatile__("pushl %eax") ;
 			__asm__ __volatile__("popf") ;
 			
-			PIC::SendEOI(PIT_pIRQ) ;
+			PIC::Instance().SendEOI(PIC::Instance().TIMER_IRQ);
 
 			__asm__ __volatile__("IRET") ;
 		
@@ -145,7 +139,7 @@ void PIT_Handler()
 	__asm__ __volatile__("movw %%ss:%0, %%fs" :: "m"(usFS) ) ;
 	__asm__ __volatile__("movw %%ss:%0, %%gs" :: "m"(usGS) ) ;
 
-	PIC::SendEOI(PIT_pIRQ) ;
+	PIC::Instance().SendEOI(PIC::Instance().TIMER_IRQ);
 
 	AsmUtil_RESTORE_GPR(GPRStack) ;
 

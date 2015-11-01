@@ -221,7 +221,7 @@ unsigned UHCIDataHandler_CreateFrameList()
 {
 	unsigned uiFreePageNo ;
 
-	if(MemManager::Instance().AllocatePhysicalPage(&uiFreePageNo) != MEM_SUCCESS)
+	if(MemManager::Instance().AllocatePhysicalPage(&uiFreePageNo) != Success)
 		return NULL ;
 
 	UHCIDataHandler_pFrameList = (unsigned*)(uiFreePageNo * PAGE_SIZE - GLOBAL_DATA_SEGMENT_BASE) ;
@@ -493,7 +493,7 @@ unsigned UHCIDataHandler_GetTDAttribute(UHCITransferDesc* pTD, UHCIDescAttrType 
 byte UHCIDataHandler_StartFrameCleaner()
 {
 	unsigned uiFreePageNo ;
-	RETURN_X_IF_NOT(MemManager::Instance().AllocatePhysicalPage(&uiFreePageNo), MEM_SUCCESS, UHCIDataHandler_FAILURE) ;
+	RETURN_X_IF_NOT(MemManager::Instance().AllocatePhysicalPage(&uiFreePageNo), Success, UHCIDataHandler_FAILURE) ;
 	
 	unsigned uiFrameQBuf = (uiFreePageNo * PAGE_SIZE) - GLOBAL_DATA_SEGMENT_BASE ;
 

@@ -22,7 +22,7 @@
 # include <Display.h>
 # include <ProcFileManager.h>
 # include <Directory.h>
-# include <String.h>
+# include <StringUtil.h>
 # include <DMM.h>
 # include <GenericUtil.h>
 # include <MemUtil.h>

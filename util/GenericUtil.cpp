@@ -21,7 +21,7 @@
 # include <Display.h>
 # include <MemConstants.h>
 # include <ProcessEnv.h>
-# include <String.h>
+# include <StringUtil.h>
 # include <ProcFileManager.h>
 # include <FileOperations.h>
 # include <DMM.h>

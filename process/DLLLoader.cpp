@@ -19,7 +19,7 @@
 # include <MemConstants.h>
 # include <DynamicLinkLoader.h>
 # include <DMM.h>
-# include <String.h>
+# include <StringUtil.h>
 # include <MemManager.h>
 # include <MemUtil.h>
 # include <ElfParser.h>
@@ -337,7 +337,7 @@ byte DLLLoader_MapDLLPagesToProcess(ProcessAddressSpace* processAddressSpace,
 	{
 		for(i = processAddressSpace->uiNoOfPagesForDLLPTE; i < uiNoOfPagesForDLLPTE; i++)
 		{
-			RETURN_X_IF_NOT(MemManager::Instance().AllocatePhysicalPage(&uiFreePageNo), MEM_SUCCESS, DLLLoader_FAILURE) ;
+			RETURN_X_IF_NOT(MemManager::Instance().AllocatePhysicalPage(&uiFreePageNo), Success, DLLLoader_FAILURE) ;
 			
 			uiPDEIndex = processAddressSpace->uiStartPDEForDLL + i ;
 			((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPDEIndex] = 

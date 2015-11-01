@@ -17,7 +17,7 @@
  */
 # include <SessionManager.h>
 # include <Display.h>
-# include <String.h>
+# include <StringUtil.h>
 # include <FileSystem.h>
 # include <Directory.h>
 # include <DMM.h>

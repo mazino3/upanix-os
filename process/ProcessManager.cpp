@@ -37,7 +37,7 @@
 #include <UserManager.h>
 #include <ProcessGroupManager.h>
 #include <MountManager.h>
-#include <String.h>
+#include <StringUtil.h>
 #include <MOSMain.h>
 #include <ProcessConstants.h>
 #include <KernelUtil.h>
@@ -65,12 +65,12 @@ static unsigned ProcessManager_InterruptQueueBuffer[PIC::MAX_INTERRUPT][MAX_PROC
 static bool ProcessManager_WakeupProcessOnInterrupt(__volatile__ int iProcessID)
 {
 	__volatile__ ProcessAddressSpace* p = &ProcessManager_processAddressSpace[iProcessID] ;
-	const IRQ* pIRQ = p->pProcessStateInfo->pIRQ ;
+	const IRQ& irq = *p->pProcessStateInfo->pIRQ ;
 
-	if(pIRQ == &PIC::NO_IRQ)
+	if(irq == PIC::Instance().NO_IRQ)
 		return true ;
 
-	if(pIRQ->GetIRQNo() == PIC::KEYBOARD_IRQ)
+	if(irq == PIC::Instance().KEYBOARD_IRQ)
 	{
 		//if(!ProcessGroupManager_IsFGProcessGroup(p->iProcessGroupID)
 		//|| !ProcessGroupManager_IsFGProcess(p->iProcessGroupID, iProcessID))
@@ -80,7 +80,7 @@ static bool ProcessManager_WakeupProcessOnInterrupt(__volatile__ int iProcessID)
 		}
 	}
 	
-	if(ProcessManager_GetFromInterruptQueue(pIRQ) == ProcessManager_SUCCESS)
+	if(ProcessManager_GetFromInterruptQueue(irq) == ProcessManager_SUCCESS)
 	{
 		p->status = RUN ;
 		return true ;
@@ -687,7 +687,7 @@ void ProcessManager_DoContextSwitch(int iProcessID)
 		ProcessManager_Destroy(iProcessID) ;
 
 	if(debug_point) TRACE_LINE ;
-	//PIC::EnableInterrupt(TIMER_IRQ) ;
+	//PIC::Instance().EnableInterrupt(TIMER_IRQ) ;
 	PIT_SetTaskSwitch(true) ;
 	if(debug_point) TRACE_LINE ;
 }
@@ -742,18 +742,18 @@ void ProcessManager_Sleep(__volatile__ unsigned uiSleepTime) // in Mili Seconds
 	ProcessManager_Yield() ;
 }
 
-void ProcessManager_WaitOnInterrupt(const IRQ* pIRQ)
+void ProcessManager_WaitOnInterrupt(const IRQ& irq)
 {
 	if(ProcessManager_DoPoleWait())
 	{
-		KernelUtil::WaitOnInterrupt(pIRQ) ;
+		KernelUtil::WaitOnInterrupt(irq);
 		return ;
 	}
 
 	ProcessManager_DisableTaskSwitch() ;
 	
-	ProcessManager_processAddressSpace[ProcessManager_iCurrentProcessID].pProcessStateInfo->pIRQ = pIRQ ;
-	ProcessManager_processAddressSpace[ProcessManager_iCurrentProcessID].status = WAIT_INT ;
+	ProcessManager_processAddressSpace[ProcessManager_iCurrentProcessID].pProcessStateInfo->pIRQ = &irq;
+	ProcessManager_processAddressSpace[ProcessManager_iCurrentProcessID].status = WAIT_INT;
 
 	ProcessManager_Yield() ;
 }
@@ -894,7 +894,7 @@ byte ProcessManager_CreateKernelImage(const unsigned uiTaskAddress, int iParentP
 	ProcessStateInfo* pStateInfo = (ProcessStateInfo*)DMM_AllocateForKernel(sizeof(ProcessStateInfo)) ;
 	
 	pStateInfo->uiSleepTime = 0 ;
-	pStateInfo->pIRQ = &PIC::NO_IRQ ;
+	pStateInfo->pIRQ = &PIC::Instance().NO_IRQ ;
 	pStateInfo->iWaitChildProcId = NO_PROCESS_ID ;
 	pStateInfo->uiWaitResourceId = RESOURCE_NIL ;
 
@@ -1005,7 +1005,7 @@ byte ProcessManager_Create(const char* szProcessName, int iParentProcessID, byte
 	ProcessStateInfo* pStateInfo = (ProcessStateInfo*)DMM_AllocateForKernel(sizeof(ProcessStateInfo)) ;
 	
 	pStateInfo->uiSleepTime = 0 ;
-	pStateInfo->pIRQ = &PIC::NO_IRQ ;
+	pStateInfo->pIRQ = &PIC::Instance().NO_IRQ ;
 	pStateInfo->iWaitChildProcId = NO_PROCESS_ID ;
 	pStateInfo->uiWaitResourceId = RESOURCE_NIL ;
 
@@ -1018,37 +1018,36 @@ byte ProcessManager_Create(const char* szProcessName, int iParentProcessID, byte
 	return ProcessManager_SUCCESS ;
 }
 
-byte ProcessManager_GetFromInterruptQueue(const IRQ* pIRQ)
+byte ProcessManager_GetFromInterruptQueue(const IRQ& irq)
 {
 	unsigned val ;
 
-	PIC::DisableInterrupt(pIRQ->GetIRQNo()) ;
+	PIC::Instance().DisableInterrupt(irq);
 	
-	ProcessManager_ConsumeInterrupt(pIRQ) ;
+	ProcessManager_ConsumeInterrupt(irq) ;
 
-	if(DSUtil_ReadFromQueue(&(ProcessManager_InterruptQueue[pIRQ->GetIRQNo()]), &val) == DSUtil_ERR_QUEUE_EMPTY)
+	if(DSUtil_ReadFromQueue(&(ProcessManager_InterruptQueue[irq.GetIRQNo()]), &val) == DSUtil_ERR_QUEUE_EMPTY)
 	{
-		PIC::EnableInterrupt(pIRQ->GetIRQNo()) ;
+		PIC::Instance().EnableInterrupt(irq);
 		return ProcessManager_ERR_INT_QUEUE_EMPTY ;
 	}
 
-	PIC::EnableInterrupt(pIRQ->GetIRQNo()) ;
+	PIC::Instance().EnableInterrupt(irq) ;
 	return ProcessManager_SUCCESS ;
 }
 
-byte ProcessManager_QueueInterrupt(const IRQ* pIRQ)
+byte ProcessManager_QueueInterrupt(const IRQ& irq)
 {
-	if(DSUtil_WriteToQueue(&(ProcessManager_InterruptQueue[pIRQ->GetIRQNo()]), 1) == DSUtil_ERR_QUEUE_FULL)
+	if(DSUtil_WriteToQueue(&(ProcessManager_InterruptQueue[irq.GetIRQNo()]), 1) == DSUtil_ERR_QUEUE_FULL)
 		return ProcessManager_ERR_INT_QUEUE_FULL ;
-	
 	return ProcessManager_SUCCESS ;
 }
 
-void ProcessManager_SignalInterruptOccured(const IRQ* pIRQ)
+void ProcessManager_SignalInterruptOccured(const IRQ& irq)
 {
-	ProcessManager_SetInterruptOccured(pIRQ) ;
+	ProcessManager_SetInterruptOccured(irq) ;
 
-	if(ProcessManager_QueueInterrupt(pIRQ) == ProcessManager_ERR_INT_QUEUE_FULL)
+	if(ProcessManager_QueueInterrupt(irq) == ProcessManager_ERR_INT_QUEUE_FULL)
 		return ;
 }
 
@@ -1169,14 +1168,14 @@ void ProcessManager_Exit()
 	ProcessManager_EXIT() ;
 }
 
-bool ProcessManager_ConsumeInterrupt(const IRQ* pIRQ)
+bool ProcessManager_ConsumeInterrupt(const IRQ& irq)
 {
-	return Atomic::Swap((int&)ProcessManager_InterruptOccured[ pIRQ->GetIRQNo() ], false) ;
+	return Atomic::Swap((int&)ProcessManager_InterruptOccured[ irq.GetIRQNo() ], false) ;
 }
 
-void ProcessManager_SetInterruptOccured(const IRQ* pIRQ)
+void ProcessManager_SetInterruptOccured(const IRQ& irq)
 {
-	Atomic::Swap((int&)ProcessManager_InterruptOccured[ pIRQ->GetIRQNo() ], true) ;
+	Atomic::Swap((int&)ProcessManager_InterruptOccured[ irq.GetIRQNo() ], true) ;
 }
 
 bool ProcessManager_IsResourceBusy(__volatile__ unsigned uiType)

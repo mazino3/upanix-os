@@ -256,7 +256,7 @@ void MemManager::FreeKernelProcessStackBlock(int id)
 	ProcessManager_EnableTaskSwitch() ;
 }
 
-byte MemManager::MarkPageAsAllocated(unsigned uiPageNumber)
+Result MemManager::MarkPageAsAllocated(unsigned uiPageNumber)
 {
 	ProcessManager_DisableTaskSwitch() ;
 	unsigned uiPageMapIndex = uiPageNumber / 32 ;
@@ -266,14 +266,14 @@ byte MemManager::MarkPageAsAllocated(unsigned uiPageNumber)
 	{
 		printf("\n Error: Page: %u is already marked as allocated", uiPageNumber) ;
 		ProcessManager_EnableTaskSwitch() ;
-		return MEM_FAILURE ;
+		return Failure;
 	}
 	m_uiPageMap[ uiPageMapIndex ] |= (0x1 << uiPageBitIndex) ;
 	ProcessManager_EnableTaskSwitch() ;
-	return MEM_SUCCESS ;
+	return Success ;
 }
 
-byte MemManager::AllocatePhysicalPage(unsigned* uiPageNumber)
+Result MemManager::AllocatePhysicalPage(unsigned* uiPageNumber)
 {	
 	ProcessManager_DisableTaskSwitch() ;
 
@@ -296,7 +296,7 @@ byte MemManager::AllocatePhysicalPage(unsigned* uiPageNumber)
 					//KC::MDisplay().Number(",", *uiPageNumber);
 					ProcessManager_EnableTaskSwitch() ;
 
-					return MEM_SUCCESS ;
+					return Success ;
 				}
 				uiPageMapEntry >>= 1 ;
 			}
@@ -305,7 +305,7 @@ byte MemManager::AllocatePhysicalPage(unsigned* uiPageNumber)
 
 	ProcessManager_EnableTaskSwitch() ;
 
-	return MEM_ERR_OUT_OF_MEMORY ;
+	return OutOfMemory;
 }
 
 void MemManager::DeAllocatePhysicalPage(const unsigned uiPageNumber)
@@ -325,7 +325,7 @@ void MemManager::DeAllocatePhysicalPage(const unsigned uiPageNumber)
 
 extern __volatile__ int SYS_CALL_ID;
 
-byte MemManager::AllocatePage(int iProcessID, unsigned uiFaultyAddress)
+Result MemManager::AllocatePage(int iProcessID, unsigned uiFaultyAddress)
 {
 	unsigned uiFreePageNo, uiVirtualPageNo ;
 	unsigned uiPDEAddress, uiPTEAddress, uiPTEFreePage ;
@@ -354,7 +354,7 @@ byte MemManager::AllocatePage(int iProcessID, unsigned uiFaultyAddress)
 			KC::MDisplay().Address("\n Segmentation Fault @ Address: ", uiFaultyAddress) ;
 			KC::MDisplay().Number("\n PID = ", iProcessID) ;
 			KC::MDisplay().Number("\n DMM Flag = ", ProcessManager_IsDMMOn(iProcessID));
-			return MEM_FAILURE ;
+			return Failure;
 		}
 
 		uiPDEAddress = ProcessManager_processAddressSpace[iProcessID].taskState.CR3_PDBR ;
@@ -363,11 +363,11 @@ byte MemManager::AllocatePage(int iProcessID, unsigned uiFaultyAddress)
 
 		if((uiPTEAddress & 0x1) == 0x0)
 		{
-			if(AllocatePhysicalPage(&uiPTEFreePage) != MEM_SUCCESS)
+			if(AllocatePhysicalPage(&uiPTEFreePage) != Success)
 			{
 				/* Crash the Process..... With SegFault Or OutOfMemeory Error*/
 				KC::MDisplay().Message("\n Out Of Memory3\n", Display::WHITE_ON_BLACK()) ;
-				return MEM_FAILURE ;
+				return Failure;
 			}
 
 			((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[ ((uiFaultyAddress >> 22) & 0x3FF)] = 
@@ -387,11 +387,11 @@ byte MemManager::AllocatePage(int iProcessID, unsigned uiFaultyAddress)
 		// TODO: Fix This Properly
 		if((uiPageAdress & 0x01) == 0x00)
 		{
-			if(AllocatePhysicalPage(&uiFreePageNo) != MEM_SUCCESS)
+			if(AllocatePhysicalPage(&uiFreePageNo) != Success)
 			{
 				/* Crash the Process..... With SegFault Or OutOfMemeory Error*/
 				KC::MDisplay().Message("\n Out Of Memory2\n", Display::WHITE_ON_BLACK()) ;
-				return MEM_FAILURE ;
+				return Failure;
 			}
 
 			((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[ ((uiFaultyAddress >> 12) & 0x3FF) ] = 
@@ -403,23 +403,23 @@ byte MemManager::AllocatePage(int iProcessID, unsigned uiFaultyAddress)
 		{
 			/* Crash the Process..... With SegFault Or OutOfMemeory Error*/
 			KC::MDisplay().Address("\n Segmentation/Permission Fault @ Address: ", uiFaultyAddress) ;
-			return MEM_FAILURE ;
+			return Failure;
 		}
 	}
 
 	//Mem_FlushTLB();
 //	KC::MDisplay().Address("\n Alloc Done: ", uiFaultyAddress) ;
-	return MEM_SUCCESS ;
+	return Success;
 }
 
-byte MemManager::DeAllocatePage(const unsigned uiAddress)
+Result MemManager::DeAllocatePage(const unsigned uiAddress)
 {
 	unsigned uiFreePageNo, uiVirtualPageNo ;
 
 	uiVirtualPageNo = uiAddress / PAGE_SIZE ;
 
 	if((m_uiPTEBase[uiVirtualPageNo] & 0x1) == 0x0)
-		return MEM_ERR_DUP_DEALLOC ;
+		return DupDealloc;
 	
 	uiFreePageNo = (m_uiPTEBase[uiVirtualPageNo] & 0xFFFFF000) / PAGE_SIZE ;
 	m_uiPTEBase[uiVirtualPageNo] &= 0x2 ;
@@ -429,7 +429,7 @@ byte MemManager::DeAllocatePage(const unsigned uiAddress)
 //	KC::MDisplay().Address(" : Page = ", uiVirtualPageNo) ;
 //	KC::MDisplay().Address("\n DeAllocated Real Page = ", uiFreePageNo) ;
 
-	return MEM_SUCCESS ;
+	return Success;
 }
 
 //void MemManager::PageFaultHandlerTask()
@@ -446,7 +446,7 @@ byte MemManager::DeAllocatePage(const unsigned uiAddress)
 //		__volatile__ unsigned uiFaultyAddress ;
 //		__asm__ __volatile__("mov %%cr2, %0" : "=r"(uiFaultyAddress) : ) ;
 //		
-//		if(AllocatePage(ProcessManager_iCurrentProcessID, uiFaultyAddress) == MEM_FAILURE)
+//		if(AllocatePage(ProcessManager_iCurrentProcessID, uiFaultyAddress) == Failure)
 //		{
 //			//TODO:
 //			ProcessManager_processAddressSpace[ProcessManager_iCurrentProcessID].status = TERMINATE ;

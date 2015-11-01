@@ -225,7 +225,7 @@ byte ProcessManager_CreateKernelImage(const unsigned uiTaskAddress, int iParentP
 		int* iProcessID, const char* szKernelProcName) ;
 void ProcessManager_Destroy(int iDeleteProcessID) ;
 void ProcessManager_Sleep(unsigned uiSleepTime) ;
-void ProcessManager_WaitOnInterrupt(const IRQ* pIRQ) ;
+void ProcessManager_WaitOnInterrupt(const IRQ&);
 void ProcessManager_WaitOnChild(int iChildProcessID) ;
 void ProcessManager_WaitOnResource(unsigned uiResourceType) ;
 void ProcessManager_WaitOnKernelService() ;
@@ -238,9 +238,9 @@ void ProcessManager_StartScheduler() ;
 void ProcessManager_EnableTaskSwitch() ;
 void ProcessManager_DisableTaskSwitch() ;
 
-byte ProcessManager_GetFromInterruptQueue(const IRQ* pIRQ) ;
-byte ProcessManager_QueueInterrupt(const IRQ* pIRQ) ;
-void ProcessManager_SignalInterruptOccured(const IRQ* pIRQ) ;
+byte ProcessManager_GetFromInterruptQueue(const IRQ&) ;
+byte ProcessManager_QueueInterrupt(const IRQ&);
+void ProcessManager_SignalInterruptOccured(const IRQ&);
 
 typedef struct
 {
@@ -263,8 +263,8 @@ void ProcessManager_ProcessInit() ;
 void ProcessManager_ProcessUnInit() ;
 byte ProcessManager_IsChildAlive(int iChildProcessID) ;
 void ProcessManager_Exit() ;
-bool ProcessManager_ConsumeInterrupt(const IRQ* pIRQ) ;
-void ProcessManager_SetInterruptOccured(const IRQ* pIRQ) ;
+bool ProcessManager_ConsumeInterrupt(const IRQ&);
+void ProcessManager_SetInterruptOccured(const IRQ&) ;
 bool ProcessManager_IsResourceBusy(__volatile__ unsigned uiType) ;
 void ProcessManager_SetResourceBusy(unsigned uiType, bool bVal) ;
 int ProcessManager_GetCurProcId() ;

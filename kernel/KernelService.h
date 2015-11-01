@@ -21,6 +21,8 @@
 #include <Global.h>
 #include <Atomic.h>
 #include <Queue.h>
+#include <String.h>
+#include <StringUtil.h>
 #include <ProcessManager.h>
 
 class KernelService
@@ -108,10 +110,10 @@ class KernelService
 		class ProcessExec : public Request
 		{
 			private:
-				int m_iNoOfArgs ;
-				char* m_szFile ;
-				char** m_szArgs ;
-				int m_iNewProcId ;
+				int m_iNoOfArgs;
+				String _szFile;
+				char** m_szArgs;
+				int m_iNewProcId;
 
 			public:
 				ProcessExec(int iNoOfArgs, const char* szFile, const char** szArgs) ;

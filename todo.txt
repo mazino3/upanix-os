@@ -1,3 +1,8 @@
+Date: 1 Nov 2015
+- Return value refactoring -> enum
+- IRQ type safety
+- Remove usage of Display.Message with printf
+
 Date: 10 Jan 2011
 1. PIC IRQ framework changed. After this reboot not hangs on sleep and also load msh hangs... 
 strongly doubt the changes made to PIC IRQ to be the cause. Need to fix this before proceeding any further

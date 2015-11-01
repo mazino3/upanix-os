@@ -26,6 +26,10 @@ enum Result
 	//PCI
 	NoPCIInstalled,
 	InvalidDeviceIndex,
+
+	//Mem
+	OutOfMemory,
+	DupDealloc,
 };
 
 #endif

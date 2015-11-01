@@ -24,7 +24,7 @@
 #include <Display.h>
 #include <PartitionManager.h>
 #include <FileSystem.h>
-#include <String.h>
+#include <StringUtil.h>
 #include <USBController.h>
 #include <EHCIStructures.h>
 

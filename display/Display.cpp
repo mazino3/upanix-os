@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
 #include <Display.h>
-#include <String.h>
+#include <StringUtil.h>
 
 Display::Attribute::Attribute() : 
 	m_blink(DisplayManager::NO_BLINK), 

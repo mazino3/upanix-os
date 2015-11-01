@@ -21,7 +21,7 @@
 #include <BTree.h>
 #include <List.h>
 #include <PIT.h>
-#include <String.h>
+#include <StringUtil.h>
 #include <MemPool.h>
 
 #define DiskCache_SUCCESS 0

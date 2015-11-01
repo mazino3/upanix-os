@@ -21,60 +21,70 @@
 #include <Global.h>
 #include <List.h>
 
-class PIC ;
+class PIC;
 
 class IRQ
 {
 	public:
-		int GetIRQNo() const { return m_iIRQNo ; }
+		int GetIRQNo() const { return m_iIRQNo; }
 		bool operator==(const IRQ& r) const { return m_iIRQNo == r.GetIRQNo() ; }
 
 	private:
-		IRQ(int iIRQNo) : m_iIRQNo(iIRQNo) { }
+		explicit IRQ(int iIRQNo) : m_iIRQNo(iIRQNo) { }
 
 	private:
-		int m_iIRQNo ;
+		int m_iIRQNo;
 
-	friend class PIC ;
-} ;
+	friend class PIC;
+};
 
 class PIC
 {
+	private:
+		PIC();
 	public:
-		static const int MAX_INTERRUPT = 24 ;
-		static const int SLAVE_IRQNO_START = 8 ;
+		static PIC& Instance()
+		{
+			static PIC instance;
+			return instance;
+		}
 
 		//Some standard IRQs
-		static const int TIMER_IRQ ;
-		static const int KEYBOARD_IRQ ;
-		static const int FLOPPY_IRQ ;
-		static const int RTC_IRQ ;
-		static const int MOUSE_IRQ ;
-		
-		static const IRQ NO_IRQ ;
+		const IRQ NO_IRQ;
+		const IRQ TIMER_IRQ;
+		const IRQ KEYBOARD_IRQ;
+		const IRQ FLOPPY_IRQ;
+		const IRQ RTC_IRQ;
+		const IRQ MOUSE_IRQ;
 
-		static unsigned short m_IRQMask ;
+		unsigned short m_IRQMask;
 
-		static void Initialize() ;
-		static void EnableAllInterrupts() ;
-		static void DisableAllInterrupts() ;
-		static bool SendEOI(const IRQ* pIRQ) ;
-		static void EnableInterrupt(const int& iIRQNo) ;
-		static void DisableInterrupt(const int& iIRQNo) ;
-		static const IRQ* RegisterIRQ(const int& iIRQNo, unsigned pHandler) ;
-		static const IRQ* GetIRQ(const int& iIRQNo) ;
+		void EnableAllInterrupts();
+		void DisableAllInterrupts();
+		void SendEOI(const IRQ& irq);
+		void EnableInterrupt(const IRQ& irq);
+		void DisableInterrupt(const IRQ& irq);
+		const IRQ* RegisterIRQ(const int& iIRQNo, unsigned pHandler);
+		bool RegisterIRQ(const IRQ& irq, unsigned pHandler);
+		const IRQ* GetIRQ(const IRQ& irq);
+		const IRQ* GetIRQ(const int& iIRQNo);
 
-		static void DisplayIRQList() ;
+		void DisplayIRQList();
+
+	public:
+		static const int MAX_INTERRUPT = 24;
+		static const int SLAVE_IRQNO_START = 8;
+
 	private:
-		static const unsigned short MASTER_PORTA = 0x20 ;
-		static const unsigned short MASTER_PORTB = 0x21 ;
-		static const unsigned short SLAVE_PORTA = 0xA0 ;
-		static const unsigned short SLAVE_PORTB = 0xA1 ;
+		static const unsigned short MASTER_PORTA = 0x20;
+		static const unsigned short MASTER_PORTB = 0x21;
+		static const unsigned short SLAVE_PORTA = 0xA0;
+		static const unsigned short SLAVE_PORTB = 0xA1;
 
-		static const unsigned short MASTER_IRQ_BASE = 0x20 ;
-		static const unsigned short SLAVE_IRQ_BASE = 0x28 ;
+		static const unsigned short MASTER_IRQ_BASE = 0x20;
+		static const unsigned short SLAVE_IRQ_BASE = 0x28;
 
-		static List<IRQ*>& GetIRQList();
+		List<const IRQ*> _irqs;
 } ;
 
 #endif

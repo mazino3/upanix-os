@@ -28,7 +28,6 @@ class MouseDriver
 {
 	public:
 		void Process(unsigned data) ;
-		const IRQ* GetIRQ() { return m_pIRQ ; }
 
 	private:
 		MouseDriver() ;
@@ -45,7 +44,6 @@ class MouseDriver
 
 	private:
 		bool m_bProcessToggle ;
-		const IRQ* m_pIRQ ;
 
 	friend class KC ;
 } ;

@@ -34,15 +34,14 @@ DSUtil_Queue KBDriver_QueueBuffer ;
 
 #define Keyboard_QUEUE_BUFFER_SIZE 100
 static unsigned Keyboard_Buffer[Keyboard_QUEUE_BUFFER_SIZE] ;
-static const IRQ* Keyboard_pIRQ ;
 
 void KBDriver_Initialize()
 {
 	DSUtil_InitializeQueue(&KBDriver_QueueBuffer, (unsigned)&Keyboard_Buffer, Keyboard_QUEUE_BUFFER_SIZE) ;
 
-	PIC::DisableInterrupt(PIC::KEYBOARD_IRQ) ;
-	Keyboard_pIRQ = PIC::RegisterIRQ(PIC::KEYBOARD_IRQ, (unsigned)&KBDriver_Handler) ;
-	PIC::EnableInterrupt(PIC::KEYBOARD_IRQ) ;
+	PIC::Instance().DisableInterrupt(PIC::Instance().KEYBOARD_IRQ) ;
+	PIC::Instance().RegisterIRQ(PIC::Instance().KEYBOARD_IRQ, (unsigned)&KBDriver_Handler) ;
+	PIC::Instance().EnableInterrupt(PIC::Instance().KEYBOARD_IRQ) ;
 
 	PortCom_ReceiveByte(KB_DATA_PORT) ;	
 
@@ -66,11 +65,11 @@ void KBDriver_Handler()
 		if(!KBInputHandler_Process(key))
 		{
 			KBDriver_PutToQueueBuffer((key & 0xFF)) ;
-			ProcessManager_SignalInterruptOccured(Keyboard_pIRQ) ;
+			ProcessManager_SignalInterruptOccured(PIC::Instance().KEYBOARD_IRQ);
 		}
 	}
 
-	PIC::SendEOI(Keyboard_pIRQ) ;
+	PIC::Instance().SendEOI(PIC::Instance().KEYBOARD_IRQ);
 
 	AsmUtil_REVOKE_KERNEL_DATA_SEGMENTS
 	AsmUtil_RESTORE_GPR(GPRStack) ;
@@ -85,7 +84,7 @@ byte KBDriver_GetCharInBlockMode(byte *data)
 	{
 //		unsigned i ; for(i = 0; i < 999; i++) asm("nop") ;
 //		ProcessManager_Sleep(10) ;
-		ProcessManager_WaitOnInterrupt(Keyboard_pIRQ) ;
+		ProcessManager_WaitOnInterrupt(PIC::Instance().KEYBOARD_IRQ);
 	}
 
 	return KBDriver_SUCCESS ;
