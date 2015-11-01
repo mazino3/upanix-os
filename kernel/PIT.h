@@ -24,14 +24,14 @@ class IRQ ;
 void PIT_Initialize() ;
 void PIT_Handler() ;
 
-__volatile__ unsigned PIT_GetClockCount() ;
+unsigned PIT_GetClockCount() ;
 
-__volatile__ unsigned char PIT_IsContextSwitch() ;
-__volatile__ void PIT_SetContextSwitch(bool flag) ;
+unsigned char PIT_IsContextSwitch() ;
+void PIT_SetContextSwitch(bool flag) ;
 
-__volatile__ unsigned char PIT_IsTaskSwitch() ;
-__volatile__ void PIT_SetTaskSwitch(bool flag) ;
+unsigned char PIT_IsTaskSwitch() ;
+void PIT_SetTaskSwitch(bool flag) ;
 
-__volatile__ unsigned PIT_RoundSleepTime(__volatile__ unsigned uiSleepTime) ;
+unsigned PIT_RoundSleepTime(__volatile__ unsigned uiSleepTime) ;
 
 #endif

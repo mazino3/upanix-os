@@ -18,7 +18,7 @@
 #ifndef _STD_DEF_H_
 #define _STD_DEF_H_
 
-typedef unsigned int size_t ;
-typedef long long ssize_t ;
+typedef long unsigned int size_t;
+typedef long long ssize_t;
 
 #endif

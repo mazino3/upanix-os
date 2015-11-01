@@ -28,7 +28,7 @@ typedef struct
 	short LastFDAssigned ;
 } PACKED ProcFileManager_FDHeader;
 
-#define PROC_SYS_MAX_OPEN_FILES ( (PAGE_SIZE - sizeof(ProcFileManager_FDHeader)) / sizeof(ProcFileDescriptor) )
+constexpr int PROC_SYS_MAX_OPEN_FILES((PAGE_SIZE - sizeof(ProcFileManager_FDHeader)) / sizeof(ProcFileDescriptor));
 
 #define PROCESS_FD_TABLE_HEADER ((ProcFileManager_FDHeader*)(PROCESS_FD_PAGE - GLOBAL_DATA_SEGMENT_BASE))
 #define PROCESS_FD_TABLE		((ProcFileDescriptor*)(PROCESS_FD_PAGE - GLOBAL_DATA_SEGMENT_BASE + sizeof(ProcFileManager_FDHeader)))

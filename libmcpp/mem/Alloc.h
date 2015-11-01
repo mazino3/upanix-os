@@ -20,11 +20,11 @@
 
 #include <stddef.h>
 
-void* operator new(size_t uiSize) ;
-void* operator new[](size_t uiSize) ;
-void* operator new(size_t uiSize, void* buffer) ;
-void operator delete(void* p) ;
-void operator delete[](void* p) ;
-void operator delete(void*, void*) ;
+void* operator new(size_t);
+void* operator new[](size_t);
+void* operator new(size_t, void* buffer);
+void operator delete(void* p);
+void operator delete[](void* p);
+void operator delete(void*, void*);
 
 #endif

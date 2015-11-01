@@ -39,15 +39,13 @@
 
 void RTC_Handler() ;
 
-static const IRQ* RTC_pIRQ ;
-
 bool RTC::Initialize()
 {
-	byte bStatusA, bStatusB, bStatusC ;
+	byte bStatusB, bStatusC ;
 		
     /* Read Status A */
 	PortCom_SendByte(RTC_COMMAND_PORT, RTC_RGSTR_STATUSA) ;
-	bStatusA = PortCom_ReceiveByte(RTC_DATA_PORT) ;
+	PortCom_ReceiveByte(RTC_DATA_PORT) ;
 
     /* Read Status B */
 	PortCom_SendByte(RTC_COMMAND_PORT, RTC_RGSTR_STATUSB) ;
@@ -109,7 +107,7 @@ void RTC_Handler()
 	AsmUtil_SET_KERNEL_DATA_SEGMENTS
 
 	PortCom_SendByte(RTC_COMMAND_PORT, RTC_RGSTR_STATUSC) ;
-	byte bUnused = PortCom_ReceiveByte(RTC_DATA_PORT) ;
+	PortCom_ReceiveByte(RTC_DATA_PORT) ;
 	
 	PIC::Instance().SendEOI(PIC::Instance().RTC_IRQ);
 

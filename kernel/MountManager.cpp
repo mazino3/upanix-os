@@ -58,7 +58,7 @@ static void MountManager_GetBootMountDrive(char* szBootDriveName)
 	}
 }
 
-static byte MountManager_GetHomeMountDrive(char* szHomeDriveName, const char* szBootDriveName, unsigned uiSize)
+static byte MountManager_GetHomeMountDrive(char* szHomeDriveName, unsigned uiSize)
 {
 	int fd ;
 	if(FileOperations_Open(&fd, "ROOT@/.mount.lst", O_RDONLY) != FileOperations_SUCCESS)
@@ -112,26 +112,6 @@ static byte MountManager_MountDrive(char* szDriveName)
 
 	return true ;
 }
-
-static byte MountManager_UnMountDrive(char* szDriveName)
-{
-	KC::MDisplay().Message("\n\n UnMounting Drive...", Display::WHITE_ON_BLACK()) ;
-
-	DriveInfo* pDriveInfo = DeviceDrive_GetByDriveName(szDriveName, false) ;
-	if(pDriveInfo == NULL)
-	{
-		KC::MDisplay().Message(" Invalid Drive", ' ') ;
-		return false ;
-	}
-	if(FSCommand_Mounter(pDriveInfo, FS_UNMOUNT) != FSCommand_SUCCESS)
-	{
-		KC::MDisplay().Message(" Failed !!!", Display::WHITE_ON_BLACK()) ;
-		return false ;
-	}
-
-	KC::MDisplay().Message(" Done.", Display::WHITE_ON_BLACK()) ;
-	return true ;
-}
 /****************************************************************************/
 
 void MountManager_Initialize()
@@ -168,7 +148,7 @@ void MountManager_MountDrives()
 	
 	MountManager_MountDrive(MountManager_szRootDriveName) ;
 	char szHomeDriveName[33] ;
-	if(MountManager_GetHomeMountDrive(szHomeDriveName, MountManager_szRootDriveName, 32))
+	if(MountManager_GetHomeMountDrive(szHomeDriveName, 32))
 	{
 		if(String_Compare(MountManager_szRootDriveName, szHomeDriveName) != 0)
 		{

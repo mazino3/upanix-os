@@ -212,7 +212,7 @@ KernelService::Request* KernelService::GetRequest()
 	return pRequest ;
 }
 
-void KernelService::Server(KernelService* pService, int i)
+void KernelService::Server(KernelService* pService)
 {
 	while(true)
 	{

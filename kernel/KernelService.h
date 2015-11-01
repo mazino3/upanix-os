@@ -63,7 +63,7 @@ class KernelService
 		int RequestProcessExec(const char* szFile, int iNoOfArgs, const char** szArgs) ;
 
 	private:
-		static void Server(KernelService* pService, int i) ;
+		static void Server(KernelService* pService) ;
 
 		void AddRequest(Request* pRequest) ;
 		Request* GetRequest() ;

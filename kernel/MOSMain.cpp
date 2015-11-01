@@ -49,7 +49,6 @@ byte SPECIAL_TASK ;
 int debug_point ;
 /***********************************************/
 
-static int errno ;
 static int MOSMain_KernelPID ;
 
 extern void Global_Object_Init() ;

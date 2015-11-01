@@ -34,9 +34,9 @@
 #define PIT_MODE_PORT 0x43
 #define PIT_COUNTER_0_PORT 0x40
 
-__volatile__ static unsigned PIT_ClockCountForSleep ;
-__volatile__ static unsigned char Process_bContextSwitch ;
-__volatile__ static int Process_iTaskSwitch ;
+static unsigned PIT_ClockCountForSleep ;
+static unsigned char Process_bContextSwitch ;
+static int Process_iTaskSwitch ;
 
 void PIT_Initialize()
 {
@@ -62,13 +62,13 @@ void PIT_Initialize()
 	KC::MDisplay().LoadMessage("Timer Initialization", bStatus ? Success : Failure);
 }
 
-__volatile__ unsigned PIT_GetClockCount() { return PIT_ClockCountForSleep ; }
+unsigned PIT_GetClockCount() { return PIT_ClockCountForSleep ; }
 
-__volatile__ unsigned char PIT_IsContextSwitch() { return Process_bContextSwitch ; }
-__volatile__ void PIT_SetContextSwitch(bool flag) { Process_bContextSwitch = flag ; }
+unsigned char PIT_IsContextSwitch() { return Process_bContextSwitch ; }
+void PIT_SetContextSwitch(bool flag) { Process_bContextSwitch = flag ; }
 
-__volatile__ unsigned char PIT_IsTaskSwitch() { return Process_iTaskSwitch ; }
-__volatile__ void PIT_SetTaskSwitch(bool flag) { Atomic::Swap(Process_iTaskSwitch, flag) ; }
+unsigned char PIT_IsTaskSwitch() { return Process_iTaskSwitch ; }
+void PIT_SetTaskSwitch(bool flag) { Atomic::Swap(Process_iTaskSwitch, flag) ; }
 
 void PIT_Handler()
 {
@@ -147,7 +147,7 @@ void PIT_Handler()
 	__asm__ __volatile__("IRET") ;
 }
 
-__volatile__ unsigned PIT_RoundSleepTime(__volatile__ unsigned uiSleepTime)
+unsigned PIT_RoundSleepTime(__volatile__ unsigned uiSleepTime)
 {
 	if((uiSleepTime % 10) >= 5)
 		return uiSleepTime / 10 + 1 ;

@@ -44,28 +44,28 @@ extern unsigned RAM_SIZE ;
 
 #define MemUtil_SetDS(/*unsigned short*/ usSelector) \
 {\
-__asm__ __volatile__("pushw %0" : : "rm"(usSelector)) ; \
+__asm__ __volatile__("pushw %0" : : "rm"((unsigned short)usSelector)) ; \
 __asm__ __volatile__("popw %ds") ; \
 /*__asm__ __volatile__("movw %%ss:%0, %%ds" : : "m"(usSelector)); \*/\
 }
 
 #define MemUtil_SetES(/*unsigned short*/ usSelector) \
 {\
-__asm__ __volatile__("pushw %0" : : "rm"(usSelector)) ; \
+__asm__ __volatile__("pushw %0" : : "rm"((unsigned short)usSelector)) ; \
 __asm__ __volatile__("popw %es") ; \
 /*__asm__ __volatile__("movw %%ss:%0, %%es" : : "m"(usSelector)); \*/\
 }
 
 #define MemUtil_SetFS(/*unsigned short*/ usSelector) \
 {\
-__asm__ __volatile__("pushw %0" : : "rm"(usSelector)) ; \
+__asm__ __volatile__("pushw %0" : : "rm"((unsigned short)usSelector)) ; \
 __asm__ __volatile__("popw %fs") ; \
 /*__asm__ __volatile__("movw %%ss:%0, %%fs" : : "m"(usSelector)); \*/\
 }
 
 #define MemUtil_SetGS(/*unsigned short*/ usSelector) \
 {\
-__asm__ __volatile__("pushw %0" : : "rm"(usSelector)) ; \
+__asm__ __volatile__("pushw %0" : : "rm"((unsigned short)usSelector)) ; \
 __asm__ __volatile__("popw %gs") ; \
 /*__asm__ __volatile__("movw %%ss:%0, %%gs" : : "m"(usSelector)); \*/\
 }

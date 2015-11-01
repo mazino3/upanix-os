@@ -13,59 +13,8 @@
 #																			 
 #	 You should have received a copy of the GNU General Public License
 #	 along with this program.  If not, see <http://www.gnu.org/licenses/
-CXX = i686-elf-g++
-
 MOS_HOME = $(shell pwd)
 
-#LIBMTERM = ${MOS_HOME}/libmterm
-INCLUDE = -I./ \
--I${MOS_HOME}/bin -I${MOS_HOME}/kernel \
--I${MOS_HOME}/process \
--I${MOS_HOME}/display \
-\
--I${MOS_HOME}/kernelprocs/console \
--I${MOS_HOME}/kernelprocs/session \
--I${MOS_HOME}/kernelprocs \
-\
--I${MOS_HOME}/drivers/floppy \
--I${MOS_HOME}/drivers/keyboard \
--I${MOS_HOME}/drivers/mouse \
--I${MOS_HOME}/drivers/bus \
--I${MOS_HOME}/drivers/ide \
--I${MOS_HOME}/drivers/ide/vendorspec \
--I${MOS_HOME}/drivers/usb/ \
--I${MOS_HOME}/drivers/usb/disk \
--I${MOS_HOME}/drivers/net \
--I${MOS_HOME}/drivers/ \
-\
--I${MOS_HOME}/util \
--I${MOS_HOME}/memory \
--I${MOS_HOME}/filesystem \
--I${MOS_HOME}/users \
--I${MOS_HOME}/exeparser \
--I${MOS_HOME}/syscall \
--I${MOS_HOME}/resource \
-\
--I${MOS_HOME}/testsuite \
-\
--I${MOS_HOME}/libc/include \
--I${MOS_HOME}/libc/sysdeps/mos/common/ \
--I${MOS_HOME}/libc/sysdeps/mos/common/bits \
-\
--I${MOS_HOME}/libm/include \
--I${MOS_HOME}/libm/include/bits \
-\
--I${MOS_HOME}/libmcpp/include \
--I${MOS_HOME}/libmcpp/ds \
--I${MOS_HOME}/libmcpp/mem
-
-#CPP_FLAGS =  -c -O2 -Wall -Wextra -ffreestanding -nodefaultlibs -nostdlib -nostartfiles \
-#						-fno-threadsafe-statics -fno-exceptions -fno-rtti -fpermissive ${INCLUDE}
-CPP_FLAGS= -c -O0 -std=c++11 -Wall -Wextra -ffreestanding -nodefaultlibs -nostdlib -nostartfiles -nostdinc \
--nostdinc++ -fno-default-inline -fno-common -fno-non-call-exceptions -fno-exceptions -fno-rtti \
--fno-threadsafe-statics -fpermissive ${INCLUDE}
-export CPP_FLAGS
-export CXX
 export MOS_HOME
 
 BIN = ${MOS_HOME}/bin
