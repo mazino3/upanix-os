@@ -113,8 +113,8 @@ flat:
 	cd ${OSUTILS} && make
 	cd ${TESTSUITE} && make 
 #	cd ${LIBMTERM} && make
-	cd ${LIBC} && ./run_make.sh
-	cd ${LIBMCPP} && ./run_make.sh
+	cd ${LIBC} && make
+	cd ${LIBMCPP} && make
 	#cd ${LIBM} && make
 	
 	@make -f Makefile.act flat
@@ -136,8 +136,8 @@ aout:
 	cd ${OSUTILS} && make
 	cd ${TESTSUITE} && make 
 #	cd ${LIBMTERM} && make
-	cd ${LIBC} && ./run_make.sh
-	cd ${LIBMCPP} && ./run_make.sh
+	cd ${LIBC} && make
+	cd ${LIBMCPP} && make
 	#cd ${LIBM} && make
 
 	@make -f Makefile.act aout
@@ -175,8 +175,8 @@ clean:
 	cd ${OSUTILS} && make clean
 	cd ${TESTSUITE} && make clean
 #	cd ${LIBMTERM} && make clean
-	cd ${LIBC} && ./run_make.sh clean
-	cd ${LIBMCPP} && ./run_make.sh clean
+	cd ${LIBC} && make clean
+	cd ${LIBMCPP} && make clean
 	#cd ${LIBM} && make clean
 
 distclean:
@@ -196,8 +196,8 @@ distclean:
 	cd ${OSUTILS} && make distclean
 	cd ${TESTSUITE} && make distclean
 #	cd ${LIBMTERM} && make distclean
-	cd ${LIBC} && ./run_make.sh distclean
-	cd ${LIBMCPP} && ./run_make.sh distclean
+	cd ${LIBC} && make distclean
+	cd ${LIBMCPP} && make distclean
 	#cd ${LIBM} && make distclean
 
 	rm -f ${MOS_OUTPUT_FLAT}

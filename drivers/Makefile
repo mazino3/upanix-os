@@ -14,12 +14,13 @@
 #	 You should have received a copy of the GNU General Public License
 #	 along with this program.  If not, see <http://www.gnu.org/licenses/
 CXX = ${COMPILER}
-
 INCLUDE = ${INCLUDES}
+CPPFLAGS = ${CPP_FLAGS} ${INCLUDE}
 
-drivers:
-	@${CXX} ${INCLUDE} -M *.cpp > depend.d
-	@make -f Makefile.act
+DEPS := $(shell ${CXX} ${INCLUDE} -M *.cpp > depend.d)
+OBJS := $(patsubst %.cpp,%.o,$(wildcard *.cpp))
+
+build: ${OBJS}
 	cd floppy && make
 	cd keyboard && make
 	cd mouse && make
@@ -27,6 +28,8 @@ drivers:
 	cd ide && make 
 	cd usb && make
 	cd net && make
+
+include depend.d
 
 clean:
 	rm -f *.o

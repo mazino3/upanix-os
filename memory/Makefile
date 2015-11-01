@@ -14,12 +14,22 @@
 #	 You should have received a copy of the GNU General Public License
 #	 along with this program.  If not, see <http://www.gnu.org/licenses/
 CXX = ${COMPILER}
-
+ASM = nasm
 INCLUDE = ${INCLUDES}
+CPPFLAGS = ${CPP_FLAGS} ${INCLUDE}
 
-memory: 
-	@${CXX} ${INCLUDE} -M *.cpp > depend.d
-	@make -f Makefile.act
+DEPS := $(shell ${CXX} ${INCLUDE} -M *.cpp > depend.d)
+OBJS := $(patsubst %.cpp,%.o,$(wildcard *.cpp))
+
+MEMORY_ASM_SRC = Mem.asm
+MEMORY_ASM_OBJ = Mem.o
+
+build: ${OBJS} ${MEMORY_ASM_OBJ}
+
+include depend.d
+
+${MEMORY_ASM_OBJ}: ${MEMORY_ASM_SRC}
+	${ASM} -felf ${MEMORY_ASM_SRC}
 
 clean:
 	rm -f *.o

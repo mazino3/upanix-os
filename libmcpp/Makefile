@@ -13,16 +13,23 @@
 #																			 
 #	 You should have received a copy of the GNU General Public License
 #	 along with this program.  If not, see <http://www.gnu.org/licenses/
-
+CXX = ${COMPILER}
 INCLUDE = ${INCLUDES}
-CPPFLAGS =  ${CPP_FLAGS} ${INCLUDE}
+CPPFLAGS = ${CPP_FLAGS} ${INCLUDE}
 
-libmcpp:
+MOS_LIBMCPP_OBJS = \
+	./ds/BTree.o \
+	./mem/Alloc.o
+
+build: subdir libmcpp.a
+
+subdir:
 	cd ds && make
 	cd mem && make
 
-	@make -f Makefile.act
-	
+libmcpp.a: ${MOS_LIBMCPP_OBJS}
+	ar -r libmcpp.a ${MOS_LIBMCPP_OBJS}
+
 clean:
 	cd ds && make clean
 	cd mem && make clean
@@ -30,6 +37,4 @@ clean:
 distclean:
 	cd ds && make distclean
 	cd mem && make distclean
-
 	rm -f libmcpp.a
-

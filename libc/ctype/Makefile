@@ -20,7 +20,7 @@ CPPFLAGS = ${CPP_FLAGS} ${INCLUDE}
 DEPS := $(shell	${CXX} ${INCLUDE} -M *.cpp > depend.d)
 OBJS := $(patsubst %.cpp,%.o,$(wildcard *.cpp))
 
-ctype_: ${OBJS}
+build: ${OBJS}
 
 include depend.d
 

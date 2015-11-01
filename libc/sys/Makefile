@@ -15,10 +15,14 @@
 #	 along with this program.  If not, see <http://www.gnu.org/licenses/
 CXX = ${COMPILER}
 INCLUDE = ${INCLUDES}
+CPPFLAGS = ${CPP_FLAGS} ${INCLUDE}
 
-sys: 
-	@${CXX} ${INCLUDE} -M *.cpp > depend.d
-	@make -f Makefile.act
+DEPS := $(shell ${CXX} ${INCLUDE} -M *.cpp > depend.d)
+OBJS := $(patsubst %.cpp,%.o,$(wildcard *.cpp))
+
+build: ${OBJS}
+
+include depend.d
 
 clean:
 	rm -f *.o
