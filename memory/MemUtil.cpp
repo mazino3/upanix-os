@@ -79,7 +79,7 @@ unsigned MemUtil_GetSP()
 	unsigned uiSP ;
 //	__asm__ __volatile__("pushw %ss") ;
 //	__asm__ __volatile__("popw %0" : "=g"(usSelector):) ;
-	__asm__ __volatile__("movl %%sp, %%ss:%0" : "=m"(uiSP) : );
+	__asm__ __volatile__("movl %%esp, %%ss:%0" : "=m"(uiSP) : );
 	return uiSP ;
 }
 

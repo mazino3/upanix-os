@@ -276,7 +276,7 @@ void _stdio_validate_FILE(const FILE *stream)
 	assert(((unsigned int)(stream->__user_locking)) <= 2);
 #endif
 
-#warning Define a constant for minimum possible valid __filedes?
+//#warning Define a constant for minimum possible valid __filedes?
 	assert(stream->__filedes >= -3);
 
 	if (stream->__filedes < 0) {

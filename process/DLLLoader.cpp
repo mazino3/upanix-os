@@ -46,8 +46,7 @@ static int DLLLoader_GetFreeProcessDLLEntry()
 {
 	ProcessSharedObjectList* pProcessSharedObjectList = (ProcessSharedObjectList*)(PROCESS_DLL_PAGE_ADDR - GLOBAL_DATA_SEGMENT_BASE) ;
 
-	unsigned i ;
-	for(i = 0; i < DLLLoader_iNoOfProcessSharedObjectList; i++)
+	for(int i = 0; i < DLLLoader_iNoOfProcessSharedObjectList; i++)
 	{
 		if(pProcessSharedObjectList[i].szName[0] == '\0')
 			return i ;
@@ -104,8 +103,7 @@ int DLLLoader_GetProcessSharedObjectListIndexByName(const char* szDLLName)
 {
 	ProcessSharedObjectList* pProcessSharedObjectList = (ProcessSharedObjectList*)(PROCESS_DLL_PAGE_ADDR - GLOBAL_DATA_SEGMENT_BASE) ;
 
-    unsigned i ;
-	for(i = 0; i < DLLLoader_iNoOfProcessSharedObjectList; i++)
+	for(int i = 0; i < DLLLoader_iNoOfProcessSharedObjectList; i++)
 	{
 		if(String_Compare(pProcessSharedObjectList[i].szName, szDLLName) == 0)
 			return i ;
@@ -118,8 +116,7 @@ ProcessSharedObjectList* DLLLoader_GetProcessSharedObjectListByName(const char* 
 {
 	ProcessSharedObjectList* pProcessSharedObjectList = (ProcessSharedObjectList*)(PROCESS_DLL_PAGE_ADDR - GLOBAL_DATA_SEGMENT_BASE) ;
 
-    unsigned i ;
-	for(i = 0; i < DLLLoader_iNoOfProcessSharedObjectList; i++)
+	for(int i = 0; i < DLLLoader_iNoOfProcessSharedObjectList; i++)
 	{
 		if(String_Compare(pProcessSharedObjectList[i].szName, szDLLName) == 0)
 			return &pProcessSharedObjectList[i] ;
@@ -142,9 +139,8 @@ int DLLLoader_GetRelativeDLLStartAddress(const char* szDLLName)
 {
 	ProcessSharedObjectList* pProcessSharedObjectList = (ProcessSharedObjectList*)(PROCESS_DLL_PAGE_ADDR - GLOBAL_DATA_SEGMENT_BASE) ;
 
-    int iRelDLLStartAddress = 0 ;
-	unsigned i ;
-	for(i = 0; i < DLLLoader_iNoOfProcessSharedObjectList; i++)
+  int iRelDLLStartAddress = 0 ;
+	for(int i = 0; i < DLLLoader_iNoOfProcessSharedObjectList; i++)
 	{
 		if(String_Compare(pProcessSharedObjectList[i].szName, szDLLName) == 0)
 			return iRelDLLStartAddress ;
@@ -218,7 +214,7 @@ byte DLLLoader_LoadELFDLL(const char* szDLLName, const char* szJustDLLName, Proc
 	unsigned pRealELFSectionHeaderAddr = a + b + c - GLOBAL_DATA_SEGMENT_BASE ;
 
 	unsigned uiCopySize = mELFParser.CopyELFSectionHeader((ELF32SectionHeader*)pRealELFSectionHeaderAddr) ;
-	unsigned uiCopySize1 = mELFParser.CopyELFSecStrTable((char*)(pRealELFSectionHeaderAddr + uiCopySize)) ;
+	mELFParser.CopyELFSecStrTable((char*)(pRealELFSectionHeaderAddr + uiCopySize)) ;
 
 	byte* bDLLImage = (byte*)DMM_AllocateForKernel(sizeof(char) * uiMemImageSize) ;
 
@@ -227,8 +223,7 @@ byte DLLLoader_LoadELFDLL(const char* szDLLName, const char* szJustDLLName, Proc
 		DMM_DeAllocateForKernel((unsigned)bDLLImage) ;
 		DMM_DeAllocateForKernel((unsigned)bDLLSectionImage) ;
 
-		unsigned i ;
-		for(i = 0; i < pProcessSharedObjectList[iProcessDLLEntryIndex].uiNoOfPages; i++)
+		for(unsigned i = 0; i < pProcessSharedObjectList[iProcessDLLEntryIndex].uiNoOfPages; i++)
 			MemManager::Instance().DeAllocatePhysicalPage(pProcessSharedObjectList[iProcessDLLEntryIndex].uiAllocatedPageNumbers[i]) ;
 
 		return DLLLoader_FAILURE ;

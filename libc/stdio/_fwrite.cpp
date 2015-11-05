@@ -43,7 +43,7 @@ size_t __stdio_fwrite(const unsigned char * __restrict buffer, size_t bytes, reg
 		}
 
 /* 	RETRY: */
-		if (bytes <= __STDIO_STREAM_BUFFER_WAVAIL(stream)) 
+		if (bytes <= (size_t)__STDIO_STREAM_BUFFER_WAVAIL(stream)) 
 		{
 			memcpy(stream->__bufpos, buffer, bytes);
 			stream->__bufpos += bytes;

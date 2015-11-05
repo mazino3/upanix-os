@@ -423,6 +423,8 @@ extern int _ppfs_parsespec(ppfs_t *ppfs); /* parses specifier */
 extern void _store_inttype(void *dest, int desttype, uintmax_t val);
 extern uintmax_t _load_inttype(int desttype, const void *src, int uflag);
 
+static char _local_null_str[] = "(null)";
+static char _local_nil_str[] = "(nil)";
 /**********************************************************************/
 #ifdef L_parse_printf_format
 
@@ -788,7 +790,7 @@ static int _promoted_size(int argtype)
 	return type_sizes[(int)(p - type_codes)];
 }
 
-static int _is_equal_or_bigger_arg(int curtype, int newtype)
+__attribute__((unused)) static int _is_equal_or_bigger_arg(int curtype, int newtype)
 {
 	/* Quick test */
 	if (newtype == __PA_NOARG) {
@@ -1203,7 +1205,7 @@ static size_t _fp_out_narrow(FILE *fp, intptr_t type, intptr_t len, intptr_t buf
 	if (type & 0x80) {			/* Some type of padding needed. */
 		int buflen = strlen((const char *) buf);
 		if ((len -= buflen) > 0) {
-			if ((r = _charpad(fp, (type & 0x7f), len)) != len) {
+			if ((r = _charpad(fp, (type & 0x7f), len)) != (size_t)len) {
 				return r;
 			}
 		}
@@ -1567,7 +1569,7 @@ static int _do_one_spec(FILE * __restrict stream,
 				if (ppfs->conv_num == CONV_X) {
 					prefix_num = PREFIX_UPR_X;
 				}
-				if ((ppfs->conv_num == CONV_o) && (numfill <= SLEN)) {
+				if ((ppfs->conv_num == CONV_o) && ((size_t)numfill <= SLEN)) {
 					numfill = ((*s == '0') ? 1 : SLEN + 1);
 				}
 			}
@@ -1576,7 +1578,7 @@ static int _do_one_spec(FILE * __restrict stream,
 					prefix_num = PREFIX_NONE;
 				}
 				if (ppfs->conv_num == CONV_p) {/* null pointer */
-					s = "(nil)";
+					s = _local_nil_str;
 #ifdef L_vfwprintf
 					SLEN =
 #endif
@@ -1589,7 +1591,7 @@ static int _do_one_spec(FILE * __restrict stream,
 					slen = 0;
 				}
 			}
-			numfill = ((numfill > SLEN) ? numfill - SLEN : 0);
+			numfill = (((size_t)numfill > SLEN) ? numfill - SLEN : 0);
 		} else if (ppfs->conv_num <= CONV_A) {	/* floating point */
 #ifdef __STDIO_PRINTF_FLOAT
 			ssize_t nf;
@@ -1654,7 +1656,7 @@ static int _do_one_spec(FILE * __restrict stream,
 #ifdef __UCLIBC_HAS_WCHAR__
 				NULL_STRING:
 #endif
-					s = "(null)";
+					s = _local_null_str;
 					slen = 6;
 				}
 			} else {			/* char */
@@ -1761,7 +1763,7 @@ static int _do_one_spec(FILE * __restrict stream,
 			if (prefix_num != PREFIX_NONE) {
 				t += ((prefix_num < PREFIX_LWR_X) ? 1 : 2);
 			}
-			numpad = ((ppfs->info.width > t) ? (ppfs->info.width - t) : 0);
+			numpad = (((size_t)ppfs->info.width > t) ? (ppfs->info.width - t) : 0);
 			*count += t + numpad;
 		}
 		if (padchar == '0') { /* TODO: check this */
@@ -1771,13 +1773,13 @@ static int _do_one_spec(FILE * __restrict stream,
 
 		/* Now handle the output itself. */
 		if (!PRINT_INFO_FLAG_VAL(&(ppfs->info),left)) {
-			if (_charpad(stream, ' ', numpad) != numpad) {
+			if (_charpad(stream, ' ', numpad) != (size_t)numpad) {
 				return -1;
 			}
 			numpad = 0;
 		}
 		OUTPUT(stream, prefix + prefix_num);
-		if (_charpad(stream, '0', numfill) != numfill) {
+		if (_charpad(stream, '0', numfill) != (size_t)numfill) {
 			return -1;
 		}
 
@@ -1822,7 +1824,7 @@ static int _do_one_spec(FILE * __restrict stream,
 		}
 
 #endif /* L_vfprintf */
-		if (_charpad(stream, ' ', numpad) != numpad) {
+		if (_charpad(stream, ' ', numpad) != (size_t)numpad) {
 			return -1;
 		}
 	}

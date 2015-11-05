@@ -749,7 +749,7 @@ ssize_t _fpmaxtostr(FILE * fp, __fpmax_t x, struct printf_info *info,
 
 #endif /* __UCLIBC_HAS_GLIBC_DIGIT_GROUPING__ */
 		{						/* NOTE: Remember 'else' above! */
-			if (fp_outfunc(fp, *ppc, ppc[1], ppc[2]) != ppc[1]) {
+			if (fp_outfunc(fp, *ppc, ppc[1], ppc[2]) != (size_t)ppc[1]) {
 				return -1;
 			}
 		}

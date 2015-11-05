@@ -138,7 +138,7 @@ static unsigned int fillrand(unsigned char *buf, unsigned int len)
 
 static void brain_damaged_fillrand(unsigned char *buf, unsigned int len)
 {
-	int i, k;
+	int k;
 	uint32_t high, low, rh;
 	static uint64_t value;
 	RTCTime rtcTime ;
@@ -146,7 +146,7 @@ static void brain_damaged_fillrand(unsigned char *buf, unsigned int len)
 	value += ((uint64_t) rtcTime.bSecond << 16) ^ rtcTime.bSecond ^ getpid();
 	low = value & UINT32_MAX;
 	high = value >> 32;
-	for (i = 0; i < len; ++i) {
+	for (unsigned i = 0; i < len; ++i) {
 		rh = high % 62;
 		high /= 62;
 #define L ((UINT32_MAX % 62 + 1) % 62)
@@ -178,7 +178,7 @@ int __gen_tempname (char *tmpl, int kind)
 {
     char *XXXXXX;
     unsigned int k;
-    int len, i, count, fd, save_errno = errno;
+    int len, count, fd, save_errno = errno;
     unsigned char randomness[6];
 
     len = strlen (tmpl);
@@ -196,7 +196,7 @@ int __gen_tempname (char *tmpl, int kind)
 		/* if random device nodes failed us, lets use the braindamaged ver */
 		brain_damaged_fillrand(randomness, sizeof(randomness));
     }
-    for (i = 0 ; i < sizeof(randomness) ; i++) {
+    for (size_t i = 0 ; i < sizeof(randomness) ; i++) {
 	k = ((randomness[i]) % 62);
 	XXXXXX[i] = letters[k];
     }

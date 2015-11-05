@@ -67,7 +67,7 @@ __volatile__ unsigned uiP9)
 				char* szFile = KERNEL_ADDR(bDoAddrTranslation, char*, uiP1) ;
 				char** szArgList = KERNEL_ADDR(bDoAddrTranslation, char**, uiP3) ;
 
-				for(int i = 0; i < uiP2; i++)
+				for(unsigned i = 0; i < uiP2; i++)
 					szArgList[i] = KERNEL_ADDR(bDoAddrTranslation, char*, szArgList[i]) ;
 
 				*piRetVal = KC::MKernelService().RequestProcessExec(szFile, uiP2, (const char**)szArgList) ;

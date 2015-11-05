@@ -38,8 +38,6 @@ static int SessionManager_List[MAX_NO_OF_SESSIONS] ;
 static byte SessionManager_ValidateUser(const char* szUserName, const char* szPassword, const UserTabEntry* pUserTabEntry) ;
 static byte SessionManager_GetUserEntry(const char* szUserName, int* iUserID, UserTabEntry** pUserTabEntry) ;
 static byte SessionManager_LoadShell(int* iShellProcessID, int iSessionUserID) ;
-static void SessionManager_Exit() ;
-
 static byte SessionManager_GetUserEntry(const char* szUserName, int* iUserID, UserTabEntry** pUserTabEntry)
 {
 	*iUserID = UserManager_GetUserEntryByName(szUserName, pUserTabEntry) ;
@@ -78,11 +76,6 @@ static byte SessionManager_LoadShell(int* iShellProcessID, int iSessionUserID)
 	KC::MDisplay().Message(" Done.", Display::WHITE_ON_BLACK()) ;
 	return true ;
 }	
-
-static void SessionManager_Exit()
-{
-	ProcessManager_EXIT() ;
-}
 
 /***********************************************************************************/
 

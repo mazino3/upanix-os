@@ -13,12 +13,8 @@
 #																			 
 #	 You should have received a copy of the GNU General Public License
 #	 along with this program.  If not, see <http://www.gnu.org/licenses/
-CXX = ${COMPILER}
 ASM = nasm
-INCLUDE = ${INCLUDES}
-CPPFLAGS = ${CPP_FLAGS} ${INCLUDE}
-
-DEPS := $(shell ${CXX} ${INCLUDE} -M *.cpp > depend.d)
+DEPS := $(shell $(MOS_HOME)/depend.sh)
 OBJS := $(patsubst %.cpp,%.o,$(wildcard *.cpp))
 
 MEMORY_ASM_SRC = Mem.asm

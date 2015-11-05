@@ -18,7 +18,7 @@
 
 int remove(register const char *filename)
 {
-	int saved_errno = errno;
+//	int saved_errno = errno;
 	int rv;
 
 	// MOSS

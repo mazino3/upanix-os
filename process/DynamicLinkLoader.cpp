@@ -148,12 +148,11 @@ void DynamicLinkLoader_UnInitialize(ProcessAddressSpace* processAddressSpace)
 
 	ProcessSharedObjectList* pSharedObjectList = (ProcessSharedObjectList*)((uiPageNumber * PAGE_SIZE) - GLOBAL_DATA_SEGMENT_BASE) ;
 
-	unsigned i, j ;
-	for(i = 0; i < DLLLoader_iNoOfProcessSharedObjectList; i++)
+	for(int i = 0; i < DLLLoader_iNoOfProcessSharedObjectList; i++)
 	{
 		if(pSharedObjectList[i].szName[0] != '\0')
 		{
-			for(j = 0; j < pSharedObjectList[i].uiNoOfPages; j++)
+			for(unsigned j = 0; j < pSharedObjectList[i].uiNoOfPages; j++)
 			{
 				MemManager::Instance().DeAllocatePhysicalPage(pSharedObjectList[i].uiAllocatedPageNumbers[j]) ;
 			}
@@ -376,7 +375,7 @@ byte DynamicLinkLoader_GetSymbolOffset(const char* szJustDLLName, const char* sz
 
 	unsigned* pHashTable = (unsigned*)(bDLLImage + pHashSectionHeader->sh_addr) ;
 	unsigned uiNoOfBuckets = pHashTable[0] ;
-	unsigned uiNoOfChains = pHashTable[1] ;
+	__attribute__((unused)) unsigned uiNoOfChains = pHashTable[1] ;
 	unsigned* pBucket = (unsigned*)((unsigned*)pHashTable + 2) ;
 	unsigned* pChain = (unsigned*)((unsigned*)pHashTable + 2 + uiNoOfBuckets) ;
 	

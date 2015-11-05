@@ -98,7 +98,9 @@ void MemManager::PageFaultHandlerTaskGate()
 	__asm__ __volatile__("iret") ;
 }
 
-MemManager::MemManager() : RAM_SIZE(MultiBoot::Instance().GetRamSize()), m_uiKernelAUTAddress(NULL)
+MemManager::MemManager() : 
+	m_uiKernelAUTAddress(NULL),
+	RAM_SIZE(MultiBoot::Instance().GetRamSize())
 {
 	if(BuildRawPageMap())
 	{

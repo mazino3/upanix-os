@@ -211,7 +211,7 @@ ProcessAllocator_AllocateAddressSpaceForKernel(ProcessAddressSpace* processAddre
 	if(iStackBlockID < 0)
 		return ProcessAllocator_FAILURE ;
 
-	*uiStackAddress = KERNEL_PROCESS_PDE_ID * PAGE_TABLE_ENTRIES * PAGE_SIZE + iStackBlockID * PROCESS_KERNEL_STACK_PAGES * PAGE_SIZE ;
+	*uiStackAddress = KERNEL_PROCESS_PDE_ID * PAGE_TABLE_ENTRIES * PAGE_SIZE + iStackBlockID * PROCESS_KERNEL_STACK_PAGES * PAGE_SIZE;
 
 	processAddressSpace->iKernelStackBlockID = iStackBlockID ;
 

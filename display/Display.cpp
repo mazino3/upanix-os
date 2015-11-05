@@ -104,7 +104,7 @@ int Display::ClearScreen()
 
 int Display::NextLine()
 {
-	unsigned curLine = (unsigned int)(DisplayManager::GetCurrentCursorPosition() / m_iMaxCols) + 1 ;
+	int curLine = (DisplayManager::GetCurrentCursorPosition() / m_iMaxCols) + 1 ;
 
 	if(curLine < m_iMaxRows)
 	{
@@ -167,9 +167,7 @@ int Display::Message(const __volatile__ char* message, const byte& rawAttr)
 
 int Display::nMessage(const __volatile__ char* message, int len, const Display::Attribute& attr)
 {
-	__volatile__ register unsigned i ;
-
-	for(i = 0; i < len; i++)
+	for(int i = 0; i < len; i++)
 		Character(message[i], attr) ;
 
 	return 0;

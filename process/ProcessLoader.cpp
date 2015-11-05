@@ -140,7 +140,7 @@ byte ProcessLoader_LoadELFExe(const char* szProcessName, ProcessAddressSpace* pP
 	}
 	
 	unsigned uiCopySize = mELFParser.CopyELFSectionHeader((ELF32SectionHeader*)pRealELFSectionHeadeAddr) ;
-	unsigned uiCopySize1 = mELFParser.CopyELFSecStrTable((char*)(pRealELFSectionHeadeAddr + uiCopySize)) ;
+	mELFParser.CopyELFSecStrTable((char*)(pRealELFSectionHeadeAddr + uiCopySize)) ;
 
 	byte* bProcessImage = (byte*)DMM_AllocateForKernel(sizeof(char) * uiMemImageSize) ;
 
@@ -331,11 +331,12 @@ void ProcessLoader_PushProgramInitStackData(unsigned uiPDEAddr, unsigned uiNoOfP
 	uiPageAddress = uiPageAddress + PAGE_SIZE - GLOBAL_DATA_SEGMENT_BASE - *uiProcessEntryStackSize ;
 	
 	int iStackIndex = 0 ;
-	((unsigned*)(uiPageAddress))[iStackIndex++] = uiProgramStartAddress ;
-	((unsigned*)(uiPageAddress))[iStackIndex++] = uiInitRelocAddress ;
-	((unsigned*)(uiPageAddress))[iStackIndex++] = uiTermRelocAddress ;
-	((unsigned*)(uiPageAddress))[iStackIndex++] = iNumberOfParameters ;
-	((unsigned*)(uiPageAddress))[iStackIndex++] = uiStackTopAddress - *uiProcessEntryStackSize + (iStackIndex + 1) * 4;
+	((unsigned*)(uiPageAddress))[iStackIndex++] = uiProgramStartAddress;
+	((unsigned*)(uiPageAddress))[iStackIndex++] = uiInitRelocAddress;
+	((unsigned*)(uiPageAddress))[iStackIndex++] = uiTermRelocAddress;
+	((unsigned*)(uiPageAddress))[iStackIndex++] = iNumberOfParameters;
+	int argLength = (iStackIndex + 1) * 4;
+	((unsigned*)(uiPageAddress))[iStackIndex++] = uiStackTopAddress - *uiProcessEntryStackSize + argLength;
 	
 	uiArgumentListSize = 0 ;
 	for(i = 0; i < iNumberOfParameters; i++)

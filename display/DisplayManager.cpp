@@ -242,7 +242,7 @@ byte DisplayManager::CheckMouseCursor(int iPos, byte ch)
 {
 	if(iPos % 2)
 	{
-		unsigned curPos = iPos / 2 ;
+		int curPos = iPos / 2 ;
 		if(GetMouseCursor().GetCurPos() == curPos)
 		{
 			GetMouseCursor().SetOrigAttr(ch) ;

@@ -24,7 +24,9 @@ PROCINIT_OUTPUT = .procinit
 REALMODE_SRC = realmode.asm
 REALMODE_OUTPUT = .realmode
 
-osutils: ${DLL_OUTPUT} ${PROCINIT_OUTPUT} ${REALMODE_OUTPUT}
+OUTPUTS := ${DLL_OUTPUT} ${PROCINIT_OUTPUT} ${REALMODE_OUTPUT}
+
+osutils: ${OUTPUTS}
 
 ${DLL_OUTPUT}: ${DLL_SRC}
 	${ASM} -fbin ${DLL_SRC} -o ${DLL_OUTPUT}
@@ -37,8 +39,9 @@ ${REALMODE_OUTPUT}: ${REALMODE_SRC}
 
 clean:
 	rm -f *.o
+	rm -f ${OUTPUTS}
 
 distclean:
 	rm -f *.o
-	rm -f ${DLL_OUTPUT} ${PROCINIT_OUTPUT} ${REALMODE_OUTPUT}
+	rm -f ${OUTPUTS}
 

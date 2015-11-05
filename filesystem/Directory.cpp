@@ -351,12 +351,12 @@ byte Directory_GetDirectoryContent(const char* szFileName, ProcessAddressSpace* 
 	}
 
 	unsigned uiCurrentSectorID ;
-	unsigned uiScanDirCount ;
+	int iScanDirCount = 0;
 	byte bSectorPosIndex ;
 
 	FileSystem_DIR_Entry* curDir ;
 
-	uiScanDirCount = 0 ;
+	iScanDirCount = 0 ;
 	uiCurrentSectorID = dirFile->uiStartSectorID ;
 	*iListSize = dirFile->uiSize ;
 
@@ -386,9 +386,9 @@ byte Directory_GetDirectoryContent(const char* szFileName, ProcessAddressSpace* 
 			else
 			{
 				MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)curDir, MemUtil_GetDS(), 
-								(unsigned)&(pAddress[uiScanDirCount]), sizeof(FileSystem_DIR_Entry)) ;
-				uiScanDirCount++ ;
-				if(uiScanDirCount >= *iListSize)
+								(unsigned)&(pAddress[iScanDirCount]), sizeof(FileSystem_DIR_Entry)) ;
+				iScanDirCount++ ;
+				if(iScanDirCount >= *iListSize)
 					return Directory_SUCCESS ;
 			}
 		}

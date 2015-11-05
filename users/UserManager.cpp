@@ -70,17 +70,17 @@ static byte UserManager_ValidateUserTableList()
 	if(UserManager_pUsrTabHeader->iNoOfUsers < 0 || UserManager_pUsrTabHeader->iNoOfUsers >= SYS_MAX_USERS || UserManager_pUsrTabHeader->iNextUser < -1 || UserManager_pUsrTabHeader->iNextUser >= SYS_MAX_USERS) 
 		return UserManager_ERR_INVALID_USR_TAB_HEADER ;
 
-	unsigned i, uiUserCount = 0 ;
+	int iUserCount = 0 ;
 		
-	for(i = 0; i < SYS_MAX_USERS; i++)
+	for(int i = 0; i < SYS_MAX_USERS; i++)
 	{
 		if(((int*)&UserManager_UseTabList[i])[0] == -1 || UserManager_UseTabList[i].bType == NO_USER)
 			continue ;
 
-		uiUserCount++ ;
+		iUserCount++ ;
 	}
 
-	if(uiUserCount != UserManager_pUsrTabHeader->iNoOfUsers)
+	if(iUserCount != UserManager_pUsrTabHeader->iNoOfUsers)
 		return UserManager_ERR_INVALID_USR_FILE ;
 
 	return UserManager_SUCCESS ;
@@ -226,8 +226,7 @@ byte UserManager_GetUserList(UserTabEntry** pUserTabList, int* iNoOfUsers)
 	if(pAddress == NULL)
 		return UserManager_FAILURE ;
 
-	unsigned i, j ;
-	for(i = 0, j = 0; j < *iNoOfUsers; i++)
+	for(int i = 0, j = 0; j < *iNoOfUsers; i++)
 	{
 		if(((int*)&UserManager_UseTabList[i])[0] == -1 || UserManager_UseTabList[i].bType == NO_USER)
 			continue ;

@@ -61,7 +61,7 @@ int setvbuf(register FILE * __restrict stream, register char * __restrict buf, i
 		size = 0;
 		buf = NULL;
 	} else if (!buf) {
-		if ((__STDIO_STREAM_BUFFER_SIZE(stream) == size) /* Same size or */
+		if (((size_t)__STDIO_STREAM_BUFFER_SIZE(stream) == size) /* Same size or */
 			|| !(buf = (char*)malloc(size)) /* malloc failed, so don't change. */
 			) {
 			goto DONE;

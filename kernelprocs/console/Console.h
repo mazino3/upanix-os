@@ -24,7 +24,7 @@ void	Console_Initialize() ;
 void	Console_StartMOSConsole() ;
 void	Console_DisplayCommandLine() ;
 void	Console_BuildCommand() ;
-void	Console_ProcessCommand(char*) ;
+void	Console_ProcessCommand(const char*) ;
 void	Console_ProcessCommand() ;
 bool	Console_ExecuteCommand(const char* szCommandLine) ;
 

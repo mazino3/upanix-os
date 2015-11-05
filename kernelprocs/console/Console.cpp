@@ -139,7 +139,7 @@ void Console_StartMOSConsole()
 	}
 }
 
-void Console_ProcessCommand(char* cmd)
+void Console_ProcessCommand(const char* cmd)
 {
 	if(!Console_ExecuteCommand(cmd))
 		puts("\n No Such Command\n") ;

@@ -143,7 +143,7 @@ static byte FSManager_AddSectorEntryIntoCache(DriveInfo* pDriveInfo, unsigned ui
 	int iPos ;
 	byte bStatus ;
 
-	if(iSize == pDriveInfo->uiNoOfSectorsInTableCache)
+	if((unsigned)iSize == pDriveInfo->uiNoOfSectorsInTableCache)
 	{
 		RETURN_IF_NOT(bStatus, FSManager_FlushEntries(pDriveInfo, 1), FSManager_SUCCESS) ;
 		iSize = pFSTableCache->iSize ;
@@ -188,7 +188,6 @@ static byte FSManager_LoadFreeSectors(DriveInfo* pDriveInfo)
 		return FSManager_SUCCESS ;
 
 	byte bStatus ;
-	int i, j ;
 
 	DSUtil_Queue* pFreePoolQueue = &pDriveInfo->FSMountInfo.FreePoolQueue ;
 	FileSystem_BootBlock* pFSBootBlock = &pDriveInfo->FSMountInfo.FSBootBlock ;
@@ -210,14 +209,14 @@ static byte FSManager_LoadFreeSectors(DriveInfo* pDriveInfo)
 		pSectorBlockEntryList = pFSTableCache->pSectorBlockEntryList ;
 
 		// First do Cache Lookup
-		for(i = 0; i < iSize; i++)
+		for(int i = 0; i < iSize; i++)
 		{
 			if(bStop)
 				break ;
 
 			uiSectorBlock = pSectorBlockEntryList[i].uiSectorBlock ;
 
-			for(j = 0; j < ENTRIES_PER_TABLE_SECTOR; j++)
+			for(int j = 0; j < ENTRIES_PER_TABLE_SECTOR; j++)
 			{
 				if(!(uiSectorBlock[j] & EOC))
 				{
@@ -238,7 +237,7 @@ static byte FSManager_LoadFreeSectors(DriveInfo* pDriveInfo)
 	int iPos ;
 	unsigned uiBlockSize = 1 ;
 	
-	for(i = 0; i < pFSBootBlock->BPB_FSTableSize; )
+	for(unsigned i = 0; i < pFSBootBlock->BPB_FSTableSize; )
 	{
 		if(bStop)
 			break ;
@@ -259,7 +258,7 @@ static byte FSManager_LoadFreeSectors(DriveInfo* pDriveInfo)
 
 		pTable = (unsigned*)bBuffer ;
 
-		for(j = 0; j < ENTRIES_PER_TABLE_SECTOR * uiBlockSize ; j++)
+		for(unsigned j = 0; j < ENTRIES_PER_TABLE_SECTOR * uiBlockSize ; j++)
 		{
 			if(!(pTable[j] & EOC))
 			{
