@@ -25,4 +25,3 @@ clean:
 
 distclean:
 	rm -f *.o
-	
