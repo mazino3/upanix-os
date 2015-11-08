@@ -13,9 +13,9 @@
 #																			 
 #	 You should have received a copy of the GNU General Public License
 #	 along with this program.  If not, see <http://www.gnu.org/licenses/
-CXX = ${COMPILER}
+CC = ${C_COMPILER}
 INCLUDE = ${INCLUDES}
-CPPFLAGS = ${CPP_FLAGS} ${INCLUDE}
+CFLAGS = ${C_FLAGS} ${INCLUDE}
 
 MOS_LIBC_OBJS = \
 	./stdlib/dtime.o \

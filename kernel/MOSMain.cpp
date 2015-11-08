@@ -51,8 +51,6 @@ int debug_point ;
 
 static int MOSMain_KernelPID ;
 
-extern void Global_Object_Init() ;
-
 void MOSMain_KernelProcess()
 {
 	int pid ;
@@ -74,10 +72,28 @@ void MOSMain_KernelProcess()
 	ProcessManager_EXIT() ;
 }
 
+extern "C" void _cxx_global_init();
+
+void ThrowException()
+{
+	printf("Throwing exception to test exception");
+//	throw "this is a test exception!!";
+}
+
+void TestException()
+{
+//	try 
+//	{
+//		TestException();
+//	}
+//	catch(const char* ex)
+//	{
+//		printf("Error: %s", ex);
+//	}
+}
+
 void Initialize()
 {
-	Global_Object_Init() ;
-
 	debug_point = 0 ;
 
 	KERNEL_MODE = true ;
@@ -88,6 +104,10 @@ void Initialize()
 	ProcFileManager_InitForKernel();
 	MultiBoot::Instance();
 	MemManager::Instance();
+
+	//defined in osutils/crti.s - this is C++ init to call global objects' constructor
+	_cxx_global_init();
+	TestException();
 
 	IDT::Instance() ;
 	PIC::Instance() ;

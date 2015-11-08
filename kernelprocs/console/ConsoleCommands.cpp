@@ -111,6 +111,7 @@ static void ConsoleCommands_Test() ;
 static void ConsoleCommands_Testd() ;
 static void ConsoleCommands_Testv() ;
 static void ConsoleCommands_TestNet() ;
+static void ConsoleCommands_TestCPP() ;
 
 /*****************************************/
 
@@ -173,6 +174,7 @@ static const ConsoleCommand ConsoleCommands_CommandList[] = {
 	{ "testd",		&ConsoleCommands_Testd },
 	{ "testv",		&ConsoleCommands_Testv },
 	{ "testn",		&ConsoleCommands_TestNet },
+	{ "testcpp", &ConsoleCommands_TestCPP },
 	{ "\0",			NULL }
 } ;
 
@@ -1168,7 +1170,7 @@ void ConsoleCommands_Testd()
 
 typedef struct
 {
-	unsigned len ;
+	int len ;
 	unsigned cnt ;
 	unsigned time ;
 	unsigned begin ;
@@ -1195,7 +1197,7 @@ void _UpdateReadStat(unsigned len, bool bFirst)
 	{
 		for(int i = 0; i < 256; i++)
 		{
-			if(read_stat[i].len == len)
+			if((unsigned)read_stat[i].len == len)
 			{
 				read_stat[i].time += (uiTime - read_stat[i].begin) ;
 				break ;
@@ -1208,7 +1210,7 @@ void _UpdateReadStat(unsigned len, bool bFirst)
 	bool bUpdated = false ;
 	for(int i = 0; i < 256; i++)
 	{
-		if(read_stat[i].len == len)
+		if((unsigned)read_stat[i].len == len)
 		{
 			read_stat[i].cnt++ ;
 			read_stat[i].begin = uiTime ;
@@ -1225,7 +1227,7 @@ void _UpdateReadStat(unsigned len, bool bFirst)
 		if(free >= 0 && free < 256)
 		{
 			read_stat[free].len = len ;
-	   		read_stat[free].cnt	= 1 ;
+	 		read_stat[free].cnt	= 1 ;
 			read_stat[free].begin = uiTime ;
 			read_stat[free].time = 0 ;
 		}
@@ -1255,3 +1257,39 @@ void ConsoleCommands_TestNet()
 	PIC::Instance().DisplayIRQList() ;
 	//KC::MNetworkManager() ;
 }
+
+class Global
+{
+	public:
+		Global()
+		{
+			printf("GLOBAL CONSTR\n");
+		}
+		~Global()
+		{
+			printf("GLOBAL DESTR\n");
+			while(1);
+		};
+};
+
+static Global GLOBAL;
+
+//#include <vector>
+void ConsoleCommands_TestCPP()
+{
+//	std::vector<int> x;
+//	std::vector<char> y;
+//	for(int i = 0; i < 10; i++)
+//	{
+//		x.push_back(i);
+//		y.push_back(40 + i);
+//	}
+//
+//	for(int i = 0; i < 10; i++)
+//	{
+//		printf("\n%d -> %c, ", x[i], y[i]);
+//	}
+//	printf("\n");
+Global x;
+}
+

@@ -17,15 +17,10 @@
  */
 #include <stdio.h>
 
-void Global_Object_Init()
-{
-	//flushSector.FlushSector() ;
-}
-
 extern "C"
 {
-	void *__dso_handle = 0; //Attention! Optimally, you should remove the '= 0' part and define this in your asm script.
-
+//	void *__dso_handle = 0; //Attention! Optimally, you should remove the '= 0' part and define this in your asm script.
+//
 	int __cxa_atexit(void (*f)(void *), void* objptr, void* dso)
 	{
 		return 0; 

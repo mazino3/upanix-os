@@ -26,10 +26,9 @@ MOS_OUTPUT_FLAT = ${BIN}/MOS.bin
 MOS_OUTPUT_AOUT = ${BIN}/MOS.aout
 
 MOS_LIBC_A = ./libc/libc.a
-
 MOS_LIBMCPP_A = ./libmcpp/libmcpp.a
-
 MOS_LIBM_A = ./libm/libm.a
+MOS_LIBCXXRT_A = ./libcxxrt/libcxxrt.a
 
 MOS_OBJS = \
 	./kernel/KBInputHandler.o \
@@ -134,10 +133,16 @@ MOS_OBJS = \
 	./testsuite/TestSuite.o \
 \
 	${MOS_LIBC_A} \
-	${MOS_LIBMCPP_A}
+	${MOS_LIBMCPP_A} \
+	${MOS_LIBCXXRT_A} 
+
+CRTBEGIN_OBJ := $(shell $(CXX) -print-file-name=crtbegin.o)
+CRTEND_OBJ := $(shell $(CXX) -print-file-name=crtend.o)
+CRTINIT_OBJ := ./osutils/crti.o ${CRTBEGIN_OBJ}
+CRTFINI_OBJ := ${CRTEND_OBJ} ./osutils/crtn.o
 
 flat:
 	${CXX} -s -o ${MOS_OUTPUT_FLAT} --oformat=binary -Ttext=0 ${FPU_INIT_OBJ} ${MOS_START_OBJ} ${shell find . -name *.o}
 
 aout:
-	${CXX} -o ${MOS_OUTPUT_AOUT} -Tkernel.ld -ffreestanding -O2 -nostdlib ${FPU_INIT_OBJ} ${MOS_START_MAIN_OBJ} ${MOS_OBJS}
+	${CXX} -o ${MOS_OUTPUT_AOUT} -Tkernel.ld -O0 -nostdlib ${FPU_INIT_OBJ} ${MOS_START_MAIN_OBJ} ${CRTINIT_OBJ} ${MOS_OBJS} ${CRTFINI_OBJ} -lgcc

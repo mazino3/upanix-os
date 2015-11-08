@@ -1,4 +1,3 @@
-CXX=i686-elf-g++
 INCLUDE="-I./ \
 -I${MOS_HOME}/bin -I${MOS_HOME}/kernel \
 -I${MOS_HOME}/process \
@@ -38,19 +37,34 @@ INCLUDE="-I./ \
 \
 -I${MOS_HOME}/libmcpp/include \
 -I${MOS_HOME}/libmcpp/ds \
--I${MOS_HOME}/libmcpp/mem"
+-I${MOS_HOME}/libmcpp/mem \
+\
+-I${MOS_HOME}/libstdc++/include/ \
+-I${MOS_HOME}/libstdc++/include/std"
 
-CPPFLAGS="-c -O0 -std=c++11 -Wall -ffreestanding -nodefaultlibs -nostdlib -nostartfiles -nostdinc \
--nostdinc++ -fno-default-inline -fno-common -fno-non-call-exceptions -fno-exceptions -fno-rtti \
--fno-threadsafe-statics -fpermissive -Wno-unused-but-set-variable"
+# -D_GLIBCXX_PROFILE
+
+export CXX=i686-elf-g++
+export CXXFLAGS=" -c -O0 -Wall -ffreestanding -nodefaultlibs -nostdlib -nostartfiles -nostdinc \
+-std=c++11 -nostdinc++ -fexceptions -frtti \
+-fno-threadsafe-statics -fpermissive"
 
 > depend.d
-for i in `ls *.cpp *.c 2> /dev/null`
+for i in `ls *.cpp 2> /dev/null`
 do
 	obj=${i%.*}.o
 	$CXX ${INCLUDE} -M $i >> depend.d
 	echo "\t@echo \"compiling $i...\"" >> depend.d
-	echo "\t@$CXX ${CPPFLAGS} ${INCLUDE} $i -o ${obj}" >> depend.d
+	echo "\t@$CXX ${CXXFLAGS} ${INCLUDE} $i -o ${obj}" >> depend.d
 done
 
+export CC=i686-elf-gcc
+export CFLAGS=" -c -O0 -Wall -ffreestanding -nodefaultlibs -nostdlib -nostartfiles -nostdinc"
 
+for i in `ls *.c 2> /dev/null`
+do
+	obj=${i%.*}.o
+	$CC ${INCLUDE} -M $i >> depend.d
+	echo "\t@echo \"compiling $i...\"" >> depend.d
+	echo "\t@$CC ${CFLAGS} ${INCLUDE} $i -o ${obj}" >> depend.d
+done

@@ -60,17 +60,15 @@ INCLUDES="-I./ \
 
 export INCLUDES
 
-GLOBAL_HEADERS="$MOS_HOME/util/Global.h $MOS_HOME/util/AsmUtil.h"
-export GLOBAL_HEADERS
+export GLOBAL_HEADERS="$MOS_HOME/util/Global.h $MOS_HOME/util/AsmUtil.h"
 
-COMPILER=i686-elf-g++
-export COMPILER
+export COMPILER=i686-elf-g++
+export C_COMPILER=i686-elf-gcc
 
-#CPP_FLAGS=" -c -O2 -Wall -Wextra -ffreestanding -nodefaultlibs -nostdlib -nostartfiles -fno-threadsafe-statics -fno-exceptions -fno-rtti -fpermissive"
-CPP_FLAGS=" -c -O0 -Wall -Wextra -ffreestanding -nodefaultlibs -nostdlib -nostartfiles -nostdinc \
--std=c++11 -nostdinc++ -fno-default-inline -fno-common -fno-non-call-exceptions -fno-exceptions -fno-rtti \
+export CPP_FLAGS=" -c -O0 -Wall -ffreestanding -nodefaultlibs -nostdlib -nostartfiles -nostdinc \
+-std=c++11 -nostdinc++ -fexceptions -frtti \
 -fno-threadsafe-statics -fpermissive"
-export CPP_FLAGS
+export C_FLAGS=" -c -O0 -Wall -ffreestanding -nodefaultlibs -nostdlib -nostartfiles -nostdinc"
 
 #C_FLAGS=" -c -O2 -Wall -ffreestanding -pedantic "
 #C_FLAGS=" -c -O1 -mtune=i386 -Wall -ffreestanding -nodefaultlibs -nostdlib -nostartfiles -nostdinc "  # For compiling with gcc 4. & above

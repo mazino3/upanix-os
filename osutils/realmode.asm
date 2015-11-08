@@ -40,7 +40,7 @@ _start_realmode:
 	savcr0:
 		dd 0			; Storage location for pmode CR0.
 
-_entry
+_entry:
 	cli
 
 	mov dword [pe_stack], esp

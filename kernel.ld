@@ -15,42 +15,47 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
-OUTPUT_FORMAT("elf32-i386", "elf32-i386","elf32-i386")
-OUTPUT_ARCH(i386)
-
-phys	= 0x100000;
-
+/* The bootloader will look at this image and start execution at the symbol
+   designated as the entry point. */
 ENTRY(_start)
+
+/* Tell where the various sections of the object files will be put in the final
+   kernel image. */
 SECTIONS
 {
-	. = phys;
-	.text phys : AT(phys) { 
-		h1 = .;
+	/* Begin putting sections at 1 MiB, a conventional place for kernels to be
+	   loaded at by the bootloader. */
+	. = 1M;
+
+	/* First put the multiboot header, as it is required to be put very early
+	   early in the image or the bootloader won't recognize the file format.
+	   Next we'll put the .text section. */
+	.text BLOCK(4K) : ALIGN(4K)
+	{
+		*(.multiboot)
 		*(.text)
 	}
 
-	.data : AT(phys + ( h2 - h1 ) ) {
-		h2 = .;
-		*(data*)
+	/* Read-only data. */
+	.rodata BLOCK(4K) : ALIGN(4K)
+	{
+		*(.rodata)
 	}
 
-	.bss : AT(phys + (  h3 - h1 ) ) {
-		h3 = .;
-		*(bss*)
+	/* Read-write data (initialized) */
+	.data BLOCK(4K) : ALIGN(4K)
+	{
+		*(.data)
 	}
 
-	.ksymtab :  AT(phys + ( h4 - h1 ) ) {
-		h4 = .;
-		*(ksymtab*)
+	/* Read-write data (uninitialized) and stack */
+	.bss BLOCK(4K) : ALIGN(4K)
+	{
+		*(COMMON)
+		*(.bss)
+		*(.bootstrap_stack)
 	}
-	
-	.rodata : AT(phys + ( h7 - h1 ) ) {
-		h7 = .;
-		*(rodata);
-	}
-	. = ALIGN(4096);
-	_end = .;
-	end =.;
 
-	/DISCARD/ : { *(.comment .note .eh_frame .dtors) }
+	/* The compiler may produce other sections, by default it will put them in
+	   a segment with the same name. Simply add stuff here as needed. */
 }

@@ -13,6 +13,7 @@
 #																			 
 #	 You should have received a copy of the GNU General Public License
 #	 along with this program.  If not, see <http://www.gnu.org/licenses/
+CC = i686-elf-gcc
 ASM = nasm
 
 DLL_SRC = dll.asm 
@@ -24,7 +25,7 @@ PROCINIT_OUTPUT = .procinit
 REALMODE_SRC = realmode.asm
 REALMODE_OUTPUT = .realmode
 
-OUTPUTS := ${DLL_OUTPUT} ${PROCINIT_OUTPUT} ${REALMODE_OUTPUT}
+OUTPUTS := ${DLL_OUTPUT} ${PROCINIT_OUTPUT} ${REALMODE_OUTPUT} crti.o crtn.o
 
 osutils: ${OUTPUTS}
 
@@ -36,6 +37,12 @@ ${PROCINIT_OUTPUT}: ${PROCINIT_SRC}
 
 ${REALMODE_OUTPUT}: ${REALMODE_SRC}
 	${ASM} -fbin ${REALMODE_SRC} -o ${REALMODE_OUTPUT}
+
+crti.o: crti.s
+	${CC} -c crti.s
+
+crtn.o: crtn.s
+	${CC} -c crtn.s
 
 clean:
 	rm -f *.o
