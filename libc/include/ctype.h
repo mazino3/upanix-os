@@ -67,13 +67,20 @@
 #define __C_tolower(c) (__C_isupper(c) ? ((c) | 0x20) : (c))
 #define __C_toupper(c) (__C_islower(c) ? ((c) ^ 0x20) : (c))
 
+#if defined (__cplusplus)
+extern "C" {
+#endif
+bool isdigit(char ch) ;
+#if defined(__cplusplus)
+}
+#endif
+
 bool iswhitespace(char ch) ;
 bool isalpha(char ch) ;
 bool isalnum(char ch) ;
 bool isprint(char ch) ;
 bool isblank(char ch) ;
 bool isgraph(char ch) ;
-bool isdigit(char ch) ;
 bool isspace(char ch) ;
 bool iscntrl(char ch) ;
 bool isxdigit(char ch) ;

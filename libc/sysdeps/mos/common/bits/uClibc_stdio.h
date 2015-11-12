@@ -411,8 +411,16 @@ extern void __stdio_init_mutex(pthread_mutex_t *m);
 # define __FEOF(__stream)		__FEOF_UNLOCKED(__stream)
 #endif
 
-extern "C" int __fgetc_unlocked(FILE *__stream);
-extern "C" int __fputc_unlocked(int __c, FILE *__stream);
+#if defined (__cplusplus)
+extern "C" {
+#endif
+
+int __fgetc_unlocked(FILE *__stream);
+int __fputc_unlocked(int __c, FILE *__stream);
+
+#if defined (__cplusplus)
+}
+#endif
 
 /* First define the default definitions.  They overriden below as necessary. */
 #define __FGETC_UNLOCKED(__stream)		(__fgetc_unlocked)((__stream))

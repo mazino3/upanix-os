@@ -18,6 +18,14 @@
 #ifndef _ABORT_H_
 #define _ABORT_H_
 
+#if defined (__cplusplus)
+extern "C" {
+#endif
+
 void abort() ;
+
+#if defined (__cplusplus)
+}
+#endif
 
 #endif

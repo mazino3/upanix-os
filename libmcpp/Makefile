@@ -17,15 +17,14 @@ CXX = ${COMPILER}
 INCLUDE = ${INCLUDES}
 CPPFLAGS = ${CPP_FLAGS} ${INCLUDE}
 
-MOS_LIBMCPP_OBJS = \
-	./ds/BTree.o \
-	./mem/Alloc.o
+MOS_LIBMCPP_OBJS := $(patsubst %.cpp,%.o,$(shell find . -name *.cpp))
 
 build: subdir libmcpp.a
 
 subdir:
 	cd ds && make
 	cd mem && make
+	cd cal && make
 
 libmcpp.a: ${MOS_LIBMCPP_OBJS}
 	ar -r libmcpp.a ${MOS_LIBMCPP_OBJS}
@@ -33,8 +32,10 @@ libmcpp.a: ${MOS_LIBMCPP_OBJS}
 clean:
 	cd ds && make clean
 	cd mem && make clean
+	cd cal && make clean
 
 distclean:
 	cd ds && make distclean
 	cd mem && make distclean
+	cd cal && make distclean
 	rm -f libmcpp.a

@@ -21,19 +21,19 @@
 void SysUtil_GetDateTime(RTCTime* pRTCTime)
 {
 	int iRetStatus ;
-	SysCallDisplay_Handle(&iRetStatus, SYS_CALL_UTIL_DTIME, false, (unsigned)pRTCTime, 2, 3, 4, 5, 6, 7, 8, 9);
+	SysCallUtil_Handle(&iRetStatus, SYS_CALL_UTIL_DTIME, false, (unsigned)pRTCTime, 2, 3, 4, 5, 6, 7, 8, 9);
 }
 
 void SysUtil_Reboot()
 {
 	int iRetStatus ;
-	SysCallDisplay_Handle(&iRetStatus, SYS_CALL_UTIL_REBOOT, false, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+	SysCallUtil_Handle(&iRetStatus, SYS_CALL_UTIL_REBOOT, false, 1, 2, 3, 4, 5, 6, 7, 8, 9);
 }
 
 int SysUtil_GetTimeOfDay(struct timeval* pTV)
 {
 	int iRetStatus ;
-	SysCallDisplay_Handle(&iRetStatus, SYS_CALL_UTIL_TOD, false, (unsigned)pTV, 2, 3, 4, 5, 6, 7, 8, 9);
+	SysCallUtil_Handle(&iRetStatus, SYS_CALL_UTIL_TOD, false, (unsigned)pTV, 2, 3, 4, 5, 6, 7, 8, 9);
 	return iRetStatus ;
 }
 

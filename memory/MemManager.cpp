@@ -213,8 +213,7 @@ bool MemManager::BuildPageTable()
 	m_uipKernelProcessStackPTEBase = (unsigned*)(MEM_PTE_START + KERNEL_PROCESS_PDE_ID * PAGE_TABLE_SIZE);
 	m_iNoOfKernelProcessStackBlocks = PAGE_TABLE_ENTRIES / PROCESS_KERNEL_STACK_PAGES ;
 	
-	int i ;
-	for(i = 0; i < m_iNoOfKernelProcessStackBlocks; i++)
+	for(int i = 0; i < m_iNoOfKernelProcessStackBlocks; i++)
 		m_bAllocationMapForKernelProcessStackBlock[i] = false ;
 
 	return true ;

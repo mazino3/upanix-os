@@ -8,11 +8,7 @@
 #include "_stdio.h"
 #include <stdarg.h>
 
-#ifndef __STDIO_HAS_VSNPRINTF
-#warning Skipping snprintf since no vsnprintf!
-#else
-
-int snprintf(char *__restrict buf, size_t size,
+extern "C" int snprintf(char *__restrict buf, size_t size,
 			 const char * __restrict format, ...)
 {
 	va_list arg;
@@ -23,5 +19,3 @@ int snprintf(char *__restrict buf, size_t size,
 	va_end(arg);
 	return rv;
 }
-
-#endif

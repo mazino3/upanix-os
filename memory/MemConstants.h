@@ -92,63 +92,63 @@ extern unsigned RAM_SIZE ;
 #define MEM_KERNEL_END		0x2000000 // 33554432 -> 32 MB
 
 /***** These addresses are Relative to Kernel Base ===> Their Phy Addr = Addr + Kernel Base ******/
-#define MEM_PTE_START		0x200000 // 2097152 -> 2 MB
-#define MEM_PTE_END			0x600000 // 6291456 -> 6 MB
+#define MEM_PTE_START		0x300000 // 3 MB
+#define MEM_PTE_END			0x700000 // 7 MB
 
-#define MEM_PAGE_MAP_START	0x600000 // 6291456 -> 6 MB
-#define MEM_PAGE_MAP_END	0x620000 // 6422528 -> 6 MB + 128 KB
+#define MEM_PAGE_MAP_START	0x700000 // 7 MB
+#define MEM_PAGE_MAP_END	0x720000 // 7 MB + 128 KB
 
-#define MEM_PDE_START		0x620000 // 6422528 -> 6 MB + 128 KB
-#define MEM_PDE_END			0x621000 // 6426624 -> 6 MB + 132 KB
+#define MEM_PDE_START		0x720000 // 7 MB + 128 KB
+#define MEM_PDE_END			0x721000 // 7 MB + 132 KB
 
-#define MEM_PAS_START		0x621000 // 6426624 -> 6 MB + 132 KB
-#define MEM_PAS_END			0x721000 // 7475200 -> 7 MB + 132 KB
+#define MEM_PAS_START		0x721000 // 7 MB + 132 KB
+#define MEM_PAS_END			0x821000 // 8 MB + 132 KB
 
-#define MEM_PAGE_FAULT_HANDLER_STACK	0x728FFF // 7507967 -> (7 MB + 132 KB + 8 * PAGE_SIZE - 1)
-#define MEM_KERNEL_SERVICE_STACK		0x730FFF // 7540735 -> (7 MB + 132 KB + 16 * PAGE_SIZE - 1)
+#define MEM_PAGE_FAULT_HANDLER_STACK	0x828FFF // (8 MB + 132 KB + 8 * PAGE_SIZE - 1)
+#define MEM_KERNEL_SERVICE_STACK		0x830FFF // (8 MB + 132 KB + 16 * PAGE_SIZE - 1)
 
 /* File Descriptor Table -> Currently not used */
-#define MEM_FDT_START		0x731000 // 7540736 -> 7 MB + 196 KB
-#define MEM_FDT_END			0x739000 // 7573504 -> 7 MB + 228 KB
+#define MEM_FDT_START		0x831000 // 8 MB + 196 KB
+#define MEM_FDT_END			0x839000 // 8 MB + 228 KB
 
 /* User Table */
-#define MEM_USR_LIST_START	0x739000 // 7573504 -> 7 MB + 228 KB
-#define MEM_USR_LIST_END	0x73C000 // 7585792 -> 7 MB + 240 KB
+#define MEM_USR_LIST_START	0x839000 // 8 MB + 228 KB
+#define MEM_USR_LIST_END	0x83C000 // 8 MB + 240 KB
 
 /* PGAS */
-#define MEM_PGAS_START		0x73C000 // 7585792 -> 7 MB + 240 KB
-#define MEM_PGAS_END		0x73C400 // 7586816 -> 7 MB + 241 KB
+#define MEM_PGAS_START		0x83C000 // 8 MB + 240 KB
+#define MEM_PGAS_END		0x83C400 // 8 MB + 241 KB
 
-#define PROCESS_KERNEL_SHARE_SPACE		0x73C400 // 7586816 -> 7 MB + 241 KB
+#define PROCESS_KERNEL_SHARE_SPACE		0x83C400 // 8 MB + 241 KB
 
 // Mapped to Different Address Space
 // Should be aligned to Page Boundary
-#define PROCESS_DLL_PAGE_ADDR	0x73E000 // 7 MB + 248 KB 
-#define PROCESS_SEC_HEADER_ADDR	0x73F000 // 7 MB + 252 KB
-#define PROCESS_ENV_PAGE		0x740000 // 7 MB + 256 KB
-#define PROCESS_VIDEO_BUFFER	0x741000 // 7 MB + 260 KB
-#define PROCESS_FD_PAGE			0x742000 // 7 MB + 264 KB
-#define EHCI_MMIO_BASE_ADDR		0x743000 // 7 MB + 268 KB
-#define EHCI_MMIO_BASE_ADDR_END	0x763000 // 7 MB + 276 KB
+#define PROCESS_DLL_PAGE_ADDR	0x83E000 // 8 MB + 248 KB 
+#define PROCESS_SEC_HEADER_ADDR	0x83F000 // 8 MB + 252 KB
+#define PROCESS_ENV_PAGE		0x840000 // 8 MB + 256 KB
+#define PROCESS_VIDEO_BUFFER	0x841000 // 8 MB + 260 KB
+#define PROCESS_FD_PAGE			0x842000 // 8 MB + 264 KB
+#define EHCI_MMIO_BASE_ADDR		0x843000 // 8 MB + 268 KB
+#define EHCI_MMIO_BASE_ADDR_END	0x863000 // 8 MB + 276 KB
 
-/********** There is unused space between 7 MB + 241 KB + 6 * PAGE_SIZE to 8 MB. Can be used as required */
+/********** There is unused space between 8 MB + 241 KB + 6 * PAGE_SIZE to 9 MB. Can be used as required */
 
-//#define MEM_HDD_DMA_START	0x800000 // 8 MB 
-//#define MEM_HDD_DMA_END		0x900000 // 9 MB
+//#define MEM_HDD_DMA_START	0x900000 // 9 MB 
+//#define MEM_HDD_DMA_END		0xA00000 // 10 MB
 
-#define MEM_FD1_FS_START	0x900000 // 9 MB
-#define MEM_FD1_FS_END		0x906400 // 9 MB + 25 KB
+#define MEM_FD1_FS_START	0xA00000 // 10 MB
+#define MEM_FD1_FS_END		0xA06400 // 10 MB + 25 KB
 
-#define MEM_FD2_FS_START	0x906400 // 9 MB + 25 KB
-#define MEM_FD2_FS_END		0x90C800 // 9 MB + 50 KB
+#define MEM_FD2_FS_START	0xA06400 // 10 MB + 25 KB
+#define MEM_FD2_FS_END		0xA0C800 // 10 MB + 50 KB
 
-#define MEM_CD_FS_START		0x90C800 // 9 MB + 50 KB
-#define MEM_CD_FS_END		0x912C00 // 9 MB + 75 KB
+#define MEM_CD_FS_START		0xA0C800 // 10 MB + 50 KB
+#define MEM_CD_FS_END		0xA12C00 // 10 MB + 75 KB
 
-#define MEM_HDD_FS_START	0x919000 // 9 MB + 100 KB
-#define MEM_HDD_FS_END		0xC00000 // 12 MB
+#define MEM_HDD_FS_START	0xA19000 // 10 MB + 100 KB
+#define MEM_HDD_FS_END		0xD00000 // 13 MB
 
-#define MEM_USD_FS_START	0xC00000 // 12 MB
+#define MEM_USD_FS_START	0xD00000 // 13 MB
 #define MEM_USD_FS_END		0x1000000 // 16 MB
 
 #define PROCESS_HEAP_START_ADDRESS		0x80000000 // 2 GB

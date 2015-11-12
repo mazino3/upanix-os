@@ -33,27 +33,77 @@ SECTIONS
 	.text BLOCK(4K) : ALIGN(4K)
 	{
 		*(.multiboot)
-		*(.text)
+		*(.text*)
 	}
 
 	/* Read-only data. */
 	.rodata BLOCK(4K) : ALIGN(4K)
 	{
-		*(.rodata)
+		*(.rodata*)
 	}
 
 	/* Read-write data (initialized) */
 	.data BLOCK(4K) : ALIGN(4K)
 	{
-		*(.data)
+		*(.data*)
 	}
 
 	/* Read-write data (uninitialized) and stack */
 	.bss BLOCK(4K) : ALIGN(4K)
 	{
 		*(COMMON)
-		*(.bss)
+		*(.bss*)
 		*(.bootstrap_stack)
+	}
+
+	/* Just make crtstuff happy */
+	.tm_clone_table BLOCK(4K) : ALIGN(4K)
+	{
+		*(.tm_clone_table)
+	}
+	.jcr BLOCK(4K) : ALIGN(4K)
+	{
+		*(.jcr)
+	}
+	.got.plt BLOCK(4K) : ALIGN(4K)
+	{
+		*(.got.plt)
+	}
+
+	.init BLOCK(4K) : ALIGN(4K) 
+	{
+		*(.init)
+	}
+
+	.fini BLOCK(4K) : ALIGN(4K)
+	{
+		*(.fini)
+	}
+
+	/* Global ctors and dtors */
+	.ctors BLOCK(4K) : ALIGN(4K)
+	{
+		*(.ctors*)
+	}
+	
+	.dtors BLOCK(4K) : ALIGN(4K)
+	{
+		*(.dtors*)
+	}
+
+	.eh_frame_hdr BLOCK(4K) : ALIGN(4K)
+	{
+		*(.eh_frame_hdr*)
+	}
+	
+	.eh_frame BLOCK(4K) : ALIGN(4K)
+	{
+		*(.eh_frame*)
+	}
+	
+	.gcc_except_table BLOCK(4K) : ALIGN(4K)
+	{
+		*(.gcc_except_table*)
 	}
 
 	/* The compiler may produce other sections, by default it will put them in

@@ -21,41 +21,41 @@
 int SysDrive_ChangeDrive(const char* szDriveName)
 {
 	__volatile__ int iRetStatus ;
-	SysCallFile_Handle(&iRetStatus, SYS_CALL_CHANGE_DRIVE, false, (unsigned)szDriveName, 2, 3, 4, 5, 6, 7, 8, 9) ;
+	SysCallDrive_Handle(&iRetStatus, SYS_CALL_CHANGE_DRIVE, false, (unsigned)szDriveName, 2, 3, 4, 5, 6, 7, 8, 9) ;
 	return iRetStatus ;
 }
 
 int SysDrive_ShowDrives(DriveStat** pDriveList, int* iListSize)
 {
 	__volatile__ int iRetStatus ;
-	SysCallFile_Handle(&iRetStatus, SYS_CALL_SHOW_DRIVES, false, (unsigned)pDriveList, (unsigned)iListSize, 3, 4, 5, 6, 7, 8, 9) ;
+	SysCallDrive_Handle(&iRetStatus, SYS_CALL_SHOW_DRIVES, false, (unsigned)pDriveList, (unsigned)iListSize, 3, 4, 5, 6, 7, 8, 9) ;
 	return iRetStatus ;
 }
 
 int SysDrive_Mount(const char* szDriveName)
 {
 	__volatile__ int iRetStatus ;
-	SysCallFile_Handle(&iRetStatus, SYS_CALL_MOUNT_DRIVE, false, (unsigned)szDriveName, 2, 3, 4, 5, 6, 7, 8, 9) ;
+	SysCallDrive_Handle(&iRetStatus, SYS_CALL_MOUNT_DRIVE, false, (unsigned)szDriveName, 2, 3, 4, 5, 6, 7, 8, 9) ;
 	return iRetStatus ;
 }
 
 int SysDrive_UnMount(const char* szDriveName)
 {
 	__volatile__ int iRetStatus ;
-	SysCallFile_Handle(&iRetStatus, SYS_CALL_UNMOUNT_DRIVE, false, (unsigned)szDriveName, 2, 3, 4, 5, 6, 7, 8, 9) ;
+	SysCallDrive_Handle(&iRetStatus, SYS_CALL_UNMOUNT_DRIVE, false, (unsigned)szDriveName, 2, 3, 4, 5, 6, 7, 8, 9) ;
 	return iRetStatus ;
 }
 
 int SysDrive_Format(const char* szDriveName)
 {
 	__volatile__ int iRetStatus ;
-	SysCallFile_Handle(&iRetStatus, SYS_CALL_FORMAT_DRIVE, false, (unsigned)szDriveName, 2, 3, 4, 5, 6, 7, 8, 9) ;
+	SysCallDrive_Handle(&iRetStatus, SYS_CALL_FORMAT_DRIVE, false, (unsigned)szDriveName, 2, 3, 4, 5, 6, 7, 8, 9) ;
 	return iRetStatus ;
 }
 
 int SysDrive_GetCurrentDrive(Drive* pDrive)
 {
 	__volatile__ int iRetStatus ;
-	SysCallFile_Handle(&iRetStatus, SYS_CALL_CURRENT_DRIVE, false, (unsigned)pDrive, 2, 3, 4, 5, 6, 7, 8, 9) ;
+	SysCallDrive_Handle(&iRetStatus, SYS_CALL_CURRENT_DRIVE, false, (unsigned)pDrive, 2, 3, 4, 5, 6, 7, 8, 9) ;
 	return iRetStatus ;
 }

@@ -36,6 +36,8 @@ TESTSUITE = ${MOS_HOME}/testsuite
 LIBC = ${MOS_HOME}/libc
 LIBMCPP = ${MOS_HOME}/libmcpp
 LIBM = ${MOS_HOME}/libm
+LIBCXXRT = ${MOS_HOME}/libcxxrt
+LIBGCCEH = ${MOS_HOME}/libgcceh
 
 FLOPPY_IMG = ${MOS_HOME}/floppy/1.44M-FLOPPY.img
 FLOPPY_DEV = /dev/fd0
@@ -64,6 +66,8 @@ flat:
 #	cd ${LIBMTERM} && make
 	cd ${LIBC} && make
 	cd ${LIBMCPP} && make
+	cd ${LIBCXXRT} && make
+	cd ${LIBGCCEH} && make
 	#cd ${LIBM} && make
 	
 	@make -f Makefile.act flat
@@ -87,6 +91,8 @@ aout:
 #	cd ${LIBMTERM} && make
 	cd ${LIBC} && make
 	cd ${LIBMCPP} && make
+	cd ${LIBCXXRT} && make
+	cd ${LIBGCCEH} && make
 	#cd ${LIBM} && make
 
 	@make -f Makefile.act aout
@@ -126,6 +132,8 @@ clean:
 #	cd ${LIBMTERM} && make clean
 	cd ${LIBC} && make clean
 	cd ${LIBMCPP} && make clean
+	cd ${LIBCXXRT} && make clean
+	cd ${LIBGCCEH} && make clean
 	#cd ${LIBM} && make clean
 
 distclean:
@@ -147,6 +155,8 @@ distclean:
 #	cd ${LIBMTERM} && make distclean
 	cd ${LIBC} && make distclean
 	cd ${LIBMCPP} && make distclean
+	cd ${LIBCXXRT} && make distclean
+	cd ${LIBGCCEH} && make distclean
 	#cd ${LIBM} && make distclean
 
 	rm -f ${MOS_OUTPUT_FLAT}

@@ -18,6 +18,7 @@
 # include <malloc.h>
 # include <stdlib.h>
 # include <string.h>
+# include <DMM.h>
 
 void* calloc(size_t n, size_t s)
 {
@@ -28,18 +29,18 @@ void* calloc(size_t n, size_t s)
 
 void* malloc(unsigned uiSizeInBytes)
 {
-	return SysMemory_Alloc(uiSizeInBytes) ;
+	return DMM_AllocateForKernel(uiSizeInBytes);
 }
 
 void free(void* uiAddress)
 {
 	/* If Free fails!!! It should stop / crash the process */
-	SysMemory_Free(uiAddress) ;
+	DMM_DeAllocateForKernel(uiAddress);
 }
 
 int get_alloc_size(void* uiAddress, int* size)
 {
-	return SysMemory_GetAllocSize(uiAddress, size) ;
+	return DMM_GetAllocSizeForKernel(uiAddress, size) ;
 }
 
 void* realloc(void* ptr, int s)

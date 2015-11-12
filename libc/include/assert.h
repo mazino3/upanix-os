@@ -36,7 +36,7 @@
 extern void __assert __P((const char *, const char *, int, const char *));
 
 #define	assert(expr)	\
-	if((expr) == true)	\
+	if((expr) != 0)	\
 	{\
 	  /* __assert (__STRING(expr),__FILE__, __LINE__, __ASSERT_FUNCTION) ;*/ \
 	}

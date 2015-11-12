@@ -98,9 +98,19 @@ extern FILE *stderr ;
 
 #define IS_STD_STREAM(S) (S->__filedes == 0 || S->__filedes == 1 || S->__filedes == 2)
 
+#if defined (__cplusplus)
+extern "C" {
+#endif
 int printf(const char * __restrict format, ...) ;
-int sprintf(char *__restrict buf, const char * __restrict format, ...) ;
 int snprintf(char *__restrict buf, size_t size, const char * __restrict format, ...) ;
+int asprintf(char **__restrict buf, const char * __restrict format, ...);
+OFFSET_TYPE ftell(register FILE *stream) ;
+int fseek(register FILE *stream, OFFSET_TYPE offset, int whence) ;
+#if defined (__cplusplus)
+}
+#endif
+
+int sprintf(char *__restrict buf, const char * __restrict format, ...) ;
 int scanf(const char * __restrict format, ...) ;
 int sscanf(const char * __restrict str, const char * __restrict format, ...) ;
 int vsscanf(const char* __restrict buf, const char * __restrict format, va_list arg) ;
@@ -130,9 +140,6 @@ extern int vfprintf (FILE * __restrict stream, register const FMT_TYPE * __restr
 extern int vsprintf(char *__restrict buf, const char * __restrict format, va_list arg) ;
 extern void perror(register const char *s) ;
 extern int vsnprintf(char *__restrict buf, size_t size, const char * __restrict format, va_list arg) ;
-
-extern "C" OFFSET_TYPE ftell(register FILE *stream) ;
-extern "C" int fseek(register FILE *stream, OFFSET_TYPE offset, int whence) ;
 
 # include <bits/uClibc_stdio.h>
 # include <bits/stdio_lim.h>

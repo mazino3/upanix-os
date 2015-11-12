@@ -74,22 +74,43 @@ void MOSMain_KernelProcess()
 
 extern "C" void _cxx_global_init();
 
-void ThrowException()
+void TestThrowStr()
 {
-	printf("Throwing exception to test exception");
-//	throw "this is a test exception!!";
+	throw "String Exception";
 }
+
+void TestThrowInt()
+{
+	throw 100;
+}
+
+class Exception
+{
+	public:
+	Exception(const char* x) : _val(x) {}
+	const char* _val;
+};
+
+void TestThrowObj()
+{
+	throw Exception("Exception Class");
+}
+
 
 void TestException()
 {
-//	try 
-//	{
-//		TestException();
-//	}
-//	catch(const char* ex)
-//	{
-//		printf("Error: %s", ex);
-//	}
+	try { TestThrowStr(); } catch(const char* ex) { printf("\nCaught Exception: %s", ex); }
+	try { TestThrowInt(); } catch(int ex) { printf("\nCaught Exception: %d", ex); }
+	try { TestThrowObj(); } catch(const Exception& ex) { printf("\nCaught Exception: %s", ex._val); }
+
+	try {
+	try { TestThrowStr(); } catch(const char* ex) { printf("\nRethrow Caught Exception: %s", ex); throw; }
+	} catch(const char* ex) { printf("\nCaught Rethrown Exception: %s", ex); }
+
+	try {
+	try { TestThrowStr(); } catch(const char* ex) { printf("\nRethrow Caught Exception: %s", ex); throw 100; }
+	} catch(const char* ex) { printf("\nCaught Rethrown Exception: %s", ex); }
+	catch(...) { printf("\nCaught Rethrown unknown Exception"); }
 }
 
 void Initialize()
@@ -107,8 +128,7 @@ void Initialize()
 
 	//defined in osutils/crti.s - this is C++ init to call global objects' constructor
 	_cxx_global_init();
-	TestException();
-
+//	TestException(); while(1);
 	IDT::Instance() ;
 	PIC::Instance() ;
 	DMA_Initialize() ;

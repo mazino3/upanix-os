@@ -58,13 +58,19 @@ typedef unsigned char byte ;
 
 int abs(int j) ;
 long int labs(long int j) ;
-extern "C" long long int llabs(long long int j) ;
+
+#if defined (__cplusplus)
+extern "C" {
+#endif
+long long int llabs(long long int j) ;
+long strtol(const char * __restrict str, char ** __restrict endptr, int base) ;
+#if defined (__cplusplus)
+}
+#endif
 int atoi(const char *nptr) ;
 long atol(const char *nptr) ;
 long long atoll(const char *nptr) ;
 double atof(const char *nptr) ;
-
-long strtol(const char * __restrict str, char ** __restrict endptr, int base) ;
 long long strtoll(const char * __restrict str, char ** __restrict endptr, int base) ;
 double strtod(const char *__restrict str, char **__restrict endptr) ;
 long double strtold(const char *str, char **endptr) ;

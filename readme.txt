@@ -5,3 +5,10 @@
 
 2. Command to find libgcc.a
    i686-elf-gcc $CFLAGS -print-libgcc-file-name
+
+3. hack thru cross-compiler build gcc folder/<target>/libgcc/Makefile to find 'make -k libgcc_eh.a' source files as:-
+   unwind-dw2.c unwind-dw2-fde.c unwind-sjlj.c unwind-c.c
+	-DIN_GCC  -DCROSS_DIRECTORY_STRUCTURE  -isystem -fpic -g -DIN_LIBGCC2
+	-fbuilding-libgcc -fno-stack-protector -Dinhibit_libc  -fpic
+
+	this is unused: unwind-sjlj.c - so removed

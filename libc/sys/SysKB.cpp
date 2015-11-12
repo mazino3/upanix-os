@@ -20,5 +20,5 @@
 void SysKB_GetWait(int* ch)
 {
 	__volatile__ int iRetStatus ;
-	SysCallDisplay_Handle(&iRetStatus, SYS_CALL_KB_READ, false, (unsigned)ch, 2, 3, 4, 5, 6, 7, 8, 9);
+	SysCallKB_Handle(&iRetStatus, SYS_CALL_KB_READ, false, (unsigned)ch, 2, 3, 4, 5, 6, 7, 8, 9);
 }

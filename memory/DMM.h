@@ -47,7 +47,8 @@ unsigned DMM_AllocateAlignForKernel(unsigned uiSizeInBytes, unsigned uiAlignNumb
 byte DMM_DeAllocate(ProcessAddressSpace* processAddressSpace, unsigned uiAddress) ;
 byte DMM_DeAllocateForKernel(unsigned uiAddress) ;
 
-byte DMM_GetAllocSize(ProcessAddressSpace* processAddressSpace, unsigned uiAddress, int* iSize) ;
+byte DMM_GetAllocSize(ProcessAddressSpace* processAddressSpace, unsigned uiAddress, int* iSize);
+byte DMM_GetAllocSizeForKernel(unsigned uiAddress, int* iSize);
 void DMM_DeAllocatePhysicalPages(ProcessAddressSpace* processAddressSpace);
 
 unsigned DMM_KernelHeapAllocSize() ;

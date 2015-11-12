@@ -14,6 +14,7 @@
 #	 You should have received a copy of the GNU General Public License
 #	 along with this program.  If not, see <http://www.gnu.org/licenses/
 CXX = i686-elf-g++
+CC = i686-elf-gcc
 
 BIN = ${MOS_HOME}/bin
 BOOT = ${MOS_HOME}/boot
@@ -29,6 +30,7 @@ MOS_LIBC_A = ./libc/libc.a
 MOS_LIBMCPP_A = ./libmcpp/libmcpp.a
 MOS_LIBM_A = ./libm/libm.a
 MOS_LIBCXXRT_A = ./libcxxrt/libcxxrt.a
+MOS_LIBGCCEH_A = ./libgcceh/libgcceh.a
 
 MOS_OBJS = \
 	./kernel/KBInputHandler.o \
@@ -41,7 +43,6 @@ MOS_OBJS = \
 	./kernel/MultiBoot.o \
 	./kernel/IDT.o \
 	./kernel/Atomic.o \
-	./kernel/MOS_CPP_Plugin.o \
 	./kernel/KernelComponents.o \
 	./kernel/KernelService.o \
 	./kernel/video.o \
@@ -132,9 +133,11 @@ MOS_OBJS = \
 \
 	./testsuite/TestSuite.o \
 \
-	${MOS_LIBC_A} \
+	${MOS_LIBCXXRT_A} \
 	${MOS_LIBMCPP_A} \
-	${MOS_LIBCXXRT_A} 
+	${MOS_LIBC_A} \
+	${MOS_LIBGCCEH_A}
+
 
 CRTBEGIN_OBJ := $(shell $(CXX) -print-file-name=crtbegin.o)
 CRTEND_OBJ := $(shell $(CXX) -print-file-name=crtend.o)
@@ -145,4 +148,5 @@ flat:
 	${CXX} -s -o ${MOS_OUTPUT_FLAT} --oformat=binary -Ttext=0 ${FPU_INIT_OBJ} ${MOS_START_OBJ} ${shell find . -name *.o}
 
 aout:
-	${CXX} -o ${MOS_OUTPUT_AOUT} -Tkernel.ld -O0 -nostdlib ${FPU_INIT_OBJ} ${MOS_START_MAIN_OBJ} ${CRTINIT_OBJ} ${MOS_OBJS} ${CRTFINI_OBJ} -lgcc
+	${CXX} -o ${MOS_OUTPUT_AOUT} -Tkernel.ld -O0 -ffreestanding -nostdlib ${FPU_INIT_OBJ} ${MOS_START_MAIN_OBJ} ${CRTINIT_OBJ} ${MOS_OBJS} ${CRTFINI_OBJ} 
+# use this if needed -lgcc

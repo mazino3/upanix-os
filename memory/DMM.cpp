@@ -350,7 +350,6 @@ byte DMM_GetAllocSize(ProcessAddressSpace* processAddressSpace, unsigned uiAddre
 	uiAddress = REAL_ALLOCATED_ADDRESS(uiAddress) ;
 
 	AllocationUnitTracker* curAUT = (AllocationUnitTracker*)processAddressSpace->uiAUTAddress ;
-	AllocationUnitTracker* prevAUT = NULL ;
 
 	while(curAUT != NULL)
 	{
@@ -360,10 +359,32 @@ byte DMM_GetAllocSize(ProcessAddressSpace* processAddressSpace, unsigned uiAddre
 			return DMM_SUCCESS ;
 		}
 
-		prevAUT = curAUT ;
 		curAUT = (AllocationUnitTracker*)(curAUT->uiNextAUTAddress) ;
 	}
 
+	return DMM_BAD_DEALLOC ;
+}
+
+byte DMM_GetAllocSizeForKernel(unsigned uiAddress, int* iSize)
+{
+	MOSMain_GetDMMMutex().Lock();
+	unsigned* uiAUTAddress = MemManager::Instance().GetKernelAUTAddress();
+	unsigned uiHeapStartAddress = MemManager::Instance().GetKernelHeapStartAddr() - GLOBAL_DATA_SEGMENT_BASE;
+
+	AllocationUnitTracker* curAUT = (AllocationUnitTracker*)(*uiAUTAddress);
+
+	while(curAUT != NULL)
+	{
+		if(curAUT->uiReturnAddress == uiAddress)
+		{
+			*iSize = curAUT->uiSize - (curAUT->uiReturnAddress - curAUT->uiAllocatedAddress) ;
+			return DMM_SUCCESS ;
+		}
+
+		curAUT = (AllocationUnitTracker*)(curAUT->uiNextAUTAddress) ;
+	}
+
+	MOSMain_GetDMMMutex().UnLock();
 	return DMM_BAD_DEALLOC ;
 }
 
