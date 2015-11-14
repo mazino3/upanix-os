@@ -77,16 +77,3 @@ fi
 export CPP_FLAGS=" -c -O0 -Wall -ffreestanding -nodefaultlibs -nostdlib -nostartfiles -nostdinc \
 -std=c++11 -nostdinc++ -fno-threadsafe-statics -fpermissive ${EXCEPTION_SUP}"
 export C_FLAGS=" -c -std=c11 -O0 -Wall -ffreestanding -nodefaultlibs -nostdlib -nostartfiles -nostdinc ${EH_FLAGS}"
-
-#C_FLAGS=" -c -O2 -Wall -ffreestanding -pedantic "
-#C_FLAGS=" -c -O1 -mtune=i386 -Wall -ffreestanding -nodefaultlibs -nostdlib -nostartfiles -nostdinc "  # For compiling with gcc 4. & above
-
-#dd if=/dev/zero of=DRV1.FDD.img bs=512 count=2880
-#dd if=/dev/zero of=30MHD.img bs=512 count=62730
-
-#dd if=/usr/lib/grub/stage1 of=floppy/1.44M-FLOPPY.img bs=512 count=1
-#dd if=/usr/lib/grub/stage2 of=floppy/1.44M-FLOPPY.img bs=512 seek=1
-
-#. use_local_gcc_3.3.4.sh
-#for i in `find . -name "*.c"`; do echo $i; sed 's/boolean/bool/g' $i > 1; mv 1 $i; done
-#find . -name "Makefile" -exec perl -p -i -e 's/C_FLAGS/CPP_FLAGS/g' {} \;

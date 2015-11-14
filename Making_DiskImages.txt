@@ -15,6 +15,12 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
+
+Summary of useful commands to create disk image files:-
+dd if=/dev/zero of=RawGrubFloppy.img count=2880 bs=512
+dd if=/dev/zero of=30MHD.img bs=512 count=62730
+dd if=/dev/zero of=30MUSB.img bs=512 count=62730
+
 Following is a step by step approach for creating a Bootable Grub Floppy Image file
 and Install the OS on it and Boot from Bochs Emulator
 
