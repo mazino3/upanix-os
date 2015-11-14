@@ -1,0 +1,7 @@
+*.o
+*.obj
+*.a
+depend.d
+tags
+MOSStart_Main.grub
+*.img
