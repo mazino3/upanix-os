@@ -1,7 +1,10 @@
 *.o
 *.obj
 *.a
+*.img
 depend.d
 tags
 MOSStart_Main.grub
-*.img
+.dll
+.procinit
+.realmode

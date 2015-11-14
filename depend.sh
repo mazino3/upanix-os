@@ -1,4 +1,4 @@
-. ${MOS_HOME}/setup.sh $@
+. ${UPANIX_HOME}/setup.sh $@
 
 # -D_GLIBCXX_PROFILE
 

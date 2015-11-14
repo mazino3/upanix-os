@@ -13,33 +13,33 @@
 #																			 
 #	 You should have received a copy of the GNU General Public License
 #	 along with this program.  If not, see <http://www.gnu.org/licenses/
-MOS_HOME = $(shell pwd)
+UPANIX_HOME = $(shell pwd)
 
-export MOS_HOME
+export UPANIX_HOME
 
-BIN = ${MOS_HOME}/bin
-BOOT = ${MOS_HOME}/boot
-KERNEL = ${MOS_HOME}/kernel
-PROCESS = ${MOS_HOME}/process
-DISPLAY = ${MOS_HOME}/display
-KERNEL_PROCS = ${MOS_HOME}/kernelprocs
-DRIVERS = ${MOS_HOME}/drivers
-UTIL = ${MOS_HOME}/util
-MEMORY = ${MOS_HOME}/memory
-FILE_SYSTEM = ${MOS_HOME}/filesystem
-RESOURCE = ${MOS_HOME}/resource
-USERS = ${MOS_HOME}/users
-EXEPARSER = ${MOS_HOME}/exeparser
-SYSCALL = ${MOS_HOME}/syscall
-OSUTILS = ${MOS_HOME}/osutils
-TESTSUITE = ${MOS_HOME}/testsuite
-LIBC = ${MOS_HOME}/libc
-LIBMCPP = ${MOS_HOME}/libmcpp
-LIBM = ${MOS_HOME}/libm
-LIBCXXRT = ${MOS_HOME}/libcxxrt
-LIBGCCEH = ${MOS_HOME}/libgcceh
+BIN = ${UPANIX_HOME}/bin
+BOOT = ${UPANIX_HOME}/boot
+KERNEL = ${UPANIX_HOME}/kernel
+PROCESS = ${UPANIX_HOME}/process
+DISPLAY = ${UPANIX_HOME}/display
+KERNEL_PROCS = ${UPANIX_HOME}/kernelprocs
+DRIVERS = ${UPANIX_HOME}/drivers
+UTIL = ${UPANIX_HOME}/util
+MEMORY = ${UPANIX_HOME}/memory
+FILE_SYSTEM = ${UPANIX_HOME}/filesystem
+RESOURCE = ${UPANIX_HOME}/resource
+USERS = ${UPANIX_HOME}/users
+EXEPARSER = ${UPANIX_HOME}/exeparser
+SYSCALL = ${UPANIX_HOME}/syscall
+OSUTILS = ${UPANIX_HOME}/osutils
+TESTSUITE = ${UPANIX_HOME}/testsuite
+LIBC = ${UPANIX_HOME}/libc
+LIBMCPP = ${UPANIX_HOME}/libmcpp
+LIBM = ${UPANIX_HOME}/libm
+LIBCXXRT = ${UPANIX_HOME}/libcxxrt
+LIBGCCEH = ${UPANIX_HOME}/libgcceh
 
-FLOPPY_IMG = ${MOS_HOME}/floppy/1.44M-FLOPPY.img
+FLOPPY_IMG = ${UPANIX_HOME}/floppy/1.44M-FLOPPY.img
 FLOPPY_DEV = /dev/fd0
 
 BOOT_OUTPUT = ${BIN}/Boot.bin

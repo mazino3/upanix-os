@@ -15,7 +15,7 @@
 #	 along with this program.  If not, see <http://www.gnu.org/licenses/
 ASM = nasm
 
-BIN = ${MOS_HOME}/bin
+BIN = ${UPANIX_HOME}/bin
 BOOT_SRC = Boot.asm
 BOOT_OUTPUT = ${BIN}/Boot.bin
 SETUP_SRC = Setup.asm

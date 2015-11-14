@@ -16,8 +16,8 @@
 CXX = i686-elf-g++
 CC = i686-elf-gcc
 
-BIN = ${MOS_HOME}/bin
-BOOT = ${MOS_HOME}/boot
+BIN = ${UPANIX_HOME}/bin
+BOOT = ${UPANIX_HOME}/boot
 
 MOS_START_OBJ = ${BOOT}/MOSStart.self
 MOS_START_MAIN_OBJ = ${BOOT}/MOSStart_Main.grub

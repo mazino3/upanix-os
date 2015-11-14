@@ -19,8 +19,8 @@
 
 clear
 
-MOS_HOME=`pwd`
-export MOS_HOME
+UPANIX_HOME=`pwd`
+export UPANIX_HOME
 
 BootFileType=$1
 
@@ -28,51 +28,51 @@ if [ "$#" -eq "0" -o "$1" = "image" ]
 then
 
 	BootFileType="image"
-	FDA=$MOS_HOME/floppy/1.44M-FLOPPY.img
-	FDB=$MOS_HOME/floppy/DRV1.FDD.img
+	FDA=$UPANIX_HOME/floppy/1.44M-FLOPPY.img
+	FDB=$UPANIX_HOME/floppy/DRV1.FDD.img
 	
 elif [ "$1" = "BT" ]
 then
 
-	FDA=$MOS_HOME/floppy/BootTest.img
-	FDB=$MOS_HOME/floppy/DRV1.FDD.img
+	FDA=$UPANIX_HOME/floppy/BootTest.img
+	FDB=$UPANIX_HOME/floppy/DRV1.FDD.img
 
 
 elif [ "$1" = "floppy" ]
 then
 
 	FDA=/dev/fd0
-	FDB=$MOS_HOME/floppy/DRV1.FDD.img
+	FDB=$UPANIX_HOME/floppy/DRV1.FDD.img
 
 elif [ "$1" = "grub_ext" ]
 then
 
-	FDA=$MOS_HOME/floppy/GrubFloppy_ext.img
-	FDB=$MOS_HOME/floppy/DRV1.FDD.img
+	FDA=$UPANIX_HOME/floppy/GrubFloppy_ext.img
+	FDB=$UPANIX_HOME/floppy/DRV1.FDD.img
 
 elif [ "$1" = "grub_mos" ]
 then
 
-	FDA=$MOS_HOME/floppy/GrubFloppy_mos.img
-	FDB=$MOS_HOME/floppy/DRV1.FDD.img
+	FDA=$UPANIX_HOME/floppy/GrubFloppy_mos.img
+	FDB=$UPANIX_HOME/floppy/DRV1.FDD.img
 
 elif [ "$1" = "setup_ext" ]
 then
 
-	FDA=$MOS_HOME/floppy/RawGrubFloppy.img
-	FDB=$MOS_HOME/floppy/GrubFloppy_ext.img
+	FDA=$UPANIX_HOME/floppy/RawGrubFloppy.img
+	FDB=$UPANIX_HOME/floppy/GrubFloppy_ext.img
 
 elif [ "$1" = "install_mos" ]
 then
 
-	FDA=$MOS_HOME/floppy/RawGrubFloppy.img
-	FDB=$MOS_HOME/floppy/GrubFloppy_mos.img
+	FDA=$UPANIX_HOME/floppy/RawGrubFloppy.img
+	FDB=$UPANIX_HOME/floppy/GrubFloppy_mos.img
 
 elif [ "$1" = "setup_mos" ]
 then
 
-	FDA=$MOS_HOME/floppy/GrubFloppy_ext.img
-	FDB=$MOS_HOME/floppy/GrubFloppy_mos.img
+	FDA=$UPANIX_HOME/floppy/GrubFloppy_ext.img
+	FDB=$UPANIX_HOME/floppy/GrubFloppy_mos.img
 
 fi
 
@@ -88,8 +88,8 @@ echo "\n\n**********************************************************************
 
 sleep 1
 
-#-hda $MOS_HOME/USBImage/30MUSB.img
-#-usbdevice disk:$MOS_HOME/USBImage/30MUSB.img
+#-hda $UPANIX_HOME/USBImage/30MUSB.img
+#-usbdevice disk:$UPANIX_HOME/USBImage/30MUSB.img
 #-hda /dev/sda \
 
 QEMU_PATH=
@@ -101,10 +101,10 @@ $SUDO qemu-system-x86_64 \
 -smp 1 \
 -net none \
 \
--drive if=none,id=usbdrive,file=$MOS_HOME/USBImage/30MUSB.img \
+-drive if=none,id=usbdrive,file=$UPANIX_HOME/USBImage/30MUSB.img \
 \
 -usb \
 -device usb-ehci,id=ehci \
 -device usb-storage,bus=ehci.0,drive=usbdrive \
 \
--hda $MOS_HOME/HDImage/30MHD.img 
+-hda $UPANIX_HOME/HDImage/30MHD.img 

@@ -14,7 +14,7 @@
 #	 You should have received a copy of the GNU General Public License
 #	 along with this program.  If not, see <http://www.gnu.org/licenses/
 ASM = nasm
-DEPS := $(shell $(MOS_HOME)/depend.sh)
+DEPS := $(shell $(UPANIX_HOME)/depend.sh)
 OBJS := $(patsubst %.cpp,%.o,$(wildcard *.cpp))
 
 MEMORY_ASM_SRC = Mem.asm

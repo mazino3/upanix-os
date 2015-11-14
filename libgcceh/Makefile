@@ -13,7 +13,7 @@
 #																			 
 #	 You should have received a copy of the GNU General Public License
 #	 along with this program.  If not, see <http://www.gnu.org/licenses/
-DEPS := $(shell $(MOS_HOME)/depend.sh EH)
+DEPS := $(shell $(UPANIX_HOME)/depend.sh EH)
 C_OBJS := $(patsubst %.c,%.o,$(wildcard *.c))
 LIBGCCEH_OBJS := ${C_OBJS}
 

@@ -14,50 +14,50 @@
 #	 You should have received a copy of the GNU General Public License
 #	 along with this program.  If not, see <http://www.gnu.org/licenses/
 
-#set MOS_HOME to mos checkout directory path
+#set UPANIX_HOME to upanix checkout directory path
 export INCLUDE="-I./ \
--I${MOS_HOME}/bin -I${MOS_HOME}/kernel \
--I${MOS_HOME}/process \
--I${MOS_HOME}/display \
+-I${UPANIX_HOME}/bin -I${UPANIX_HOME}/kernel \
+-I${UPANIX_HOME}/process \
+-I${UPANIX_HOME}/display \
 \
--I${MOS_HOME}/kernelprocs/console \
--I${MOS_HOME}/kernelprocs/session \
--I${MOS_HOME}/kernelprocs \
+-I${UPANIX_HOME}/kernelprocs/console \
+-I${UPANIX_HOME}/kernelprocs/session \
+-I${UPANIX_HOME}/kernelprocs \
 \
--I${MOS_HOME}/drivers/floppy \
--I${MOS_HOME}/drivers/keyboard \
--I${MOS_HOME}/drivers/mouse \
--I${MOS_HOME}/drivers/bus \
--I${MOS_HOME}/drivers/ide \
--I${MOS_HOME}/drivers/ide/vendorspec \
--I${MOS_HOME}/drivers/usb/ \
--I${MOS_HOME}/drivers/usb/disk \
--I${MOS_HOME}/drivers/net \
--I${MOS_HOME}/drivers/ \
+-I${UPANIX_HOME}/drivers/floppy \
+-I${UPANIX_HOME}/drivers/keyboard \
+-I${UPANIX_HOME}/drivers/mouse \
+-I${UPANIX_HOME}/drivers/bus \
+-I${UPANIX_HOME}/drivers/ide \
+-I${UPANIX_HOME}/drivers/ide/vendorspec \
+-I${UPANIX_HOME}/drivers/usb/ \
+-I${UPANIX_HOME}/drivers/usb/disk \
+-I${UPANIX_HOME}/drivers/net \
+-I${UPANIX_HOME}/drivers/ \
 \
--I${MOS_HOME}/util \
--I${MOS_HOME}/memory \
--I${MOS_HOME}/filesystem \
--I${MOS_HOME}/users \
--I${MOS_HOME}/exeparser \
--I${MOS_HOME}/syscall \
--I${MOS_HOME}/resource \
+-I${UPANIX_HOME}/util \
+-I${UPANIX_HOME}/memory \
+-I${UPANIX_HOME}/filesystem \
+-I${UPANIX_HOME}/users \
+-I${UPANIX_HOME}/exeparser \
+-I${UPANIX_HOME}/syscall \
+-I${UPANIX_HOME}/resource \
 \
--I${MOS_HOME}/testsuite \
+-I${UPANIX_HOME}/testsuite \
 \
--I${MOS_HOME}/libc/include \
--I${MOS_HOME}/libc/sysdeps/mos/common/ \
--I${MOS_HOME}/libc/sysdeps/mos/common/bits \
+-I${UPANIX_HOME}/libc/include \
+-I${UPANIX_HOME}/libc/sysdeps/mos/common/ \
+-I${UPANIX_HOME}/libc/sysdeps/mos/common/bits \
 \
--I${MOS_HOME}/libm/include \
--I${MOS_HOME}/libm/include/bits \
+-I${UPANIX_HOME}/libm/include \
+-I${UPANIX_HOME}/libm/include/bits \
 \
--I${MOS_HOME}/libmcpp/include \
--I${MOS_HOME}/libmcpp/ds \
--I${MOS_HOME}/libmcpp/mem \
--I${MOS_HOME}/libmcpp/cal"
+-I${UPANIX_HOME}/libmcpp/include \
+-I${UPANIX_HOME}/libmcpp/ds \
+-I${UPANIX_HOME}/libmcpp/mem \
+-I${UPANIX_HOME}/libmcpp/cal"
 
-export GLOBAL_HEADERS="$MOS_HOME/util/Global.h $MOS_HOME/util/AsmUtil.h"
+export GLOBAL_HEADERS="$UPANIX_HOME/util/Global.h $UPANIX_HOME/util/AsmUtil.h"
 
 export COMPILER=i686-elf-g++
 export C_COMPILER=i686-elf-gcc

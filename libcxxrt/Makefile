@@ -19,7 +19,7 @@ INCLUDE = ${INCLUDES}
 CXXFLAGS = ${CPP_FLAGS} ${INCLUDE}
 CFLAGS = ${C_FLAGS} ${INCLUDE}
 
-DEPS := $(shell $(MOS_HOME)/depend.sh ES)
+DEPS := $(shell $(UPANIX_HOME)/depend.sh ES)
 CXX_OBJS := $(patsubst %.cc,%.o,$(wildcard *.cc))
 C_OBJS := $(patsubst %.c,%.o,$(wildcard *.c))
 LIBCXXRT_OBJS := ${C_OBJS} ${CXX_OBJS}
