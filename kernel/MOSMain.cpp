@@ -1,5 +1,5 @@
 /*
- *	Mother Operating System - An x86 based Operating System
+ *	Upanix - An x86 based Operating System
  *  Copyright (C) 2011 'Prajwala Prabhakar' 'srinivasa_prajwal@yahoo.co.in'
  *                                                                          
  *  This program is free software: you can redistribute it and/or modify
@@ -122,7 +122,7 @@ void Initialize()
 	SPECIAL_TASK = false ;
 
 	DisplayManager::Initialize();
-	KC::MDisplay().Message("\n****    Welcome To MOS The Mother Operating System   ****\n", Display::Attribute(' ')) ;
+	KC::MDisplay().Message("\n****    Welcome To MOS The Upanix   ****\n", Display::Attribute(' ')) ;
 	ProcFileManager_InitForKernel();
 	MultiBoot::Instance();
 	MemManager::Instance();
