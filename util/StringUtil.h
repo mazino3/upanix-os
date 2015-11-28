@@ -20,6 +20,7 @@
 
 # include <Global.h>
 # include <string.h>
+# include <String.h>
 
 void String_RawCopy(byte* dest, const byte* src, const unsigned uiLen) ;
 
@@ -47,7 +48,7 @@ unsigned String_CanCat(char* dest, const char* src) ;
 short String_Compare(const char* s1, const char* s2) ;
 int String_Length(const char* str) ;
 void String_Tokenize(const char* src, char chToken, int* iListSize, StringTokenizer& strTkCopy) ;
-void String_ConvertNumberToString(char* strNumber, unsigned uiNumber) ;
+String ToString(unsigned uiNumber);
 byte String_ConvertStringToNumber(unsigned* uiNumber, char* strNumber) ;
 short String_NCompare(const char* s1, const char* s2, unsigned len) ;
 byte String_IsSubStr(const char* szMainString, const char* szSubString) ;

@@ -144,8 +144,8 @@ byte FileOperations_Open(int* fd, const char* szFileName, const byte mode)
 
 	unsigned short usFileAttr = dirEntry.usAttribute ;
 	if(FILE_TYPE(usFileAttr) != ATTR_TYPE_FILE)
-		return FileOperations_ERR_NOT_EXISTS ;
-	
+		return FileOperations_ERR_NOT_EXISTS;
+
 	int userType = FileOperations_GetUserType(pPAS->bIsKernelProcess, pPAS->iUserID, dirEntry.iUserID) ;
 
 	if(!FileOperations_HasPermission(userType, usFileAttr, mode))

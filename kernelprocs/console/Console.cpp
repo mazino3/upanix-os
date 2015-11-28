@@ -78,8 +78,8 @@ void Console_StartMOSConsole()
 
 	//Default init code
 	Console_ProcessCommand("eusbprobe");
-	Console_ProcessCommand("mount usdb");
-	Console_ProcessCommand("chd usdb");
+	Console_ProcessCommand("mount usda");
+	Console_ProcessCommand("chd usda");
 
 	while(SUCCESS)
 	{

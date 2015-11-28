@@ -15,15 +15,35 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
-#ifndef _GENERIC_UTIL_H_
-#define _GENERIC_UTIL_H_
+#ifndef _EXERR_H_
+#define _EXERR_H_
 
-# include <Global.h>
+#include <String.h>
+#include <ctype.h>
 
-byte GenericUtil_IsDigit(char ch) ;
-byte GenericUtil_IsAlpha(char ch) ;
-void GenericUtil_ReadInput(char* szInputBuffer, const int iMaxReadLength, byte bEcho) ;
-unsigned GenericUtil_Power(unsigned uiNum, unsigned uiPow) ;
-byte GenericUtil_GetFullFilePathFromEnv(const char* szPathEnvVar, const char* szPathEnvDefVal, const char* szFileName, char* szFullFilePath) ;
+#define XWHERE __FILE__, __LINE__
+
+class Exerr
+{
+  public:
+    Exerr(const String& fileName, unsigned lineNo, const String& msg) :
+      _fileName(fileName), _lineNo(lineNo), _msg(msg)
+    {
+      _error = _fileName + ":" + ToString(_lineNo) + " " + _msg;
+    }
+
+    const String& File() const { return _fileName; }
+    unsigned LineNo() const { return _lineNo; }
+    const String& Msg() const { return _msg; }
+    const String& Error() const 
+    {
+      return _error;
+    }
+  private:
+    const String _fileName;
+    const unsigned _lineNo;
+    const String _msg;
+    String _error;
+};
 
 #endif

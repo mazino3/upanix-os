@@ -42,6 +42,7 @@
 # include <DisplayManager.h>
 # include <UHCIController.h>
 # include <EHCIController.h>
+# include <Exerr.h>
 
 /**** Global Variable declaration/definition *****/
 byte KERNEL_MODE ;
@@ -129,46 +130,60 @@ void Initialize()
 	//defined in osutils/crti.s - this is C++ init to call global objects' constructor
 	_cxx_global_init();
 //	TestException(); while(1);
-	IDT::Instance() ;
-	PIC::Instance() ;
-	DMA_Initialize() ;
-	PIT_Initialize() ;
+  try
+  {
+    IDT::Instance() ;
+    PIC::Instance() ;
+    DMA_Initialize() ;
+    PIT_Initialize() ;
 
-	ProcessManager_Initialize() ;
-	SysCall_Initialize() ;
+    ProcessManager_Initialize() ;
+    SysCall_Initialize() ;
 
-	KC::MKernelService() ;
+    KC::MKernelService() ;
 
-	PIC::Instance().EnableInterrupt(PIC::Instance().TIMER_IRQ) ;
+    PIC::Instance().EnableInterrupt(PIC::Instance().TIMER_IRQ) ;
 
-/* Start - Peripheral Device Initialization */
-//TODO: An Abstract Bus Handler which should internally take care of different
-//types of bus like ISA, PCI etc... 
-	PCIBusHandler_Initialize() ;
+  /* Start - Peripheral Device Initialization */
+  //TODO: An Abstract Bus Handler which should internally take care of different
+  //types of bus like ISA, PCI etc... 
+    PCIBusHandler_Initialize() ;
 
-	DeviceDrive_Initialize() ;
+    DeviceDrive_Initialize() ;
 
-	Keyboard_Initialize() ;
+    Keyboard_Initialize() ;
 
-	//Floppy_Initialize() ;
-	//ATADeviceController_Initialize() ;
+    //Floppy_Initialize() ;
+    //ATADeviceController_Initialize() ;
 
-	//MountManager_Initialize() ;
+    //MountManager_Initialize() ;
 
-/*End - Peripheral Device Initialization */
+  /*End - Peripheral Device Initialization */
 
-	RTC::Initialize() ;
-	//while(1) ;
-	
-	//USB
-	USBController_Initialize() ;
-	EHCIController_Initialize() ;
-	UHCIController_Initialize() ;
-	USBMassBulkStorageDisk_Initialize() ;
+    RTC::Initialize() ;
+    //while(1) ;
+    
+    //USB
+    USBController_Initialize() ;
+    EHCIController_Initialize() ;
+    UHCIController_Initialize() ;
+    USBMassBulkStorageDisk_Initialize() ;
 
-	SessionManager_Initialize() ;
+    SessionManager_Initialize() ;
 
-	Console_Initialize() ;
+    Console_Initialize() ;
+  }
+  catch(const Exerr& ex)
+  {
+    printf("%s\n", ex.Error().Value());
+    printf("KERNEL PANIC!\n");
+    while(1);
+  }
+  catch(...)
+  {
+    printf("\n Unknown error!! KERNEL PANIC!\n");
+    while(1);
+  }
 }
 
 Mutex& MOSMain_GetDMMMutex()

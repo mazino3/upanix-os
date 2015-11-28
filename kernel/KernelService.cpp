@@ -239,20 +239,18 @@ int KernelService::Spawn()
 	m_mutexServer.Lock() ;
 
 	static const char* szKS = "kers-" ;
-	static const int iLen = String_Length(szKS) ;
 	static int iID = 0 ;
 
-	char szName[16] ;
-	String_Copy(szName, szKS) ;
-	String_ConvertNumberToString(szName + iLen, iID) ;
+  String szName(szKS);
+  szName += ToString(iID);
 	iID++ ;
 
 	int pid ;
-	if(ProcessManager_CreateKernelImage((unsigned)&(KernelService::Server), ProcessManager_iCurrentProcessID, false, (unsigned)this, NULL, &pid, szName) !=
+	if(ProcessManager_CreateKernelImage((unsigned)&(KernelService::Server), ProcessManager_iCurrentProcessID, false, (unsigned)this, NULL, &pid, szName.Value()) !=
 			ProcessManager_SUCCESS)
 	{
 		m_mutexServer.UnLock() ;
-		printf("\n Failed to create Kernel Service Process %s", szName) ;
+		printf("\n Failed to create Kernel Service Process %s", szName.Value()) ;
 		return -1 ;
 	}
 

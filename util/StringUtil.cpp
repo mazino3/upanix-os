@@ -122,19 +122,23 @@ void String_Reverse(char* str)
 	}	
 }
 
-void String_ConvertNumberToString(char* strNumber, unsigned uiNumber)
+String ToString(unsigned uiNumber)
 {
-	unsigned i = 0 ;
+  char strNumber[128];
+	unsigned i = 0;
 
 	do
 	{
-		strNumber[i++] = (uiNumber % 10) + 0x30 ;
-		uiNumber /= 10 ;
+		strNumber[i++] = (uiNumber % 10) + 0x30;
+		uiNumber /= 10;
+    if(i == 128)
+      return "";
 	}
 	while(uiNumber) ;
 
-	strNumber[i] = '\0' ;
-	String_Reverse(strNumber) ;
+	strNumber[i] = '\0';
+	String_Reverse(strNumber);
+  return strNumber;
 }
 
 byte String_ConvertStringToNumber(unsigned* uiNumber, char* strNumber)

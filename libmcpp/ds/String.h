@@ -41,20 +41,21 @@ class String
 
 		String(const String& r) : _pVal(0)
 		{
-			Copy(r);
+			Value(r.Value());
 		}
 
 		String& operator=(const String& r)
 		{
-			Copy(r);
+      Value(r.Value());
 			return *this;
 		}
 
 		String& operator+=(const String& r)
 		{
-			if(Large(_len + r.Length()))
+      _len += r.Length();
+			if(Large())
 			{
-				char* newVal = AllocPtr(_len + r.Length());
+				char* newVal = AllocPtr(_len);
 				strcpy(newVal, Value());
 				strcat(newVal, r.Value());
 				DeletePtr();
@@ -92,15 +93,6 @@ class String
 
 	private:
 		static const unsigned FIXED_BUFFER = 64;
-
-		void Copy(const String& r)
-		{
-			DeletePtr();
-			char* dest = _sVal;
-			if(r.Large())
-				dest = _pVal = AllocPtr(r.Length());
-			strcpy(dest, r.Value());
-		}
 
 		bool Large(unsigned len) const { return len > FIXED_BUFFER - 1; }
 		bool Large() const { return Large(_len); }
