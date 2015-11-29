@@ -153,7 +153,7 @@ void SessionManager_SwitchToSession(int key)
 		return ;
 	}
 
-	ProcessGroupManager_SwitchFGProcessGroup(SessionManager_List[key]) ;		
+	ProcessGroupManager::Instance().SwitchFGProcessGroup(SessionManager_List[key]);
 	DisplayManager::RefreshScreen() ;
 }
 

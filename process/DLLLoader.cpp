@@ -32,6 +32,7 @@
 # include <ElfRelocationSection.h>
 # include <ElfSymbolTable.h>
 # include <ElfDynamicSection.h>
+# include <Exerr.h>
 
 using namespace ELFSectionHeader ;
 using namespace ELFHeader ;
@@ -176,11 +177,18 @@ byte DLLLoader_LoadELFDLL(const char* szDLLName, const char* szJustDLLName, Proc
 	if(uiMinMemAddr != 0)
 		return DLLLoader_ERR_NOT_PIC ;
 
-	byte bStatus ;
 	unsigned uiDLLSectionSize ;
 	byte* bDLLSectionImage = NULL ;
 
-	RETURN_IF_NOT(bStatus, ProcessLoader_LoadInitSections(processAddressSpace, &uiDLLSectionSize, &bDLLSectionImage, PROCESS_DLL_FILE), ProcessLoader_SUCCESS) ;
+  try
+  {
+	  bDLLSectionImage = ProcessLoader::Instance().LoadDLLInitSection(*processAddressSpace, uiDLLSectionSize);
+  }
+  catch(const Exerr& ex)
+  {
+    ex.Print();
+    return DLLLoader_FAILURE;
+  }
 
 	unsigned uiDLLImageSize = ProcessLoader_GetCeilAlignedAddress(uiMaxMemAddr - uiMinMemAddr, 4) ;
 	unsigned uiMemImageSize = uiDLLImageSize + uiDLLSectionSize ;
@@ -332,8 +340,7 @@ byte DLLLoader_MapDLLPagesToProcess(ProcessAddressSpace* processAddressSpace,
 	{
 		for(i = processAddressSpace->uiNoOfPagesForDLLPTE; i < uiNoOfPagesForDLLPTE; i++)
 		{
-			RETURN_X_IF_NOT(MemManager::Instance().AllocatePhysicalPage(&uiFreePageNo), Success, DLLLoader_FAILURE) ;
-			
+      uiFreePageNo = MemManager::Instance().AllocatePhysicalPage();
 			uiPDEIndex = processAddressSpace->uiStartPDEForDLL + i ;
 			((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPDEIndex] = 
 															((uiFreePageNo * PAGE_SIZE) & 0xFFFFF000) | 0x7 ;

@@ -60,7 +60,7 @@ __volatile__ unsigned uiP9)
 				byte bStatus ;
 				char** szPathAddress = KERNEL_ADDR(bDoAddrTranslation, char**, uiP1) ;
 
-				if((bStatus = Directory_PresentWorkingDirectory( &ProcessManager_processAddressSpace[ProcessManager_iCurrentProcessID], 
+				if((bStatus = Directory_PresentWorkingDirectory( &ProcessManager::Instance().GetCurrentPAS(), 
 																	szPathAddress)) != Directory_SUCCESS)
 				{
 					KC::MDisplay().Address("\n Failed to Get PWD: ", bStatus) ;

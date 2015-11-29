@@ -96,11 +96,11 @@ static byte MountManager_MountDrive(char* szDriveName)
 		KC::MDisplay().Message(" Done.", Display::WHITE_ON_BLACK()) ;
 
 	// Set Process Drive
-	ProcessManager_processAddressSpace[ProcessManager_iCurrentProcessID].iDriveID = pDriveInfo->drive.iID ;
+	ProcessManager::Instance().GetCurrentPAS().iDriveID = pDriveInfo->drive.iID ;
 
 	MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&(pDriveInfo->FSMountInfo.FSpwd), 
 	MemUtil_GetDS(), 
-	(unsigned)&ProcessManager_processAddressSpace[ProcessManager_iCurrentProcessID].processPWD, 
+	(unsigned)&ProcessManager::Instance().GetCurrentPAS().processPWD, 
 	sizeof(FileSystem_PresentWorkingDirectory)) ;
 
 	// Change To Root Directory
@@ -170,8 +170,8 @@ int MountManager_GetRootDriveID()
 		
 		if(pDriveInfo == NULL)
 		{
-			if(ProcessManager_iCurrentProcessID != NO_PROCESS_ID)
-				return ProcessManager_processAddressSpace[ProcessManager_iCurrentProcessID].iDriveID ;
+			if(ProcessManager::GetCurrentProcessID() != NO_PROCESS_ID)
+				return ProcessManager::Instance().GetCurrentPAS().iDriveID ;
 
 			return CURRENT_DRIVE ;
 		}

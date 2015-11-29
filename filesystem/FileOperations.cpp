@@ -94,7 +94,7 @@ static void FileOperations_ParseFilePathWithDrive(const char* szFileNameWithDriv
 	
 	if(i == -1)
 	{
-		*pDriveID = ProcessManager_processAddressSpace[ProcessManager_iCurrentProcessID].iDriveID ;
+		*pDriveID = ProcessManager::Instance().GetCurrentPAS().iDriveID ;
 		String_Copy(szFileName, szFileNameWithDrive) ;
 		return ;
 	}
@@ -135,8 +135,7 @@ byte FileOperations_Open(int* fd, const char* szFileName, const byte mode)
 
 	byte bStatus ;
 	FileSystem_DIR_Entry dirEntry ;
-	int pid = ProcessManager_iCurrentProcessID ;
-	ProcessAddressSpace* pPAS = &ProcessManager_processAddressSpace[pid] ;
+	ProcessAddressSpace* pPAS = &ProcessManager::Instance().GetCurrentPAS() ;
 
 	GET_DRIVE_FOR_FS_OPS(iDriveID, Directory_FAILURE) ;
 
@@ -178,8 +177,7 @@ byte FileOperations_Read(int fd, char* buffer, int len, unsigned* pReadLen)
 	RETURN_X_IF_NOT(ProcFileManager_GetRealNonDuppedFD(fd, &fd), ProcFileManager_SUCCESS, FileOperations_FAILURE) ;
 
 	ProcFileDescriptor* pFDEntry ;
-	int pid = ProcessManager_iCurrentProcessID ;
-	ProcessAddressSpace* pPAS = &ProcessManager_processAddressSpace[pid] ;
+	ProcessAddressSpace* pPAS = &ProcessManager::Instance().GetCurrentPAS() ;
 
 	RETURN_X_IF_NOT(ProcFileManager_GetFDEntry(fd, &pFDEntry), ProcFileManager_SUCCESS, FileOperations_FAILURE) ;
 
@@ -226,8 +224,7 @@ byte FileOperations_Write(int fd, const char* buffer, int len, int* pWriteLen)
 	ProcFileDescriptor* pFDEntry ;
 	RETURN_X_IF_NOT(ProcFileManager_GetFDEntry(fd, &pFDEntry), ProcFileManager_SUCCESS, FileOperations_FAILURE) ;
 
-	int pid = ProcessManager_iCurrentProcessID ;
-	ProcessAddressSpace* pPAS = &ProcessManager_processAddressSpace[pid] ;
+	ProcessAddressSpace* pPAS = &ProcessManager::Instance().GetCurrentPAS() ;
 
 	if( !(pFDEntry->mode & O_WRONLY || pFDEntry->mode & O_RDWR || pFDEntry->mode & O_APPEND) )
 		return FileOperations_ERR_NO_WRITE_PERM ;
@@ -280,8 +277,7 @@ byte FileOperations_Create(const char* szFilePath, unsigned short usFileType, un
 	char szFile[100] ;
 	FileOperations_ParseFilePathWithDrive(szFilePath, szFile, (unsigned*)&iDriveID) ;
 
-	int pid = ProcessManager_iCurrentProcessID ;
-	ProcessAddressSpace* pPAS = &ProcessManager_processAddressSpace[pid] ;
+	ProcessAddressSpace* pPAS = &ProcessManager::Instance().GetCurrentPAS() ;
 
 	unsigned short usFileAttr ;
 	byte bStatus ;
@@ -318,8 +314,7 @@ byte FileOperations_Delete(const char* szFilePath)
 	char szFile[100] ;
 	FileOperations_ParseFilePathWithDrive(szFilePath, szFile, (unsigned*)&iDriveID) ;
 
-	int pid = ProcessManager_iCurrentProcessID ;
-	ProcessAddressSpace* pPAS = &ProcessManager_processAddressSpace[pid] ;
+	ProcessAddressSpace* pPAS = &ProcessManager::Instance().GetCurrentPAS() ;
 
 	byte bStatus ;
 	byte bParentDirectoryBuffer[512] ;
@@ -361,8 +356,7 @@ byte FileOperations_Exists(const char* szFileName, unsigned short usFileType)
 	FileOperations_ParseFilePathWithDrive(szFileName, szFile, (unsigned*)&iDriveID) ;
 
 	FileSystem_DIR_Entry dirEntry ;
-	int pid = ProcessManager_iCurrentProcessID ;
-	ProcessAddressSpace* pPAS = &ProcessManager_processAddressSpace[pid] ;
+	ProcessAddressSpace* pPAS = &ProcessManager::Instance().GetCurrentPAS() ;
 
 	byte bStatus ;
 	RETURN_IF_NOT(bStatus, Directory_GetDirEntry(szFile, pPAS, iDriveID, &dirEntry), Directory_SUCCESS)
@@ -390,8 +384,8 @@ byte FileOperations_GetOffset(int fd, unsigned* uiOffset)
 byte FileOperations_GetCWD(char* szPathBuf, int iBufSize)
 {
 	byte bStatus ;
-	FileSystem_PresentWorkingDirectory* pPWD = (FileSystem_PresentWorkingDirectory*)&(ProcessManager_processAddressSpace[ProcessManager_iCurrentProcessID].processPWD) ;
-	int iDriveID = ProcessManager_processAddressSpace[ProcessManager_iCurrentProcessID].iDriveID ;
+	FileSystem_PresentWorkingDirectory* pPWD = (FileSystem_PresentWorkingDirectory*)&(ProcessManager::Instance().GetCurrentPAS().processPWD) ;
+	int iDriveID = ProcessManager::Instance().GetCurrentPAS().iDriveID ;
 
 	GET_DRIVE_FOR_FS_OPS(iDriveID, Directory_FAILURE) ;
 
@@ -414,9 +408,9 @@ byte FileOperations_GetDirEntry(const char* szFileName, FileSystem_DIR_Entry* pD
 	GET_DRIVE_FOR_FS_OPS(iDriveID, Directory_FAILURE) ;
 
 	FileSystem_CWD CWD ;
-	if(iDriveID == ProcessManager_processAddressSpace [ProcessManager_iCurrentProcessID].iDriveID)
+	if(iDriveID == ProcessManager::Instance().GetCurrentPAS().iDriveID)
 	{
-		FileSystem_PresentWorkingDirectory* pPWD = (FileSystem_PresentWorkingDirectory*)&(ProcessManager_processAddressSpace[ProcessManager_iCurrentProcessID].processPWD) ;
+		FileSystem_PresentWorkingDirectory* pPWD = (FileSystem_PresentWorkingDirectory*)&(ProcessManager::Instance().GetCurrentPAS().processPWD) ;
 		CWD.pDirEntry = &pPWD->DirEntry ;
 		CWD.uiSectorNo = pPWD->uiSectorNo ;
 		CWD.bSectorEntryPosition = pPWD->bSectorEntryPosition ;
@@ -457,9 +451,9 @@ byte FileOperations_GetStat(const char* szFileName, int iDriveID, FileSystem_Fil
 
 	FileSystem_CWD CWD ;
 
-	if(iDriveID == ProcessManager_processAddressSpace [ProcessManager_iCurrentProcessID].iDriveID)
+	if(iDriveID == ProcessManager::Instance().GetCurrentPAS().iDriveID)
 	{
-		FileSystem_PresentWorkingDirectory* pPWD = (FileSystem_PresentWorkingDirectory*)&(ProcessManager_processAddressSpace[ProcessManager_iCurrentProcessID].processPWD) ;
+		FileSystem_PresentWorkingDirectory* pPWD = (FileSystem_PresentWorkingDirectory*)&(ProcessManager::Instance().GetCurrentPAS().processPWD) ;
 		CWD.pDirEntry = &pPWD->DirEntry ;
 		CWD.uiSectorNo = pPWD->uiSectorNo ;
 		CWD.bSectorEntryPosition = pPWD->bSectorEntryPosition ;
@@ -513,14 +507,14 @@ byte FileOperations_GetStatFD(int iFD, FileSystem_FileStat* pFileStat)
 byte FileOperations_UpdateTime(const char* szFileName, int iDriveID, byte bTimeType)
 {
 	if(iDriveID == CURRENT_DRIVE)
-		iDriveID = ProcessManager_processAddressSpace [ProcessManager_iCurrentProcessID].iDriveID ;
+		iDriveID = ProcessManager::Instance().GetCurrentPAS().iDriveID ;
 
 	GET_DRIVE_FOR_FS_OPS(iDriveID, Directory_FAILURE) ;
 
 	FileSystem_CWD CWD ;
-	if(iDriveID == ProcessManager_processAddressSpace [ProcessManager_iCurrentProcessID].iDriveID)
+	if(iDriveID == ProcessManager::Instance().GetCurrentPAS().iDriveID)
 	{
-		FileSystem_PresentWorkingDirectory* pPWD = (FileSystem_PresentWorkingDirectory*)&(ProcessManager_processAddressSpace[ProcessManager_iCurrentProcessID].processPWD) ;
+		FileSystem_PresentWorkingDirectory* pPWD = (FileSystem_PresentWorkingDirectory*)&(ProcessManager::Instance().GetCurrentPAS().processPWD) ;
 		CWD.pDirEntry = &pPWD->DirEntry ;
 		CWD.uiSectorNo = pPWD->uiSectorNo ;
 		CWD.bSectorEntryPosition = pPWD->bSectorEntryPosition ;
@@ -560,7 +554,7 @@ byte FileOperations_GetFileOpenMode(int fd, byte* mode)
 
 byte FileOperations_SyncPWD()
 {
-	RETURN_X_IF_NOT(Directory_SyncPWD(&ProcessManager_processAddressSpace[ProcessManager_iCurrentProcessID]), Directory_SUCCESS, FileOperations_FAILURE) ;
+	RETURN_X_IF_NOT(Directory_SyncPWD(&ProcessManager::Instance().GetCurrentPAS()), Directory_SUCCESS, FileOperations_FAILURE) ;
 	return FileOperations_SUCCESS ;
 }
 
@@ -570,7 +564,7 @@ byte FileOperations_ChangeDir(const char* szFileName)
 	char szFile[100] ;
 	FileOperations_ParseFilePathWithDrive(szFileName, szFile, (unsigned*)&iDriveID) ;
 
-	ProcessAddressSpace* pPAS = &ProcessManager_processAddressSpace[ProcessManager_iCurrentProcessID] ;
+	ProcessAddressSpace* pPAS = &ProcessManager::Instance().GetCurrentPAS() ;
 	
 	RETURN_X_IF_NOT(Directory_Change(szFile, iDriveID, pPAS), Directory_SUCCESS, FileOperations_FAILURE) ;
 
@@ -583,7 +577,7 @@ byte FileOperations_GetDirectoryContent(const char* szPathAddress, FileSystem_DI
 	char szPath[100] ;
 	FileOperations_ParseFilePathWithDrive(szPathAddress, szPath, (unsigned*)&iDriveID) ;
 
-	ProcessAddressSpace* pPAS = &ProcessManager_processAddressSpace[ProcessManager_iCurrentProcessID] ;
+	ProcessAddressSpace* pPAS = &ProcessManager::Instance().GetCurrentPAS() ;
 
 	RETURN_X_IF_NOT(Directory_GetDirectoryContent(szPath, pPAS, iDriveID, pDirList, iListSize), Directory_SUCCESS, FileOperations_FAILURE) ;
 
@@ -604,8 +598,7 @@ byte FileOperations_FileAccess(const char* szFileName, int iDriveID, int mode)
 
 	byte bStatus ;
 	FileSystem_DIR_Entry dirEntry ;
-	int pid = ProcessManager_iCurrentProcessID ;
-	ProcessAddressSpace* pPAS = &ProcessManager_processAddressSpace[pid] ;
+	ProcessAddressSpace* pPAS = &ProcessManager::Instance().GetCurrentPAS() ;
 
 	GET_DRIVE_FOR_FS_OPS(iDriveID, Directory_FAILURE) ;
 

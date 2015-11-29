@@ -17,6 +17,7 @@
  */
 #include <SysCall.h>
 #include <MemUtil.h>
+#include <Exerr.h>
 
 typedef void Handler(
 __volatile__ int* piRetVal,
@@ -112,13 +113,19 @@ __volatile__ unsigned uiP9)
 	//KC::MDisplay().Number(", SC: ", uiSysCallID) ;
 	SYS_CALL_ID = uiSysCallID ;
 	
-	unsigned i ;
-	for(i = 0; i < SysCall_NoOfHandlers; i++)
+	for(unsigned i = 0; i < SysCall_NoOfHandlers; i++)
 	{
 		if(SysCall_Handlers[i].pFuncCheck(uiSysCallID))
 		{
-			SysCall_Handlers[i].pFuncHandle(&iRetVal, uiSysCallID, true, uiP1, uiP2, uiP3, uiP4, uiP5, uiP6, uiP7, uiP8, uiP9) ;
-			break ;
+      try
+      {
+  			SysCall_Handlers[i].pFuncHandle(&iRetVal, uiSysCallID, true, uiP1, uiP2, uiP3, uiP4, uiP5, uiP6, uiP7, uiP8, uiP9) ;
+      }
+      catch(const Exerr& ex)
+      {
+        printf("\n SysCall %u failed with error: %s\n", uiSysCallID, ex.Error().Value());
+      }
+	  	break ;
 		}
 	}
 

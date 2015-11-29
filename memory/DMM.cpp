@@ -20,6 +20,7 @@
 #include <Display.h>
 #include <MOSMain.h>
 #include <stdio.h>
+#include <Exerr.h>
 
 unsigned DMM_uiTotalKernelAllocation = 0 ;
 
@@ -43,24 +44,18 @@ static unsigned DMM_GetByteStuffForAlign(unsigned uiAddress, unsigned uiAlignNum
 	return uiByteStuffForAlign ;
 }
 
-static byte DMM_CheckAlignNumber(unsigned uiAlignNumber)
+void DMM_CheckAlignNumber(unsigned uiAlignNumber)
 {
 	static unsigned ALIGN[] = { 0, 1, 2, 4, 8, 16, 32, 64, 99 } ;
-	unsigned i ;
-	for(i = 0; ALIGN[i] != 99; i++)
+	for(unsigned i = 0; ALIGN[i] != 99; i++)
 		if(uiAlignNumber == ALIGN[i])
-			return DMM_SUCCESS ;
-
-	KC::MDisplay().Number("\n Align Number: ", uiAlignNumber) ;
-	KC::MDisplay().Message(" is not supported.", Display::WHITE_ON_BLACK()) ;
-
-	return DMM_FAILURE ;
+			return;
+  throw Exerr(XLOC, "%u is not aligned address", uiAlignNumber);
 }
 
-static unsigned DMM_AllocateAlignForKernel_Act(unsigned uiSizeInBytes, unsigned uiAlignNumber)
+unsigned DMM_AllocateAlignForKernel_Act(unsigned uiSizeInBytes, unsigned uiAlignNumber)
 {
-	if(DMM_CheckAlignNumber(uiAlignNumber) != DMM_SUCCESS)
-		return DMM_BAD_ALIGN ;
+	DMM_CheckAlignNumber(uiAlignNumber);
 
 	unsigned uiHeapStartAddress ;
 	unsigned* uiAUTAddress ;
@@ -145,8 +140,7 @@ static unsigned DMM_AllocateAlignForKernel_Act(unsigned uiSizeInBytes, unsigned 
 		prevAut = aut ;
 		aut = (AllocationUnitTracker*)(aut->uiNextAUTAddress) ;
 	}
-
-	return NULL ;
+  throw Exerr(XLOC, "out of memory!");
 }
 
 static byte DMM_DeAllocateForKernel_Act(unsigned uiAddress)
@@ -197,10 +191,9 @@ unsigned DMM_Allocate(ProcessAddressSpace* processAddressSpace, unsigned uiSizeI
 
 unsigned DMM_AllocateAlign(ProcessAddressSpace* processAddressSpace, unsigned uiSizeInBytes, unsigned uiAlignNumber)
 {
-	if(DMM_CheckAlignNumber(uiAlignNumber) != DMM_SUCCESS)
-		return DMM_BAD_ALIGN ;
+	DMM_CheckAlignNumber(uiAlignNumber);
 	
-	ProcessManager_SetDMMFlag(ProcessManager_iCurrentProcessID, true) ;
+	ProcessManager_SetDMMFlag(ProcessManager::GetCurrentProcessID(), true) ;
 
 	__volatile__ unsigned uiHeapStartAddress = PROCESS_HEAP_START_ADDRESS - GLOBAL_DATA_SEGMENT_BASE ;
 
@@ -264,7 +257,7 @@ unsigned DMM_AllocateAlign(ProcessAddressSpace* processAddressSpace, unsigned ui
 				}
 				x = ((char*)(uiAddress + aut->uiSize - 1))[0] ;
 
-				ProcessManager_SetDMMFlag(ProcessManager_iCurrentProcessID, false) ;
+				ProcessManager_SetDMMFlag(ProcessManager::GetCurrentProcessID(), false) ;
 				
 				return VIRTUAL_ALLOCATED_ADDRESS(aut->uiReturnAddress) ;
 			}
@@ -292,8 +285,8 @@ unsigned DMM_AllocateAlign(ProcessAddressSpace* processAddressSpace, unsigned ui
 		aut = (AllocationUnitTracker*)(aut->uiNextAUTAddress) ;
 	}
 
-	ProcessManager_SetDMMFlag(ProcessManager_iCurrentProcessID, false) ;
-	return NULL ;
+	ProcessManager_SetDMMFlag(ProcessManager::GetCurrentProcessID(), false) ;
+  throw Exerr(XLOC, "out of memory!");
 }
 
 unsigned DMM_AllocateForKernel(unsigned uiSizeInBytes)

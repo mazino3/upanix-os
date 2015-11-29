@@ -26,6 +26,7 @@
 #include <AsmUtil.h>
 #include <IDT.h>
 #include <Atomic.h>
+#include <Exerr.h>
 
 extern "C" { 
 	unsigned MEM_PDBR ;
@@ -274,9 +275,9 @@ Result MemManager::MarkPageAsAllocated(unsigned uiPageNumber)
 	return Success ;
 }
 
-Result MemManager::AllocatePhysicalPage(unsigned* uiPageNumber)
+unsigned MemManager::AllocatePhysicalPage()
 {	
-	ProcessManager_DisableTaskSwitch() ;
+	ProcessSwitchLock lock;
 
 	unsigned uiPageMapPosition ;
 	unsigned uiPageOffset ;
@@ -291,22 +292,14 @@ Result MemManager::AllocatePhysicalPage(unsigned* uiPageNumber)
 			{
 				if((uiPageMapEntry & 0x1) == 0x0)
 				{
-					*uiPageNumber = (uiPageMapPosition * 4 * 8) + uiPageOffset ;
 					m_uiPageMap[uiPageMapPosition] |= (0x1	<< uiPageOffset) ;
-
-					//KC::MDisplay().Number(",", *uiPageNumber);
-					ProcessManager_EnableTaskSwitch() ;
-
-					return Success ;
+          return (uiPageMapPosition * 4 * 8) + uiPageOffset;
 				}
 				uiPageMapEntry >>= 1 ;
 			}
 		}
 	}
-
-	ProcessManager_EnableTaskSwitch() ;
-
-	return OutOfMemory;
+  throw Exerr(XLOC, "Out of memory pages!");
 }
 
 void MemManager::DeAllocatePhysicalPage(const unsigned uiPageNumber)
@@ -335,7 +328,7 @@ Result MemManager::AllocatePage(int iProcessID, unsigned uiFaultyAddress)
 
 	uiVirtualPageNo = uiFaultyAddress / PAGE_SIZE ;
 
-	if(ProcessManager_processAddressSpace[iProcessID].bIsKernelProcess == true)
+	if(ProcessManager::Instance().GetAddressSpace(iProcessID).bIsKernelProcess == true)
 	{
 		printf("\n Page Fault in Kernel! COMMON MAN... FIX THIS !!!") ;
 		printf("\n Page Fault Address/Page: %u / %u", uiFaultyAddress, uiVirtualPageNo);
@@ -358,18 +351,13 @@ Result MemManager::AllocatePage(int iProcessID, unsigned uiFaultyAddress)
 			return Failure;
 		}
 
-		uiPDEAddress = ProcessManager_processAddressSpace[iProcessID].taskState.CR3_PDBR ;
+		uiPDEAddress = ProcessManager::Instance().GetAddressSpace(iProcessID).taskState.CR3_PDBR ;
 
 		uiPTEAddress = (((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[ ((uiFaultyAddress >> 22) & 0x3FF) ]) ;
 
 		if((uiPTEAddress & 0x1) == 0x0)
 		{
-			if(AllocatePhysicalPage(&uiPTEFreePage) != Success)
-			{
-				/* Crash the Process..... With SegFault Or OutOfMemeory Error*/
-				KC::MDisplay().Message("\n Out Of Memory3\n", Display::WHITE_ON_BLACK()) ;
-				return Failure;
-			}
+			uiPTEFreePage = AllocatePhysicalPage();
 
 			((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[ ((uiFaultyAddress >> 22) & 0x3FF)] = 
 				((uiPTEFreePage * PAGE_SIZE) & 0xFFFFF000) | 0x7 ;
@@ -388,12 +376,7 @@ Result MemManager::AllocatePage(int iProcessID, unsigned uiFaultyAddress)
 		// TODO: Fix This Properly
 		if((uiPageAdress & 0x01) == 0x00)
 		{
-			if(AllocatePhysicalPage(&uiFreePageNo) != Success)
-			{
-				/* Crash the Process..... With SegFault Or OutOfMemeory Error*/
-				KC::MDisplay().Message("\n Out Of Memory2\n", Display::WHITE_ON_BLACK()) ;
-				return Failure;
-			}
+			uiFreePageNo = AllocatePhysicalPage();
 
 			((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[ ((uiFaultyAddress >> 12) & 0x3FF) ] = 
 					((uiFreePageNo * PAGE_SIZE) & 0xFFFFF000) | 0x7 ;
@@ -450,7 +433,7 @@ Result MemManager::DeAllocatePage(const unsigned uiAddress)
 //		if(AllocatePage(ProcessManager_iCurrentProcessID, uiFaultyAddress) == Failure)
 //		{
 //			//TODO:
-//			ProcessManager_processAddressSpace[ProcessManager_iCurrentProcessID].status = TERMINATE ;
+//			ProcessManager::Instance().GetCurrentPAS().status = TERMINATE ;
 //			__asm__ __volatile__("HLT") ;
 //		}
 //		SPECIAL_TASK = false ;
@@ -485,7 +468,7 @@ void MemManager::DisplayNoOfFreePages()
 
 unsigned MemManager::GetFlatAddress(unsigned uiVirtualAddress)
 {
-	unsigned uiPDEAddress = ProcessManager_processAddressSpace[ProcessManager_iCurrentProcessID].taskState.CR3_PDBR ;
+	unsigned uiPDEAddress = ProcessManager::Instance().GetCurrentPAS().taskState.CR3_PDBR ;
 
 	unsigned uiPTEAddress = (((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[((uiVirtualAddress >> 22) & 0x3FF)]) ;
 

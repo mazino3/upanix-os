@@ -44,7 +44,7 @@ class MemManager
 			return instance;
 		}
 		Result MarkPageAsAllocated(unsigned uiPageNumber) ;
-		Result AllocatePhysicalPage(unsigned* uiPageNumber) ;
+		unsigned AllocatePhysicalPage();
 		void DeAllocatePhysicalPage(const unsigned uiPageNumber) ;
 		Result AllocatePage(int iProcessID, unsigned uiFaultyAddress) ;
 		Result DeAllocatePage(const unsigned uiAddress) ;

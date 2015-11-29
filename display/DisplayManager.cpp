@@ -25,7 +25,7 @@
 # include <KernelComponents.h>
 
 #define VIDEO_BUFFER_ADDRESS			0xB8000
-#define VIDEOMEM						(DisplayManager::GetDisplayMemAddress(ProcessManager_iCurrentProcessID))
+#define VIDEOMEM						(DisplayManager::GetDisplayMemAddress(ProcessManager::GetCurrentProcessID()))
 
 DisplayBuffer::DisplayBuffer() : m_mCursor(0, 0), m_uiDisplayMemRawAddress(VIDEO_BUFFER_ADDRESS)
 {
@@ -107,14 +107,14 @@ DisplayBuffer& DisplayManager::GetDisplayBuffer(int pid)
 		return KernelDisplayBuffer() ;
 	}
 	
-	ProcessAddressSpace* pAddrSpace = &ProcessManager_processAddressSpace[pid] ;
-	ProcessGroup* pGroup = &ProcessGroupManager_AddressSpace[pAddrSpace->iProcessGroupID] ;
+	ProcessAddressSpace* pAddrSpace = &ProcessManager::Instance().GetAddressSpace(pid) ;
+	ProcessGroup* pGroup = &ProcessGroupManager::Instance().GetProcessGroup(pAddrSpace->iProcessGroupID) ;
 	return pGroup->videoBuffer ;
 }
 
 DisplayBuffer& DisplayManager::GetDisplayBuffer()
 {
-	return GetDisplayBuffer(ProcessManager_iCurrentProcessID) ;
+	return GetDisplayBuffer(ProcessManager::GetCurrentProcessID()) ;
 }
 
 byte* DisplayManager::GetDisplayMemAddress(int pid)
@@ -197,7 +197,7 @@ byte DisplayManager::GetChar(int iPos)
 // Called for Non Kernel Processes only
 void DisplayManager::SetupPageTableForDisplayBuffer(int iProcessGroupID, unsigned uiPDEAddress)
 {
-	unsigned uiDisplayMemRawAddress = ProcessGroupManager_AddressSpace[iProcessGroupID].videoBuffer.GetDisplayMemAddr() ;
+	unsigned uiDisplayMemRawAddress = ProcessGroupManager::Instance().GetProcessGroup(iProcessGroupID).videoBuffer.GetDisplayMemAddr() ;
 
 	unsigned uiPDEIndex = ((PROCESS_VIDEO_BUFFER >> 22) & 0x3FF) ;
 	unsigned uiPTEIndex = ((PROCESS_VIDEO_BUFFER >> 12) & 0x3FF) ;
@@ -211,8 +211,8 @@ void DisplayManager::SetupPageTableForDisplayBuffer(int iProcessGroupID, unsigne
 /**********************************************************/
 void DisplayManager::RefreshScreen()
 {
-	const ProcessGroup* pFGGroup = ProcessGroupManager_GetFGProcessGroup() ;
-	const DisplayBuffer& mDisplayBuffer = pFGGroup->videoBuffer ;
+	const ProcessGroup& pFGGroup = ProcessGroupManager::Instance().GetFGProcessGroup() ;
+	const DisplayBuffer& mDisplayBuffer = pFGGroup.videoBuffer ;
 
 	char* pDestDisplayBuf = (char*)(VIDEO_BUFFER_ADDRESS - GLOBAL_DATA_SEGMENT_BASE) ;
 	char* pSrcDisplayBuf = (char*)(mDisplayBuffer.GetDisplayMemAddr() - GLOBAL_DATA_SEGMENT_BASE) ;

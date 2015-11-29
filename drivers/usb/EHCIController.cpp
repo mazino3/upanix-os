@@ -318,8 +318,7 @@ static void EHCIController_SetupInterrupts(EHCIController* pController)
 
 static byte EHCIController_SetupPeriodicFrameList(EHCIController* pController)
 {
-	unsigned uiFreePageNo ;
-	RETURN_X_IF_NOT(MemManager::Instance().AllocatePhysicalPage(&uiFreePageNo), Success, EHCIController_FAILURE) ;
+	unsigned uiFreePageNo = MemManager::Instance().AllocatePhysicalPage();
 
 	unsigned* pFrameList = (unsigned*)(uiFreePageNo * PAGE_SIZE - GLOBAL_DATA_SEGMENT_BASE) ;
 	

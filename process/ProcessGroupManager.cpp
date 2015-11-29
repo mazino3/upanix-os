@@ -20,130 +20,94 @@
 # include <MemManager.h>
 # include <Display.h>
 # include <DMM.h>
-# include <Atomic.h>
+# include <Exerr.h>
 
-int ProcessGroupManager_iFGProcessGroup ;
-ProcessGroup* ProcessGroupManager_AddressSpace ;
-
-/***** static ****/
-static Mutex& ProcessGroupManager_PGASMutex()
-{
-	static Mutex m ;
-	return m ;
-}
-
-static int ProcessGroupManager_GetFreePGAS()
-{
-	ProcessGroupManager_PGASMutex().Lock() ;
-	unsigned i ;
-	for(i = 0; i < MAX_NO_PROCESS_GROUP; i++)
-	{
-		if(ProcessGroupManager_AddressSpace[i].bFree == true)
-		{
-			ProcessGroupManager_AddressSpace[i].bFree = false ;
-			ProcessGroupManager_PGASMutex().UnLock() ;
-			return i ;
-		}
-	}
-
-	ProcessGroupManager_PGASMutex().UnLock() ;
-	return -1 ;
-}
-
-static void ProcessGroupManager_FreePGAS(int iProcessGroupID)
-{
-	ProcessGroupManager_PGASMutex().Lock() ;
-	ProcessGroupManager_AddressSpace[iProcessGroupID].bFree = true ;
-	ProcessGroupManager_PGASMutex().UnLock() ;
-}
-
-/*********************/
-
-byte ProcessGroupManager_Initialize()
+ProcessGroupManager::ProcessGroupManager() : 
+  _iFGProcessGroup(NO_PROCESS_GROUP_ID), 
+  _groups((ProcessGroup*)MEM_PGAS_START)
 {
 	if(((sizeof(ProcessGroup) * MAX_NO_PROCESS_GROUP)) > (MEM_PGAS_END - MEM_PGAS_START))
+    throw Exerr(XLOC, "Process Group Address Space InSufficient");
+
+	for(int i = 0; i < MAX_NO_PROCESS_GROUP; i++)
+		_groups[i].bFree = true ;
+}
+
+int ProcessGroupManager::GetFreePGAS()
+{
+  MutexGuard g(_mutex);
+	for(unsigned i = 0; i < MAX_NO_PROCESS_GROUP; i++)
 	{
-		KC::MDisplay().Message("\n Process Group Address Space InSufficient\n", '\r') ;
-		return ProcessGroupManager_FAILURE ;
+		if(_groups[i].bFree == true)
+		{
+			_groups[i].bFree = false ;
+			return i;
+		}
 	}
-
-	ProcessGroupManager_iFGProcessGroup = NO_PROCESS_GROUP_ID ;
-
-	ProcessGroupManager_AddressSpace = (ProcessGroup*)MEM_PGAS_START ;
-
-	unsigned i ;
-	for(i = 0; i < MAX_NO_PROCESS_GROUP; i++)
-		ProcessGroupManager_AddressSpace[i].bFree = true ;
-
-	return ProcessGroupManager_SUCCESS ;
+  throw Exerr(XLOC, "out of free process group memory");
 }
 
-int ProcessGroupManager_GetProcessCount(int iProcessGroupID)
+void ProcessGroupManager::FreePGAS(int iProcessGroupID)
 {
-	return ProcessGroupManager_AddressSpace[iProcessGroupID].iProcessCount ;
+  MutexGuard g(_mutex);
+	_groups[iProcessGroupID].bFree = true ;
 }
 
-byte ProcessGroupManager_CreateProcessGroup(byte bIsFGProcessGroup, int* iProcessGroupID)
+int ProcessGroupManager::GetProcessCount(int iProcessGroupID)
 {
-	int iPgid = ProcessGroupManager_GetFreePGAS() ;
+	return _groups[iProcessGroupID].iProcessCount ;
+}
 
-	if(iPgid == -1)
-		return ProcessGroupManager_ERR_NO_FREE_PGAS ;
+int ProcessGroupManager::CreateProcessGroup(bool isFGProcessGroup)
+{
+	int iPgid = GetFreePGAS() ;
 
-	ProcessGroupManager_AddressSpace[iPgid].iProcessCount = 0 ;
-	ProcessGroupManager_AddressSpace[iPgid].fgProcessListHead.pNext = NULL ;
-	ProcessGroupManager_AddressSpace[iPgid].fgProcessListHead.iProcessID = NO_PROCESS_ID ;
+	_groups[iPgid].iProcessCount = 0 ;
+	_groups[iPgid].fgProcessListHead.pNext = NULL ;
+	_groups[iPgid].fgProcessListHead.iProcessID = NO_PROCESS_ID ;
 	
-	if(bIsFGProcessGroup)
-		ProcessGroupManager_iFGProcessGroup = iPgid ;
+	if(isFGProcessGroup)
+		_iFGProcessGroup = iPgid ;
 
-	unsigned uiFreePageNo ;
-	RETURN_X_IF_NOT(MemManager::Instance().AllocatePhysicalPage(&uiFreePageNo), Success, ProcessGroupManager_FAILURE) ;
+	unsigned uiFreePageNo = MemManager::Instance().AllocatePhysicalPage();
 
-	DisplayManager::InitializeDisplayBuffer(ProcessGroupManager_AddressSpace[iPgid].videoBuffer, uiFreePageNo * PAGE_SIZE) ;
-
-	*iProcessGroupID = iPgid ;
-
-	return ProcessGroupManager_SUCCESS ;
+	DisplayManager::InitializeDisplayBuffer(_groups[iPgid].videoBuffer, uiFreePageNo * PAGE_SIZE) ;
+  return iPgid;
 }
 
-byte ProcessGroupManager_DestroyProcessGroup(int iProcessGroupID)
+void ProcessGroupManager::DestroyProcessGroup(int iProcessGroupID)
 {
-	ProcessGroupManager_FreePGAS(iProcessGroupID) ;
-	ProcessGroup* pGroup = &ProcessGroupManager_AddressSpace[iProcessGroupID] ;
+	FreePGAS(iProcessGroupID) ;
+	ProcessGroup& pGroup = _groups[iProcessGroupID] ;
 
-	MemManager::Instance().DeAllocatePhysicalPage(((unsigned)pGroup->videoBuffer.GetDisplayMemAddr()) / PAGE_SIZE) ;
+	MemManager::Instance().DeAllocatePhysicalPage(((unsigned)pGroup.videoBuffer.GetDisplayMemAddr()) / PAGE_SIZE) ;
 
-	if(pGroup->fgProcessListHead.pNext != NULL)
-		DMM_DeAllocateForKernel((unsigned)pGroup->fgProcessListHead.pNext) ;
-
-	return ProcessGroupManager_SUCCESS ;
+	if(pGroup.fgProcessListHead.pNext != NULL)
+		DMM_DeAllocateForKernel((unsigned)pGroup.fgProcessListHead.pNext) ;
 }
 
-void ProcessGroupManager_PutOnFGProcessList(int iProcessID)
+void ProcessGroupManager::PutOnFGProcessList(int iProcessID)
 {
-	ProcessGroupManager_PGASMutex().Lock() ;
+  MutexGuard g(_mutex);
 
-	ProcessAddressSpace* pAddrSpace = &ProcessManager_processAddressSpace[iProcessID] ;
-	ProcessGroup* pGroup = &ProcessGroupManager_AddressSpace[pAddrSpace->iProcessGroupID] ;
+	ProcessAddressSpace& pAddrSpace = ProcessManager::Instance().GetAddressSpace(iProcessID);
+	ProcessGroup& pGroup = _groups[pAddrSpace.iProcessGroupID];
 
 	FGProcessList* pFGProcessListEntry = (FGProcessList*)DMM_AllocateForKernel(sizeof(FGProcessList)) ;
 	pFGProcessListEntry->iProcessID = iProcessID ;
-	pFGProcessListEntry->pNext = pGroup->fgProcessListHead.pNext ;
-	pGroup->fgProcessListHead.pNext = pFGProcessListEntry ;
-
-	ProcessGroupManager_PGASMutex().UnLock() ;
+	pFGProcessListEntry->pNext = pGroup.fgProcessListHead.pNext ;
+	pGroup.fgProcessListHead.pNext = pFGProcessListEntry ;
 }
 
-void ProcessGroupManager_RemoveFromFGProcessList(int iProcessID)
+void ProcessGroupManager::RemoveFromFGProcessList(int iProcessID)
 {
-	ProcessGroupManager_PGASMutex().Lock() ;
+  MutexGuard g(_mutex);
 
-	ProcessAddressSpace* pAddrSpace = &ProcessManager_processAddressSpace[iProcessID] ;
-	ProcessGroup* pGroup = &ProcessGroupManager_AddressSpace[pAddrSpace->iProcessGroupID] ;
+	ProcessAddressSpace& pAddrSpace = ProcessManager::Instance().GetAddressSpace(iProcessID);
+	ProcessGroup& pGroup = _groups[pAddrSpace.iProcessGroupID];
 	
-	FGProcessList* pPrev = &pGroup->fgProcessListHead, *pCur ;
-	for(pCur = pGroup->fgProcessListHead.pNext; pCur != NULL; pCur = pCur->pNext)
+	FGProcessList* pPrev = &pGroup.fgProcessListHead, *pCur ;
+	for(pCur = pGroup.fgProcessListHead.pNext; pCur != NULL; pCur = pCur->pNext)
 	{
 		if(pCur->iProcessID == iProcessID)
 		{
@@ -151,62 +115,42 @@ void ProcessGroupManager_RemoveFromFGProcessList(int iProcessID)
 			DMM_DeAllocateForKernel((unsigned)pCur) ;
 			break ;
 		}
-
 		pPrev = pCur ;
 	}
-
-	ProcessGroupManager_PGASMutex().UnLock() ;
 }
 
-void ProcessGroupManager_AddProcessToGroup(int iProcessID)
+void ProcessGroupManager::AddProcessToGroup(int iProcessID)
 {
-	ProcessGroupManager_PGASMutex().Lock() ;
-
-	ProcessAddressSpace* pAddrSpace = &ProcessManager_processAddressSpace[iProcessID] ;
-	ProcessGroup* pGroup = &ProcessGroupManager_AddressSpace[pAddrSpace->iProcessGroupID] ;
-	pGroup->iProcessCount++ ;
-
-	ProcessGroupManager_PGASMutex().UnLock() ;
+  MutexGuard g(_mutex);
+	ProcessAddressSpace& pAddrSpace = ProcessManager::Instance().GetAddressSpace(iProcessID);
+	ProcessGroup& pGroup = _groups[pAddrSpace.iProcessGroupID] ;
+	pGroup.iProcessCount++ ;
 }
 
-void ProcessGroupManager_RemoveProcessFromGroup(int iProcessID)
+void ProcessGroupManager::RemoveProcessFromGroup(int iProcessID)
 {
-	ProcessGroupManager_PGASMutex().Lock() ;
+  MutexGuard g(_mutex);
 
-	ProcessAddressSpace* pAddrSpace = &ProcessManager_processAddressSpace[iProcessID] ;
-	ProcessGroup* pGroup = &ProcessGroupManager_AddressSpace[pAddrSpace->iProcessGroupID] ;
-	pGroup->iProcessCount-- ;
-	
-	ProcessGroupManager_PGASMutex().UnLock() ;
+	ProcessAddressSpace& pAddrSpace = ProcessManager::Instance().GetAddressSpace(iProcessID);
+	ProcessGroup& pGroup = _groups[pAddrSpace.iProcessGroupID];
+	pGroup.iProcessCount-- ;
 }
 
-void ProcessGroupManager_SwitchFGProcessGroup(int iProcessID)
+void ProcessGroupManager::SwitchFGProcessGroup(int iProcessID)
 {
-	ProcessGroupManager_PGASMutex().Lock() ;
-
-	ProcessGroupManager_iFGProcessGroup = ProcessManager_processAddressSpace[iProcessID].iProcessGroupID ;
-
-	ProcessGroupManager_PGASMutex().UnLock() ;
+  MutexGuard g(_mutex);
+	_iFGProcessGroup = ProcessManager::Instance().GetAddressSpace(iProcessID).iProcessGroupID ;
 }
 
-bool ProcessGroupManager_IsFGProcessGroup(int iProcessGroupID)
+bool ProcessGroupManager::IsFGProcessGroup(int iProcessGroupID)
 {
-	return (iProcessGroupID == ProcessGroupManager_iFGProcessGroup) ;
+	return iProcessGroupID == _iFGProcessGroup;
 }
 
-bool ProcessGroupManager_IsFGProcess(int iProcessGroupID, int iProcessID)
+bool ProcessGroupManager::IsFGProcess(int iProcessGroupID, int iProcessID)
 {
-	ProcessGroup* pGroup = &ProcessGroupManager_AddressSpace[iProcessGroupID] ;
-
-	if(pGroup->fgProcessListHead.pNext != NULL)
-	{
-		return (pGroup->fgProcessListHead.pNext->iProcessID == iProcessID) ;
-	}
-
+	ProcessGroup& pGroup = _groups[iProcessGroupID] ;
+	if(pGroup.fgProcessListHead.pNext != NULL)
+		return pGroup.fgProcessListHead.pNext->iProcessID == iProcessID;
 	return false ;
-}
-
-const ProcessGroup* ProcessGroupManager_GetFGProcessGroup()
-{
-	return &ProcessGroupManager_AddressSpace[ProcessGroupManager_iFGProcessGroup] ;
 }

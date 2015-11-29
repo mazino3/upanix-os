@@ -52,7 +52,7 @@
 #include <video.h>
 #include <VM86.h>
 #include <MouseDriver.h>
-
+#include <Exerr.h>
 #include <stdio.h>
 
 /**** Command Fucntion Declarations  *****/
@@ -187,12 +187,19 @@ void ConsoleCommands_Init()
 
 bool ConsoleCommands_ExecuteInternalCommand(const char* szCommand)
 {
-	int i ;
-	for(i = 0; i < ConsoleCommands_NoOfInterCommands; i++)
+	for(int i = 0; i < ConsoleCommands_NoOfInterCommands; i++)
 	{
 		if(strcmp(szCommand, ConsoleCommands_CommandList[i].szCommand) == 0)
 		{
-			ConsoleCommands_CommandList[i].cmdFunc() ;
+      try
+      {
+  			ConsoleCommands_CommandList[i].cmdFunc() ;
+      }
+      catch(const Exerr& ex)
+      {
+        ex.Print();
+        return false;
+      }
 			return true ;
 		}
 	}
@@ -209,11 +216,11 @@ void ConsoleCommands_ChangeDrive()
 		return ;
 	}
 
-	ProcessManager_processAddressSpace[ProcessManager_iCurrentProcessID].iDriveID = pDriveInfo->drive.iID ;
+	ProcessManager::Instance().GetCurrentPAS().iDriveID = pDriveInfo->drive.iID ;
 
 	MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&(pDriveInfo->FSMountInfo.FSpwd), 
 	MemUtil_GetDS(), 
-	(unsigned)&ProcessManager_processAddressSpace[ProcessManager_iCurrentProcessID].processPWD, 
+	(unsigned)&ProcessManager::Instance().GetCurrentPAS().processPWD, 
 	sizeof(FileSystem_PresentWorkingDirectory)) ;
 }
 
@@ -374,7 +381,7 @@ void ConsoleCommands_PresentWorkingDir()
 {
 	char* szPWD ;
 	Directory_PresentWorkingDirectory(
-	&ProcessManager_processAddressSpace[ ProcessManager_iCurrentProcessID],
+	&ProcessManager::Instance().GetCurrentPAS(),
 	&szPWD) ;
 	KC::MDisplay().Message("\n", ' ') ;
 	KC::MDisplay().Message(szPWD, Display::WHITE_ON_BLACK()) ;
@@ -859,7 +866,7 @@ void ConsoleCommands_LoadExe()
 	argv[0] = (char*)&a1 ;
 	argv[1] = (char*)&a2 ;
 
-	if((bStatus = ProcessManager_Create(CommandLineParser_GetParameterAt(0), ProcessManager_iCurrentProcessID, true, &iChildProcessID, DERIVE_FROM_PARENT, 2, argv)) != ProcessManager_SUCCESS)
+	if((bStatus = ProcessManager_Create(CommandLineParser_GetParameterAt(0), ProcessManager::GetCurrentProcessID(), true, &iChildProcessID, DERIVE_FROM_PARENT, 2, argv)) != ProcessManager_SUCCESS)
 	{
 		KC::MDisplay().Address("\n Load User Process Failed: ", bStatus) ;
 		KC::MDisplay().Character('\n', Display::WHITE_ON_BLACK()) ;
@@ -890,7 +897,7 @@ void ConsoleCommands_Clone()
 
 	extern void Console_StartMOSConsole() ;
 	
-	ProcessManager_CreateKernelImage((unsigned)&Console_StartMOSConsole, ProcessManager_iCurrentProcessID, true, NULL, NULL, &pid, "console_1") ;
+	ProcessManager_CreateKernelImage((unsigned)&Console_StartMOSConsole, ProcessManager::GetCurrentProcessID(), true, NULL, NULL, &pid, "console_1") ;
 	
 	ProcessManager_WaitOnChild(pid) ;
 }
@@ -929,14 +936,8 @@ void ConsoleCommands_ListCommands()
 
 void ConsoleCommands_ListProcess()
 {
-	PS* pPS ;
-	unsigned uiSize ;
-	
-	if(ProcessManager_GetProcList(&pPS, &uiSize) == ProcessManager_FAILURE)
-	{
-		KC::MDisplay().Message("\n Error\n", ' ') ;
-		return ;
-	}
+	unsigned uiSize;
+	PS* pPS = ProcessManager::Instance().GetProcList(uiSize);
 	
 	unsigned i ;
 	for(i = 0; i < uiSize; i++)
@@ -946,7 +947,7 @@ void ConsoleCommands_ListProcess()
 	}
 	KC::MDisplay().NextLine() ;
 
-	ProcessManager_FreeProcListMem(pPS, uiSize) ;
+	ProcessManager::Instance().FreeProcListMem(pPS, uiSize) ;
 }
 
 void ConsoleCommands_ChangeRootDrive()

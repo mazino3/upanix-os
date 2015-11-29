@@ -36,7 +36,7 @@ KernelService::DLLAllocCopy::DLLAllocCopy(int iDLLEntryIndex, unsigned uiAllocPa
 
 void KernelService::DLLAllocCopy::Process()
 {
-	ProcessAddressSpace* pPAS = &ProcessManager_processAddressSpace[ GetRequestProcessID() ] ;
+	ProcessAddressSpace* pPAS = &ProcessManager::Instance().GetAddressSpace( GetRequestProcessID() ) ;
 
 	ProcessSharedObjectList* pPSOList = (ProcessSharedObjectList*)DLLLoader_GetProcessDLLPageAdrressForKernel(pPAS) ;
 	ProcessSharedObjectList* pPSO = &pPSOList[ m_iProcessDLLEntryIndex ] ;
@@ -76,7 +76,7 @@ void KernelService::PageFault::Process()
 	if(MemManager::Instance().AllocatePage(GetRequestProcessID(), m_uiFaultyAddress) == Failure)
 	{
 		//TODO:
-		ProcessManager_Kill(ProcessManager_iCurrentProcessID) ;
+		ProcessManager_Kill(ProcessManager::GetCurrentProcessID()) ;
 		m_bStatus = false ;
 		return ;
 	}
@@ -113,8 +113,8 @@ void KernelService::ProcessExec::Process()
 		m_iNewProcId = -1 ;
 
 	int iPID = ProcessManager_GetCurProcId() ;
-	ProcessManager_processAddressSpace[ iPID ].iDriveID = iOldDDriveID ;
-	MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&(mOldPWD), MemUtil_GetDS(), (unsigned)&(ProcessManager_processAddressSpace[ iPID ].processPWD),
+	ProcessManager::Instance().GetAddressSpace( iPID ).iDriveID = iOldDDriveID ;
+	MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&(mOldPWD), MemUtil_GetDS(), (unsigned)&(ProcessManager::Instance().GetAddressSpace( iPID ).processPWD),
 				sizeof(FileSystem_PresentWorkingDirectory));
 }
 
@@ -224,9 +224,9 @@ void KernelService::Server(KernelService* pService)
 			continue ;
 		}
 
-		ProcessAddressSpace* pPAS = &ProcessManager_processAddressSpace[ ProcessManager_iCurrentProcessID ] ;
+		ProcessAddressSpace* pPAS = &ProcessManager::Instance().GetCurrentPAS();
 		int iKSProcessGroupID = pPAS->iProcessGroupID ;
-		pPAS->iProcessGroupID = ProcessManager_processAddressSpace[ pRequest->GetRequestProcessID() ].iProcessGroupID ;
+		pPAS->iProcessGroupID = ProcessManager::Instance().GetAddressSpace( pRequest->GetRequestProcessID() ).iProcessGroupID ;
 		pRequest->Process() ;
 		pPAS->iProcessGroupID = iKSProcessGroupID ;
 
@@ -246,7 +246,7 @@ int KernelService::Spawn()
 	iID++ ;
 
 	int pid ;
-	if(ProcessManager_CreateKernelImage((unsigned)&(KernelService::Server), ProcessManager_iCurrentProcessID, false, (unsigned)this, NULL, &pid, szName.Value()) !=
+	if(ProcessManager_CreateKernelImage((unsigned)&(KernelService::Server), ProcessManager::GetCurrentProcessID(), false, (unsigned)this, NULL, &pid, szName.Value()) !=
 			ProcessManager_SUCCESS)
 	{
 		m_mutexServer.UnLock() ;

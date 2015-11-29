@@ -47,7 +47,7 @@ __volatile__ unsigned uiP9)
 
 				byte bStatus ;
 				if((bStatus = DynamicLinkLoader_DoRelocation(
-					&ProcessManager_processAddressSpace[ProcessManager_iCurrentProcessID], 
+					&ProcessManager::Instance().GetCurrentPAS(), 
 					(int)uiP8, uiP9, piRetVal)) != DynamicLinkLoader_SUCCESS) 
 				{
 					KC::MDisplay().Address("\n Dynamic Relocation Failed: ", bStatus) ;
@@ -99,7 +99,7 @@ __volatile__ unsigned uiP9)
 
 		case SYS_CALL_PROCESS_PID :
 			{
-				*piRetVal = ProcessManager_iCurrentProcessID ;
+				*piRetVal = ProcessManager::GetCurrentProcessID();
 			}
 			break ;
 
@@ -141,11 +141,8 @@ __volatile__ unsigned uiP9)
 				PS** pProcList = KERNEL_ADDR(bDoAddrTranslation, PS**, uiP1) ;
 				unsigned* uiListSize = KERNEL_ADDR(bDoAddrTranslation, unsigned*, uiP2) ;
 
-				*piRetVal = 0 ;
-				if(ProcessManager_GetProcList(pProcList, uiListSize) != ProcessManager_SUCCESS)
-				{
-					*piRetVal = -1 ;
-				}
+				*piRetVal = 0;
+        *pProcList = ProcessManager::Instance().GetProcList(*uiListSize);
 			}
 			break ;
 
@@ -154,7 +151,7 @@ __volatile__ unsigned uiP9)
 			//P2 - List size
 			{
 				PS* pProcList = KERNEL_ADDR(bDoAddrTranslation, PS*, uiP1) ;
-				ProcessManager_FreeProcListMem(pProcList, uiP2) ;
+				ProcessManager::Instance().FreeProcListMem(pProcList, uiP2) ;
 			}
 			break ;
 

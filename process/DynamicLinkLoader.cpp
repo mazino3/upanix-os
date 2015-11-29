@@ -111,7 +111,7 @@ byte DynamicLinkLoader_Initialize(unsigned* pRealELFSectionHeadeAddr, unsigned u
 {
 	unsigned uiFreePageNo ;
 
-	RETURN_X_IF_NOT(MemManager::Instance().AllocatePhysicalPage(&uiFreePageNo), Success, DynamicLinkLoader_FAILURE) ;
+  uiFreePageNo = MemManager::Instance().AllocatePhysicalPage();
 	ProcessSharedObjectList* pSharedObjectList = (ProcessSharedObjectList*)(uiFreePageNo * PAGE_SIZE - GLOBAL_DATA_SEGMENT_BASE) ;
 
 	for(int i = 0; i < DLLLoader_iNoOfProcessSharedObjectList; i++)
@@ -124,7 +124,7 @@ byte DynamicLinkLoader_Initialize(unsigned* pRealELFSectionHeadeAddr, unsigned u
 
 	((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPTEIndex] = ((uiFreePageNo * PAGE_SIZE) & 0xFFFFF000) | 0x3 ;
 
-	RETURN_X_IF_NOT(MemManager::Instance().AllocatePhysicalPage(&uiFreePageNo), Success, DynamicLinkLoader_FAILURE) ;
+	uiFreePageNo = MemManager::Instance().AllocatePhysicalPage();
 	*pRealELFSectionHeadeAddr = (uiFreePageNo * PAGE_SIZE - GLOBAL_DATA_SEGMENT_BASE) ;
 
 	uiPDEIndex = ((PROCESS_SEC_HEADER_ADDR >> 22) & 0x3FF) ;

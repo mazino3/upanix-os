@@ -58,14 +58,14 @@ void MOSMain_KernelProcess()
 
 	//MountManager_MountDrives() ;
 	
-	MOSMain_KernelPID = ProcessManager_iCurrentProcessID ;
+	MOSMain_KernelPID = ProcessManager::GetCurrentProcessID() ;
 
 	KC::MKernelService().Spawn() ;
 	KC::MKernelService().Spawn() ;
 
-	ProcessManager_CreateKernelImage((unsigned)&Console_StartMOSConsole, ProcessManager_iCurrentProcessID, true, NULL, NULL, &pid, "console") ;
-//	ProcessManager_CreateKernelImage((unsigned)&FloatProcess, ProcessManager_iCurrentProcessID, false, NULL, NULL, &pid, "float") ;
-//	ProcessManager_CreateKernelImage((unsigned)&FloatProcess, ProcessManager_iCurrentProcessID, false, NULL, NULL, &pid, "float1") ;
+	ProcessManager_CreateKernelImage((unsigned)&Console_StartMOSConsole, ProcessManager::GetCurrentProcessID(), true, NULL, NULL, &pid, "console") ;
+//	ProcessManager_CreateKernelImage((unsigned)&FloatProcess, ProcessManager::GetCurrentProcessID(), false, NULL, NULL, &pid, "float") ;
+//	ProcessManager_CreateKernelImage((unsigned)&FloatProcess, ProcessManager::GetCurrentProcessID(), false, NULL, NULL, &pid, "float1") ;
 //	ProcessManager_CreateKernelImage((unsigned)&SessionManager_StartSession, NO_PROCESS_ID, true, NULL, NULL, &pid, "sesman") ;
 //	SessionManager_SetSessionIDMap(SessionManager_KeyToSessionIDMap(Keyboard_F1), pid) ;
 
@@ -132,12 +132,12 @@ void Initialize()
 //	TestException(); while(1);
   try
   {
-    IDT::Instance() ;
-    PIC::Instance() ;
-    DMA_Initialize() ;
-    PIT_Initialize() ;
+    IDT::Instance();
+    PIC::Instance();
+    DMA_Initialize();
+    PIT_Initialize();
 
-    ProcessManager_Initialize() ;
+    ProcessManager::Instance();
     SysCall_Initialize() ;
 
     KC::MKernelService() ;
@@ -212,7 +212,7 @@ void MOSMain()
 	ProcessManager_CreateKernelImage((unsigned)&MOSMain_KernelProcess, NO_PROCESS_ID, true, NULL, NULL, &pid, "kerparent") ;
 //	ProcessManager_CreateKernelImage((unsigned)&Console_StartMOSConsole, NO_PROCESS_ID, true, NULL, NULL, &pid) ;
 
-	ProcessManager_StartScheduler() ;
+	ProcessManager::Instance().StartScheduler();
 	while(1) ;
 }
 

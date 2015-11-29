@@ -284,7 +284,7 @@ DriveInfo* DeviceDrive_GetByID(int iID, bool bCheckMount)
 	}
 	else if(iID == CURRENT_DRIVE)
 	{
-		iID = ProcessManager_processAddressSpace [ProcessManager_iCurrentProcessID].iDriveID ;
+		iID = ProcessManager::Instance().GetCurrentPAS().iDriveID ;
 	}
 
 	mDriveListMutex.Lock() ;
@@ -340,12 +340,12 @@ byte DeviceDrive_Change(const char* szDriveName)
 	if(pDriveInfo == NULL)
 		return DeviceDrive_ERR_INVALID_DRIVE_NAME ;
 
-	ProcessManager_processAddressSpace[ProcessManager_iCurrentProcessID].iDriveID = pDriveInfo->drive.iID ;
+	ProcessManager::Instance().GetCurrentPAS().iDriveID = pDriveInfo->drive.iID ;
 
 	MemUtil_CopyMemory(MemUtil_GetDS(), 
 	(unsigned)&(pDriveInfo->FSMountInfo.FSpwd), 
 	MemUtil_GetDS(), 
-	(unsigned)&ProcessManager_processAddressSpace[ProcessManager_iCurrentProcessID].processPWD, 
+	(unsigned)&ProcessManager::Instance().GetCurrentPAS().processPWD, 
 	sizeof(FileSystem_PresentWorkingDirectory)) ;
 
 	ProcessEnv_Set("PWD", (const char*)pDriveInfo->FSMountInfo.FSpwd.DirEntry.Name) ;
@@ -363,7 +363,7 @@ byte DeviceDrive_GetList(DriveStat** pDriveList, int* iListSize)
 	if(DeviceDrive_uiCount == 0)
 		return DeviceDrive_SUCCESS ;
 
-	ProcessAddressSpace* pAddrSpace = &ProcessManager_processAddressSpace[ProcessManager_iCurrentProcessID] ;
+	ProcessAddressSpace* pAddrSpace = &ProcessManager::Instance().GetCurrentPAS() ;
 	DriveStat* pAddress = NULL ;
 	
 	if(pAddrSpace->bIsKernelProcess == true)
@@ -423,10 +423,10 @@ byte DeviceDrive_UnMountDrive(const char* szDriveName)
 	if(pDriveInfo == NULL)
 		return DeviceDrive_ERR_INVALID_DRIVE_NAME ;
 
-	bool bKernel = IS_KERNEL() ? true : IS_KERNEL_PROCESS(ProcessManager_iCurrentProcessID) ;
+	bool bKernel = IS_KERNEL() ? true : IS_KERNEL_PROCESS(ProcessManager::GetCurrentProcessID()) ;
 	if(!bKernel)
 	{
-		if(pDriveInfo->drive.iID == ProcessManager_processAddressSpace[ProcessManager_iCurrentProcessID].iDriveID)
+		if(pDriveInfo->drive.iID == ProcessManager::Instance().GetCurrentPAS().iDriveID)
 			return DeviceDrive_ERR_CURR_DRIVE_UMOUNT ;
 	}
 
@@ -458,7 +458,7 @@ byte DeviceDrive_FormatDrive(const char* szDriveName)
 
 byte DeviceDrive_GetCurrentDrive(Drive* pDrive)
 {
-	DriveInfo* pDriveInfo = DeviceDrive_GetByID(ProcessManager_processAddressSpace[ProcessManager_iCurrentProcessID].iDriveID, true) ;
+	DriveInfo* pDriveInfo = DeviceDrive_GetByID(ProcessManager::Instance().GetCurrentPAS().iDriveID, true) ;
 
 	if(pDriveInfo == NULL)
 		return DeviceDrive_FAILURE ;

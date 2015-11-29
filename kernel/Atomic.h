@@ -49,4 +49,19 @@ class Atomic
 		static int Swap(__volatile__ int& iLock, int val) ;
 } ;
 
+class MutexGuard
+{
+  public:
+    MutexGuard(Mutex& m) : _m(m)
+    {
+      _m.Lock();
+    }
+    ~MutexGuard()
+    {
+      _m.UnLock();
+    }
+  private:
+    Mutex _m;
+};
+
 #endif

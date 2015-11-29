@@ -45,7 +45,7 @@ __volatile__ unsigned uiP9)
 			{
 				// ProcessManager_DisableTaskSwitch() ;
 
-				*piRetVal = DMM_Allocate(&ProcessManager_processAddressSpace[ ProcessManager_iCurrentProcessID ], uiP1) ;
+				*piRetVal = DMM_Allocate(&ProcessManager::Instance().GetCurrentPAS(), uiP1) ;
 
 				// ProcessManager_EnableTaskSwitch() ;
 			}
@@ -59,7 +59,7 @@ __volatile__ unsigned uiP9)
 
 				*piRetVal = 0 ;
 				
-				if(DMM_DeAllocate(&ProcessManager_processAddressSpace[ ProcessManager_iCurrentProcessID ], uiP1) != DMM_SUCCESS)
+				if(DMM_DeAllocate(&ProcessManager::Instance().GetCurrentPAS(), uiP1) != DMM_SUCCESS)
 					*piRetVal = -1 ;
 
 				// ProcessManager_EnableTaskSwitch() ;
@@ -74,7 +74,7 @@ __volatile__ unsigned uiP9)
 
 				int* pRetAllocSize = KERNEL_ADDR(bDoAddrTranslation, int*, uiP2) ;
 				*piRetVal = 0 ;
-				if(DMM_GetAllocSize(&ProcessManager_processAddressSpace[ ProcessManager_iCurrentProcessID ], uiP1, pRetAllocSize) != DMM_SUCCESS)
+				if(DMM_GetAllocSize(&ProcessManager::Instance().GetCurrentPAS(), uiP1, pRetAllocSize) != DMM_SUCCESS)
 					*piRetVal = -1 ;
 
 				ProcessManager_EnableTaskSwitch() ;

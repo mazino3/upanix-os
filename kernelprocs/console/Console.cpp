@@ -51,7 +51,7 @@ void Console_ClearCommandLine()
 void Console_DisplayCommandLine()
 {
 	char* szPWD ;
-	Directory_PresentWorkingDirectory( &ProcessManager_processAddressSpace[ProcessManager_iCurrentProcessID], &szPWD) ;
+	Directory_PresentWorkingDirectory( &ProcessManager::Instance().GetCurrentPAS(), &szPWD) ;
 
 	KC::MDisplay().Message(Console_PROMPT, Display::WHITE_ON_BLACK()) ;
 	KC::MDisplay().Message(szPWD, Display::WHITE_ON_BLACK()) ;

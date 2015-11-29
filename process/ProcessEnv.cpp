@@ -23,9 +23,9 @@
 
 #define PROCESS_ENV_LIST ((ProcessEnvEntry*)(PROCESS_ENV_PAGE - GLOBAL_DATA_SEGMENT_BASE))
 
-static unsigned ProcessEnv_GetProcessEnvPageNumber(__volatile__ ProcessAddressSpace* processAddressSpace)
+static unsigned ProcessEnv_GetProcessEnvPageNumber(__volatile__ ProcessAddressSpace& processAddressSpace)
 {
-	unsigned uiPDEAddress = processAddressSpace->taskState.CR3_PDBR ;
+	unsigned uiPDEAddress = processAddressSpace.taskState.CR3_PDBR ;
 	unsigned uiPDEIndex = ((PROCESS_ENV_PAGE >> 22) & 0x3FF) ;
 	unsigned uiPTEIndex = ((PROCESS_ENV_PAGE >> 12) & 0x3FF) ;
 	unsigned uiPTEAddress = ((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPDEIndex] & 0xFFFFF000 ;
@@ -34,12 +34,10 @@ static unsigned ProcessEnv_GetProcessEnvPageNumber(__volatile__ ProcessAddressSp
 
 byte ProcessEnv_Initialize(__volatile__ unsigned uiPDEAddress, __volatile__ int iParentProcessID)
 {
-	unsigned uiFreePageNo, i ;
-
-	RETURN_X_IF_NOT(MemManager::Instance().AllocatePhysicalPage(&uiFreePageNo), Success, ProcessEnv_FAILURE) ;
+	unsigned uiFreePageNo = MemManager::Instance().AllocatePhysicalPage();
 
 	char* pEnv =(char*)(uiFreePageNo * PAGE_SIZE - GLOBAL_DATA_SEGMENT_BASE) ;
-	for(i = 0; i < PAGE_SIZE; i += ENV_VAR_LENGTH)
+	for(unsigned i = 0; i < PAGE_SIZE; i += ENV_VAR_LENGTH)
 		pEnv[i] = '\0' ;
 
 	//TODO: To be set to Home Directory Env Var
@@ -56,7 +54,7 @@ byte ProcessEnv_Initialize(__volatile__ unsigned uiPDEAddress, __volatile__ int 
 
 	if(iParentProcessID != NO_PROCESS_ID)
 	{
-		__volatile__ ProcessAddressSpace* parentProcessAddrSpace = &ProcessManager_processAddressSpace[iParentProcessID] ;
+		__volatile__ ProcessAddressSpace& parentProcessAddrSpace = ProcessManager::Instance().GetAddressSpace(iParentProcessID);
 
 		unsigned uiParentPageNo = ProcessEnv_GetProcessEnvPageNumber(parentProcessAddrSpace) ;
 
@@ -80,7 +78,7 @@ void ProcessEnv_InitializeForKernelProcess()
 
 void ProcessEnv_UnInitialize(ProcessAddressSpace* processAddressSpace)
 {
-	MemManager::Instance().DeAllocatePhysicalPage(ProcessEnv_GetProcessEnvPageNumber(processAddressSpace)) ;
+	MemManager::Instance().DeAllocatePhysicalPage(ProcessEnv_GetProcessEnvPageNumber(*processAddressSpace)) ;
 }
 
 char* ProcessEnv_Get(const char* szEnvVar)

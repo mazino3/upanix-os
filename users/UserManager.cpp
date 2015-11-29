@@ -207,8 +207,7 @@ byte UserManager_Initialize()
 
 byte UserManager_GetUserList(UserTabEntry** pUserTabList, int* iNoOfUsers)
 {
-	int pid = ProcessManager_iCurrentProcessID ;
-	ProcessAddressSpace* pPAS = &ProcessManager_processAddressSpace[pid] ;
+	ProcessAddressSpace* pPAS = &ProcessManager::Instance().GetCurrentPAS();
 	UserTabEntry* pAddress = NULL ;
 
 	*iNoOfUsers = UserManager_pUsrTabHeader->iNoOfUsers ;

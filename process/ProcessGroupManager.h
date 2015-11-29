@@ -24,6 +24,7 @@
 
 # include <Global.h>
 # include <DisplayManager.h>
+# include <Atomic.h>
 
 #define MAX_NO_PROCESS_GROUP 20
 
@@ -45,20 +46,44 @@ typedef struct
 
 #define NO_PROCESS_GROUP_ID -1
 
-extern int ProcessGroupManager_iFGProcessGroup ;
-extern ProcessGroup* ProcessGroupManager_AddressSpace ;
+class ProcessGroupManager
+{
+  private:
+    ProcessGroupManager();
 
-byte ProcessGroupManager_Initialize() ;
-byte ProcessGroupManager_CreateProcessGroup(byte bIsFGProcessGroup, int* iProcessGroupID) ;
-byte ProcessGroupManager_DestroyProcessGroup(int iProcessGroupID) ;
-void ProcessGroupManager_PutOnFGProcessList(int iProcessID) ;
-void ProcessGroupManager_RemoveFromFGProcessList(int iDeleteProcessID) ;
-int ProcessGroupManager_GetProcessCount(int iProcessGroupID) ;
-void ProcessGroupManager_AddProcessToGroup(int iProcessID) ;
-void ProcessGroupManager_RemoveProcessFromGroup(int iProcessID) ;
-void ProcessGroupManager_SwitchFGProcessGroup(int iProcessID) ;
-bool ProcessGroupManager_IsFGProcessGroup(int iProcessGroupID) ;
-bool ProcessGroupManager_IsFGProcess(int iProcessGroupID, int iProcessID) ;
-const ProcessGroup* ProcessGroupManager_GetFGProcessGroup() ;
+  public:
+    static ProcessGroupManager& Instance()
+    {
+      static ProcessGroupManager instance;
+      return instance;
+    }
+
+    int GetProcessCount(int iProcessGroupID);
+    int CreateProcessGroup(bool isFGProcessGroup);
+    void DestroyProcessGroup(int iProcessGroupID);
+    void PutOnFGProcessList(int iProcessID);
+    void RemoveFromFGProcessList(int iProcessID);
+    void AddProcessToGroup(int iProcessID);
+    void RemoveProcessFromGroup(int iProcessID);
+    void SwitchFGProcessGroup(int iProcessID);
+    bool IsFGProcessGroup(int iProcessGroupID);
+    bool IsFGProcess(int iProcessGroupID, int iProcessID);
+    ProcessGroup& GetProcessGroup(int iProcessGroupID)
+    {
+      return _groups[iProcessGroupID];
+    }
+    const ProcessGroup& GetFGProcessGroup()
+    {
+	    return GetProcessGroup(_iFGProcessGroup);
+    }
+
+  private:
+    int GetFreePGAS();
+    void FreePGAS(int iProcessGroupID);
+
+    Mutex _mutex;
+    int _iFGProcessGroup;
+    ProcessGroup* _groups;
+};
 
 #endif

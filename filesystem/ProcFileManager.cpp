@@ -67,9 +67,7 @@ static unsigned ProcFileManager_GetPage(ProcessAddressSpace* processAddressSpace
 
 byte ProcFileManager_Initialize(__volatile__ unsigned uiPDEAddress, __volatile__ int iParentProcessID)
 {
-	unsigned uiFreePageNo ;
-
-	RETURN_X_IF_NOT(MemManager::Instance().AllocatePhysicalPage(&uiFreePageNo), Success, ProcFileManager_FAILURE) ;
+	unsigned uiFreePageNo = MemManager::Instance().AllocatePhysicalPage();
 
 	unsigned uiPDEIndex = ((PROCESS_FD_PAGE >> 22) & 0x3FF) ;
 	unsigned uiPTEIndex = ((PROCESS_FD_PAGE >> 12) & 0x3FF) ;

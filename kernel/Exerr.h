@@ -19,17 +19,31 @@
 #define _EXERR_H_
 
 #include <String.h>
+#include <StringUtil.h>
 #include <ctype.h>
+#include <stdarg.h>
+#include <stdio.h>
 
-#define XWHERE __FILE__, __LINE__
+#define XLOC __FILE__, __LINE__
 
 class Exerr
 {
   public:
-    Exerr(const String& fileName, unsigned lineNo, const String& msg) :
-      _fileName(fileName), _lineNo(lineNo), _msg(msg)
+    Exerr(const String& fileName, unsigned lineNo, const char * __restrict fmsg, ...) :
+      _fileName(fileName), _lineNo(lineNo)
     {
+      va_list arg;
+
+      const int BSIZE = 1024;
+      char buf[BSIZE];
+
+      va_start(arg, fmsg);
+
+      vsnprintf(buf, BSIZE, fmsg, arg);
+      _msg = buf;
       _error = _fileName + ":" + ToString(_lineNo) + " " + _msg;
+
+      va_end(arg);
     }
 
     const String& File() const { return _fileName; }
@@ -39,10 +53,14 @@ class Exerr
     {
       return _error;
     }
+    void Print() const
+    {
+      printf("\n%s\n", _error.Value());
+    }
   private:
     const String _fileName;
     const unsigned _lineNo;
-    const String _msg;
+    String _msg;
     String _error;
 };
 

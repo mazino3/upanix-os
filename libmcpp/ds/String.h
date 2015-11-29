@@ -20,6 +20,7 @@
 
 #include <Global.h>
 #include <string.h>
+#include <stdio.h>
 
 class String
 {
@@ -50,12 +51,18 @@ class String
 			return *this;
 		}
 
+    String operator+(const String& r) const
+    {
+      String temp(*this);
+      return temp += r;
+    }
+
 		String& operator+=(const String& r)
 		{
-      _len += r.Length();
-			if(Large())
+      unsigned newLen = _len + r.Length();
+			if(Large(newLen))
 			{
-				char* newVal = AllocPtr(_len);
+				char* newVal = AllocPtr(newLen);
 				strcpy(newVal, Value());
 				strcat(newVal, r.Value());
 				DeletePtr();
@@ -63,13 +70,8 @@ class String
 			}
 			else
 				strcat(_sVal, r.Value());
+      _len = newLen;
 			return *this;
-		}
-
-		String operator+(const String& r) const
-		{
-			String temp(*this);
-			return temp += r;
 		}
 
 		bool operator==(const String& r) const

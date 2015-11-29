@@ -35,9 +35,6 @@
 #define __PROCESS_START_UP_FILE	".procinit"
 #define __PROCESS_DLL_FILE		".dll"
 
-extern char PROCESS_START_UP_FILE[30] ;
-extern char PROCESS_DLL_FILE[30] ;
-
 byte ProcessLoader_Load(const char* szProcessName, ProcessAddressSpace* pProcessAddressSpace, unsigned *uiPDEAddress,
 		unsigned* uiEntryAdddress, unsigned* uiProcessEntryStackSize, int iNumberOfParameters,
 		char** szArgumentList) ;
@@ -55,6 +52,24 @@ void ProcessLoader_PushProgramInitStackData(unsigned uiPDEAddr, unsigned uiNoOfP
 
 unsigned ProcessLoader_GetCeilAlignedAddress(unsigned uiAddress, unsigned uiAlign) ;
 unsigned ProcessLoader_GetFloorAlignedAddress(unsigned uiAddress, unsigned uiAlign) ;
-byte ProcessLoader_LoadInitSections(ProcessAddressSpace* pProcessAddressSpace, unsigned* uiSectionSize, byte** bSectionImage, const char* szSectionName) ;
+
+class ProcessLoader
+{
+  private:
+    ProcessLoader();
+  public:
+    static ProcessLoader& Instance()
+    {
+      static ProcessLoader instance;
+      return instance;
+    }
+    byte* LoadDLLInitSection(ProcessAddressSpace& pas, unsigned& uiSectionSize);
+    byte* LoadStartUpInitSection(ProcessAddressSpace& pas, unsigned& uiSectionSize);
+  private:
+    byte* LoadInitSection(ProcessAddressSpace& pas, unsigned& uiSectionSize, const String& szSectionName);
+
+    const String PROCESS_DLL_FILE;
+    const String PROCESS_START_UP_FILE;
+};
 
 #endif

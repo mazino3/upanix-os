@@ -205,11 +205,8 @@ typedef struct
 	unsigned uiDMMFlag ;
 } PACKED ProcessAddressSpace ;
 
-extern ProcessAddressSpace *ProcessManager_processAddressSpace ;
-extern int ProcessManager_iCurrentProcessID ;
 extern unsigned ProcessManager_uiKernelAUTAddress ;
 
-void ProcessManager_Initialize() ;
 void ProcessManager_Load(int iProcessID) ;
 void ProcessManager_Store(int iProcessID) ;
 void ProcessManager_DoContextSwitch(int iProcessID) ;
@@ -219,8 +216,6 @@ void ProcessManager_BuildKernelTaskLDT(int iProcessID) ;
 void ProcessManager_BuildIntTaskState(const unsigned uiTaskAddress, const unsigned uiTSSAddress, const int stack) ;
 void ProcessManager_BuildTaskState(ProcessAddressSpace* pProcessAddressSpace, unsigned uiPDEAddress, unsigned uiEntryAdddress, unsigned uiProcessEntryStackSize) ;
 void ProcessManager_BuildKernelTaskState(const unsigned uiTaskAddress, const int iProcessID, const unsigned uiStackTop, unsigned uiParam1, unsigned uiParam2) ;
-void ProcessManager_AddToSchedulerList(int iNewProcessID) ;
-void ProcessManager_DeleteFromSchedulerList(int iDeleteProcessID) ;
 byte ProcessManager_CreateKernelImage(const unsigned uiTaskAddress, int iParentProcessID, byte bIsFGProcess, unsigned uiParam1, unsigned uiParam2, 
 		int* iProcessID, const char* szKernelProcName) ;
 void ProcessManager_Destroy(int iDeleteProcessID) ;
@@ -233,7 +228,6 @@ byte ProcessManager_Create(const char* szProcessName, int iParentProcessID, byte
 
 void ProcessManager_BuildCallGate(unsigned short usGateSelector, unsigned uiOffset, unsigned short usSelector, 
 		byte bParameterCount) ;
-void ProcessManager_StartScheduler() ;
 
 void ProcessManager_EnableTaskSwitch() ;
 void ProcessManager_DisableTaskSwitch() ;
@@ -271,6 +265,62 @@ int ProcessManager_GetCurProcId() ;
 void ProcessManager_Kill(int iProcessID) ;
 void ProcessManager_WakeUpFromKSWait(int iProcessID) ;
 bool ProcessManager_CopyDriveInfo(int iProcessID, int& iOldDriveId, FileSystem_PresentWorkingDirectory& mOldPWD) ;
+
+class ProcessManager
+{
+  private:
+    ProcessManager();
+  public:
+    static ProcessManager& Instance()
+    {
+      static ProcessManager instance;
+      return instance;
+    }
+    ProcessAddressSpace& GetAddressSpace(int pid);
+    PS* GetProcList(unsigned& uiListSize);
+    void FreeProcListMem(PS* pProcList, unsigned uiListSize);
+    ProcessAddressSpace& GetCurrentPAS() { return _processAddressSpace[_iCurrentProcessID]; }
+    int FindFreePAS();
+    void StartScheduler();
+    void DeleteFromSchedulerList(int iDeleteProcessID);
+    void AddToSchedulerList(int iNewProcessID);
+    static int GetCurrentProcessID() { return _iCurrentProcessID; }
+    void InsertIntoProcessList(int iProcessID);
+    void DeleteFromProcessList(int iProcessID);
+  private:
+    PS* GetProcListASync();
+
+    static int _iCurrentProcessID;
+    unsigned _uiProcessCount;
+    ProcessAddressSpace* _processAddressSpace;
+};
+
+class ProcessSwitchLock
+{
+  public:
+    ProcessSwitchLock() : _locked(true)
+    {
+	    ProcessManager_DisableTaskSwitch();
+    }
+
+    ~ProcessSwitchLock()
+    {
+      UnLock();
+    }
+
+    void UnLock()
+    {
+      if(_locked)
+      {
+        ProcessManager_EnableTaskSwitch();
+        _locked = false;
+      }
+      else
+        printf("\n unlocking process switch which is already unlocked!!");
+    }
+  private:
+    bool _locked;
+};
 
 #endif
 

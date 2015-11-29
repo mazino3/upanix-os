@@ -20,7 +20,7 @@
 #include <ProcessAllocator.h>
 #include <DMM.h>
 
-static byte ProcessAllocator_AllocatePDE(unsigned* uiPDEAddress) ;
+static unsigned ProcessAllocator_AllocatePDE();
 static byte ProcessAllocator_AllocatePTE(unsigned* uiPDEAddress, unsigned* uiStartPDEForDLL, unsigned uiNoOfPagesForPTE, unsigned uiProcessBase) ;
 static void ProcessAllocator_InitializeProcessSpaceForOS(unsigned* uiPDEAddress) ;
 static byte ProcessAllocator_InitializeProcessSpaceForProcess(unsigned* uiPDEAddress, unsigned uiNoOfPagesForProcess, unsigned uiProcessBase) ;
@@ -32,7 +32,7 @@ static void ProcessAllocator_DeAllocatePTE(unsigned uiNoOfPagesForPTE, unsigned 
 byte ProcessAllocator_AllocateAddressSpace(const unsigned uiNoOfPagesForProcess, const unsigned uiNoOfPagesForPTE, 
 		unsigned* uiPDEAddress, unsigned* uiStartPDEForDLL, unsigned uiProcessBase)
 {
-	RETURN_X_IF_NOT(ProcessAllocator_AllocatePDE(uiPDEAddress), ProcessAllocator_SUCCESS, ProcessAllocator_FAILURE) ;
+	*uiPDEAddress = ProcessAllocator_AllocatePDE();
 
 	RETURN_X_IF_NOT(ProcessAllocator_AllocatePTE(uiPDEAddress, uiStartPDEForDLL, uiNoOfPagesForPTE, uiProcessBase), ProcessAllocator_SUCCESS, ProcessAllocator_FAILURE) ;
 
@@ -44,17 +44,15 @@ byte ProcessAllocator_AllocateAddressSpace(const unsigned uiNoOfPagesForProcess,
 	return ProcessAllocator_SUCCESS ;
 }
 
-static byte ProcessAllocator_AllocatePDE(unsigned* uiPDEAddress)
+unsigned ProcessAllocator_AllocatePDE()
 {
-	unsigned uiFreePageNo, i ;
+	unsigned uiFreePageNo = MemManager::Instance().AllocatePhysicalPage();
+	unsigned uiPDEAddress = uiFreePageNo * PAGE_SIZE;
 
-	RETURN_X_IF_NOT(MemManager::Instance().AllocatePhysicalPage(&uiFreePageNo), Success, ProcessAllocator_FAILURE) ;
-	*uiPDEAddress = uiFreePageNo * PAGE_SIZE ;
+	for(unsigned i = 0; i < PAGE_TABLE_ENTRIES; i++)
+		((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[i] = 0x2;
 
-	for(i = 0; i < PAGE_TABLE_ENTRIES; i++)
-		((unsigned*)(*uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[i] = 0x2 ;
-
-	return ProcessAllocator_SUCCESS ;
+  return uiPDEAddress;
 }
 
 static byte ProcessAllocator_AllocatePTE(unsigned* uiPDEAddress, unsigned* uiStartPDEForDLL, unsigned uiNoOfPagesForPTE, unsigned uiProcessBase)
@@ -65,7 +63,7 @@ static byte ProcessAllocator_AllocatePTE(unsigned* uiPDEAddress, unsigned* uiSta
 
 	for(i = 0; i < uiNoOfPagesForPTE; i++)
 	{
-		RETURN_X_IF_NOT(MemManager::Instance().AllocatePhysicalPage(&uiFreePageNo), Success, ProcessAllocator_FAILURE) ;
+    uiFreePageNo = MemManager::Instance().AllocatePhysicalPage();
 
 		for(j = 0; j < PAGE_TABLE_ENTRIES; j++)
 			((unsigned*)((uiFreePageNo * PAGE_SIZE) - GLOBAL_DATA_SEGMENT_BASE))[j] = 0x2 ;
@@ -125,7 +123,7 @@ static byte ProcessAllocator_InitializeProcessSpaceForProcess(unsigned* uiPDEAdd
 
 	for(i = 0; i < uiNoOfPagesForProcess; i++)
 	{
-		RETURN_X_IF_NOT(MemManager::Instance().AllocatePhysicalPage(&uiFreePageNo), Success, ProcessAllocator_FAILURE) ;
+    uiFreePageNo = MemManager::Instance().AllocatePhysicalPage();
 		
 		uiPDEIndex = (uiProcessPageBase + i) / PAGE_TABLE_ENTRIES + uiProcessPDEBase + PROCESS_SPACE_FOR_OS ;
 		uiPTEIndex = (uiProcessPageBase + i) % PAGE_TABLE_ENTRIES ;
@@ -217,7 +215,7 @@ ProcessAllocator_AllocateAddressSpaceForKernel(ProcessAddressSpace* processAddre
 
 	for(i = 0; i < PROCESS_KERNEL_STACK_PAGES; i++)
 	{
-		RETURN_X_IF_NOT(MemManager::Instance().AllocatePhysicalPage(&uiFreePageNo), Success, ProcessAllocator_FAILURE) ;
+    uiFreePageNo = MemManager::Instance().AllocatePhysicalPage();
 		MemManager::Instance().GetKernelProcessStackPTEBase()[iStackBlockID * PROCESS_KERNEL_STACK_PAGES + i] = ((uiFreePageNo * PAGE_SIZE) & 0xFFFFF000) | 0x3 ;
 	}
 
@@ -247,7 +245,7 @@ byte ProcessAllocator_AllocatePagesForDLL(unsigned uiNoOfPagesForDLL, ProcessSha
 	pProcessSharedObjectList->uiAllocatedPageNumbers = (unsigned*)DMM_AllocateForKernel(sizeof(unsigned) * uiNoOfPagesForDLL) ;
 	for(i = 0; i < uiNoOfPagesForDLL; i++)
 	{
-		RETURN_X_IF_NOT(MemManager::Instance().AllocatePhysicalPage(&uiFreePageNo), Success, ProcessAllocator_FAILURE) ;
+    uiFreePageNo = MemManager::Instance().AllocatePhysicalPage();
 		pProcessSharedObjectList->uiAllocatedPageNumbers[i] = uiFreePageNo ;	
 	}
 
