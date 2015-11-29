@@ -46,13 +46,13 @@ static Mutex& ProcFileManager_GetFDMutex()
 
 static void ProcFileManager_FDTableLock()
 {
-	if(ProcessManager_IsKernelProcess(ProcessManager_GetCurProcId()))
+	if(ProcessManager::Instance().IsKernelProcess(ProcessManager::Instance().GetCurProcId()))
 		ProcFileManager_GetFDMutex().Lock() ;
 }
 
 static void ProcFileManager_FDTableUnLock()
 {
-	if(ProcessManager_IsKernelProcess(ProcessManager_GetCurProcId()))
+	if(ProcessManager::Instance().IsKernelProcess(ProcessManager::Instance().GetCurProcId()))
 		ProcFileManager_GetFDMutex().UnLock() ;
 }
 

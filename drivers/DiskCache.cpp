@@ -113,7 +113,7 @@ bool LFUSectorManager::ReplaceCache(unsigned uiSectorID, byte* bDataBuffer)
 	if(!(m_pDriveInfo->mCache.m_pTree->Delete(DiskCacheKey(node.m_uiSectorID))))
 	{
 		printf("\n Failed to delete ranked sector: %u from the Cache BTree", node.m_uiSectorID) ;
-		ProcessManager_Sleep(10000); 
+		ProcessManager::Instance().Sleep(10000); 
 		return false ;
 	}
 
@@ -265,7 +265,7 @@ static void DiskCache_TaskFlushCache(DriveInfo* pDriveInfo, unsigned uiParam2)
 	//	if(pDriveInfo->drive.bMounted)
 			DiskCache_FlushDirtyCacheSectors(pDriveInfo, 10) ;
 
-		ProcessManager_Sleep(200) ;
+		ProcessManager::Instance().Sleep(200) ;
 	} while(!pDriveInfo->mCache.bStopReleaseCacheTask) ;
 
 	ProcessManager_EXIT() ;
@@ -278,7 +278,7 @@ static void DiskCache_TaskReleaseCache(DriveInfo* pDriveInfo, unsigned uiParam2)
 		if(pDriveInfo->drive.bMounted)
 			pDriveInfo->mCache.m_pLFUSectorManager->Run() ;
 
-		ProcessManager_Sleep(50) ;
+		ProcessManager::Instance().Sleep(50) ;
 	} while(!pDriveInfo->mCache.bStopReleaseCacheTask) ;
 
 	ProcessManager_EXIT() ;
@@ -540,12 +540,11 @@ void DiskCache_StartReleaseCacheTask(DriveInfo* pDriveInfo)
 	int pid ;
 	char szDCFName[64] = "dcf-" ;
 	String_CanCat(szDCFName, pDriveInfo->drive.driveName) ;
-	//ProcessManager_CreateKernelImage((unsigned)&DiskCache_TaskReleaseCache, NO_PROCESS_ID, false, (unsigned)pDriveInfo, 0, &pid, szName) ;
-	ProcessManager_CreateKernelImage((unsigned)&DiskCache_TaskFlushCache, ProcessManager_GetCurProcId(), false, (unsigned)pDriveInfo, 0, &pid, szDCFName) ;
+	ProcessManager::Instance().CreateKernelImage((unsigned)&DiskCache_TaskFlushCache, ProcessManager::Instance().GetCurProcId(), false, (unsigned)pDriveInfo, 0, &pid, szDCFName) ;
 
 	char szDCRName[64] = "dcr-" ;
 	String_CanCat(szDCRName, pDriveInfo->drive.driveName) ;
-	ProcessManager_CreateKernelImage((unsigned)&DiskCache_TaskReleaseCache, ProcessManager_GetCurProcId(), false, (unsigned)pDriveInfo, 0, &pid, szDCRName) ;
+	ProcessManager::Instance().CreateKernelImage((unsigned)&DiskCache_TaskReleaseCache, ProcessManager::Instance().GetCurProcId(), false, (unsigned)pDriveInfo, 0, &pid, szDCRName) ;
 }
 
 void DiskCache_StopReleaseCacheTask(DriveInfo* pDriveInfo)

@@ -48,7 +48,7 @@ void Mutex::Acquire()
 		if(val == 0)
 			break ;
 
-		ProcessManager_Sleep(10) ;
+		ProcessManager::Instance().Sleep(10) ;
 	}
 }
 
@@ -65,7 +65,7 @@ bool Mutex::Lock(bool bBlock)
 	{
 		Acquire() ;
 
-		val = ProcessManager_GetCurProcId() ;
+		val = ProcessManager::Instance().GetCurProcId() ;
 
 		if(m_iID != FREE_MUTEX && m_iID != val)
 		{
@@ -74,7 +74,7 @@ bool Mutex::Lock(bool bBlock)
 			if(!bBlock)
 				return false ;
 
-			ProcessManager_Sleep(10) ;
+			ProcessManager::Instance().Sleep(10) ;
 			continue ;
 		}
 
@@ -92,7 +92,7 @@ bool Mutex::UnLock()
 {
 	Acquire() ;
 
-	__volatile__ int val = ProcessManager_GetCurProcId() ;
+	__volatile__ int val = ProcessManager::Instance().GetCurProcId() ;
 
 	if(m_iID != val)
 	{

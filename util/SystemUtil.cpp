@@ -47,7 +47,7 @@ void SystemUtil_Reboot()
 		}
 	}
 
-	ProcessManager_Sleep(2000) ;
+	ProcessManager::Instance().Sleep(2000) ;
 	KBDriver_Reboot() ;
 }
 

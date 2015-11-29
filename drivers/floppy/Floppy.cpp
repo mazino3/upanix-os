@@ -278,7 +278,7 @@ Floppy_ReCaliberate(DRIVE_NO driveNo)
 	Floppy_SendControlCommand(FDD_RECALIBRATE_CMD) ;
 	Floppy_SendControlCommand(driveNo) ;
 
-	ProcessManager_WaitOnInterrupt(PIC::Instance().FLOPPY_IRQ);
+	ProcessManager::Instance().WaitOnInterrupt(PIC::Instance().FLOPPY_IRQ);
 	Floppy_SenseInterruptStatus() ;
 
 	if (Floppy_ReplyBuffer[0] & 0x20)
@@ -297,7 +297,7 @@ Floppy_Seek(DRIVE_NO driveNo, Floppy_HEAD_NO headNo, unsigned uiSeekTrack)
 	Floppy_SendControlCommand((headNo << 2) | driveNo) ;
  	Floppy_SendControlCommand(uiSeekTrack) ;
 
-	ProcessManager_WaitOnInterrupt(PIC::Instance().FLOPPY_IRQ);
+	ProcessManager::Instance().WaitOnInterrupt(PIC::Instance().FLOPPY_IRQ);
 	Floppy_SenseInterruptStatus() ;
 
 	if (Floppy_ReplyBuffer[0] & 0x20)
@@ -318,7 +318,7 @@ Floppy_FormatTrack(const Drive* pDrive, const Floppy_HEAD_NO headNo)
 					if(Floppy_SendControlCommand(GAP) == Floppy_SUCCESS)
 						if(Floppy_SendControlCommand(0x00) == Floppy_SUCCESS) // Data Field Filler Value	
 						{
-							ProcessManager_WaitOnInterrupt(PIC::Instance().FLOPPY_IRQ);
+							ProcessManager::Instance().WaitOnInterrupt(PIC::Instance().FLOPPY_IRQ);
 								
 							if((bStatus = Floppy_CompleteResultPhase(MAX_RESULT_PHASE_REPLIES)) != Floppy_SUCCESS)
 								return bStatus ;
@@ -392,7 +392,7 @@ static byte Floppy_ReadWrite(const Drive* pDrive, unsigned uiStartSectorNo, unsi
 										if(Floppy_SendControlCommand(GAP) == Floppy_SUCCESS)
 											if(Floppy_SendControlCommand(0xFF) == Floppy_SUCCESS) // DTL = 0xFF
 											{
-												ProcessManager_WaitOnInterrupt(PIC::Instance().FLOPPY_IRQ);
+												ProcessManager::Instance().WaitOnInterrupt(PIC::Instance().FLOPPY_IRQ);
 
 												if((bStatus = Floppy_CompleteResultPhase1(MAX_RESULT_PHASE_REPLIES)) != Floppy_SUCCESS)
 													continue ;
@@ -428,7 +428,7 @@ static byte Floppy_FullFormat(const Drive* pDrive)
 	unsigned uiTrackCount ;
 	for(uiTrackCount = 0; uiTrackCount < pDrive->uiTracksPerHead; uiTrackCount++)
 	{
-		ProcessManager_Sleep(100) ;
+		ProcessManager::Instance().Sleep(100) ;
 
 		if((bStatus = Floppy_Seek(pDrive->driveNumber, (Floppy_HEAD_NO)0, uiTrackCount)) != Floppy_SUCCESS)
 			return bStatus ;
@@ -548,7 +548,7 @@ void Floppy_Handler()
 	AsmUtil_STORE_GPR(GPRStack) ;
 	AsmUtil_SET_KERNEL_DATA_SEGMENTS
 
-	ProcessManager_SignalInterruptOccured(PIC::Instance().FLOPPY_IRQ);
+	ProcessManager::Instance().SignalInterruptOccured(PIC::Instance().FLOPPY_IRQ);
 
 	PIC::Instance().SendEOI(PIC::Instance().FLOPPY_IRQ);
 

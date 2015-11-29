@@ -65,7 +65,7 @@ void KBDriver_Handler()
 		if(!KBInputHandler_Process(key))
 		{
 			KBDriver_PutToQueueBuffer((key & 0xFF)) ;
-			ProcessManager_SignalInterruptOccured(PIC::Instance().KEYBOARD_IRQ);
+			ProcessManager::Instance().SignalInterruptOccured(PIC::Instance().KEYBOARD_IRQ);
 		}
 	}
 
@@ -84,7 +84,7 @@ byte KBDriver_GetCharInBlockMode(byte *data)
 	{
 //		unsigned i ; for(i = 0; i < 999; i++) asm("nop") ;
 //		ProcessManager_Sleep(10) ;
-		ProcessManager_WaitOnInterrupt(PIC::Instance().KEYBOARD_IRQ);
+		ProcessManager::Instance().WaitOnInterrupt(PIC::Instance().KEYBOARD_IRQ);
 	}
 
 	return KBDriver_SUCCESS ;

@@ -63,13 +63,13 @@ void MOSMain_KernelProcess()
 	KC::MKernelService().Spawn() ;
 	KC::MKernelService().Spawn() ;
 
-	ProcessManager_CreateKernelImage((unsigned)&Console_StartMOSConsole, ProcessManager::GetCurrentProcessID(), true, NULL, NULL, &pid, "console") ;
+	ProcessManager::Instance().CreateKernelImage((unsigned)&Console_StartMOSConsole, ProcessManager::GetCurrentProcessID(), true, NULL, NULL, &pid, "console") ;
 //	ProcessManager_CreateKernelImage((unsigned)&FloatProcess, ProcessManager::GetCurrentProcessID(), false, NULL, NULL, &pid, "float") ;
 //	ProcessManager_CreateKernelImage((unsigned)&FloatProcess, ProcessManager::GetCurrentProcessID(), false, NULL, NULL, &pid, "float1") ;
 //	ProcessManager_CreateKernelImage((unsigned)&SessionManager_StartSession, NO_PROCESS_ID, true, NULL, NULL, &pid, "sesman") ;
 //	SessionManager_SetSessionIDMap(SessionManager_KeyToSessionIDMap(Keyboard_F1), pid) ;
 
-	ProcessManager_WaitOnChild(pid) ;
+	ProcessManager::Instance().WaitOnChild(pid) ;
 	ProcessManager_EXIT() ;
 }
 
@@ -209,7 +209,7 @@ void MOSMain()
 	Initialize() ;
 
 	int pid ;
-	ProcessManager_CreateKernelImage((unsigned)&MOSMain_KernelProcess, NO_PROCESS_ID, true, NULL, NULL, &pid, "kerparent") ;
+	ProcessManager::Instance().CreateKernelImage((unsigned)&MOSMain_KernelProcess, NO_PROCESS_ID, true, NULL, NULL, &pid, "kerparent") ;
 //	ProcessManager_CreateKernelImage((unsigned)&Console_StartMOSConsole, NO_PROCESS_ID, true, NULL, NULL, &pid) ;
 
 	ProcessManager::Instance().StartScheduler();

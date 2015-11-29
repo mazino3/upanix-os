@@ -76,7 +76,7 @@ void KernelService::PageFault::Process()
 	if(MemManager::Instance().AllocatePage(GetRequestProcessID(), m_uiFaultyAddress) == Failure)
 	{
 		//TODO:
-		ProcessManager_Kill(ProcessManager::GetCurrentProcessID()) ;
+		ProcessManager::Instance().Kill(ProcessManager::GetCurrentProcessID()) ;
 		m_bStatus = false ;
 		return ;
 	}
@@ -106,13 +106,13 @@ void KernelService::ProcessExec::Process()
 {
 	int iOldDDriveID ;
 	FileSystem_PresentWorkingDirectory mOldPWD ;
-	ProcessManager_CopyDriveInfo(GetRequestProcessID(), iOldDDriveID, mOldPWD) ;
+	ProcessManager::Instance().CopyDriveInfo(GetRequestProcessID(), iOldDDriveID, mOldPWD) ;
 
-	byte bStatus = ProcessManager_Create(_szFile.Value(), GetRequestProcessID(), true, &m_iNewProcId, DERIVE_FROM_PARENT, m_iNoOfArgs, m_szArgs) ;
+	byte bStatus = ProcessManager::Instance().Create(_szFile.Value(), GetRequestProcessID(), true, &m_iNewProcId, DERIVE_FROM_PARENT, m_iNoOfArgs, m_szArgs) ;
 	if(bStatus != ProcessManager_SUCCESS)
 		m_iNewProcId = -1 ;
 
-	int iPID = ProcessManager_GetCurProcId() ;
+	int iPID = ProcessManager::Instance().GetCurProcId() ;
 	ProcessManager::Instance().GetAddressSpace( iPID ).iDriveID = iOldDDriveID ;
 	MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&(mOldPWD), MemUtil_GetDS(), (unsigned)&(ProcessManager::Instance().GetAddressSpace( iPID ).processPWD),
 				sizeof(FileSystem_PresentWorkingDirectory));
@@ -123,7 +123,7 @@ bool KernelService::RequestDLLAlloCopy(int iDLLEntryIndex, unsigned uiAllocPageC
 	KernelService::DLLAllocCopy* pRequest = new KernelService::DLLAllocCopy(iDLLEntryIndex, uiAllocPageCnt, uiNoOfPages) ;
 	AddRequest(pRequest) ;
 
-	ProcessManager_WaitOnKernelService() ;
+	ProcessManager::Instance().WaitOnKernelService() ;
 
 	bool bStatus = pRequest->GetStatus() ;
 
@@ -137,7 +137,7 @@ unsigned KernelService::RequestFlatAddress(unsigned uiVirtualAddress)
 	KernelService::FlatAddress* pRequest = new KernelService::FlatAddress(uiVirtualAddress) ;
 	AddRequest(pRequest) ;
 
-	ProcessManager_WaitOnKernelService() ;
+	ProcessManager::Instance().WaitOnKernelService() ;
 
 	unsigned uiFlatAddress = pRequest->GetFlatAddress() ;
 
@@ -151,7 +151,7 @@ bool KernelService::RequestPageFault(unsigned uiFaultyAddress)
 	KernelService::PageFault* pRequest = new KernelService::PageFault(uiFaultyAddress) ;
 
 	AddRequest(pRequest) ;
-	ProcessManager_WaitOnKernelService() ;
+	ProcessManager::Instance().WaitOnKernelService() ;
 
 	bool bStatus = pRequest->GetStatus() ;
 	delete pRequest ;
@@ -181,7 +181,7 @@ int KernelService::RequestProcessExec(const char* szFile, int iNoOfArgs, const c
 	KernelService::ProcessExec* pRequest = new KernelService::ProcessExec(iNoOfArgs, szFullProcPath, szArgs) ;
 
 	AddRequest(pRequest) ;
-	ProcessManager_WaitOnKernelService() ;
+	ProcessManager::Instance().WaitOnKernelService() ;
 
 	int iNewProcId = pRequest->GetNewProcId() ;
 
@@ -220,7 +220,7 @@ void KernelService::Server(KernelService* pService)
 
 		if(!pRequest)
 		{
-			ProcessManager_Sleep(10) ;
+			ProcessManager::Instance().Sleep(10) ;
 			continue ;
 		}
 
@@ -230,7 +230,7 @@ void KernelService::Server(KernelService* pService)
 		pRequest->Process() ;
 		pPAS->iProcessGroupID = iKSProcessGroupID ;
 
-		ProcessManager_WakeUpFromKSWait(pRequest->GetRequestProcessID()) ;
+		ProcessManager::Instance().WakeUpFromKSWait(pRequest->GetRequestProcessID()) ;
 	}
 }
 
@@ -246,7 +246,7 @@ int KernelService::Spawn()
 	iID++ ;
 
 	int pid ;
-	if(ProcessManager_CreateKernelImage((unsigned)&(KernelService::Server), ProcessManager::GetCurrentProcessID(), false, (unsigned)this, NULL, &pid, szName.Value()) !=
+	if(ProcessManager::Instance().CreateKernelImage((unsigned)&(KernelService::Server), ProcessManager::GetCurrentProcessID(), false, (unsigned)this, NULL, &pid, szName.Value()) !=
 			ProcessManager_SUCCESS)
 	{
 		m_mutexServer.UnLock() ;
@@ -272,7 +272,7 @@ bool KernelService::Stop(int iServerProcessID)
 		return false ;
 	}
 
-	ProcessManager_Kill(iServerProcessID) ;
+	ProcessManager::Instance().Kill(iServerProcessID) ;
 
 	m_mutexServer.UnLock() ;
 	return true;

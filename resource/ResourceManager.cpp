@@ -21,31 +21,28 @@
 
 byte ResourceManager_Acquire(unsigned uiType, unsigned uiMode)
 {
-	ProcessManager_DisableTaskSwitch() ;
+	ProcessManager::DisableTaskSwitch();
 
-	byte bStatus = ResourceManager_SUCCESS ;
+	byte bStatus = ResourceManager_SUCCESS;
 
-	if(!ProcessManager_IsResourceBusy(uiType))
-		ProcessManager_SetResourceBusy(uiType, true) ;
+	if(!ProcessManager::Instance().IsResourceBusy(uiType))
+		ProcessManager::Instance().SetResourceBusy(uiType, true);
 	else
 	{
 		if(uiMode == RESOURCE_ACQUIRE_NON_BLOCK)
-			bStatus = ResourceManager_ERR_BUSY ;
+			bStatus = ResourceManager_ERR_BUSY;
 		else
-			ProcessManager_WaitOnResource(uiType) ;
+			ProcessManager::Instance().WaitOnResource(uiType);
 	}
 
-	ProcessManager_EnableTaskSwitch() ;
+	ProcessManager::EnableTaskSwitch();
 	return bStatus ;
 }
 
 void ResourceManager_Release(unsigned uiType)
 {
-	ProcessManager_DisableTaskSwitch() ;
-
-	ProcessManager_SetResourceBusy(uiType, false) ;
-
-	ProcessManager_EnableTaskSwitch() ;
+  ProcessSwitchLock pLock;
+	ProcessManager::Instance().SetResourceBusy(uiType, false) ;
 }
 
 byte ResourceManager_GetDiskResourceType(RAW_DISK_TYPES iType, unsigned* uiResourceType)

@@ -101,7 +101,7 @@ static void ATADeviceController_PrimaryIRQHandler()
 	AsmUtil_STORE_GPR(GPRStack) ;
 	AsmUtil_SET_KERNEL_DATA_SEGMENTS
 
-	ProcessManager_SignalInterruptOccured(*HD_PRIMARY_IRQ) ;
+	ProcessManager::Instance().SignalInterruptOccured(*HD_PRIMARY_IRQ) ;
 
 	PIC::Instance().SendEOI(*HD_PRIMARY_IRQ) ;
 	
@@ -118,7 +118,7 @@ static void ATADeviceController_SecondaryIRQHandler()
 	AsmUtil_STORE_GPR(GPRStack) ;
 	AsmUtil_SET_KERNEL_DATA_SEGMENTS
 
-	ProcessManager_SignalInterruptOccured(*HD_SECONDARY_IRQ) ;
+	ProcessManager::Instance().SignalInterruptOccured(*HD_SECONDARY_IRQ) ;
 	
 	PIC::Instance().SendEOI(*HD_SECONDARY_IRQ) ;
 

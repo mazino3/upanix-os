@@ -106,7 +106,7 @@ __attribute__((unused)) static int SCSIHandler_UnitNotReady(SCSIDevice* pDevice,
 					printf("and a qualifier of SCSI_BECOMING_READY" ) ;
 
 					/* Wait for the drive to become ready. Delay a little to give the drive a chance to spin up */
-					ProcessManager_Sleep(1000) ;
+					ProcessManager::Instance().Sleep(1000) ;
 					iStatus = SENSE_RETRY ;
 					break ;
 
@@ -387,8 +387,6 @@ static byte SCSIHandler_ReadCapacity(SCSIDevice* pDevice)
 		unsigned uiBlockLen ;
 	} sCap;
 
-	byte bStatus ;
-
 	pDevice->uiSectors = 0 ;
 	pDevice->uiSectorSize = 0 ;
 	pDevice->ulSize = 0 ;
@@ -407,7 +405,7 @@ static byte SCSIHandler_ReadCapacity(SCSIDevice* pDevice)
 		sCommand.iCmdLen = SCSIHandler_GetCommandSize(SCSI_READ_CAPACITY) ;
 		
 		/* Send command */
-		bStatus = pDevice->pHost->QueueCommand(&sCommand) ;
+		pDevice->pHost->QueueCommand(&sCommand) ;
 
 		if(sCommand.u.Sense.SenseKey != SCSI_NO_SENSE && sCommand.iResult != 0)
 		{
@@ -460,7 +458,7 @@ byte SCSIHandler_GenericOpen(SCSIDevice* pDevice)
 
 	if(bStatus == SCSIHandler_SUCCESS)
 	{
-		ProcessManager_Sleep(1000) ;
+		ProcessManager::Instance().Sleep(1000) ;
 
 		bStatus = SCSIHandler_ReadCapacity(pDevice) ;
 

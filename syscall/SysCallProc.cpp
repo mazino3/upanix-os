@@ -79,7 +79,7 @@ __volatile__ unsigned uiP9)
 		case SYS_CALL_PROCESS_WAIT_PID :
 			// P1 => PID	
 			{
-				ProcessManager_WaitOnChild((int)uiP1) ;
+				ProcessManager::Instance().WaitOnChild((int)uiP1) ;
 			}
 			break ;
 
@@ -93,7 +93,7 @@ __volatile__ unsigned uiP9)
 		case SYS_CALL_PROCESS_SLEEP :
 			// P1 => Exit Status
 			{
-				ProcessManager_Sleep((unsigned)uiP1) ;
+				ProcessManager::Instance().Sleep((unsigned)uiP1) ;
 			}
 			break ;
 
@@ -157,20 +157,20 @@ __volatile__ unsigned uiP9)
 
 		case SYS_CALL_DISABLE_TASK_SWITCH:
 			{
-				ProcessManager_DisableTaskSwitch() ;
+				ProcessManager::DisableTaskSwitch() ;
 			}
 			break ;
 
 		case SYS_CALL_ENABLE_TASK_SWITCH:
 			{
-				ProcessManager_EnableTaskSwitch() ;
+				ProcessManager::EnableTaskSwitch() ;
 			}
 			break ;
 
 		case SYS_CALL_PROCESS_CHILD_ALIVE :
 			// P1 => PID	
 			{
-				*piRetVal = ProcessManager_IsChildAlive((int)uiP1) ;
+				*piRetVal = ProcessManager::Instance().IsChildAlive((int)uiP1) ;
 			}
 			break ;
 	}

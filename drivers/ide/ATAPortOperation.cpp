@@ -145,7 +145,7 @@ byte ATAPortOperation_StartDMA(ATAPort* pPort)
 	if(KERNEL_MODE)
 		KernelUtil::WaitOnInterrupt(ATADeviceController_GetHDInterruptNo(pPort)) ;
 	else
-		ProcessManager_WaitOnInterrupt(ATADeviceController_GetHDInterruptNo(pPort)) ;
+		ProcessManager::Instance().WaitOnInterrupt(ATADeviceController_GetHDInterruptNo(pPort)) ;
 
 	bStatus = 0 ;
 	

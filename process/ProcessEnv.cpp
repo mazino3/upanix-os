@@ -76,9 +76,9 @@ void ProcessEnv_InitializeForKernelProcess()
 	ProcessEnv_Set("PWD", FS_ROOT_DIR) ;
 }
 
-void ProcessEnv_UnInitialize(ProcessAddressSpace* processAddressSpace)
+void ProcessEnv_UnInitialize(ProcessAddressSpace& pas)
 {
-	MemManager::Instance().DeAllocatePhysicalPage(ProcessEnv_GetProcessEnvPageNumber(*processAddressSpace)) ;
+	MemManager::Instance().DeAllocatePhysicalPage(ProcessEnv_GetProcessEnvPageNumber(pas)) ;
 }
 
 char* ProcessEnv_Get(const char* szEnvVar)

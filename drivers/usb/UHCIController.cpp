@@ -138,7 +138,7 @@ static byte UHCIController_GetDescriptor(unsigned uiIOAddr, char devAddr, unsign
 		UHCIDataHandler_SetFrameListEntry(uiFrameNumber, ((unsigned)pQH + GLOBAL_DATA_SEGMENT_BASE) | 0x2, true, true) ;
 		printf("\nFrame Reg = %x", UHCIDataHandler_GetFrameListEntry(uiFrameNumber)) ;
 
-		ProcessManager_Sleep(5000) ;
+		ProcessManager::Instance().Sleep(5000) ;
 		printf("\n QH Element Pointer = %x", pQH->uiElementLinkPointer) ;
 		printf("\n QH Head Pointer = %x", pQH->uiHeadLinkPointer) ;
 		printf("\n TD1 Status = %x/%x/%x\n TD2 Status = %x/%x/%x\n TD3 Status = %x/%x/%x", 
@@ -156,7 +156,7 @@ static byte UHCIController_GetDescriptor(unsigned uiIOAddr, char devAddr, unsign
 		MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)pDesc, MemUtil_GetDS(), (unsigned) pDestDesc, iLen) ;
 
 		printf("\n\n Scheduling Frame Clean %d: %d", uiFrameNumber, UHCIDataHandler_CleanFrame(uiFrameNumber)) ;
-		ProcessManager_Sleep(2000) ;
+		ProcessManager::Instance().Sleep(2000) ;
 	}
 	else
 	{
@@ -261,7 +261,7 @@ static byte UHCIController_GetConfiguration(unsigned uiIOAddr, char devAddr, cha
 		UHCIDataHandler_SetFrameListEntry(uiFrameNumber, ((unsigned)pQH + GLOBAL_DATA_SEGMENT_BASE) | 0x2, true, true) ;
 		printf("\nFrame Reg = %x", UHCIDataHandler_GetFrameListEntry(uiFrameNumber)) ;
 
-		ProcessManager_Sleep(5000) ;
+		ProcessManager::Instance().Sleep(5000) ;
 		printf("\n QH Element Pointer = %x", pQH->uiElementLinkPointer) ;
 		printf("\n QH Head Pointer = %x", pQH->uiHeadLinkPointer) ;
 		printf("\n TD1 Status = %x/%x/%x\n TD2 Status = %x/%x/%x\n TD3 Status = %x/%x/%x", 
@@ -277,7 +277,7 @@ static byte UHCIController_GetConfiguration(unsigned uiIOAddr, char devAddr, cha
 		*bConfigValue = *((char*)UHCIDataHandler_GetTDAttribute(pTD2, UHCI_ATTR_BUF_PTR)) ;
 
 		printf("\n\n Scheduling Frame Clean %d: %d", uiFrameNumber, UHCIDataHandler_CleanFrame(uiFrameNumber)) ;
-		ProcessManager_Sleep(2000) ;
+		ProcessManager::Instance().Sleep(2000) ;
 	}
 	else
 	{
@@ -363,7 +363,7 @@ static byte UHCIController_SetConfiguration(unsigned uiIOAddr, char devAddr, cha
 		UHCIDataHandler_SetFrameListEntry(uiFrameNumber, ((unsigned)pQH + GLOBAL_DATA_SEGMENT_BASE) | 0x2, true, true) ;
 		printf("\nFrame Reg = %x", UHCIDataHandler_GetFrameListEntry(uiFrameNumber)) ;
 
-		ProcessManager_Sleep(5000) ;
+		ProcessManager::Instance().Sleep(5000) ;
 		printf("\n QH Element Pointer = %x", pQH->uiElementLinkPointer) ;
 		printf("\n QH Head Pointer = %x", pQH->uiHeadLinkPointer) ;
 		printf("\n TD1 Status = %x/%x/%x\n TD2 Status = %x/%x/%x\n",
@@ -376,7 +376,7 @@ static byte UHCIController_SetConfiguration(unsigned uiIOAddr, char devAddr, cha
 		printf("\nFrame Number = %d", PortCom_ReceiveWord(uiIOAddr + FRNUM_REG)) ;
 
 		printf("\n\n Scheduling Frame Clean %d: %d", uiFrameNumber, UHCIDataHandler_CleanFrame(uiFrameNumber)) ;
-		ProcessManager_Sleep(2000) ;
+		ProcessManager::Instance().Sleep(2000) ;
 	}
 	else
 	{
@@ -476,7 +476,7 @@ static byte UHCIController_SetAddress(unsigned uiIOAddr, char devAddr)
 		UHCIDataHandler_SetFrameListEntry(uiFrameNumber, ((unsigned)pQH + GLOBAL_DATA_SEGMENT_BASE) | 0x2, true, true) ;
 		printf("\nFrame Reg = %x", UHCIDataHandler_GetFrameListEntry(uiFrameNumber)) ;
 
-		ProcessManager_Sleep(5000) ;
+		ProcessManager::Instance().Sleep(5000) ;
 		printf("\n QH Element Pointer = %x", pQH->uiElementLinkPointer) ;
 		printf("\n QH Head Pointer = %x", pQH->uiHeadLinkPointer) ;
 		printf("\n TD1 Status = %x/%x/%x\n TD2 Status = %x/%x/%x\n",
@@ -489,7 +489,7 @@ static byte UHCIController_SetAddress(unsigned uiIOAddr, char devAddr)
 		printf("\nFrame Number = %d", PortCom_ReceiveWord(uiIOAddr + FRNUM_REG)) ;
 
 		printf("\n\n Scheduling Frame Clean %d: %d", uiFrameNumber, UHCIDataHandler_CleanFrame(uiFrameNumber)) ;
-		ProcessManager_Sleep(2000) ;
+		ProcessManager::Instance().Sleep(2000) ;
 	}
 	else
 	{
@@ -570,7 +570,7 @@ static byte UHCIController_GetConfigDescriptor(unsigned uiIOAddr, char devAddr, 
 
 		printf("\n Parsing Interface information for Configuration: %d", index) ;
 		printf("\n Number of Interfaces: %d", (int)pCD[ index ].bNumInterfaces) ;
-		ProcessManager_Sleep(10000) ;
+		ProcessManager::Instance().Sleep(10000) ;
 
 		void* pInterfaceBuffer = (char*)pBuffer + pCD[index].bLength ;
 
@@ -606,7 +606,7 @@ static byte UHCIController_GetConfigDescriptor(unsigned uiIOAddr, char devAddr, 
 														sizeof(USBStandardEndPt) * iNumEndPoints) ;
 
 			printf("\n Parsing EndPoints for Interface: %d of Configuration: %d", iI, index) ;
-			ProcessManager_Sleep(10000) ;
+			ProcessManager::Instance().Sleep(10000) ;
 
 			int iE ;
 			for(iE = 0; iE < iNumEndPoints; iE++)
@@ -817,7 +817,7 @@ static bool UHCIController_GetMaxLun(USBDevice* pUSBDevice, byte* bLUN)
 		UHCIDataHandler_SetFrameListEntry(uiFrameNumber, ((unsigned)pQH + GLOBAL_DATA_SEGMENT_BASE) | 0x2, true, true) ;
 		printf("\nFrame Reg = %x", UHCIDataHandler_GetFrameListEntry(uiFrameNumber)) ;
 
-		ProcessManager_Sleep(5000) ;
+		ProcessManager::Instance().Sleep(5000) ;
 		printf("\n QH Element Pointer = %x", pQH->uiElementLinkPointer) ;
 		printf("\n QH Head Pointer = %x", pQH->uiHeadLinkPointer) ;
 		printf("\n TD1 Status = %x/%x/%x\n TD2 Status = %x/%x/%x\n",
@@ -831,7 +831,7 @@ static bool UHCIController_GetMaxLun(USBDevice* pUSBDevice, byte* bLUN)
 
 		*bLUN = pBufPtr[0] ;
 		printf("\n\n Scheduling Frame Clean %d: %d", uiFrameNumber, UHCIDataHandler_CleanFrame(uiFrameNumber)) ;
-		ProcessManager_Sleep(2000) ;
+		ProcessManager::Instance().Sleep(2000) ;
 	}
 	else
 	{
@@ -920,7 +920,7 @@ static bool UHCIController_CommandReset(USBDevice* pUSBDevice)
 		UHCIDataHandler_SetFrameListEntry(uiFrameNumber, ((unsigned)pQH + GLOBAL_DATA_SEGMENT_BASE) | 0x2, true, true) ;
 		printf("\nFrame Reg = %x", UHCIDataHandler_GetFrameListEntry(uiFrameNumber)) ;
 
-		ProcessManager_Sleep(5000) ;
+		ProcessManager::Instance().Sleep(5000) ;
 		printf("\n QH Element Pointer = %x", pQH->uiElementLinkPointer) ;
 		printf("\n QH Head Pointer = %x", pQH->uiHeadLinkPointer) ;
 		printf("\n TD1 Status = %x/%x/%x\n TD2 Status = %x/%x/%x\n",
@@ -933,7 +933,7 @@ static bool UHCIController_CommandReset(USBDevice* pUSBDevice)
 		printf("\nFrame Number = %d", PortCom_ReceiveWord(uiIOAddr + FRNUM_REG)) ;
 
 		printf("\n\n Scheduling Frame Clean %d: %d", uiFrameNumber, UHCIDataHandler_CleanFrame(uiFrameNumber)) ;
-		ProcessManager_Sleep(2000) ;
+		ProcessManager::Instance().Sleep(2000) ;
 	}
 	else
 	{
@@ -1022,7 +1022,7 @@ static bool UHCIController_ClearHaltEndPoint(USBulkDisk* pDisk, bool bIn)
 		UHCIDataHandler_SetFrameListEntry(uiFrameNumber, ((unsigned)pQH + GLOBAL_DATA_SEGMENT_BASE) | 0x2, true, true) ;
 		printf("\nFrame Reg = %x", UHCIDataHandler_GetFrameListEntry(uiFrameNumber)) ;
 
-		ProcessManager_Sleep(5000) ;
+		ProcessManager::Instance().Sleep(5000) ;
 		printf("\n QH Element Pointer = %x", pQH->uiElementLinkPointer) ;
 		printf("\n QH Head Pointer = %x", pQH->uiHeadLinkPointer) ;
 		printf("\n TD1 Status = %x/%x/%x\n TD2 Status = %x/%x/%x\n",
@@ -1035,7 +1035,7 @@ static bool UHCIController_ClearHaltEndPoint(USBulkDisk* pDisk, bool bIn)
 		printf("\nFrame Number = %d", PortCom_ReceiveWord(uiIOAddr + FRNUM_REG)) ;
 
 		printf("\n\n Scheduling Frame Clean %d: %d", uiFrameNumber, UHCIDataHandler_CleanFrame(uiFrameNumber)) ;
-		ProcessManager_Sleep(2000) ;
+		ProcessManager::Instance().Sleep(2000) ;
 	}
 	else
 	{
@@ -1311,9 +1311,9 @@ static byte UHCIController_Alloc(PCIEntry* pPCIEntry, unsigned uiIOAddr, unsigne
 	//Reset Hub
 	/* Global reset for 50ms */
 	PortCom_SendWord(uiIOAddr + USBCMD_REG, USBCMD_GRESET) ;
-	ProcessManager_Sleep(100) ;
+	ProcessManager::Instance().Sleep(100) ;
 	PortCom_SendWord(uiIOAddr + USBCMD_REG, 0) ;
-	ProcessManager_Sleep(100) ;
+	ProcessManager::Instance().Sleep(100) ;
 
 	//Start Hub
 	/* Reset the HC - this will force us to get a new notification of any
@@ -1322,13 +1322,13 @@ static byte UHCIController_Alloc(PCIEntry* pPCIEntry, unsigned uiIOAddr, unsigne
 	 */
 	unsigned uiLimit = 1000;
 	PortCom_SendWord(uiIOAddr + USBCMD_REG, USBCMD_HCRESET) ;
-	ProcessManager_Sleep(50) ;
+	ProcessManager::Instance().Sleep(50) ;
 	
 	while(PortCom_ReceiveWord(uiIOAddr + USBCMD_REG) & USBCMD_HCRESET)
 	{
 		// Spec says we should wait for 10ms before HCRESET is set to 0
 		if(uiLimit == 1)
-			ProcessManager_Sleep(10) ;
+			ProcessManager::Instance().Sleep(10) ;
 
 		if(! (--uiLimit) )
 		{
@@ -1349,7 +1349,7 @@ static byte UHCIController_Alloc(PCIEntry* pPCIEntry, unsigned uiIOAddr, unsigne
 	/* Run and mark it configured with a 64-byte max packet */
 	PortCom_SendWord(uiIOAddr + USBCMD_REG, (USBCMD_RS | USBCMD_CF | USBCMD_MAXP)) ;
 
-	ProcessManager_Sleep(200) ;
+	ProcessManager::Instance().Sleep(200) ;
 
 	// Check Status
 	// For the time just checking for zero
@@ -1387,7 +1387,7 @@ static byte UHCIController_Alloc(PCIEntry* pPCIEntry, unsigned uiIOAddr, unsigne
 
 	printf("\n USB UHCI at I/O: %x, IRQ: %d, Detected Ports: %d ", uiIOAddr, iIRQ, iNumPorts) ;
 
-	ProcessManager_Sleep(100) ;
+	ProcessManager::Instance().Sleep(100) ;
 
 	bool bActivePortFound = false ;
 	for(int i = 0; i < iNumPorts; i++)
@@ -1404,7 +1404,7 @@ static byte UHCIController_Alloc(PCIEntry* pPCIEntry, unsigned uiIOAddr, unsigne
 				printf("\n Setting Port: %d status to %x", i + 1, status) ;
 				PortCom_SendWord(uiPortAddr, status) ;
 				
-				ProcessManager_Sleep(100) ;
+				ProcessManager::Instance().Sleep(100) ;
 				
 				status = PortCom_ReceiveWord(uiPortAddr) ;
 				printf("\n New Port Status = %x", status) ;
@@ -1412,19 +1412,19 @@ static byte UHCIController_Alloc(PCIEntry* pPCIEntry, unsigned uiIOAddr, unsigne
 				status &= ~(0x200) ;
 				PortCom_SendWord(uiPortAddr, status) ;
 
-				ProcessManager_Sleep(100) ;
+				ProcessManager::Instance().Sleep(100) ;
 			
 				status = PortCom_ReceiveWord(uiPortAddr) ;
 				status |= 0x4 ;
 				PortCom_SendWord(uiPortAddr, status) ;
 
-				ProcessManager_Sleep(100) ;
+				ProcessManager::Instance().Sleep(100) ;
 
 				status = PortCom_ReceiveWord(uiPortAddr) ;
 				status |= 0xA ;
 				PortCom_SendWord(uiPortAddr, status) ;
 
-				ProcessManager_Sleep(100) ;
+				ProcessManager::Instance().Sleep(100) ;
 
 				status = PortCom_ReceiveWord(uiPortAddr) ;
 				printf("\n After Reset Port Status = %x", status) ;
@@ -1630,7 +1630,7 @@ byte UHCIController_ProbeDevice()
 //
 			PCIBusHandler_ReadPCIConfig(pPCIEntry->uiBusNumber, pPCIEntry->uiDeviceNumber, pPCIEntry->uiFunction, PCI_COMMAND, 2, &usCommand) ;
 			printf("\n PCI COMMAND: %x", usCommand) ;
-  			//ProcessManager_Sleep(5000) ;
+  			//ProcessManager::Instance().Sleep(5000) ;
 
 			if(UHCIController_Alloc(pPCIEntry, uiIOAddr & PCI_ADDRESS_IO_MASK, uiIOSize) == UHCIController_SUCCESS)
 				return UHCIController_SUCCESS ;
@@ -1653,7 +1653,7 @@ bool UHCIController_PoleWait(unsigned* pPoleAddr, unsigned uiValue)
 		if((*pPoleAddr) == uiValue)
 			break ;
 
-		ProcessManager_Sleep(50) ;
+		ProcessManager::Instance().Sleep(50) ;
 	
 		iTotalAttempts-- ;
 	}

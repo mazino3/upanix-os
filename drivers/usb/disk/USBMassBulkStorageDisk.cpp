@@ -170,7 +170,7 @@ static byte USBMassBulkStorageDisk_DoReset(USBulkDisk* pDisk)
 	KC::MDisplay().Message("\n Command Reset Complete", Display::WHITE_ON_BLACK()) ;
 
 	// Long Wait For Reset
-	ProcessManager_Sleep( 5 * 1000 );
+	ProcessManager::Instance().Sleep( 5 * 1000 );
 
 	KC::MDisplay().Message("\n Doing IN EndPoint Clear Halt", Display::WHITE_ON_BLACK()) ;
 

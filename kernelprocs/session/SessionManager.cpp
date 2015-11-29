@@ -67,7 +67,6 @@ static byte SessionManager_LoadShell(int* iShellProcessID, int iSessionUserID)
 
 	*iShellProcessID = KC::MKernelService().RequestProcessExec(shell, 0, NULL) ;
 	if(*iShellProcessID < 0)
-	//if(ProcessManager_Create(shell, ProcessManager_iCurrentProcessID, true, iShellProcessID, iSessionUserID, 0, NULL) != ProcessManager_SUCCESS)
 	{
 		KC::MDisplay().Message(" Failed !!!", Display::WHITE_ON_BLACK()) ;
 		return false ;
@@ -126,7 +125,7 @@ __OnlyLogin:
 		if(!SessionManager_LoadShell(&iShellProcessID, iSessionUserID))
 			goto __OnlyLogin ;
 
-		ProcessManager_WaitOnChild(iShellProcessID) ;
+		ProcessManager::Instance().WaitOnChild(iShellProcessID) ;
 	}	
 }
 
@@ -148,7 +147,7 @@ void SessionManager_SwitchToSession(int key)
 	if(SessionManager_List[key] == NO_PROCESS_ID)
 	{
 		int pid ;
-		ProcessManager_CreateKernelImage((unsigned)&SessionManager_StartSession, NO_PROCESS_ID, true, NULL, NULL, &pid, "session") ;
+		ProcessManager::Instance().CreateKernelImage((unsigned)&SessionManager_StartSession, NO_PROCESS_ID, true, NULL, NULL, &pid, "session") ;
 		SessionManager_List[key] = pid ;
 		return ;
 	}

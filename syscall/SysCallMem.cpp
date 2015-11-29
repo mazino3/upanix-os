@@ -70,14 +70,11 @@ __volatile__ unsigned uiP9)
 			//P1 => Address
 			//P2 => Ret Size
 			{
-				ProcessManager_DisableTaskSwitch() ;
-
+        ProcessSwitchLock pLock;
 				int* pRetAllocSize = KERNEL_ADDR(bDoAddrTranslation, int*, uiP2) ;
 				*piRetVal = 0 ;
 				if(DMM_GetAllocSize(&ProcessManager::Instance().GetCurrentPAS(), uiP1, pRetAllocSize) != DMM_SUCCESS)
 					*piRetVal = -1 ;
-
-				ProcessManager_EnableTaskSwitch() ;
 			}
 			break ;
 	}

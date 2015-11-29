@@ -222,56 +222,38 @@ bool MemManager::BuildPageTable()
 
 int MemManager::GetFreeKernelProcessStackBlockID()
 {
-	ProcessManager_DisableTaskSwitch() ;
-
-	int i ;
-
-	for(i = 0; i < m_iNoOfKernelProcessStackBlocks; i++)
+  ProcessSwitchLock pLock;
+	for(int i = 0; i < m_iNoOfKernelProcessStackBlocks; i++)
 	{
 		if(m_bAllocationMapForKernelProcessStackBlock[i] == false)
 		{
 			m_bAllocationMapForKernelProcessStackBlock[i] = true ;
-			
-			ProcessManager_EnableTaskSwitch() ;
-
-			return i ;
+			return i;
 		}
 	}
-
-	ProcessManager_EnableTaskSwitch() ;
-
 	return -1 ;
 }
 
 void MemManager::FreeKernelProcessStackBlock(int id)
 {
-	ProcessManager_DisableTaskSwitch() ;
-
+  ProcessSwitchLock pLock;
 	if(id < 0 || id >= m_iNoOfKernelProcessStackBlocks)
-	{
-		ProcessManager_DisableTaskSwitch() ;
 		return ;
-	}
-
 	m_bAllocationMapForKernelProcessStackBlock[id] = false ;
-
-	ProcessManager_EnableTaskSwitch() ;
 }
 
 Result MemManager::MarkPageAsAllocated(unsigned uiPageNumber)
 {
-	ProcessManager_DisableTaskSwitch() ;
+  ProcessSwitchLock pLock;
 	unsigned uiPageMapIndex = uiPageNumber / 32 ;
 	unsigned uiPageBitIndex = uiPageNumber % 32 ;
 	unsigned uiCurVal = (m_uiPageMap[ uiPageMapIndex ] >> uiPageBitIndex) & 0x1 ;
 	if(uiCurVal)
 	{
 		printf("\n Error: Page: %u is already marked as allocated", uiPageNumber) ;
-		ProcessManager_EnableTaskSwitch() ;
 		return Failure;
 	}
 	m_uiPageMap[ uiPageMapIndex ] |= (0x1 << uiPageBitIndex) ;
-	ProcessManager_EnableTaskSwitch() ;
 	return Success ;
 }
 
@@ -304,7 +286,7 @@ unsigned MemManager::AllocatePhysicalPage()
 
 void MemManager::DeAllocatePhysicalPage(const unsigned uiPageNumber)
 {
-	ProcessManager_DisableTaskSwitch() ;
+  ProcessSwitchLock pLock;
 
 	unsigned uiPageMapPosition ;
 	unsigned uiPageOffset ;
@@ -313,8 +295,6 @@ void MemManager::DeAllocatePhysicalPage(const unsigned uiPageNumber)
 	uiPageMapPosition = uiPageNumber / (8 * 4) ;
 	
 	m_uiPageMap[uiPageMapPosition] = m_uiPageMap[uiPageMapPosition] & ~(0x1 << uiPageOffset) ;
-
-	ProcessManager_EnableTaskSwitch() ;
 }
 
 extern __volatile__ int SYS_CALL_ID;
@@ -342,12 +322,12 @@ Result MemManager::AllocatePage(int iProcessID, unsigned uiFaultyAddress)
 		
 		/* Not accessing Heap and Not the startUp Address access (20MB) in proc_init */
 		if((uiFaultyAddress < PROCESS_HEAP_START_ADDRESS && uiFaultyAddress != PROCESS_INIT_DOCK_ADDRESS) || 
-				(uiFaultyAddress >= PROCESS_HEAP_START_ADDRESS && !ProcessManager_IsDMMOn(iProcessID)))
+				(uiFaultyAddress >= PROCESS_HEAP_START_ADDRESS && !ProcessManager::Instance().IsDMMOn(iProcessID)))
 		{
 			KC::MDisplay().Number("\n SYS CALL ID = ", SYS_CALL_ID) ;
 			KC::MDisplay().Address("\n Segmentation Fault @ Address: ", uiFaultyAddress) ;
 			KC::MDisplay().Number("\n PID = ", iProcessID) ;
-			KC::MDisplay().Number("\n DMM Flag = ", ProcessManager_IsDMMOn(iProcessID));
+			KC::MDisplay().Number("\n DMM Flag = ", ProcessManager::Instance().IsDMMOn(iProcessID));
 			return Failure;
 		}
 

@@ -193,7 +193,7 @@ unsigned DMM_AllocateAlign(ProcessAddressSpace* processAddressSpace, unsigned ui
 {
 	DMM_CheckAlignNumber(uiAlignNumber);
 	
-	ProcessManager_SetDMMFlag(ProcessManager::GetCurrentProcessID(), true) ;
+	ProcessManager::Instance().SetDMMFlag(ProcessManager::GetCurrentProcessID(), true) ;
 
 	__volatile__ unsigned uiHeapStartAddress = PROCESS_HEAP_START_ADDRESS - GLOBAL_DATA_SEGMENT_BASE ;
 
@@ -257,7 +257,7 @@ unsigned DMM_AllocateAlign(ProcessAddressSpace* processAddressSpace, unsigned ui
 				}
 				x = ((char*)(uiAddress + aut->uiSize - 1))[0] ;
 
-				ProcessManager_SetDMMFlag(ProcessManager::GetCurrentProcessID(), false) ;
+				ProcessManager::Instance().SetDMMFlag(ProcessManager::GetCurrentProcessID(), false) ;
 				
 				return VIRTUAL_ALLOCATED_ADDRESS(aut->uiReturnAddress) ;
 			}
@@ -285,7 +285,7 @@ unsigned DMM_AllocateAlign(ProcessAddressSpace* processAddressSpace, unsigned ui
 		aut = (AllocationUnitTracker*)(aut->uiNextAUTAddress) ;
 	}
 
-	ProcessManager_SetDMMFlag(ProcessManager::GetCurrentProcessID(), false) ;
+	ProcessManager::Instance().SetDMMFlag(ProcessManager::GetCurrentProcessID(), false) ;
   throw Exerr(XLOC, "out of memory!");
 }
 

@@ -39,7 +39,7 @@
 #include <SysCallDrive.h>
 #include <SysCallUtil.h>
 
-#define IKP ( ProcessManager_IsKernelProcess(ProcessManager::GetCurrentProcessID()) )
+#define IKP ( ProcessManager::Instance().IsKernelProcess(ProcessManager::GetCurrentProcessID()) )
 #define KERNEL_ADDR(DO, TYPE, ADDR) (TYPE)( (DO) ? (IKP ? ADDR : (PROCESS_BASE + ADDR - GLOBAL_DATA_SEGMENT_BASE)) : ADDR )
 
 #define NO_OF_SYSCALL_PARAMS 10

@@ -87,4 +87,19 @@ class PIC
 		List<const IRQ*> _irqs;
 } ;
 
+class PICGuard
+{
+  public:
+    PICGuard(const IRQ& irq) : _irq(irq)
+    {
+      PIC::Instance().DisableInterrupt(_irq);
+    }
+    ~PICGuard()
+    {
+      PIC::Instance().EnableInterrupt(_irq);
+    }
+  private:
+    const IRQ& _irq;
+};
+
 #endif

@@ -77,7 +77,7 @@ static bool EHCIController_PollWait(unsigned* pValue, int iBitPos, unsigned valu
 		if( (((*pValue) >> iBitPos) & 1) == value )
 			return true ;
 
-		ProcessManager_Sleep(uiSleepTime) ;
+		ProcessManager::Instance().Sleep(uiSleepTime) ;
 		iMaxLimit -= uiSleepTime ;
 	}
 
@@ -116,7 +116,7 @@ static bool EHCIController_PollWaitTransaction(EHCITransaction* pTransaction)
 		}
 		iMaxLimit -= uiSleepTime ;
 		if(iMaxLimit == 20)
-			ProcessManager_Sleep(uiSleepTime) ;
+			ProcessManager::Instance().Sleep(uiSleepTime) ;
 	}
 
 	return false ;
@@ -252,7 +252,7 @@ static byte EHCIController_PerformBiosToOSHandoff(EHCIController* pController)
 		uiLegSup = uiLegSup | ( 1 << 24 ) ;
 
 		PCIBusHandler_WritePCIConfig(pPCIEntry->uiBusNumber, pPCIEntry->uiDeviceNumber, pPCIEntry->uiFunction, bEECPOffSet, 4, uiLegSup) ;
-		ProcessManager_Sleep(500) ;
+		ProcessManager::Instance().Sleep(500) ;
 		PCIBusHandler_ReadPCIConfig(pPCIEntry->uiBusNumber, pPCIEntry->uiDeviceNumber, pPCIEntry->uiFunction, bEECPOffSet, 4, &uiLegSup) ;
 
 		printf("\n New USB EHCI LEGSUP: %x", uiLegSup) ;
@@ -290,7 +290,7 @@ static byte EHCIController_SetConfigFlag(EHCIController* pController, bool bSet)
 
 		pController->pOpRegs->uiConfigFlag = uiConfigFlag ;
 
-		ProcessManager_Sleep(100) ;
+		ProcessManager::Instance().Sleep(100) ;
 		if((pController->pOpRegs->uiConfigFlag & 0x1) == uiCompareValue)
 		{
 			printf("\n Failed to Set Config Flag to: %d:", bSet ? 1 : 0) ;
@@ -477,7 +477,7 @@ static void EHCIController_SetupPorts(EHCIController* pController)
 		if(bPPC)
 		{
 			*pPort |= (1 << 12) ;
-			ProcessManager_Sleep(100) ;
+			ProcessManager::Instance().Sleep(100) ;
 		}
 
 		if((*pPort & (1 << 13)))
@@ -494,9 +494,9 @@ static void EHCIController_SetupPorts(EHCIController* pController)
 
 		// Perform Port Reset
 		*pPort = (*pPort | 0x100) & ~(0x4) ;
-		ProcessManager_Sleep(200) ;
+		ProcessManager::Instance().Sleep(200) ;
 		*pPort &= (~(0x100)) ;
-		ProcessManager_Sleep(500) ;
+		ProcessManager::Instance().Sleep(500) ;
 
 		if(!(*pPort & 0x4))
 		{
@@ -1462,7 +1462,7 @@ static byte EHCIController_DoProbe(int iIndex)
 
 	EHCIController_StartController(pController) ;
 
-	ProcessManager_Sleep(100) ;
+	ProcessManager::Instance().Sleep(100) ;
 
 	if(EHCIController_SetConfigFlag(pController, true) != EHCIController_SUCCESS)
 		return EHCIController_FAILURE ;

@@ -34,7 +34,7 @@ class KernelService
 				int m_iRequestProcessID ;
 
 			public:
-				Request() : m_iRequestProcessID(ProcessManager_GetCurProcId()) { }
+				Request() : m_iRequestProcessID(ProcessManager::Instance().GetCurProcId()) { }
 				virtual ~Request() { }
 				virtual void Process() = 0 ;
 

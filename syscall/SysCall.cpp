@@ -55,7 +55,7 @@ void SysCall_InitializeHandler(SysCallHandler* pSysCallHandler, Check* pFuncChec
 
 void SysCall_Initialize()
 {
-	ProcessManager_BuildCallGate(CALL_GATE_SELECTOR, (unsigned)&SysCall_Entry, SYS_CODE_SELECTOR, NO_OF_SYSCALL_PARAMS) ;
+	ProcessManager::Instance().BuildCallGate(CALL_GATE_SELECTOR, (unsigned)&SysCall_Entry, SYS_CODE_SELECTOR, NO_OF_SYSCALL_PARAMS) ;
 
 	SysCall_NoOfHandlers = 0 ;
 

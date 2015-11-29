@@ -34,19 +34,19 @@ void KernelUtil::Wait(__volatile__ unsigned uiTimeInMilliSec)
 
 void KernelUtil::WaitOnInterrupt(const IRQ& irq)
 {
-	while(!ProcessManager_ConsumeInterrupt(irq))
+	while(!ProcessManager::Instance().ConsumeInterrupt(irq))
 	{	
 		__asm__ __volatile__("nop") ;
 		__asm__ __volatile__("nop") ;
 	}
 
-	ProcessManager_GetFromInterruptQueue(irq) ;
+	ProcessManager::Instance().GetFromInterruptQueue(irq) ;
 }
 
 void KernelUtil::ScheduleTimedTask(const char* szName, unsigned uiTimeInMilliSec, unsigned CallBackFunction)
 {
 	int pid ;
-	ProcessManager_CreateKernelImage((unsigned)&SystemTimer, NO_PROCESS_ID, false, uiTimeInMilliSec, CallBackFunction, &pid, szName) ;
+	ProcessManager::Instance().CreateKernelImage((unsigned)&SystemTimer, NO_PROCESS_ID, false, uiTimeInMilliSec, CallBackFunction, &pid, szName) ;
 }
 
 void KernelUtil::TightLoopWait(unsigned loop)
@@ -67,7 +67,7 @@ void KernelUtil::SystemTimer(unsigned uiTimeInMilliSec, KernelUtilTimerFunc* Cal
 {
 	do
 	{
-		ProcessManager_Sleep(uiTimeInMilliSec) ;
+		ProcessManager::Instance().Sleep(uiTimeInMilliSec) ;
 	} while(CallBackFunction()) ;
 	ProcessManager_EXIT() ;
 }

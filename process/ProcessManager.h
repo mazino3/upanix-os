@@ -207,35 +207,6 @@ typedef struct
 
 extern unsigned ProcessManager_uiKernelAUTAddress ;
 
-void ProcessManager_Load(int iProcessID) ;
-void ProcessManager_Store(int iProcessID) ;
-void ProcessManager_DoContextSwitch(int iProcessID) ;
-void ProcessManager_BuildDescriptor(Descriptor* descriptor, unsigned uiLimit, unsigned uiBase, byte bType, byte bFlag) ;
-void ProcessManager_BuildLDT(ProcessLDT* processLDT) ;
-void ProcessManager_BuildKernelTaskLDT(int iProcessID) ;
-void ProcessManager_BuildIntTaskState(const unsigned uiTaskAddress, const unsigned uiTSSAddress, const int stack) ;
-void ProcessManager_BuildTaskState(ProcessAddressSpace* pProcessAddressSpace, unsigned uiPDEAddress, unsigned uiEntryAdddress, unsigned uiProcessEntryStackSize) ;
-void ProcessManager_BuildKernelTaskState(const unsigned uiTaskAddress, const int iProcessID, const unsigned uiStackTop, unsigned uiParam1, unsigned uiParam2) ;
-byte ProcessManager_CreateKernelImage(const unsigned uiTaskAddress, int iParentProcessID, byte bIsFGProcess, unsigned uiParam1, unsigned uiParam2, 
-		int* iProcessID, const char* szKernelProcName) ;
-void ProcessManager_Destroy(int iDeleteProcessID) ;
-void ProcessManager_Sleep(unsigned uiSleepTime) ;
-void ProcessManager_WaitOnInterrupt(const IRQ&);
-void ProcessManager_WaitOnChild(int iChildProcessID) ;
-void ProcessManager_WaitOnResource(unsigned uiResourceType) ;
-void ProcessManager_WaitOnKernelService() ;
-byte ProcessManager_Create(const char* szProcessName, int iParentProcessID, byte bIsFGProcess, int* iProcessID, int iUserID, int iNumberOfParameters, char** szArgumentList) ;
-
-void ProcessManager_BuildCallGate(unsigned short usGateSelector, unsigned uiOffset, unsigned short usSelector, 
-		byte bParameterCount) ;
-
-void ProcessManager_EnableTaskSwitch() ;
-void ProcessManager_DisableTaskSwitch() ;
-
-byte ProcessManager_GetFromInterruptQueue(const IRQ&) ;
-byte ProcessManager_QueueInterrupt(const IRQ&);
-void ProcessManager_SignalInterruptOccured(const IRQ&);
-
 typedef struct
 {
 	int pid ;
@@ -246,25 +217,9 @@ typedef struct
 	int iUserID ;
 } PS ;
 
-byte ProcessManager_GetProcList(PS** pProcList, unsigned* uiListSize) ;
-void ProcessManager_FreeProcListMem(PS* pProcList, unsigned uiListSize) ;
-void ProcessManager_BuildIntGate(unsigned short usGateSelector, unsigned uiOffset, unsigned short usSelector, byte bParameterCount) ;
-
-void ProcessManager_SetDMMFlag(int iProcessID, bool flag) ;
-bool ProcessManager_IsDMMOn(int iProcessID) ;
-bool ProcessManager_IsKernelProcess(int iProcessID) ;
 void ProcessManager_ProcessInit() ;
 void ProcessManager_ProcessUnInit() ;
-byte ProcessManager_IsChildAlive(int iChildProcessID) ;
 void ProcessManager_Exit() ;
-bool ProcessManager_ConsumeInterrupt(const IRQ&);
-void ProcessManager_SetInterruptOccured(const IRQ&) ;
-bool ProcessManager_IsResourceBusy(__volatile__ unsigned uiType) ;
-void ProcessManager_SetResourceBusy(unsigned uiType, bool bVal) ;
-int ProcessManager_GetCurProcId() ;
-void ProcessManager_Kill(int iProcessID) ;
-void ProcessManager_WakeUpFromKSWait(int iProcessID) ;
-bool ProcessManager_CopyDriveInfo(int iProcessID, int& iOldDriveId, FileSystem_PresentWorkingDirectory& mOldPWD) ;
 
 class ProcessManager
 {
@@ -284,13 +239,65 @@ class ProcessManager
     void StartScheduler();
     void DeleteFromSchedulerList(int iDeleteProcessID);
     void AddToSchedulerList(int iNewProcessID);
-    static int GetCurrentProcessID() { return _iCurrentProcessID; }
     void InsertIntoProcessList(int iProcessID);
     void DeleteFromProcessList(int iProcessID);
+    bool WakeupProcessOnInterrupt(__volatile__ int iProcessID);
+    void SignalInterruptOccured(const IRQ&);
+    bool ConsumeInterrupt(const IRQ&);
+    bool GetFromInterruptQueue(const IRQ&);
+    bool IsResourceBusy(__volatile__ unsigned uiType);
+    void SetResourceBusy(unsigned uiType, bool bVal);
+    void Sleep(unsigned uiSleepTime);
+    void WaitOnInterrupt(const IRQ&);
+    int GetCurProcId();
+    bool CopyDriveInfo(int iProcessID, int& iOldDriveId, FileSystem_PresentWorkingDirectory& mOldPWD);
+    void Kill(int iProcessID);
+    void WakeUpFromKSWait(int iProcessID);
+    bool IsChildAlive(int iChildProcessID);
+    byte CreateKernelImage(const unsigned uiTaskAddress, int iParentProcessID, byte bIsFGProcess, unsigned uiParam1, unsigned uiParam2, int* iProcessID, const char* szKernelProcName);
+    byte Create(const char* szProcessName, int iParentProcessID, byte bIsFGProcess, int* iProcessID, int iUserID, int iNumberOfParameters, char** szArgumentList);
+    void SetDMMFlag(int iProcessID, bool flag);
+    bool IsDMMOn(int iProcessID);
+    void WaitOnChild(int iChildProcessID);
+    void WaitOnResource(unsigned uiResourceType);
+    void WaitOnKernelService();
+    bool IsKernelProcess(int iProcessID);
+    void BuildCallGate(unsigned short usGateSelector, unsigned uiOffset, unsigned short usSelector, byte bParameterCount);
+
+    static int GetCurrentProcessID() { return _iCurrentProcessID; }
+    static void EnableTaskSwitch() ;
+    static void DisableTaskSwitch() ;
   private:
+    void Destroy(int iDeleteProcessID);
+    void DoContextSwitch(int iProcessID);
     PS* GetProcListASync();
+    void SetInterruptOccured(const IRQ&);
+    bool QueueInterrupt(const IRQ&);
+    void Load(int iProcessID);
+    void Store(int iProcessID);
+    void DeAllocateProcessInitDockMem(ProcessAddressSpace& pas);
+    void DeAllocateResources(int iProcessID);
+    void Release(int iProcessID);
+    bool DoPoleWait();
+    void BuildDescriptor(Descriptor* descriptor, unsigned uiLimit, unsigned uiBase, byte bType, byte bFlag);
+    void BuildLDT(ProcessLDT* processLDT);
+    void BuildKernelTaskLDT(int iProcessID);
+    void BuildIntTaskState(const unsigned uiTaskAddress, const unsigned uiTSSAddress, const int stack);
+    void BuildTaskState(ProcessAddressSpace* pProcessAddressSpace, unsigned uiPDEAddress, unsigned uiEntryAdddress, unsigned uiProcessEntryStackSize);
+    void BuildKernelTaskState(const unsigned uiTaskAddress, const int iProcessID, const unsigned uiStackTop, unsigned uiParam1, unsigned uiParam2);
+    void BuildIntGate(unsigned short usGateSelector, unsigned uiOffset, unsigned short usSelector, byte bParameterCount);
 
     static int _iCurrentProcessID;
+
+    static const int MAX_PROC_ON_INT_QUEUE = 100;
+
+    unsigned _interruptOccured[PIC::MAX_INTERRUPT];
+    DSUtil_Queue _interruptQueue[PIC::MAX_INTERRUPT];
+    unsigned _interruptQueueBuffer[PIC::MAX_INTERRUPT][MAX_PROC_ON_INT_QUEUE];
+
+    DSUtil_SLL _processList;
+    bool _resourceList[MAX_RESOURCE];
+
     unsigned _uiProcessCount;
     ProcessAddressSpace* _processAddressSpace;
 };
@@ -300,7 +307,7 @@ class ProcessSwitchLock
   public:
     ProcessSwitchLock() : _locked(true)
     {
-	    ProcessManager_DisableTaskSwitch();
+	    ProcessManager::DisableTaskSwitch();
     }
 
     ~ProcessSwitchLock()
@@ -312,7 +319,7 @@ class ProcessSwitchLock
     {
       if(_locked)
       {
-        ProcessManager_EnableTaskSwitch();
+        ProcessManager::EnableTaskSwitch();
         _locked = false;
       }
       else

@@ -554,8 +554,8 @@ void ConsoleCommands_DeleteUser()
 void ConsoleCommands_OpenSession()
 {
 	int pid ;
-	ProcessManager_CreateKernelImage((unsigned)&SessionManager_StartSession, NO_PROCESS_ID, true, NULL, NULL, &pid, "session") ;
-	ProcessManager_WaitOnChild(pid) ;
+	ProcessManager::Instance().CreateKernelImage((unsigned)&SessionManager_StartSession, NO_PROCESS_ID, true, NULL, NULL, &pid, "session") ;
+	ProcessManager::Instance().WaitOnChild(pid) ;
 }
 
 RawDiskDrive* ConsoleCommands_CheckDiskParam()
@@ -866,14 +866,14 @@ void ConsoleCommands_LoadExe()
 	argv[0] = (char*)&a1 ;
 	argv[1] = (char*)&a2 ;
 
-	if((bStatus = ProcessManager_Create(CommandLineParser_GetParameterAt(0), ProcessManager::GetCurrentProcessID(), true, &iChildProcessID, DERIVE_FROM_PARENT, 2, argv)) != ProcessManager_SUCCESS)
+	if((bStatus = ProcessManager::Instance().Create(CommandLineParser_GetParameterAt(0), ProcessManager::GetCurrentProcessID(), true, &iChildProcessID, DERIVE_FROM_PARENT, 2, argv)) != ProcessManager_SUCCESS)
 	{
 		KC::MDisplay().Address("\n Load User Process Failed: ", bStatus) ;
 		KC::MDisplay().Character('\n', Display::WHITE_ON_BLACK()) ;
 	}
 	else
 	{
-		ProcessManager_WaitOnChild(iChildProcessID) ;
+		ProcessManager::Instance().WaitOnChild(iChildProcessID) ;
 	}
 }
 
@@ -883,7 +883,7 @@ void ConsoleCommands_WaitPID()
 
 	String_ConvertStringToNumber(&pid, CommandLineParser_GetParameterAt(0)) ;
 
-	ProcessManager_WaitOnChild(pid) ;
+	ProcessManager::Instance().WaitOnChild(pid);
 }
 
 void ConsoleCommands_Exit()
@@ -897,9 +897,9 @@ void ConsoleCommands_Clone()
 
 	extern void Console_StartMOSConsole() ;
 	
-	ProcessManager_CreateKernelImage((unsigned)&Console_StartMOSConsole, ProcessManager::GetCurrentProcessID(), true, NULL, NULL, &pid, "console_1") ;
+	ProcessManager::Instance().CreateKernelImage((unsigned)&Console_StartMOSConsole, ProcessManager::GetCurrentProcessID(), true, NULL, NULL, &pid, "console_1") ;
 	
-	ProcessManager_WaitOnChild(pid) ;
+	ProcessManager::Instance().WaitOnChild(pid) ;
 }
 
 void ConsoleCommands_Reboot()
