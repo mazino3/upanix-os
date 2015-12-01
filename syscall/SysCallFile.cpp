@@ -74,12 +74,12 @@ __volatile__ unsigned uiP9)
 			{
 				byte bStatus ;
 				char* szPathAddress = KERNEL_ADDR(bDoAddrTranslation, char*, uiP1) ;
-				*piRetVal = uiP1 ;
+				*piRetVal = 0;
 
 				if((bStatus = FileOperations_GetCWD(szPathAddress, uiP2)) != FileOperations_SUCCESS)
 				{
 					KC::MDisplay().Address("\n Failed to Get CWD: ", bStatus) ;
-					*piRetVal = NULL ;
+					*piRetVal = -1;
 				}
 			}
 			break ;

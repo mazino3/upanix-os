@@ -108,7 +108,7 @@ __volatile__ unsigned uiP9)
 	__asm__ __volatile__("pushw %0" : : "i"(SYS_DATA_SELECTOR_DEFINED)) ; 
 	__asm__ __volatile__("popw %es") ; 
 
-	__volatile__ int iRetVal = 0 ;
+	__volatile__ int iRetVal = 0;
 
 	//KC::MDisplay().Number(", SC: ", uiSysCallID) ;
 	SYS_CALL_ID = uiSysCallID ;
@@ -124,6 +124,7 @@ __volatile__ unsigned uiP9)
       catch(const Exerr& ex)
       {
         printf("\n SysCall %u failed with error: %s\n", uiSysCallID, ex.Error().Value());
+        iRetVal = -1;
       }
 	  	break ;
 		}

@@ -40,12 +40,13 @@ __volatile__ unsigned uiP9)
 	switch(uiSysCallID)
 	{
 		case SYS_CALL_ALLOC : //Allocate Mem.. Ment only for User Process
-			//P1 => Size in Bytes
-			//P2 => Return Alloc Address
+			//P1 => Return Alloc Address
+			//P2 => Size in Bytes
 			{
+				void** addr = KERNEL_ADDR(bDoAddrTranslation, void**, uiP1) ;
 				// ProcessManager_DisableTaskSwitch() ;
 
-				*piRetVal = DMM_Allocate(&ProcessManager::Instance().GetCurrentPAS(), uiP1) ;
+				*addr = DMM_Allocate(&ProcessManager::Instance().GetCurrentPAS(), uiP2) ;
 
 				// ProcessManager_EnableTaskSwitch() ;
 			}

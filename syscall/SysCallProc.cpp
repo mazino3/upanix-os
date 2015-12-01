@@ -105,17 +105,17 @@ __volatile__ unsigned uiP9)
 
 		case SYS_CALL_PROCESS_GET_ENV:
 			//P1 - Env Var
+			//P2 - Return val
 			{
 				char* szVar = KERNEL_ADDR(bDoAddrTranslation, char*, uiP1) ;
-				char* szVal = ProcessEnv_Get(szVar) ;
+				char** szVal = KERNEL_ADDR(bDoAddrTranslation, char**, uiP2) ;
+				*szVal = ProcessEnv_Get(szVar) ;
 
-				if(szVal != NULL)
+				if(*szVal != NULL)
 				{
 					if(bDoAddrTranslation)
-						szVal = (char*)((unsigned)szVal + GLOBAL_DATA_SEGMENT_BASE - PROCESS_BASE) ;
+						*szVal = (char*)((unsigned)*szVal + GLOBAL_DATA_SEGMENT_BASE - PROCESS_BASE) ;
 				}
-				
-				*piRetVal = (volatile int)szVal ;
 			}
 			break ;
 
