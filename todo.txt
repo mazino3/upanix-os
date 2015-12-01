@@ -1,7 +1,16 @@
+Date: 1 Dec 2015
+- implement certain std containers like vector, map, list, string etc..
+- Convert SysCall a polymorphic class + exception/error handling
+
 Date: 1 Nov 2015
 - Return value refactoring -> enum
+--> Partially done - incremental change
+
 - IRQ type safety
+--> Done
+
 - Remove usage of Display.Message with printf
+--> 
 
 Date: 10 Jan 2011
 1. PIC IRQ framework changed. After this reboot not hangs on sleep and also load msh hangs... 
