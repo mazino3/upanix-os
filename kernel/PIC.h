@@ -19,7 +19,7 @@
 #define _PIC_H_
 
 #include <Global.h>
-#include <List.h>
+#include <list.h>
 
 class PIC;
 
@@ -84,7 +84,7 @@ class PIC
 		static const unsigned short MASTER_IRQ_BASE = 0x20;
 		static const unsigned short SLAVE_IRQ_BASE = 0x28;
 
-		List<const IRQ*> _irqs;
+		upan::list<const IRQ*> _irqs;
 } ;
 
 class PICGuard

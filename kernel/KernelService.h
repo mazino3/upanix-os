@@ -20,10 +20,10 @@
 
 #include <Global.h>
 #include <Atomic.h>
-#include <Queue.h>
 #include <cstring.h>
 #include <StringUtil.h>
 #include <ProcessManager.h>
+#include <list.h>
 
 class KernelService
 {
@@ -42,10 +42,10 @@ class KernelService
 		} ;
 
 	private:
-		Queue<Request*> m_qRequest ;
+		upan::list<Request*> m_qRequest ;
 		Mutex m_mutexQRequest ;
 
-		List<int> m_lServerList ;
+		upan::list<int> m_lServerList ;
 		Mutex m_mutexServer ;
 
 

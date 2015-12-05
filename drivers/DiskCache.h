@@ -19,7 +19,7 @@
 #define _DISK_CACHE_H_
 
 #include <BTree.h>
-#include <List.h>
+#include <list.h>
 #include <PIT.h>
 #include <StringUtil.h>
 #include <MemPool.h>
@@ -98,7 +98,7 @@ class LFUSectorManager : public BTree::InOrderVisitor
 				}
 		} ;
 
-		List<CacheRankNode> m_mReleaseList ;
+		upan::list<CacheRankNode> m_mReleaseList ;
 
 		DriveInfo* m_pDriveInfo ;
 		unsigned m_bReleaseListBuilt ; 
@@ -157,7 +157,7 @@ struct DiskCache
 		MemPool<DiskCacheKey>* m_pCacheKeyMemPool ;
 		MemPool<DiskCacheValue>* m_pCacheValueMemPool ;
 
-		List<SecKeyCacheValue>* m_pDirtyCacheList ;
+		upan::list<SecKeyCacheValue>* m_pDirtyCacheList ;
 		LFUSectorManager* m_pLFUSectorManager ;
 
 		DriveInfo* pDriveInfo ;

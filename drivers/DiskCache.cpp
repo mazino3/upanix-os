@@ -63,7 +63,7 @@ void LFUSectorManager::Run()
 	if(m_bAbort)
 		return ;
 
-	if(m_mReleaseList.Size() == m_uiMaxRelListSize)
+	if(m_mReleaseList.size() == m_uiMaxRelListSize)
 		m_bReleaseListBuilt = true ;
 
 	if(m_bReleaseListBuilt)
@@ -78,7 +78,7 @@ bool LFUSectorManager::ReplaceCache(unsigned uiSectorID, byte* bDataBuffer)
 		return true ;
 	}
 
-	if(m_mReleaseList.Size() == 0)
+	if(m_mReleaseList.empty())
 	{
 		m_bReleaseListBuilt = false ;
 		//printf("\n Release List is empty, not rebuilt yet!") ;
@@ -87,19 +87,16 @@ bool LFUSectorManager::ReplaceCache(unsigned uiSectorID, byte* bDataBuffer)
 
 	bool bFound = false ;
 	CacheRankNode node ;
-	while(m_mReleaseList.Size() > 0)
+	while(!m_mReleaseList.empty())
 	{
-		if(!m_mReleaseList.PopFront(node))
-		{
-			printf("\n Failed to remove an element from Release List!!") ;
-			return false ;
-		}
-
+    const CacheRankNode& node = m_mReleaseList.front();
+    m_mReleaseList.pop_front();
 		// Skip dirty sectors from replacing
-		if(m_pDriveInfo->mCache.m_pDirtyCacheList->FindByValue(DiskCache::SecKeyCacheValue(node.m_uiSectorID, NULL)))
-			continue ;
-
-		bFound = true ;
+    DiskCache::SecKeyCacheValue skey(node.m_uiSectorID, NULL);
+    auto l = m_pDriveInfo->mCache.m_pDirtyCacheList;
+    if(upan::find(l->begin(), l->end(), skey) != l->end())
+			continue;
+		bFound = true;
 		break ;
 	}
 
@@ -126,7 +123,7 @@ bool LFUSectorManager::ReplaceCache(unsigned uiSectorID, byte* bDataBuffer)
 		return false ;
 	}
 
-	if(m_mReleaseList.Size() == 0)
+	if(m_mReleaseList.empty())
 		m_bReleaseListBuilt = false ;
 
 	return true ;
@@ -138,37 +135,31 @@ void LFUSectorManager::operator()(const BTreeKey& rKey, BTreeValue* pValue)
 	const DiskCacheValue* value = static_cast<const DiskCacheValue*>(pValue) ;
 
 	// Skip dirty sectors from lfu ranking
-	if(m_pDriveInfo->mCache.m_pDirtyCacheList->FindByValue(DiskCache::SecKeyCacheValue(key.GetSectorID(), NULL)))
+  DiskCache::SecKeyCacheValue skey(key.GetSectorID(), NULL);
+  auto l = m_pDriveInfo->mCache.m_pDirtyCacheList;
+  if(upan::find(l->begin(), l->end(), skey) != l->end())
 		return ;
 
-	CacheRankNode node ;
 	unsigned uiTimeDiff = m_uiCurrent - value->GetLastAccess() ;
 	double dRank = 	(double)uiTimeDiff / (double)value->GetHitCount() ;
-
-	if(m_mReleaseList.Size() == m_uiMaxRelListSize)
+  CacheRankNode node;
+	if(m_mReleaseList.size() == m_uiMaxRelListSize)
 	{
-		if(!m_mReleaseList.Last(node))
-		{
-			printf("\n Unexpected error in ReleaseCacheList Build") ;
-			m_bAbort = true ;
-			return ;
-		}
-
+    node = m_mReleaseList.back();
 		if(dRank <= node.m_dRank)
-			return ;
-
-		m_mReleaseList.PopBack(node) ;
+			return;
+		m_mReleaseList.pop_back();
 	}
-	
 	node.m_uiSectorID = key.GetSectorID() ;
 	node.m_dRank = dRank ;
-	m_mReleaseList.SortedInsert(node, true) ;
+	m_mReleaseList.sorted_insert_asc(node);
 }
 
 static void DiskCache_InsertToDirtyList(DiskCache* pCache, const DiskCache::SecKeyCacheValue& v)
 {
-	if(!pCache->m_pDirtyCacheList->FindByValue(v))
-		pCache->m_pDirtyCacheList->PushBack(v) ;
+  auto l = pCache->m_pDirtyCacheList;
+  if(upan::find(l->begin(), l->end(), v) == l->end())
+		pCache->m_pDirtyCacheList->push_back(v);
 }
 
 static DiskCacheKey* DiskCache_CreateKey(DiskCache* pCache, unsigned uiSectorID)
@@ -307,7 +298,7 @@ void DiskCache_Setup(DriveInfo* pDriveInfo)
 	}
 
 	//pDriveInfo->mCache.m_pTree->SetMaxElements(pDriveInfo->mCache.iMaxCacheSectors) ;
-	pDriveInfo->mCache.m_pDirtyCacheList = new List<DiskCache::SecKeyCacheValue>() ;
+	pDriveInfo->mCache.m_pDirtyCacheList = new upan::list<DiskCache::SecKeyCacheValue>() ;
 	pDriveInfo->mCache.m_pLFUSectorManager = new LFUSectorManager(pDriveInfo) ;
 }
 
@@ -505,27 +496,21 @@ byte DiskCache_FlushDirtyCacheSectors(DriveInfo* pDriveInfo, int iCount)
 
 	pDriveInfo->mDriveMutex.Lock() ;
 
-	DiskCache::SecKeyCacheValue v ;
 	DiskCache* pCache = &(pDriveInfo->mCache) ;
 
-	if(pCache->m_pDirtyCacheList->Size())
-	{
-		while(iCount != 0)
-		{
-			if(pCache->m_pDirtyCacheList->PopFront(v))
-			{
-				if(!DiskCache_FlushSector(pDriveInfo, v.m_uiSectorID, v.m_pSectorBuffer))
-				{
-					printf("\n Flushing Sector %u to Drive %s failed !!", v.m_uiSectorID, pDriveInfo->drive.driveName) ;
-					pDriveInfo->mDriveMutex.UnLock() ;
-					return DiskCache_FAILURE ;
-				}
-			}
-			else
-				break ;
-
-			--iCount ;
-		}
+  while(iCount != 0)
+  {
+    if(pCache->m_pDirtyCacheList->empty())
+      break;
+	  const DiskCache::SecKeyCacheValue& v = pCache->m_pDirtyCacheList->front();
+	  pCache->m_pDirtyCacheList->pop_front();
+    if(!DiskCache_FlushSector(pDriveInfo, v.m_uiSectorID, v.m_pSectorBuffer))
+    {
+      printf("\n Flushing Sector %u to Drive %s failed !!", v.m_uiSectorID, pDriveInfo->drive.driveName) ;
+      pDriveInfo->mDriveMutex.UnLock() ;
+      return DiskCache_FAILURE ;
+    }
+    --iCount ;
 	}
 
 	pDriveInfo->mDriveMutex.UnLock() ;

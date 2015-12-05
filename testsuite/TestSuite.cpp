@@ -18,7 +18,7 @@
 #include <Atomic.h>
 #include <stdio.h>
 #include <TestSuite.h>
-#include <List.h>
+#include <list.h>
 #include <DMM.h>
 #include <BTree.h>
 #include <PIT.h>
@@ -89,34 +89,26 @@ bool TestSuite::TestListDS()
 {
 	printf("\n Running TestListDS...") ;
 
-	List<int> l ;
+	upan::list<int> l ;
 
-	l.PushBack(100) ;
-	l.PushBack(200) ;
-	l.PushBack(300) ;
+	l.push_back(100) ;
+	l.push_back(200) ;
+	l.push_back(300) ;
 
-	l.Insert(1, 400) ;
-
-	l.Reset() ;
+	l.insert(++l.begin(), 400) ;
 
 	int arr[ ] = { 100, 400, 200, 300 } ;
 	int i = 0 ;
-	int v ;
 
-	while(l.GetNext())
-	{
-		l.GetCurrentValue(v) ;
-		ASSERT_CONDITION(arr[ i++ ] == v) ;
-	}
+  for(auto it : l)
+		ASSERT_CONDITION(arr[ i++ ] == it) ;
 
-	ASSERT_CONDITION(l.Size() == 4) ;
-	ASSERT_CONDITION(l.PopFront(v)) ;
-	ASSERT_CONDITION(v == 100) ;
-	ASSERT_CONDITION(l.Size() == 3) ;
-	ASSERT_CONDITION(l.First(v)) ;
-	ASSERT_CONDITION(v == 400) ; 
-	ASSERT_CONDITION(l.Last(v)) ;
-	ASSERT_CONDITION(v == 300) ;
+	ASSERT_CONDITION(l.size() == 4) ;
+	ASSERT_CONDITION(l.front() == 100) ;
+	l.pop_front() ;
+	ASSERT_CONDITION(l.size() == 3) ;
+	ASSERT_CONDITION(l.front() == 400);
+	ASSERT_CONDITION(l.back() == 300);
 
 	return true ;
 }
@@ -125,45 +117,38 @@ bool TestSuite::TestListDSPtr()
 {
 	printf("\n Running TestListDS PTR...") ;
 
-	List<int*> l ;
+	upan::list<int*> l ;
 
-	l.PushBack(new int(100)) ;
-	l.PushBack(new int(200)) ;
-	l.PushBack(new int(300)) ;
+	l.push_back(new int(100)) ;
+	l.push_back(new int(200)) ;
+	l.push_back(new int(300)) ;
 
-	l.Insert(1, new int(400)) ;
-
-	l.Reset() ;
+	l.insert(++l.begin(), new int(400)) ;
 
 	int arr[ ] = { 100, 400, 200, 300 } ;
 	int i = 0 ;
-	int* v ;
 
-	while(l.GetNext())
-	{
-		l.GetCurrentValue(v) ;
-		ASSERT_CONDITION(arr[ i++ ] == *v) ;
-	}
+  for(auto it : l) 
+		ASSERT_CONDITION(arr[ i++ ] == *it);
 
-	ASSERT_CONDITION(l.Size() == 4) ;
-	ASSERT_CONDITION(l.PopFront(v)) ;
+	ASSERT_CONDITION(l.size() == 4) ;
+  int* v = l.front();
 	ASSERT_CONDITION(*v == 100) ;
+	l.pop_front();
 	delete v ;
-	ASSERT_CONDITION(l.Size() == 3) ;
-	ASSERT_CONDITION(l.First(v)) ;
-	ASSERT_CONDITION(*v == 400) ; 
-	ASSERT_CONDITION(l.Last(v)) ;
-	ASSERT_CONDITION(*v == 300) ;
+	ASSERT_CONDITION(l.size() == 3);
+	ASSERT_CONDITION(*l.front() == 400);
+	ASSERT_CONDITION(*l.back() == 300);
 
-	l.Reset() ;
-	i = 3 ;
-	while(l.GetPrev())
+	i = 1;
+  for(auto it = l.begin(); it != l.end();)
 	{
-		l.GetCurrentValue(v) ;
-		ASSERT_CONDITION(arr[ i-- ] == *v) ;
-		delete v ;
+		ASSERT_CONDITION(arr[ i++ ] == **it);
+		delete *it;
+    l.erase(it++);
 	}
 
+	ASSERT_CONDITION(l.size() == 0);
 	return true ;
 }
 

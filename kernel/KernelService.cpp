@@ -194,7 +194,7 @@ void KernelService::AddRequest(Request* pRequest)
 {
 	m_mutexQRequest.Lock() ;
 
-	m_qRequest.PushBack(pRequest) ;
+	m_qRequest.push_back(pRequest) ;
 
 	m_mutexQRequest.UnLock() ;
 }
@@ -203,9 +203,12 @@ KernelService::Request* KernelService::GetRequest()
 {
 	m_mutexQRequest.Lock() ;
 
-	Request* pRequest ;
-	if(!m_qRequest.PopFront(pRequest))
-		pRequest = NULL ;
+	Request* pRequest = NULL;
+  if(!m_qRequest.empty())
+  {
+    pRequest = m_qRequest.front();
+    m_qRequest.pop_front();
+  }
 
 	m_mutexQRequest.UnLock() ;
 
@@ -254,7 +257,7 @@ int KernelService::Spawn()
 		return -1 ;
 	}
 
-	m_lServerList.PushBack(pid) ;
+	m_lServerList.push_back(pid) ;
 
 	m_mutexServer.UnLock() ;
 
@@ -265,7 +268,7 @@ bool KernelService::Stop(int iServerProcessID)
 {
 	m_mutexServer.Lock() ;
 
-	if(!m_lServerList.DeleteByValue(iServerProcessID))
+	if(!m_lServerList.erase(iServerProcessID))
 	{
 		printf("\n Invalid KernelService ProcessID %d", iServerProcessID) ;
 		m_mutexServer.UnLock() ;

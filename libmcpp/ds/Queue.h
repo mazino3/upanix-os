@@ -18,14 +18,14 @@
 #ifndef _MCPP_QUEUE_H_
 #define _MCPP_QUEUE_H_
 
-#include <List.h>
+#include <list.h>
 
 template <typename T>
 class Queue
 {
 	private:
 	public:
-		List<T> m_lList ;
+		upan::list<T> m_lList ;
 
 	public:
 

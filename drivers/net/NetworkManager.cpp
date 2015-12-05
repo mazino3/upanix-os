@@ -40,7 +40,7 @@ NetworkManager::NetworkManager()
 		if(pNIC)
 		{
 			bControllerFound = true ;
-			m_NICList.PushBack(pNIC) ;
+			m_NICList.push_back(pNIC) ;
 		}
 	}
 	

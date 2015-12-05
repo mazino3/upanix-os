@@ -128,7 +128,7 @@ bool PIC::RegisterIRQ(const IRQ& irq, unsigned pHandler)
 		return false;
 	}
 
-	_irqs.PushBack(&irq);
+	_irqs.push_back(&irq);
 
 	int iIRQNo = irq.GetIRQNo();
 	unsigned uiIRQBase = MASTER_IRQ_BASE + iIRQNo ;
@@ -148,25 +148,14 @@ const IRQ* PIC::GetIRQ(const IRQ& irq)
 
 const IRQ* PIC::GetIRQ(const int& iIRQNo)
 {
-	const IRQ* pIRQ ;
-
-	_irqs.Reset() ;
-	for(int i = 0; _irqs.GetNext(); i++)
-	{
-		_irqs.GetCurrentValue(pIRQ) ;
-		if(pIRQ->GetIRQNo() == iIRQNo)
-			return pIRQ ;
-	}
-	return NULL ;
+	for(auto i : _irqs)
+    if(i->GetIRQNo() == iIRQNo)
+      return i;
+  return NULL;
 }
 
 void PIC::DisplayIRQList()
 {
-	const IRQ* pIRQ ;
-	_irqs.Reset() ;
-	for(int i = 0; _irqs.GetNext(); i++)
-	{
-		_irqs.GetCurrentValue(pIRQ) ;
-		printf("\n IRQ = ", pIRQ->GetIRQNo()) ;
-	}
+	for(auto i : _irqs)
+		printf("\n IRQ = %d", i->GetIRQNo()) ;
 }

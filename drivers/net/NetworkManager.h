@@ -18,7 +18,7 @@
 #ifndef _MOS_NETWORK_H_
 #define _MOS_NETWORK_H_
 
-#include <List.h>
+#include <list.h>
 class NIC ;
 
 class NetworkManager
@@ -27,7 +27,7 @@ class NetworkManager
 		NetworkManager() ;
 
 	private:
-		List<NIC*> m_NICList ;
+		upan::list<NIC*> m_NICList ;
 } ;
 
 #endif
