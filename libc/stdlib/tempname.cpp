@@ -35,7 +35,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
+#include <cstring.h>
 #include <errno.h>
 #include <mosstd.h>
 #include <assert.h>

@@ -13,7 +13,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
+#include <cstring.h>
 #include <fs.h>
 #include <mosstd.h>
 #include <bits/uClibc_stdio.h>

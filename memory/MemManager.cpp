@@ -26,7 +26,7 @@
 #include <AsmUtil.h>
 #include <IDT.h>
 #include <Atomic.h>
-#include <Exerr.h>
+#include <exception.h>
 
 extern "C" { 
 	unsigned MEM_PDBR ;
@@ -281,7 +281,7 @@ unsigned MemManager::AllocatePhysicalPage()
 			}
 		}
 	}
-  throw Exerr(XLOC, "Out of memory pages!");
+  throw upan::exception(XLOC, "Out of memory pages!");
 }
 
 void MemManager::DeAllocatePhysicalPage(const unsigned uiPageNumber)

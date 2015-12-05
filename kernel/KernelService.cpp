@@ -241,7 +241,7 @@ int KernelService::Spawn()
 	static const char* szKS = "kers-" ;
 	static int iID = 0 ;
 
-  String szName(szKS);
+  upan::string szName(szKS);
   szName += ToString(iID);
 	iID++ ;
 

@@ -23,7 +23,7 @@
 # include <MemUtil.h>
 # include <PortCom.h>
 # include <stdio.h>
-# include <string.h>
+# include <cstring.h>
 # include <StringUtil.h>
 
 # include <USBStructures.h>

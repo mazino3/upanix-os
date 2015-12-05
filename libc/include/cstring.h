@@ -17,7 +17,7 @@
    02111-1307 USA.  */
 
 /*
- *	ISO C99 Standard: 7.21 String handling	<string.h>
+ *	ISO C99 Standard: 7.21 String handling	<cstring.h>
  */
 
 #ifndef	_STRING_H
@@ -135,4 +135,4 @@ void *rawmemchr (const void * s, int c_in) ;
 extern char * strtok_r (char *s, const char *delim, char **save_ptr);
 //#define strtok_r(p, d, sp) __strtok_r(p, d, sp)
 
-#endif /* string.h  */
+#endif /* cstring.h  */

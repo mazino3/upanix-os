@@ -109,7 +109,7 @@
 
 #define _ISOC99_SOURCE 1
 #include <stdlib.h>
-#include <string.h>
+#include <cstring.h>
 #include <ctype.h>
 #include <errno.h>
 #include <limits.h>

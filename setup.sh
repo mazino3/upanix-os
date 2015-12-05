@@ -52,7 +52,7 @@ export INCLUDE="-I./ \
 -I${UPANIX_HOME}/libm/include \
 -I${UPANIX_HOME}/libm/include/bits \
 \
--I${UPANIX_HOME}/libmcpp/include \
+-I${UPANIX_HOME}/libmcpp/infra \
 -I${UPANIX_HOME}/libmcpp/ds \
 -I${UPANIX_HOME}/libmcpp/mem \
 -I${UPANIX_HOME}/libmcpp/cal"

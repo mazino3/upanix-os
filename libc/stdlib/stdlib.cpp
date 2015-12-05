@@ -48,7 +48,7 @@
 
 #include <stdlib.h>
 #include <locale.h>
-#include <string.h>
+#include <cstring.h>
 
 int errno;
 

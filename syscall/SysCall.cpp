@@ -17,7 +17,7 @@
  */
 #include <SysCall.h>
 #include <MemUtil.h>
-#include <Exerr.h>
+#include <exception.h>
 
 typedef void Handler(
 __volatile__ int* piRetVal,
@@ -121,7 +121,7 @@ __volatile__ unsigned uiP9)
       {
   			SysCall_Handlers[i].pFuncHandle(&iRetVal, uiSysCallID, true, uiP1, uiP2, uiP3, uiP4, uiP5, uiP6, uiP7, uiP8, uiP9) ;
       }
-      catch(const Exerr& ex)
+      catch(const upan::exception& ex)
       {
         printf("\n SysCall %u failed with error: %s\n", uiSysCallID, ex.Error().Value());
         iRetVal = -1;

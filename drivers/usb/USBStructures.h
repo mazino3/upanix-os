@@ -21,7 +21,7 @@
 #include <Global.h>
 #include <USBConstants.h>
 #include <SCSIHandler.h>
-#include <String.h>
+#include <string.h>
 
 typedef enum
 {
@@ -159,7 +159,7 @@ struct USBulkDisk
 
 	byte bMaxLun ;
 
-	String szProtocolName ;
+	upan::string szProtocolName ;
 	SCSIHost* pHost ;
 	SCSIDevice** pSCSIDeviceList ;
 	byte* pRawAlignedBuffer ;

@@ -94,7 +94,7 @@
 #include <features.h>
 #include "_stdio.h"
 #include <stdlib.h>
-#include <string.h>
+#include <cstring.h>
 #include <stddef.h>
 #include <ctype.h>
 #include <limits.h>

@@ -32,7 +32,7 @@
 # include <ElfRelocationSection.h>
 # include <ElfSymbolTable.h>
 # include <ElfDynamicSection.h>
-# include <Exerr.h>
+# include <exception.h>
 
 using namespace ELFSectionHeader ;
 using namespace ELFHeader ;
@@ -184,7 +184,7 @@ byte DLLLoader_LoadELFDLL(const char* szDLLName, const char* szJustDLLName, Proc
   {
 	  bDLLSectionImage = ProcessLoader::Instance().LoadDLLInitSection(*processAddressSpace, uiDLLSectionSize);
   }
-  catch(const Exerr& ex)
+  catch(const upan::exception& ex)
   {
     ex.Print();
     return DLLLoader_FAILURE;

@@ -20,7 +20,7 @@
 #include <Display.h>
 #include <MOSMain.h>
 #include <stdio.h>
-#include <Exerr.h>
+#include <exception.h>
 
 unsigned DMM_uiTotalKernelAllocation = 0 ;
 
@@ -50,7 +50,7 @@ void DMM_CheckAlignNumber(unsigned uiAlignNumber)
 	for(unsigned i = 0; ALIGN[i] != 99; i++)
 		if(uiAlignNumber == ALIGN[i])
 			return;
-  throw Exerr(XLOC, "%u is not aligned address", uiAlignNumber);
+  throw upan::exception(XLOC, "%u is not aligned address", uiAlignNumber);
 }
 
 unsigned DMM_AllocateAlignForKernel_Act(unsigned uiSizeInBytes, unsigned uiAlignNumber)
@@ -140,7 +140,7 @@ unsigned DMM_AllocateAlignForKernel_Act(unsigned uiSizeInBytes, unsigned uiAlign
 		prevAut = aut ;
 		aut = (AllocationUnitTracker*)(aut->uiNextAUTAddress) ;
 	}
-  throw Exerr(XLOC, "out of memory!");
+  throw upan::exception(XLOC, "out of memory!");
 }
 
 static byte DMM_DeAllocateForKernel_Act(unsigned uiAddress)
@@ -286,7 +286,7 @@ unsigned DMM_AllocateAlign(ProcessAddressSpace* processAddressSpace, unsigned ui
 	}
 
 	ProcessManager::Instance().SetDMMFlag(ProcessManager::GetCurrentProcessID(), false) ;
-  throw Exerr(XLOC, "out of memory!");
+  throw upan::exception(XLOC, "out of memory!");
 }
 
 unsigned DMM_AllocateForKernel(unsigned uiSizeInBytes)

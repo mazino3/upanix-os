@@ -29,7 +29,7 @@
 #include <SessionManager.h>
 
 #include <stdio.h>
-#include <string.h>
+#include <cstring.h>
 
 char Console_PROMPT[10] ;
 char Console_commandLine[COMMAND_LINE_SIZE] ;

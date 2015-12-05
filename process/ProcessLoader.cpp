@@ -35,27 +35,27 @@
 #include <ElfSymbolTable.h>
 #include <ElfDynamicSection.h>
 #include <stdio.h>
-#include <String.h>
-#include <Exerr.h>
+#include <string.h>
+#include <exception.h>
 
 #define INIT_NAME "_stdio_init-NOTINUSE"
 #define TERM_NAME "_stdio_term-NOTINUSE"
 
 ProcessLoader::ProcessLoader() :
-  PROCESS_DLL_FILE(String(OSIN_PATH) + __PROCESS_DLL_FILE),
-  PROCESS_START_UP_FILE(String(OSIN_PATH) + __PROCESS_START_UP_FILE)
+  PROCESS_DLL_FILE(upan::string(OSIN_PATH) + __PROCESS_DLL_FILE),
+  PROCESS_START_UP_FILE(upan::string(OSIN_PATH) + __PROCESS_START_UP_FILE)
 {
 }
 
-byte* ProcessLoader::LoadInitSection(ProcessAddressSpace& pas, unsigned& uiSectionSize, const String& szSectionName)
+byte* ProcessLoader::LoadInitSection(ProcessAddressSpace& pas, unsigned& uiSectionSize, const upan::string& szSectionName)
 {
 	FileSystem_DIR_Entry DirEntry ;
 
   if(FileOperations_GetDirEntry(szSectionName.Value(), &DirEntry) != FileOperations_SUCCESS)
-    throw Exerr(XLOC, "failed to get dir entry for: %s", szSectionName.Value());
+    throw upan::exception(XLOC, "failed to get dir entry for: %s", szSectionName.Value());
 	
 	if((DirEntry.usAttribute & ATTR_TYPE_DIRECTORY) == ATTR_TYPE_DIRECTORY)
-    throw Exerr(XLOC, "%s is a directory!", szSectionName.Value());
+    throw upan::exception(XLOC, "%s is a directory!", szSectionName.Value());
 
 	uiSectionSize = DirEntry.uiSize ;
 	byte* bSectionImage = (byte*)DMM_AllocateForKernel(sizeof(char) * (uiSectionSize));
@@ -66,16 +66,16 @@ byte* ProcessLoader::LoadInitSection(ProcessAddressSpace& pas, unsigned& uiSecti
     unsigned n;
 
     if(FileOperations_Open(&fd, szSectionName.Value(), O_RDONLY) != FileOperations_SUCCESS)
-      throw Exerr(XLOC, "failed to open file: %s", szSectionName.Value());
+      throw upan::exception(XLOC, "failed to open file: %s", szSectionName.Value());
 
     if(FileOperations_Read(fd, (char*)bSectionImage, 0, &n) != FileOperations_SUCCESS)
-      throw Exerr(XLOC, "error reading file: %s", szSectionName.Value());
+      throw upan::exception(XLOC, "error reading file: %s", szSectionName.Value());
 
     if(FileOperations_Close(fd) != FileOperations_SUCCESS)
-      throw Exerr(XLOC, "error closing file: %s", szSectionName.Value());
+      throw upan::exception(XLOC, "error closing file: %s", szSectionName.Value());
 
     if(n != uiSectionSize)
-      throw Exerr(XLOC, "could read only %u of %u bytes of %s section", n, uiSectionSize, szSectionName.Value());
+      throw upan::exception(XLOC, "could read only %u of %u bytes of %s section", n, uiSectionSize, szSectionName.Value());
   }
   catch(...)
   {
@@ -161,7 +161,7 @@ byte ProcessLoader_LoadELFExe(const char* szProcessName, ProcessAddressSpace* pP
     bStartUpSectionImage = ProcessLoader::Instance().LoadStartUpInitSection(*pProcessAddressSpace, uiStartUpSectionSize);
     bDLLSectionImage = ProcessLoader::Instance().LoadDLLInitSection(*pProcessAddressSpace, uiDLLSectionSize);
   }
-  catch(const Exerr& ex)
+  catch(const upan::exception& ex)
   {
     ex.Print();
     return ProcessLoader_FAILURE;

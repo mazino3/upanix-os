@@ -122,7 +122,7 @@ void String_Reverse(char* str)
 	}	
 }
 
-String ToString(unsigned uiNumber)
+upan::string ToString(unsigned uiNumber)
 {
   char strNumber[128];
 	unsigned i = 0;

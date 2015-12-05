@@ -20,14 +20,14 @@
 # include <MemManager.h>
 # include <Display.h>
 # include <DMM.h>
-# include <Exerr.h>
+# include <exception.h>
 
 ProcessGroupManager::ProcessGroupManager() : 
   _iFGProcessGroup(NO_PROCESS_GROUP_ID), 
   _groups((ProcessGroup*)MEM_PGAS_START)
 {
 	if(((sizeof(ProcessGroup) * MAX_NO_PROCESS_GROUP)) > (MEM_PGAS_END - MEM_PGAS_START))
-    throw Exerr(XLOC, "Process Group Address Space InSufficient");
+    throw upan::exception(XLOC, "Process Group Address Space InSufficient");
 
 	for(int i = 0; i < MAX_NO_PROCESS_GROUP; i++)
 		_groups[i].bFree = true ;
@@ -44,7 +44,7 @@ int ProcessGroupManager::GetFreePGAS()
 			return i;
 		}
 	}
-  throw Exerr(XLOC, "out of free process group memory");
+  throw upan::exception(XLOC, "out of free process group memory");
 }
 
 void ProcessGroupManager::FreePGAS(int iProcessGroupID)

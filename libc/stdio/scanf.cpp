@@ -52,7 +52,7 @@
 #include <stdlib.h>
 #include <mosstd.h>
 #include <ctype.h>
-#include <string.h>
+#include <cstring.h>
 #include <stdarg.h>
 #include <stdint.h>
 #include <errno.h>

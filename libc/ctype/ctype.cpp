@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
 #include <ctype.h>
-#include <string.h>
+#include <cstring.h>
 
 bool iswhitespace(char ch)
 {

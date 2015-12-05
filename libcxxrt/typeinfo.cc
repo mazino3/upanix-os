@@ -26,7 +26,7 @@
 
 #include "typeinfo.h"
 #include <malloc.h>
-#include <string.h>
+#include <cstring.h>
 #include <stdlib.h>
 #include <stdio.h>
 

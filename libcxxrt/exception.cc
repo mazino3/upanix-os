@@ -28,7 +28,7 @@
 #include <dlfcn.h>
 #include <malloc.h>
 #include <stdio.h>
-#include <string.h>
+#include <cstring.h>
 #include <stdint.h>
 #include <pthread.h>
 #include "typeinfo.h"

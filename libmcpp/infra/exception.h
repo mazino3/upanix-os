@@ -18,18 +18,20 @@
 #ifndef _EXERR_H_
 #define _EXERR_H_
 
-#include <String.h>
+#include <cstring.h>
 #include <StringUtil.h>
 #include <ctype.h>
 #include <stdarg.h>
 #include <stdio.h>
 
+namespace upan {
+
 #define XLOC __FILE__, __LINE__
 
-class Exerr
+class exception
 {
   public:
-    Exerr(const String& fileName, unsigned lineNo, const char * __restrict fmsg, ...) :
+    exception(const upan::string& fileName, unsigned lineNo, const char * __restrict fmsg, ...) :
       _fileName(fileName), _lineNo(lineNo)
     {
       va_list arg;
@@ -46,10 +48,10 @@ class Exerr
       va_end(arg);
     }
 
-    const String& File() const { return _fileName; }
+    const upan::string& File() const { return _fileName; }
     unsigned LineNo() const { return _lineNo; }
-    const String& Msg() const { return _msg; }
-    const String& Error() const 
+    const upan::string& Msg() const { return _msg; }
+    const upan::string& Error() const 
     {
       return _error;
     }
@@ -58,10 +60,12 @@ class Exerr
       printf("\n%s\n", _error.Value());
     }
   private:
-    const String _fileName;
+    const upan::string _fileName;
     const unsigned _lineNo;
-    String _msg;
-    String _error;
+    upan::string _msg;
+    upan::string _error;
+};
+
 };
 
 #endif

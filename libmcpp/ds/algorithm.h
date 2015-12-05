@@ -1,6 +1,6 @@
 /*
  *	Upanix - An x86 based Operating System
- *  Copyright (C) 2011 'Prajwala Prabhakar' 'srinivasa_prajwal@yahoo.co.in'
+ *  Copyright (C) 2015 'Prajwala Prabhakar' 'srinivasa_prajwal@yahoo.co.in'
  *                                                                          
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -15,54 +15,48 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
-# include <malloc.h>
-# include <stdlib.h>
-# include <cstring.h>
-# include <DMM.h>
+#ifndef _ALGO_H_
+#define _ALGO_H_
 
-void* calloc(size_t n, size_t s)
+namespace upan {
+
+template <typename T>
+class unary_function
 {
-	void* a = malloc(n * s) ;
-	memset(a, 0, n * s) ;
-	return a ;
+  public:
+    virtual bool operator()(const T&) const = 0;
+};
+
+template <typename T>
+class equal_to final : public unary_function<T>
+{
+  public:
+    equal_to(const T& value) : _value(value) {}
+    bool operator()(const T& rhs) const { return _value == rhs; }
+  private:
+    const T _value;
+};
+
+template <typename IT>
+IT find(IT begin, IT end, const typename IT::value_type& value)
+{
+  auto i = begin;
+  for(; i != end; ++i)
+    if(*i == value)
+      break;
+  return i;
 }
 
-void* malloc(unsigned uiSizeInBytes)
+template <typename IT>
+IT find(IT begin, IT end, const unary_function<typename IT::value_type>& ufunc)
 {
-	return DMM_AllocateForKernel(uiSizeInBytes);
+  auto i = begin;
+  for(; i != end; ++i)
+    if(ufunc(*i))
+      break;
+  return i;
 }
 
-void free(void* uiAddress)
-{
-	/* If Free fails!!! It should stop / crash the process */
-	DMM_DeAllocateForKernel(uiAddress);
 }
 
-int get_alloc_size(void* uiAddress, int* size)
-{
-	return DMM_GetAllocSizeForKernel(uiAddress, size) ;
-}
-
-void* realloc(void* ptr, int s)
-{
-	void* new_ptr = NULL ;
-
-	if(s)
-		new_ptr = (void*)malloc(s) ;
-
-	if(ptr)
-	{
-		int old_size ;
-
-		if(get_alloc_size(ptr, &old_size) < 0)
-			return (void*)NULL ;
-
-		int copy_size = (old_size < s) ? old_size : s ;
-
-		memcpy(new_ptr, ptr, copy_size) ;
-	
-		free(ptr) ;
-	}
-
-	return new_ptr ;
-}
+#endif

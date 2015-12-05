@@ -52,7 +52,7 @@
 #include <video.h>
 #include <VM86.h>
 #include <MouseDriver.h>
-#include <Exerr.h>
+#include <exception.h>
 #include <stdio.h>
 
 /**** Command Fucntion Declarations  *****/
@@ -195,7 +195,7 @@ bool ConsoleCommands_ExecuteInternalCommand(const char* szCommand)
       {
   			ConsoleCommands_CommandList[i].cmdFunc() ;
       }
-      catch(const Exerr& ex)
+      catch(const upan::exception& ex)
       {
         ex.Print();
         return false;

@@ -42,7 +42,7 @@
 # include <DisplayManager.h>
 # include <UHCIController.h>
 # include <EHCIController.h>
-# include <Exerr.h>
+# include <exception.h>
 
 /**** Global Variable declaration/definition *****/
 byte KERNEL_MODE ;
@@ -173,7 +173,7 @@ void Initialize()
 
     Console_Initialize() ;
   }
-  catch(const Exerr& ex)
+  catch(const upan::exception& ex)
   {
     printf("%s\n", ex.Error().Value());
     printf("KERNEL PANIC!\n");

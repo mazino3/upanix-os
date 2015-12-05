@@ -19,45 +19,47 @@
 #define _STRING_H_
 
 #include <Global.h>
-#include <string.h>
+#include <cstring.h>
 #include <stdio.h>
 
-class String
+namespace upan {
+
+class string
 {
 	public:
-		String() : _pVal(0), _len(0)
+		string() : _pVal(0), _len(0)
 		{
 			_sVal[0] = '\0';
 		}
 
-		String(const char* v) : _pVal(0), _len(0)
+		string(const char* v) : _pVal(0), _len(0)
 		{
 			Value(v);
 		}
 
-		~String()
+		~string()
 		{
 			DeletePtr();
 		}
 
-		String(const String& r) : _pVal(0)
+		string(const string& r) : _pVal(0)
 		{
 			Value(r.Value());
 		}
 
-		String& operator=(const String& r)
+		string& operator=(const string& r)
 		{
       Value(r.Value());
 			return *this;
 		}
 
-    String operator+(const String& r) const
+    string operator+(const string& r) const
     {
-      String temp(*this);
+      string temp(*this);
       return temp += r;
     }
 
-		String& operator+=(const String& r)
+		string& operator+=(const string& r)
 		{
       unsigned newLen = _len + r.Length();
 			if(Large(newLen))
@@ -74,12 +76,12 @@ class String
 			return *this;
 		}
 
-		bool operator==(const String& r) const
+		bool operator==(const string& r) const
 		{
 			return strcmp(Value(), r.Value()) == 0;
 		}
 
-		bool operator!=(const String& r) const
+		bool operator!=(const string& r) const
 		{
 			return !(*this == r);
 		}
@@ -123,6 +125,8 @@ class String
 		char  _sVal[FIXED_BUFFER];
 		char* _pVal;
 		unsigned _len;
+};
+
 };
 
 #endif

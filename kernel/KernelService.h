@@ -21,7 +21,7 @@
 #include <Global.h>
 #include <Atomic.h>
 #include <Queue.h>
-#include <String.h>
+#include <cstring.h>
 #include <StringUtil.h>
 #include <ProcessManager.h>
 
@@ -111,7 +111,7 @@ class KernelService
 		{
 			private:
 				int m_iNoOfArgs;
-				String _szFile;
+				upan::string _szFile;
 				char** m_szArgs;
 				int m_iNewProcId;
 

@@ -66,10 +66,10 @@ class ProcessLoader
     byte* LoadDLLInitSection(ProcessAddressSpace& pas, unsigned& uiSectionSize);
     byte* LoadStartUpInitSection(ProcessAddressSpace& pas, unsigned& uiSectionSize);
   private:
-    byte* LoadInitSection(ProcessAddressSpace& pas, unsigned& uiSectionSize, const String& szSectionName);
+    byte* LoadInitSection(ProcessAddressSpace& pas, unsigned& uiSectionSize, const upan::string& szSectionName);
 
-    const String PROCESS_DLL_FILE;
-    const String PROCESS_START_UP_FILE;
+    const upan::string PROCESS_DLL_FILE;
+    const upan::string PROCESS_START_UP_FILE;
 };
 
 #endif

@@ -41,7 +41,7 @@
 #include <MOSMain.h>
 #include <ProcessConstants.h>
 #include <KernelUtil.h>
-#include <Exerr.h>
+#include <exception.h>
 
 int ProcessManager::_iCurrentProcessID = NO_PROCESS_ID;
 static const char* DEF_KERNEL_PROC_NAME = "Kernel Proc" ;
@@ -58,7 +58,7 @@ ProcessManager::ProcessManager() :
   _processAddressSpace((ProcessAddressSpace*)MEM_PAS_START)
 {
 	if(((sizeof(ProcessAddressSpace) * MAX_NO_PROCESS)) > (MEM_PAS_END - MEM_PAS_START))
-    throw Exerr(XLOC, "Process Address Space InSufficient");
+    throw upan::exception(XLOC, "Process Address Space InSufficient");
 
   for(int i = 0; i < MAX_NO_PROCESS; i++)
   {
@@ -136,7 +136,7 @@ int ProcessManager::FindFreePAS()
   MutexGuard g(m);
 
 	if(_uiProcessCount + 1 > MAX_NO_PROCESS)
-    throw Exerr(XLOC, "Max process limit reached!");
+    throw upan::exception(XLOC, "Max process limit reached!");
 
 	for(int i = 0; i < MAX_NO_PROCESS; i++)
 	{
@@ -150,7 +150,7 @@ int ProcessManager::FindFreePAS()
 		}
 	}
 
-  throw Exerr(XLOC, "no free process address space available");
+  throw upan::exception(XLOC, "no free process address space available");
 }
 
 void ProcessManager::BuildDescriptor(Descriptor* descriptor, unsigned uiLimit, unsigned uiBase, byte bType, byte bFlag)

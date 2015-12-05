@@ -18,7 +18,7 @@
 #include <SCSIHandler.h>
 #include <stdio.h>
 #include <StringUtil.h>
-#include <string.h>
+#include <cstring.h>
 #include <Display.h>
 #include <DMM.h>
 #include <MemUtil.h>

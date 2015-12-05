@@ -26,7 +26,7 @@
  *
  * Stephen R. van den Berg, berg@pool.informatik.rwth-aachen.de	*/
 
-#include <string.h>
+#include <cstring.h>
 
 typedef unsigned chartype;
 
