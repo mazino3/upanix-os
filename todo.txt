@@ -1,3 +1,7 @@
+Date: 10 Dec 2015
+- improvize kernel memory de-allocation algorithm to combine adjacent free blocks to avoid fragmentation
+- replace user memory allocation algorithm with kernel memory algorithm to improve performance
+
 Date: 1 Dec 2015
 - implement certain std containers like vector, map, list, string etc..
 - Convert SysCall a polymorphic class + exception/error handling
