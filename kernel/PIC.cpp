@@ -24,6 +24,29 @@
 #include <MemConstants.h>
 #include <stdio.h>
 #include <Alloc.h>
+#include <Atomic.h>
+
+void IRQ::Signal() const
+{
+	Atomic::Swap(_interruptOn, 1);
+  if(_qInterrupt.size() < MAX_PROC_ON_INT_QUEUE)
+    _qInterrupt.push_back(1);
+}
+
+int IRQ::InterruptOn() const
+{
+	return Atomic::Swap(_interruptOn, 0);
+}
+
+bool IRQ::Consume() const
+{
+  PICGuard g(*this);
+  InterruptOn();
+  if(_qInterrupt.empty())
+    return false;
+  _qInterrupt.pop_front();
+  return true;
+}
 
 PIC::PIC() : NO_IRQ(999),
 	TIMER_IRQ(0),

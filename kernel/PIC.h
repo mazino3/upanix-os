@@ -28,12 +28,18 @@ class IRQ
 	public:
 		int GetIRQNo() const { return m_iIRQNo; }
 		bool operator==(const IRQ& r) const { return m_iIRQNo == r.GetIRQNo() ; }
+    void Signal() const;
+    bool Consume() const;
+    int InterruptOn() const;
 
 	private:
-		explicit IRQ(int iIRQNo) : m_iIRQNo(iIRQNo) { }
+		explicit IRQ(int iIRQNo) : m_iIRQNo(iIRQNo), _interruptOn(0) { }
 
 	private:
-		int m_iIRQNo;
+    static const int MAX_PROC_ON_INT_QUEUE = 8 * 1024;
+		const int m_iIRQNo;
+    mutable int _interruptOn;
+    mutable upan::list<bool> _qInterrupt;
 
 	friend class PIC;
 };
@@ -90,16 +96,23 @@ class PIC
 class PICGuard
 {
   public:
-    PICGuard(const IRQ& irq) : _irq(irq)
+    PICGuard(const IRQ& irq) : _irq(&irq)
     {
-      PIC::Instance().DisableInterrupt(_irq);
+      PIC::Instance().DisableInterrupt(*_irq);
+    }
+    PICGuard() : _irq(nullptr)
+    {
+      PIC::Instance().DisableAllInterrupts();
     }
     ~PICGuard()
     {
-      PIC::Instance().EnableInterrupt(_irq);
+      if(_irq)
+        PIC::Instance().EnableInterrupt(*_irq);
+      else
+        PIC::Instance().EnableAllInterrupts();
     }
   private:
-    const IRQ& _irq;
+    const IRQ* _irq;
 };
 
 #endif

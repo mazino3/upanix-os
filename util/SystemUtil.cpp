@@ -48,7 +48,7 @@ void SystemUtil_Reboot()
 	}
 
 	ProcessManager::Instance().Sleep(2000) ;
-	KBDriver_Reboot() ;
+	KBDriver::Instance().Reboot() ;
 }
 
 byte SystemUtil_GetTimeOfDay(struct timeval* tv)

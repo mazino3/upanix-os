@@ -34,13 +34,12 @@ void KernelUtil::Wait(__volatile__ unsigned uiTimeInMilliSec)
 
 void KernelUtil::WaitOnInterrupt(const IRQ& irq)
 {
-	while(!ProcessManager::Instance().ConsumeInterrupt(irq))
+	while(!irq.InterruptOn())
 	{	
 		__asm__ __volatile__("nop") ;
 		__asm__ __volatile__("nop") ;
 	}
-
-	ProcessManager::Instance().GetFromInterruptQueue(irq) ;
+  irq.Consume();
 }
 
 void KernelUtil::ScheduleTimedTask(const char* szName, unsigned uiTimeInMilliSec, unsigned CallBackFunction)

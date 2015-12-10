@@ -18,8 +18,6 @@
 #include <DMM.h>
 #include <stdio.h>
 #include <cstring.h>
-#include <DSUtil.h>
-
 #include <EHCIStructures.h>
 
 void EHCIDataHandler_CleanAysncQueueHead(EHCIQueueHead*  pQH)
@@ -64,21 +62,12 @@ void EHCIDataHandler_CleanTransaction(EHCITransaction* pTransaction)
 {
 	EHCIDataHandler_CleanAysncQueueHead(pTransaction->pQH) ;
 	
-	DSUtil_SLL *pSLL = &(pTransaction->dStorageList) ;
-
-	DSUtil_SLLNode *pCur, *pTemp ;
-	
-	for(pCur = pSLL->pFirst; pCur != NULL;)
+  for(auto i : pTransaction->dStorageList)
 	{
-		if(pCur->val != NULL)
-			DMM_DeAllocateForKernel(pCur->val) ;
-
-		pTemp = pCur->pNext ;
-		DMM_DeAllocateForKernel((unsigned)pCur) ;
-		pCur = pTemp ;
+		if(i != NULL)
+			DMM_DeAllocateForKernel(i);
 	}
-
-	DSUtil_InitializeSLL(pSLL) ;
+  pTransaction->dStorageList.clear();
 }
 
 

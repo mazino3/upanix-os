@@ -16,7 +16,6 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
 #include <DMM.h>
-#include <DSUtil.h>
 #include <Display.h>
 #include <KernelUtil.h>
 #include <USBStructures.h>
@@ -24,10 +23,12 @@
 #include <UHCIDataHandler.h>
 #include <stdio.h>
 #include <Atomic.h>
+#include <list.h>
+#include <queue.h>
 
-static DSUtil_Queue UHCIDataHandler_FrameQueue ;
+static upan::queue<unsigned> UHCIDataHandler_FrameQueue(PAGE_TABLE_ENTRIES);
 static unsigned* UHCIDataHandler_pFrameList = NULL ;
-static DSUtil_SLL* UHCIDataHandler_pLocalFrameList = NULL ;
+static upan::list<unsigned>* UHCIDataHandler_pLocalFrameList = NULL;
 __attribute__((unused)) static unsigned short UHCIDataHandler_lSupportedLandIds[] = { 0x409, 0 } ;
 
 /***********************************************************************************************/
@@ -88,9 +89,15 @@ static byte UHCIDataHandler_GetNextFrameToClean(unsigned* uiFrameNumber)
 
 	ResourceManager_Acquire(RESOURCE_UHCI_FRM_BUF, RESOURCE_ACQUIRE_BLOCK) ;
 
-	if(DSUtil_ReadFromQueue(&UHCIDataHandler_FrameQueue, uiFrameNumber) == DSUtil_ERR_QUEUE_EMPTY)
-		bStatus = UHCIDataHandler_FRMQ_EMPTY ;
-
+  if(UHCIDataHandler_FrameQueue.empty())
+  {
+		bStatus = UHCIDataHandler_FRMQ_EMPTY;
+  }
+  else
+  {
+    *uiFrameNumber = UHCIDataHandler_FrameQueue.front();
+    UHCIDataHandler_FrameQueue.pop_front();
+  }
 	ResourceManager_Release(RESOURCE_UHCI_FRM_BUF) ;
 
 	return bStatus ;
@@ -101,7 +108,7 @@ static void UHCIDataHandler_BuildFrameEntryForDeAlloc(unsigned uiFrameNumber, un
 	if(uiDescAddress == NULL)
 		return ;
 
-	DSUtil_SLL* pSLL = &(UHCIDataHandler_pLocalFrameList[uiFrameNumber]) ;
+  auto& frameList = UHCIDataHandler_pLocalFrameList[uiFrameNumber];
 
 	if(uiDescAddress & TD_LINK_QH_POINTER)
 	{
@@ -121,7 +128,7 @@ static void UHCIDataHandler_BuildFrameEntryForDeAlloc(unsigned uiFrameNumber, un
 			UHCIDataHandler_BuildFrameEntryForDeAlloc(uiFrameNumber, uiHeadLinkPointer, bCleanBuffer, bCleanDescs) ;
 		}
 
-		DSUtil_InsertSLL(pSLL, uiDescAddress) ;
+    frameList.push_back(uiDescAddress);
 	}
 	else
 	{
@@ -143,33 +150,25 @@ static void UHCIDataHandler_BuildFrameEntryForDeAlloc(unsigned uiFrameNumber, un
 				uiBufferPointer -= GLOBAL_DATA_SEGMENT_BASE ;
 
 				if(uiBufferPointer != NULL)
-				{
-					DSUtil_InsertSLL(pSLL, uiBufferPointer) ;
-				}
+          frameList.push_back(uiBufferPointer);
 			}
 		}
 
 		if(bCleanDescs)
-			DSUtil_InsertSLL(pSLL, uiDescAddress) ;
+      frameList.push_back(uiDescAddress);
 	}
 }
 
 void UHCIDataHandler_ReleaseFrameResource(unsigned uiFrameNumber)
 {
-	DSUtil_SLL* pSLL = &(UHCIDataHandler_pLocalFrameList[uiFrameNumber]) ;
+  auto& frameList = UHCIDataHandler_pLocalFrameList[uiFrameNumber];
 
-	DSUtil_SLLNode *pCur, *pTemp ;
-	
-	for(pCur = pSLL->pFirst; pCur != NULL;)
-	{
-		DMM_DeAllocateForKernel(pCur->val) ;
-
-		pTemp = pCur->pNext ;
-		DMM_DeAllocateForKernel((unsigned)pCur) ;
-		pCur = pTemp ;
-	}
-
-	DSUtil_InitializeSLL(pSLL) ;
+  for(auto i : frameList)
+  {
+    if(i != NULL)
+		  DMM_DeAllocateForKernel(i);
+  }
+  frameList.clear();
 }
 
 static void UHCIDataHandler_FrameCleaner()
@@ -227,10 +226,7 @@ unsigned UHCIDataHandler_CreateFrameList()
 	for(i = 0; i < 1024; i++)
 		UHCIDataHandler_pFrameList[i] = 1;
 
-	UHCIDataHandler_pLocalFrameList = (DSUtil_SLL*)DMM_AllocateForKernel(sizeof(DSUtil_SLL) * 1024) ;
-
-	for(i = 0; i < 1024; i++)
-		DSUtil_InitializeSLL(&(UHCIDataHandler_pLocalFrameList[i])) ;
+	UHCIDataHandler_pLocalFrameList = new upan::list<unsigned>[1024];
 
 	return (unsigned)UHCIDataHandler_pFrameList ;
 }
@@ -489,14 +485,8 @@ unsigned UHCIDataHandler_GetTDAttribute(UHCITransferDesc* pTD, UHCIDescAttrType 
 
 byte UHCIDataHandler_StartFrameCleaner()
 {
-	unsigned uiFreePageNo = MemManager::Instance().AllocatePhysicalPage();
-	
-	unsigned uiFrameQBuf = (uiFreePageNo * PAGE_SIZE) - GLOBAL_DATA_SEGMENT_BASE ;
-
-	DSUtil_InitializeQueue(&UHCIDataHandler_FrameQueue, uiFrameQBuf, PAGE_TABLE_ENTRIES) ;
-
-	KernelUtil::ScheduleTimedTask("UHCIFrmCleaner", 100, (unsigned)UHCIDataHandler_FrameCleaner) ;
-
+  UHCIDataHandler_FrameQueue.clear();
+	KernelUtil::ScheduleTimedTask("UHCIFrmCleaner", 100, (unsigned)UHCIDataHandler_FrameCleaner);
 	return UHCIDataHandler_SUCCESS ;
 }
 
@@ -507,18 +497,15 @@ byte UHCIDataHandler_CleanFrame(unsigned uiFrameNumber)
 	UHCIDataHandler_GetFrameListMutex().Lock() ;
 	// ResourceManager_Acquire(RESOURCE_UHCI_FRM_BUF, RESOURCE_ACQUIRE_BLOCK) ;
 
-	if(DSUtil_WriteToQueue(&UHCIDataHandler_FrameQueue, uiFrameNumber) == DSUtil_ERR_QUEUE_FULL)
-		bStatus = UHCIDataHandler_FRMQ_FULL ;
+  if(UHCIDataHandler_FrameQueue.full())
+		bStatus = UHCIDataHandler_FRMQ_FULL;
+  else
+    UHCIDataHandler_FrameQueue.push_back(uiFrameNumber);
 	
 	// ResourceManager_Release(RESOURCE_UHCI_FRM_BUF) ;
 	UHCIDataHandler_GetFrameListMutex().UnLock() ;
 
 	return bStatus ;
-}
-
-unsigned UHCIDataHandler_GetFrameListAddress()
-{
-	return (unsigned)UHCIDataHandler_pFrameList ;
 }
 
 unsigned UHCIDataHandler_GetFrameListEntry(unsigned uiFrameNumber)

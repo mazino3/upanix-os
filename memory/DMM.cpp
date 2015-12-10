@@ -53,14 +53,79 @@ void DMM_CheckAlignNumber(unsigned uiAlignNumber)
   throw upan::exception(XLOC, "%u is not aligned address", uiAlignNumber);
 }
 
-unsigned DMM_AllocateAlignForKernel_Act(unsigned uiSizeInBytes, unsigned uiAlignNumber)
+static unsigned DMM_AllocateAlignForKernel_Act1(unsigned uiSizeInBytes, unsigned uiAlignNumber)
+{
+	DMM_CheckAlignNumber(uiAlignNumber);
+	AllocationUnitTracker *aut, *prevAut;
+	unsigned& uiAUTAddress = MemManager::Instance().GetKernelAUTAddress();
+	
+	// Dedicated Head Node. This will avoid Back Loop at Head
+	if(uiAUTAddress == NULL)
+	{
+	  unsigned uiHeapStartAddress = MemManager::Instance().GetKernelHeapStartAddr() - GLOBAL_DATA_SEGMENT_BASE;
+		aut = (AllocationUnitTracker*)(uiHeapStartAddress);
+		aut->uiAllocatedAddress = uiHeapStartAddress;
+		aut->uiSize = MEM_KERNEL_HEAP_SIZE;
+    aut->uiReturnAddress = NULL;
+		aut->uiNextAUTAddress = NULL;
+		uiAUTAddress = uiHeapStartAddress;
+	}
+
+	aut = (AllocationUnitTracker*)(uiAUTAddress);
+  prevAut = NULL;
+  while(aut != NULL)
+  {
+    unsigned uiAddress = aut->uiAllocatedAddress;
+    unsigned uiMaxSize = aut->uiSize;
+    unsigned uiNextAUTAddress = aut->uiNextAUTAddress;
+    unsigned uiByteStuffForAlign = DMM_GetByteStuffForAlign(uiAddress + sizeof(AllocationUnitTracker), uiAlignNumber);
+    unsigned uiSize = uiSizeInBytes + sizeof(AllocationUnitTracker) + uiByteStuffForAlign;
+
+    if(uiSize <= uiMaxSize)
+    {
+      AllocationUnitTracker* allocAUT = (AllocationUnitTracker*)(uiAddress + uiByteStuffForAlign);
+      allocAUT->uiAllocatedAddress = uiAddress;
+      allocAUT->uiReturnAddress = uiAddress + sizeof(AllocationUnitTracker) + uiByteStuffForAlign;
+      allocAUT->uiSize = uiSize;
+      allocAUT->uiByteStuffForAlign = uiByteStuffForAlign;
+
+      unsigned uiRemaining = uiMaxSize - uiSize;
+      if(uiRemaining > (sizeof(AllocationUnitTracker) + 1))
+      {
+        AllocationUnitTracker* freeAUT = (AllocationUnitTracker*)(uiAddress + uiSize);
+        freeAUT->uiAllocatedAddress = uiAddress + uiSize;
+        freeAUT->uiReturnAddress = NULL;
+        freeAUT->uiSize = uiRemaining;
+        freeAUT->uiNextAUTAddress = uiNextAUTAddress;
+
+        if(prevAut == NULL)
+          uiAUTAddress = freeAUT->uiAllocatedAddress;
+        else
+          prevAut->uiNextAUTAddress = freeAUT->uiAllocatedAddress;
+      }
+      else
+      {
+        allocAUT->uiSize += uiRemaining;
+        if(prevAut == NULL)
+          uiAUTAddress = uiNextAUTAddress;
+        else
+          prevAut->uiNextAUTAddress = uiNextAUTAddress;
+      }
+      return allocAUT->uiReturnAddress;
+    }
+
+    prevAut = aut;
+    aut = (AllocationUnitTracker*)uiNextAUTAddress;
+  }
+  throw upan::exception(XLOC, "out of memory!");
+}
+
+static unsigned DMM_AllocateAlignForKernel_Act(unsigned uiSizeInBytes, unsigned uiAlignNumber)
 {
 	DMM_CheckAlignNumber(uiAlignNumber);
 
 	unsigned uiHeapStartAddress ;
-	unsigned* uiAUTAddress ;
-
-	uiAUTAddress = MemManager::Instance().GetKernelAUTAddress() ;
+	unsigned& uiAUTAddress = MemManager::Instance().GetKernelAUTAddress() ;
 
 	uiHeapStartAddress = MemManager::Instance().GetKernelHeapStartAddr() - GLOBAL_DATA_SEGMENT_BASE ;
 	AllocationUnitTracker *aut, *prevAut ;
@@ -70,7 +135,7 @@ unsigned DMM_AllocateAlignForKernel_Act(unsigned uiSizeInBytes, unsigned uiAlign
 	// RAM Size OR 4GB if virtual memory management is implemented
 
 	// Dedicated Head Node. This will avoid Back Loop at Head
-	if(*uiAUTAddress == NULL)
+	if(uiAUTAddress == NULL)
 	{
 		aut = (AllocationUnitTracker*)(uiHeapStartAddress) ;
 
@@ -78,12 +143,12 @@ unsigned DMM_AllocateAlignForKernel_Act(unsigned uiSizeInBytes, unsigned uiAlign
 		aut->uiSize = 0 + sizeof(AllocationUnitTracker) ;
 
 		aut->uiNextAUTAddress = NULL ;
-		*uiAUTAddress = uiHeapStartAddress ;
+		uiAUTAddress = uiHeapStartAddress ;
 	}
 
 	unsigned uiByteStuffForAlign = 0;
 
-	aut = prevAut = (AllocationUnitTracker*)(*uiAUTAddress) ;
+	aut = prevAut = (AllocationUnitTracker*)(uiAUTAddress) ;
 	byte bStop = false ;
 	for(uiAddress = uiHeapStartAddress; ;)
 	{
@@ -110,7 +175,7 @@ unsigned DMM_AllocateAlignForKernel_Act(unsigned uiSizeInBytes, unsigned uiAlign
 				else
 				{
 					aut->uiNextAUTAddress = NULL ;
-					*uiAUTAddress = uiAddress ;
+					uiAUTAddress = uiAddress ;
 				}
 
 				DMM_uiTotalKernelAllocation += aut->uiSize ;
@@ -143,9 +208,9 @@ unsigned DMM_AllocateAlignForKernel_Act(unsigned uiSizeInBytes, unsigned uiAlign
   throw upan::exception(XLOC, "out of memory!");
 }
 
-static byte DMM_DeAllocateForKernel_Act(unsigned uiAddress)
+static byte DMM_DeAllocateForKernel_Act1(unsigned uiAddress)
 {
-	unsigned* uiAUTAddress ;
+	unsigned& uiAUTAddress = MemManager::Instance().GetKernelAUTAddress() ;
 	unsigned uiHeapStartAddress = MemManager::Instance().GetKernelHeapStartAddr() - GLOBAL_DATA_SEGMENT_BASE ;
 
 	if(uiAddress == NULL)
@@ -154,9 +219,30 @@ static byte DMM_DeAllocateForKernel_Act(unsigned uiAddress)
 	if(uiAddress == uiHeapStartAddress)
 		return DMM_BAD_DEALLOC ;
 
-	uiAUTAddress = MemManager::Instance().GetKernelAUTAddress() ;
+  AllocationUnitTracker* freeAUT = (AllocationUnitTracker*)(uiAddress - sizeof(AllocationUnitTracker));
+  unsigned uiAllocatedAddress = uiAddress - sizeof(AllocationUnitTracker) - freeAUT->uiByteStuffForAlign;
+  unsigned uiSize = freeAUT->uiSize;
+  freeAUT = (AllocationUnitTracker*)uiAllocatedAddress;
+  freeAUT->uiAllocatedAddress = uiAllocatedAddress;
+  freeAUT->uiReturnAddress = NULL;
+  freeAUT->uiSize = uiSize;
+  freeAUT->uiNextAUTAddress = uiAUTAddress;
+  uiAUTAddress = uiAllocatedAddress;
+  return DMM_SUCCESS;
+}
 
-	AllocationUnitTracker* curAUT = (AllocationUnitTracker*)(*uiAUTAddress) ;
+static byte DMM_DeAllocateForKernel_Act(unsigned uiAddress)
+{
+	unsigned& uiAUTAddress = MemManager::Instance().GetKernelAUTAddress() ;
+	unsigned uiHeapStartAddress = MemManager::Instance().GetKernelHeapStartAddr() - GLOBAL_DATA_SEGMENT_BASE ;
+
+	if(uiAddress == NULL)
+		return DMM_SUCCESS ;
+
+	if(uiAddress == uiHeapStartAddress)
+		return DMM_BAD_DEALLOC ;
+
+	AllocationUnitTracker* curAUT = (AllocationUnitTracker*)(uiAUTAddress) ;
 	AllocationUnitTracker* prevAUT = NULL ;
 
 	while(curAUT != NULL)
@@ -164,7 +250,7 @@ static byte DMM_DeAllocateForKernel_Act(unsigned uiAddress)
 		if(curAUT->uiReturnAddress == uiAddress)
 		{
 			if(prevAUT == NULL)
-				*uiAUTAddress = curAUT->uiNextAUTAddress ;
+				uiAUTAddress = curAUT->uiNextAUTAddress ;
 			else
 				prevAUT->uiNextAUTAddress = curAUT->uiNextAUTAddress ;
 
@@ -296,13 +382,9 @@ unsigned DMM_AllocateForKernel(unsigned uiSizeInBytes)
 
 unsigned DMM_AllocateAlignForKernel(unsigned uiSizeInBytes, unsigned uiAlignNumber)
 {
-	MOSMain_GetDMMMutex().Lock() ;
-
-	unsigned uiAddr = DMM_AllocateAlignForKernel_Act(uiSizeInBytes, uiAlignNumber) ;
-
-	MOSMain_GetDMMMutex().UnLock() ;
-
-	return uiAddr ;
+  PICGuard g;
+	unsigned uiAddr = DMM_AllocateAlignForKernel_Act1(uiSizeInBytes, uiAlignNumber);
+	return uiAddr;
 }
 
 byte DMM_DeAllocate(ProcessAddressSpace* processAddressSpace, unsigned uiAddress)
@@ -360,11 +442,10 @@ byte DMM_GetAllocSize(ProcessAddressSpace* processAddressSpace, unsigned uiAddre
 
 byte DMM_GetAllocSizeForKernel(unsigned uiAddress, int* iSize)
 {
-	MOSMain_GetDMMMutex().Lock();
-	unsigned* uiAUTAddress = MemManager::Instance().GetKernelAUTAddress();
-	unsigned uiHeapStartAddress = MemManager::Instance().GetKernelHeapStartAddr() - GLOBAL_DATA_SEGMENT_BASE;
+  PICGuard g;
+	unsigned& uiAUTAddress = MemManager::Instance().GetKernelAUTAddress();
 
-	AllocationUnitTracker* curAUT = (AllocationUnitTracker*)(*uiAUTAddress);
+	AllocationUnitTracker* curAUT = (AllocationUnitTracker*)(uiAUTAddress);
 
 	while(curAUT != NULL)
 	{
@@ -377,18 +458,13 @@ byte DMM_GetAllocSizeForKernel(unsigned uiAddress, int* iSize)
 		curAUT = (AllocationUnitTracker*)(curAUT->uiNextAUTAddress) ;
 	}
 
-	MOSMain_GetDMMMutex().UnLock();
 	return DMM_BAD_DEALLOC ;
 }
 
 byte DMM_DeAllocateForKernel(unsigned uiAddress)
 {
-	MOSMain_GetDMMMutex().Lock() ;
-
-	unsigned bStatus = DMM_DeAllocateForKernel_Act(uiAddress) ;
-
-	MOSMain_GetDMMMutex().UnLock() ;
-
+  PICGuard g;
+	unsigned bStatus = DMM_DeAllocateForKernel_Act1(uiAddress) ;
 	return bStatus ;
 }
 	

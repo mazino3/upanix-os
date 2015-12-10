@@ -15,8 +15,8 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
-#ifndef _SLIST_H_
-#define _SLIST_H_
+#ifndef _UPAN_LIST_H_
+#define _UPAN_LIST_H_
 
 #include <exception.h>
 #include <algorithm.h>
@@ -37,8 +37,8 @@ class list
 
     void push_back(const T& value);
     void push_front(const T& value);
-    void pop_front();
-    void pop_back();
+    bool pop_front();
+    bool pop_back();
     T& front();
     const T& front() const;
     T& back();
@@ -52,9 +52,10 @@ class list
     iterator insert(iterator pos, const T& v);
     iterator sorted_insert_asc(const T& v);
     iterator sorted_insert_desc(const T& v);
+    void clear();
 
   private:
-    void pop(bool front);
+    bool pop(bool front);
 
     class node
     {
@@ -137,7 +138,7 @@ class list
         }
       private:
         const list<T>* _parent;
-        mutable node*   _node;
+        mutable node*  _node;
         friend class list<T>;
     };
     friend class list_iterator;
@@ -152,7 +153,7 @@ list<T>::list() : _size(0), _first(nullptr)
 }
 
 template <typename T>
-list<T>::list(const list<T>& rhs)
+list<T>::list(const list<T>& rhs) : _size(0), _first(nullptr)
 {
   for(const auto& i : rhs)
     push_back(i);
@@ -161,9 +162,7 @@ list<T>::list(const list<T>& rhs)
 template <typename T>
 list<T>::~list()
 {
-  iterator it = begin();
-  for(; it != end(); ++it)
-    delete it._node;
+  clear();
 }
 
 template <typename T>
@@ -228,10 +227,10 @@ bool list<T>::erase(const T& v)
 }
 
 template <typename T>
-void list<T>::pop(bool front)
+bool list<T>::pop(bool front)
 {
   if(empty())
-    throw exception(XLOC, "pop_back: list is empty");
+    return false;
   node* cur = front ? _first : _first->prev();
   if(_size == 1)
   {
@@ -241,23 +240,24 @@ void list<T>::pop(bool front)
   {
     cur->prev()->next(cur->next());
     cur->next()->prev(cur->prev());
-    if(front);
+    if(front)
       _first = cur->next();
   }
   delete cur;
   --_size;
+  return true;
 }
 
 template <typename T>
-void list<T>::pop_front()
+bool list<T>::pop_front()
 {
-  pop(true);
+  return pop(true);
 }
 
 template <typename T>
-void list<T>::pop_back()
+bool list<T>::pop_back()
 {
-  pop(false);
+  return pop(false);
 }
 
 template <typename T>
@@ -341,6 +341,16 @@ template <typename T>
 typename list<T>::iterator list<T>::end() const 
 { 
   return list<T>::iterator(); 
+}
+
+template <typename T>
+void list<T>::clear()
+{
+  iterator it = begin();
+  for(; it != end(); ++it)
+    delete it._node;
+  _size = 0;
+  _first = nullptr;
 }
 
 };

@@ -62,10 +62,9 @@ static void USBMassBulkStorageDisk_AddDeviceDrive(RawDiskDrive* pDisk)
 
 	/*** Calculate MountSpacePerPartition, FreePoolSize, TableCacheSize *****/
 	const unsigned uiSectorsInFreePool = 4096 ;
-	const unsigned uiFreePoolSize = FileSystem_GetSizeForFreePool(uiSectorsInFreePool) ;
 	unsigned uiSectorsInTableCache = 1024 ;
 	
-	const unsigned uiMinMountSpaceRequired =  uiFreePoolSize + FileSystem_GetSizeForTableCache(uiSectorsInTableCache) ;
+	const unsigned uiMinMountSpaceRequired =  FileSystem_GetSizeForTableCache(uiSectorsInTableCache) ;
 	const unsigned uiTotalMountSpaceAvailable = MEM_USD_FS_END - MEM_USD_FS_START ;
 	
 	unsigned uiNoOfParitions = uiTotalPartitions ;
@@ -87,7 +86,7 @@ static void USBMassBulkStorageDisk_AddDeviceDrive(RawDiskDrive* pDisk)
 	
 	if( uiMountSpaceAvailablePerDrive > uiMinMountSpaceRequired )
 	{
-		uiSectorsInTableCache = (uiMountSpaceAvailablePerDrive - uiFreePoolSize) / FileSystem_GetSizeForTableCache(1) ;
+		uiSectorsInTableCache = uiMountSpaceAvailablePerDrive / FileSystem_GetSizeForTableCache(1) ;
 	}
 	/*** DONE - Calculating mount stuff ***/
 	
@@ -131,7 +130,7 @@ static void USBMassBulkStorageDisk_AddDeviceDrive(RawDiskDrive* pDisk)
 		
 		pDriveInfo->pDevice = pDevice ;
 
-		pDriveInfo->uiNoOfSectorsInFreePool = uiSectorsInFreePool ;
+		pDriveInfo->uiMaxSectorsInFreePoolCache = uiSectorsInFreePool ;
 		pDriveInfo->uiNoOfSectorsInTableCache = uiSectorsInTableCache ;
 
 		if(i < uiNoOfParitions)

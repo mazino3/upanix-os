@@ -166,43 +166,32 @@ static byte FileSystem_ReadRootDirectory(DriveInfo* pDriveInfo)
 
 static byte FileSystem_InitializeMountInfo(DriveInfo* pDriveInfo)
 {
-	FileSystem_MountInfo *pFSMountInfo = &(pDriveInfo->FSMountInfo) ;
+	FileSystemMountInfo *pFSMountInfo = &(pDriveInfo->FSMountInfo) ;
 	
 	unsigned uiMountPointStart = pDriveInfo->uiMountPointStart ;
 	unsigned uiMountPointEnd = pDriveInfo->uiMountPointEnd ;
 
 	unsigned uiMountSpaceLimit = uiMountPointEnd - uiMountPointStart ;
 
-	unsigned uiSizeOfFreePool = FileSystem_GetSizeForFreePool(pDriveInfo->uiNoOfSectorsInFreePool) ;
 	unsigned uiSizeOfTableCahce = FileSystem_GetSizeForTableCache(pDriveInfo->uiNoOfSectorsInTableCache) ;
 
 	pDriveInfo->bFSCacheFlag = ENABLE_TABLE_CAHCE | ENABLE_FREE_POOL_CACHE ;
 
-	if( (uiSizeOfFreePool + uiSizeOfTableCahce) > uiMountSpaceLimit)
+	if(uiSizeOfTableCahce > uiMountSpaceLimit)
 	{
-		KC::MDisplay().Message("\n Critical Error: FS Mount Cache size insufficient. Checking for atleast FreePool", ' ') ;
-
+		KC::MDisplay().Message("\n Critical Error: FS Mount Cache size insufficient. ", ' ') ;
 		pDriveInfo->bFSCacheFlag &= ~((byte)ENABLE_TABLE_CAHCE) ;
-		if( uiSizeOfFreePool > uiMountSpaceLimit)
-		{
-			KC::MDisplay().Message("\n Critical Error: FS Mount Cahce size insufficient for FreePool !!", ' ') ;
-			pDriveInfo->bFSCacheFlag &= ~((byte)ENABLE_FREE_POOL_CACHE) ;
-		}
-
 		KernelUtil::Wait(3000) ;
 	}
 
-	if(FileSystem_IsFreePoolCacheEnabled(pDriveInfo))
-	{
-		DSUtil_InitializeQueue(&pFSMountInfo->FreePoolQueue, uiMountPointStart, pDriveInfo->uiNoOfSectorsInFreePool) ;
-	}
+  pFSMountInfo->pFreePoolQueue = new upan::queue<unsigned>(pDriveInfo->uiMaxSectorsInFreePoolCache);
 
 	pFSMountInfo->FSTableCache.pSectorBlockEntryList = NULL ;
 	pFSMountInfo->FSTableCache.iSize = 0 ;
 
 	if(FileSystem_IsTableCacheEnabled(pDriveInfo))
 	{
-		pFSMountInfo->FSTableCache.pSectorBlockEntryList = (SectorBlockEntry*)(uiMountPointStart + uiSizeOfFreePool) ;
+		pFSMountInfo->FSTableCache.pSectorBlockEntryList = (SectorBlockEntry*)(uiMountPointStart) ;
 	}
 
 	return FileSystem_SUCCESS ;
@@ -394,8 +383,7 @@ byte FileSystem_DeAllocateSector(DriveInfo* pDriveInfo, unsigned uiCurrentSector
 
 	if(FileSystem_IsFreePoolCacheEnabled(pDriveInfo))
 	{
-		DSUtil_Queue* pFreePoolQueue = &pDriveInfo->FSMountInfo.FreePoolQueue ;
-		DSUtil_WriteToQueue(pFreePoolQueue, uiCurrentSectorID) ;
+    pDriveInfo->FSMountInfo.pFreePoolQueue->push_back(uiCurrentSectorID);
 	}
 
 	return FileSystem_SUCCESS ;
@@ -409,11 +397,6 @@ byte FileSystem_IsFreePoolCacheEnabled(const DriveInfo* pDriveInfo)
 byte FileSystem_IsTableCacheEnabled(const DriveInfo* pDriveInfo)
 {
 	return pDriveInfo->bFSCacheFlag & ENABLE_TABLE_CAHCE ;
-}
-
-unsigned FileSystem_GetSizeForFreePool(unsigned uiNoOfSectorsInFreePool)
-{
-	return ( sizeof(unsigned) * uiNoOfSectorsInFreePool ) ;
 }
 
 unsigned FileSystem_GetSizeForTableCache(unsigned uiNoOfSectorsInTableCache)

@@ -52,6 +52,16 @@ int debug_point ;
 
 static int MOSMain_KernelPID ;
 
+void DummyPrint()
+{
+  static int i = 1;
+  while(true)
+  {
+    ProcessManager::Instance().Sleep(1000);
+    printf("\n COUNTER: %d", ++i);
+  }
+}
+
 void MOSMain_KernelProcess()
 {
 	int pid ;
@@ -63,6 +73,7 @@ void MOSMain_KernelProcess()
 	KC::MKernelService().Spawn() ;
 	KC::MKernelService().Spawn() ;
 
+//	ProcessManager::Instance().CreateKernelImage((unsigned)&DummyPrint, ProcessManager::GetCurrentProcessID(), true, NULL, NULL, &pid, "dummy") ;
 	ProcessManager::Instance().CreateKernelImage((unsigned)&Console_StartMOSConsole, ProcessManager::GetCurrentProcessID(), true, NULL, NULL, &pid, "console") ;
 //	ProcessManager_CreateKernelImage((unsigned)&FloatProcess, ProcessManager::GetCurrentProcessID(), false, NULL, NULL, &pid, "float") ;
 //	ProcessManager_CreateKernelImage((unsigned)&FloatProcess, ProcessManager::GetCurrentProcessID(), false, NULL, NULL, &pid, "float1") ;

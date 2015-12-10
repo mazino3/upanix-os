@@ -71,9 +71,9 @@ class MemManager
 			return ((uiSizeInPages - 1) / PAGE_TABLE_ENTRIES) + 1 ;
 		}
 
-		inline unsigned* GetKernelAUTAddress()
+		inline unsigned& GetKernelAUTAddress()
 		{
-			return &m_uiKernelAUTAddress ;
+			return m_uiKernelAUTAddress ;
 		}
 
 	private:

@@ -243,7 +243,7 @@ byte Directory_GetDirEntryForCreateDelete(const ProcessAddressSpace* processAddr
 	FileSystem_CWD CWD ;
 
 	GET_DRIVE_FOR_FS_OPS(iDriveID, Directory_FAILURE) ;
-	FileSystem_MountInfo* pFSMountInfo = &pDriveInfo->FSMountInfo ;
+	FileSystemMountInfo* pFSMountInfo = &pDriveInfo->FSMountInfo ;
 
 	if(String_Length(szDirPath) == 0 ||	String_Compare(FS_ROOT_DIR, szDirPath) == 0)
 		return Directory_ERR_EXISTS ;
@@ -922,7 +922,7 @@ byte Directory_GetDirEntryInfo(DriveInfo* pDriveInfo, FileSystem_CWD* pCWD, cons
 	byte bStatus ;
 	byte bIsPresent ;
 	FileSystem_CWD CWD ;
-	FileSystem_MountInfo* pFSMountInfo = &(pDriveInfo->FSMountInfo) ;
+	FileSystemMountInfo* pFSMountInfo = &(pDriveInfo->FSMountInfo) ;
 
 	if(String_Length(szFileName) == 0)
 		return Directory_ERR_INVALID_NAME ;

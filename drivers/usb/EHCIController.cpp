@@ -127,16 +127,15 @@ static void EHCIController_ScheduleTransaction(EHCITransaction* pTransaction, EH
 	pTransaction->pQH = pQH ;
 	pTransaction->pTDStart = pTDStart ;
 
-	DSUtil_SLL *pSLL = &(pTransaction->dStorageList) ;
-	DSUtil_InitializeSLL(pSLL) ;
+  pTransaction->dStorageList.clear();
 
 	EHCIQTransferDesc* pTDCur = pTDStart ;
 	unsigned uiNextAddress ;
 
 	for(; (unsigned)pTDCur != 1; pTDCur = (EHCIQTransferDesc*)(uiNextAddress))
 	{
-		DSUtil_InsertSLL(pSLL, KERNEL_VIRTUAL_ADDRESS(pTDCur->uiBufferPointer[ 0 ])) ;
-		DSUtil_InsertSLL(pSLL, (unsigned)pTDCur) ;
+    pTransaction->dStorageList.push_back(KERNEL_VIRTUAL_ADDRESS(pTDCur->uiBufferPointer[0]));
+    pTransaction->dStorageList.push_back((unsigned)pTDCur);
 		uiNextAddress = KERNEL_VIRTUAL_ADDRESS(pTDCur->uiNextpTDPointer) ;
 	}
 

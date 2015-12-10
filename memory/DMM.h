@@ -35,7 +35,11 @@ typedef struct
 	unsigned uiAllocatedAddress ;
 	unsigned uiReturnAddress ;
 	unsigned uiSize ;
-	unsigned uiNextAUTAddress ;	
+  union
+  {
+  	unsigned uiNextAUTAddress;
+    unsigned uiByteStuffForAlign;
+  };
 } PACKED AllocationUnitTracker ; // AUT
 
 unsigned DMM_Allocate(ProcessAddressSpace* processAddressSpace, unsigned uiSizeInBytes) ;

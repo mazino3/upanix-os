@@ -101,7 +101,7 @@ static void ATADeviceController_PrimaryIRQHandler()
 	AsmUtil_STORE_GPR(GPRStack) ;
 	AsmUtil_SET_KERNEL_DATA_SEGMENTS
 
-	ProcessManager::Instance().SignalInterruptOccured(*HD_PRIMARY_IRQ) ;
+  HD_PRIMARY_IRQ->Signal();
 
 	PIC::Instance().SendEOI(*HD_PRIMARY_IRQ) ;
 	
@@ -118,7 +118,7 @@ static void ATADeviceController_SecondaryIRQHandler()
 	AsmUtil_STORE_GPR(GPRStack) ;
 	AsmUtil_SET_KERNEL_DATA_SEGMENTS
 
-	ProcessManager::Instance().SignalInterruptOccured(*HD_SECONDARY_IRQ) ;
+  HD_SECONDARY_IRQ->Signal();
 	
 	PIC::Instance().SendEOI(*HD_SECONDARY_IRQ) ;
 
@@ -471,12 +471,11 @@ static void ATADeviceController_AddATADrive(RawDiskDrive* pDisk)
 	unsigned uiTotalPartitions = partitionTable.uiNoOfPrimaryPartitions + partitionTable.uiNoOfExtPartitions ;
 	PartitionInfo* pPartitionInfo ;
 
-	/*** Calculate MountSpacePerPartition, FreePoolSize, TableCacheSize *****/
+	/*** Calculate MountSpacePerPartition, TableCacheSize *****/
 	const unsigned uiSectorsInFreePool = 4096 ;
-	const unsigned uiFreePoolSize = FileSystem_GetSizeForFreePool(uiSectorsInFreePool) ;
 	unsigned uiSectorsInTableCache = 1024 ;
 	
-	const unsigned uiMinMountSpaceRequired =  uiFreePoolSize + FileSystem_GetSizeForTableCache(uiSectorsInTableCache) ;
+	const unsigned uiMinMountSpaceRequired =  FileSystem_GetSizeForTableCache(uiSectorsInTableCache) ;
 	const unsigned uiTotalMountSpaceAvailable = MEM_HDD_FS_END - MEM_HDD_FS_START ;
 	
 	unsigned uiNoOfParitions = uiTotalPartitions ;
@@ -498,7 +497,7 @@ static void ATADeviceController_AddATADrive(RawDiskDrive* pDisk)
 	
 	if( uiMountSpaceAvailablePerDrive > uiMinMountSpaceRequired )
 	{
-		uiSectorsInTableCache = (uiMountSpaceAvailablePerDrive - uiFreePoolSize) / FileSystem_GetSizeForTableCache(1) ;
+		uiSectorsInTableCache = uiMountSpaceAvailablePerDrive / FileSystem_GetSizeForTableCache(1) ;
 	}
 	/*** DONE - Calculating mount stuff ***/
 	
@@ -542,7 +541,7 @@ static void ATADeviceController_AddATADrive(RawDiskDrive* pDisk)
 		
 		pDriveInfo->pDevice = pPort ;
 
-		pDriveInfo->uiNoOfSectorsInFreePool = uiSectorsInFreePool ;
+		pDriveInfo->uiMaxSectorsInFreePoolCache = uiSectorsInFreePool ;
 		pDriveInfo->uiNoOfSectorsInTableCache = uiSectorsInTableCache ;
 
 		if(i < uiNoOfParitions)

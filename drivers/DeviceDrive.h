@@ -117,10 +117,10 @@ struct DriveInfo
 	// FileSystem Mount Info
 	unsigned				uiMountPointStart ;
 	unsigned				uiMountPointEnd ;
-	FileSystem_MountInfo	FSMountInfo ;
+	FileSystemMountInfo	FSMountInfo ;
 
-	unsigned				uiNoOfSectorsInFreePool ;
-	unsigned				uiNoOfSectorsInTableCache ;
+	unsigned				uiMaxSectorsInFreePoolCache;
+	unsigned				uiNoOfSectorsInTableCache;
 	byte					bFSCacheFlag ;
 
 	Mutex			mDriveMutex ;

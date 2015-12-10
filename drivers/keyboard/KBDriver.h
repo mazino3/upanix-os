@@ -19,6 +19,7 @@
 #define _KB_DRIVER_H_
 
 #include <Global.h>
+#include <queue.h>
 
 #define KBDriver_SUCCESS 0
 #define KBDriver_ERR_BUFFER_EMPTY 1
@@ -27,15 +28,27 @@
 #define KB_DATA_PORT 0x60
 #define KB_STAT_PORT 0x64
 
-void KBDriver_Initialize() ;
-void KBDriver_Handler() ;
-byte KBDriver_GetCharInBlockMode(byte *data) ;
-byte KBDriver_GetCharInNonBlockMode(byte *data) ;
-byte KBDriver_GetFromQueueBuffer(byte *data) ;
-byte KBDriver_PutToQueueBuffer(byte data) ;
-byte KBDriver_WaitForWrite() ;
-byte KBDriver_WaitForRead() ;
-void KBDriver_Reboot() ;
+class KBDriver
+{
+  private:
+    KBDriver();
+  public:
+    static KBDriver& Instance()
+    {
+      static KBDriver instance;
+      return instance;
+    }
+    bool GetCharInBlockMode(byte *data);
+    bool GetCharInNonBlockMode(byte *data);
+    bool WaitForWrite();
+    bool WaitForRead();
+    void Reboot();
+    bool PutToQueueBuffer(byte data);
+  private:
+    bool GetFromQueueBuffer(byte *data);
+
+    upan::queue<byte> _qBuffer;
+};
 
 #endif
 

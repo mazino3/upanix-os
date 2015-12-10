@@ -21,6 +21,7 @@
 #include <Global.h>
 #include <USBConstants.h>
 #include <PCIBusHandler.h>
+#include <list.h>
 
 /* EHCI Interrupt Flags */
 #define INTR_ASYNC_ADVANCE	0x20
@@ -98,7 +99,7 @@ typedef struct
 	EHCIQueueHead* pQH ;
 	EHCIQTransferDesc* pTDStart ;
 
-	DSUtil_SLL dStorageList ;
+  upan::list<unsigned> dStorageList;
 } EHCITransaction ;
 
 typedef struct

@@ -187,7 +187,7 @@ void DeviceDrive_RemoveEntryByCondition(const DriveRemoveClause& removeClause)
 			if(pCur->drive.bMounted)
 				FSCommand_Mounter(pCur, FS_UNMOUNT) ;
 
-			DMM_DeAllocateForKernel((unsigned)pCur) ;
+      delete pCur;
 			DeviceDrive_uiCount-- ;
 
 			pCur = pTemp ;
@@ -204,7 +204,7 @@ void DeviceDrive_RemoveEntryByCondition(const DriveRemoveClause& removeClause)
 
 DriveInfo* DeviceDrive_CreateDriveInfo(bool bEnableDiskCache)
 {
-	DriveInfo* pDriveInfo = (DriveInfo*)DMM_AllocateForKernel(sizeof(DriveInfo)) ;
+	DriveInfo* pDriveInfo = new DriveInfo();
 
 	if(!pDriveInfo)
 		return pDriveInfo ;

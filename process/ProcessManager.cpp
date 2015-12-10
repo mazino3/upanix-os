@@ -29,7 +29,6 @@
 #include <ProcessAllocator.h>
 #include <DynamicLinkLoader.h>
 #include <DMM.h>
-#include <DSUtil.h>
 #include <DLLLoader.h>
 #include <ProcessEnv.h>
 #include <KernelService.h>
@@ -66,9 +65,6 @@ ProcessManager::ProcessManager() :
     _processAddressSpace[i].status = NEW;
   }
       
-  for(int i = 0; i < PIC::MAX_INTERRUPT; i++)
-    _interruptOccured[i] = false ;
-
   for(int i = 0; i < MAX_RESOURCE; i++)
     _resourceList[i] = false ;
 
@@ -82,12 +78,7 @@ ProcessManager::ProcessManager() :
   ProcessLoader::Instance();
 	ProcessGroupManager::Instance();
 
-	for(int i = 0; i < PIC::MAX_INTERRUPT; i++)
-		DSUtil_InitializeQueue(&_interruptQueue[i], (unsigned)&(_interruptQueueBuffer[i]), MAX_PROC_ON_INT_QUEUE) ;
-
 	DLLLoader_Initialize() ;	
-
-	DSUtil_InitializeSLL(&_processList) ;
 
 	KC::MDisplay().LoadMessage("Process Manager Initialization", Success);
 }
@@ -852,25 +843,6 @@ byte ProcessManager::Create(const char* szProcessName, int iParentProcessID, byt
 	return ProcessManager_SUCCESS ;
 }
 
-bool ProcessManager::GetFromInterruptQueue(const IRQ& irq)
-{
-  PICGuard g(irq);
-	unsigned val ;
-	ConsumeInterrupt(irq) ;
-	return DSUtil_ReadFromQueue(&(_interruptQueue[irq.GetIRQNo()]), &val) != DSUtil_ERR_QUEUE_EMPTY;
-}
-
-bool ProcessManager::QueueInterrupt(const IRQ& irq)
-{
-  return DSUtil_WriteToQueue(&(_interruptQueue[irq.GetIRQNo()]), 1) != DSUtil_ERR_QUEUE_FULL;
-}
-
-void ProcessManager::SignalInterruptOccured(const IRQ& irq)
-{
-	SetInterruptOccured(irq) ;
-	QueueInterrupt(irq);
-}
-
 PS* ProcessManager::GetProcListASync()
 {
   PS* pProcList;
@@ -887,12 +859,12 @@ PS* ProcessManager::GetProcListASync()
 		pPS = (PS*)(((unsigned)pProcList + PROCESS_BASE) - GLOBAL_DATA_SEGMENT_BASE) ;
 	}
 
-	DSUtil_SLLNode* pCur = _processList.pFirst ;
-	for(int i = 0; pCur != NULL; pCur = pCur->pNext, i++)
+  auto it = _processList.begin();
+	for(int i = 0; it != _processList.end(); ++i, ++it)
 	{
-		ProcessAddressSpace& p = GetAddressSpace(pCur->val) ;
+		ProcessAddressSpace& p = GetAddressSpace(*it);
 		
-		pPS[i].pid = pCur->val ;
+		pPS[i].pid = *it;
 		pPS[i].status = p.status ;
 		pPS[i].iParentProcessID = p.iParentProcessID ;
 		pPS[i].iProcessGroupID = p.iProcessGroupID ;
@@ -958,16 +930,6 @@ void ProcessManager_Exit()
 {
 	PIT_SetContextSwitch(false) ;
 	ProcessManager_EXIT() ;
-}
-
-bool ProcessManager::ConsumeInterrupt(const IRQ& irq)
-{
-	return Atomic::Swap((int&)_interruptOccured[ irq.GetIRQNo() ], false) ;
-}
-
-void ProcessManager::SetInterruptOccured(const IRQ& irq)
-{
-	Atomic::Swap((int&)_interruptOccured[ irq.GetIRQNo() ], true) ;
 }
 
 bool ProcessManager::IsResourceBusy(__volatile__ unsigned uiType)
@@ -1042,7 +1004,7 @@ bool ProcessManager::WakeupProcessOnInterrupt(__volatile__ int iProcessID)
 			return false ;
 	}
 	
-	if(GetFromInterruptQueue(irq))
+	if(irq.Consume())
 	{
 		p->status = RUN;
 		return true;
@@ -1053,16 +1015,14 @@ bool ProcessManager::WakeupProcessOnInterrupt(__volatile__ int iProcessID)
 
 void ProcessManager::InsertIntoProcessList(int iProcessID)
 {
-  _uiProcessCount++;
-	if(DSUtil_InsertSLL(&_processList, iProcessID) != DSUtil_SUCCESS)
-		KC::MDisplay().Message("\n Failed to Insert Into Process List Data Structure\n", ' ') ;
+  ++_uiProcessCount;
+  _processList.push_back(iProcessID);
 }
 
 void ProcessManager::DeleteFromProcessList(int iProcessID)
 {
-  _uiProcessCount--;
-	if(DSUtil_DeleteSLL(&_processList, iProcessID) != DSUtil_SUCCESS)
-		KC::MDisplay().Message("\n Failed to Delete From Process List Data Structure\n", ' ') ;
+  --_uiProcessCount;
+  _processList.erase(iProcessID);
 }
 
 void ProcessManager::DeAllocateProcessInitDockMem(ProcessAddressSpace& pas)

@@ -83,7 +83,6 @@ MOS_OBJS = \
 	./filesystem/FileOperations.o \
  \
 	./util/SystemUtil.o \
-	./util/DSUtil.o \
 	./util/GenericUtil.o \
 	./util/StringUtil.o \
 	./util/BinaryTree.o \

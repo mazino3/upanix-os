@@ -18,7 +18,6 @@
 # include <FSManager.h>
 # include <DMM.h>
 # include <Global.h>
-# include <DSUtil.h>
 # include <FSStructures.h>
 # include <MemUtil.h>
 # include <Display.h>
@@ -135,7 +134,7 @@ static byte FSManager_FlushEntries(DriveInfo* pDriveInfo, int iFlushSize)
 
 static byte FSManager_AddSectorEntryIntoCache(DriveInfo* pDriveInfo, unsigned uiSectorEntry)
 {	
-	FileSystem_MountInfo* pFSMountInfo = (FileSystem_MountInfo*)&pDriveInfo->FSMountInfo ;
+	FileSystemMountInfo* pFSMountInfo = (FileSystemMountInfo*)&pDriveInfo->FSMountInfo ;
 	FileSystem_BootBlock* pFSBootBlock = (FileSystem_BootBlock*)&pFSMountInfo->FSBootBlock ;
 	FileSystem_TableCache* pFSTableCache = (FileSystem_TableCache*)&pFSMountInfo->FSTableCache ;
 	SectorBlockEntry* pSectorBlockEntryList = pFSTableCache->pSectorBlockEntryList ;
@@ -183,13 +182,15 @@ static void FSManager_UpdateWriteCount(SectorBlockEntry* pSectorBlockEntry)
 }
 
 static byte FSManager_LoadFreeSectors(DriveInfo* pDriveInfo)
-{
+{ 
 	if(!FileSystem_IsFreePoolCacheEnabled(pDriveInfo))
 		return FSManager_SUCCESS ;
 
-	byte bStatus ;
+  auto& freePoolQueue = *pDriveInfo->FSMountInfo.pFreePoolQueue;
+  if(freePoolQueue.full())
+    return FSManager_SUCCESS;
 
-	DSUtil_Queue* pFreePoolQueue = &pDriveInfo->FSMountInfo.FreePoolQueue ;
+	byte bStatus;
 	FileSystem_BootBlock* pFSBootBlock = &pDriveInfo->FSMountInfo.FSBootBlock ;
 	byte bBuffer[ 4096 ] ;
 
@@ -221,7 +222,7 @@ static byte FSManager_LoadFreeSectors(DriveInfo* pDriveInfo)
 				if(!(uiSectorBlock[j] & EOC))
 				{
 					uiSectorID = pSectorBlockEntryList[i].uiBlockID * ENTRIES_PER_TABLE_SECTOR + j;
-					if(DSUtil_WriteToQueue(pFreePoolQueue, uiSectorID) == DSUtil_ERR_QUEUE_FULL)
+          if(!freePoolQueue.push_back(uiSectorID))
 					{
 						bStop = true ;
 						break ;
@@ -263,7 +264,7 @@ static byte FSManager_LoadFreeSectors(DriveInfo* pDriveInfo)
 			if(!(pTable[j] & EOC))
 			{
 				uiSectorID = i * ENTRIES_PER_TABLE_SECTOR + j;
-				if(DSUtil_WriteToQueue(pFreePoolQueue, uiSectorID) == DSUtil_ERR_QUEUE_FULL)
+				if(!freePoolQueue.push_back(uiSectorID))
 				{
 					bStop = true ;
 					break ;
@@ -368,7 +369,7 @@ byte FSManager_GetSectorEntryValue(DriveInfo* pDriveInfo, const unsigned uiSecto
 		return FSManager_GetSectorEntryValueDirect(const_cast<DriveInfo*>(pDriveInfo), uiSectorID, uiSectorEntryValue) ;
 	}
 	
-	FileSystem_MountInfo* pFSMountInfo = (FileSystem_MountInfo*)&pDriveInfo->FSMountInfo ;
+	FileSystemMountInfo* pFSMountInfo = (FileSystemMountInfo*)&pDriveInfo->FSMountInfo ;
 	SectorBlockEntry* pSectorBlockEntry = FSManager_GetSectorEntryFromCache(&pFSMountInfo->FSTableCache, uiSectorID) ;
 
 	if(pSectorBlockEntry != NULL)
@@ -411,7 +412,7 @@ byte FSManager_SetSectorEntryValue(DriveInfo* pDriveInfo, const unsigned uiSecto
 		FSManager_UpdateUsedSectors(pDriveInfo, uiSectorEntryValue) ;
 	}
 
-	FileSystem_MountInfo* pFSMountInfo = (FileSystem_MountInfo*)&pDriveInfo->FSMountInfo ;
+	FileSystemMountInfo* pFSMountInfo = (FileSystemMountInfo*)&pDriveInfo->FSMountInfo ;
 	SectorBlockEntry* pSectorBlockEntry = FSManager_GetSectorEntryFromCache(&pFSMountInfo->FSTableCache, uiSectorID) ;
 
 	if(pSectorBlockEntry != NULL)
@@ -448,14 +449,14 @@ byte FSManager_AllocateSector(DriveInfo* pDriveInfo, unsigned* uiFreeSectorID)
 	}
 	else
 	{
-		DSUtil_Queue* pFreePoolQueue = &pDriveInfo->FSMountInfo.FreePoolQueue ;
-
-		if(DSUtil_ReadFromQueue(pFreePoolQueue, uiFreeSectorID) == DSUtil_ERR_QUEUE_EMPTY)
-		{
+		if(pDriveInfo->FSMountInfo.pFreePoolQueue->empty())
+    {
 			RETURN_IF_NOT(bStatus, FSManager_LoadFreeSectors(pDriveInfo), FSManager_SUCCESS) ;
-			if(DSUtil_ReadFromQueue(pFreePoolQueue, uiFreeSectorID) != DSUtil_SUCCESS)
-				return FSManager_FAILURE ;
+      if(pDriveInfo->FSMountInfo.pFreePoolQueue->empty())
+        return FSManager_FAILURE;
 		}
+    *uiFreeSectorID = pDriveInfo->FSMountInfo.pFreePoolQueue->front();
+    pDriveInfo->FSMountInfo.pFreePoolQueue->pop_front();
 	}
 
 	RETURN_IF_NOT(bStatus, FSManager_SetSectorEntryValue(pDriveInfo, *uiFreeSectorID, EOC, false), FSManager_SUCCESS) ;

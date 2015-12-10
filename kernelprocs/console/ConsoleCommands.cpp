@@ -29,7 +29,6 @@
 #include <FSCommand.h>
 #include <MemManager.h>
 #include <DMM.h>
-#include <DSUtil.h>
 #include <ATADrive.h>
 #include <ATADeviceController.h>
 #include <PartitionManager.h>

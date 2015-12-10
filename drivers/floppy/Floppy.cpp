@@ -533,8 +533,8 @@ static void Floppy_CreateDriveInfo()
 	pDriveInfo->uiMountPointStart = MEM_FD1_FS_START ;
 	pDriveInfo->uiMountPointEnd = MEM_FD1_FS_END ;
 
-	pDriveInfo->uiNoOfSectorsInFreePool = 2048 ;
-	pDriveInfo->uiNoOfSectorsInTableCache = 24 ;
+	pDriveInfo->uiMaxSectorsInFreePoolCache = 2048;
+	pDriveInfo->uiNoOfSectorsInTableCache = 24;
 
 	pDriveInfo->pRawDisk = DeviceDrive_CreateRawDisk("floppy", FLOPPY_DISK, NULL) ;
 
@@ -548,7 +548,7 @@ void Floppy_Handler()
 	AsmUtil_STORE_GPR(GPRStack) ;
 	AsmUtil_SET_KERNEL_DATA_SEGMENTS
 
-	ProcessManager::Instance().SignalInterruptOccured(PIC::Instance().FLOPPY_IRQ);
+	PIC::Instance().FLOPPY_IRQ.Signal();
 
 	PIC::Instance().SendEOI(PIC::Instance().FLOPPY_IRQ);
 

@@ -17,7 +17,6 @@
  */
 #include <KBDriver.h>
 #include <Display.h>
-#include <DSUtil.h>
 #include <PIC.h>
 #include <IDT.h>
 #include <AsmUtil.h>
@@ -30,25 +29,7 @@
 #define KB_STAT_IBF 0x02
 #define KB_REBOOT	0xFE
 
-DSUtil_Queue KBDriver_QueueBuffer ;
-
-#define Keyboard_QUEUE_BUFFER_SIZE 100
-static unsigned Keyboard_Buffer[Keyboard_QUEUE_BUFFER_SIZE] ;
-
-void KBDriver_Initialize()
-{
-	DSUtil_InitializeQueue(&KBDriver_QueueBuffer, (unsigned)&Keyboard_Buffer, Keyboard_QUEUE_BUFFER_SIZE) ;
-
-	PIC::Instance().DisableInterrupt(PIC::Instance().KEYBOARD_IRQ) ;
-	PIC::Instance().RegisterIRQ(PIC::Instance().KEYBOARD_IRQ, (unsigned)&KBDriver_Handler) ;
-	PIC::Instance().EnableInterrupt(PIC::Instance().KEYBOARD_IRQ) ;
-
-	PortCom_ReceiveByte(KB_DATA_PORT) ;	
-
-	KC::MDisplay().LoadMessage("Keyboard Initialization", Success) ;
-}
-
-void KBDriver_Handler()
+static void KBDriver_Handler()
 {
 	unsigned GPRStack[NO_OF_GPR] ;
 	AsmUtil_STORE_GPR(GPRStack) ;
@@ -57,15 +38,15 @@ void KBDriver_Handler()
 	__volatile__ char key ;
 
 	//KC::MDisplay().Message("\n KB IRQ") ;
-	KBDriver_WaitForRead() ;
+	KBDriver::Instance().WaitForRead();
 	if(!(PortCom_ReceiveByte(KB_STAT_PORT) & 0x20))
 	{
 		key = ((PortCom_ReceiveByte(KB_DATA_PORT)) & 0xFF) ;
 
 		if(!KBInputHandler_Process(key))
 		{
-			KBDriver_PutToQueueBuffer((key & 0xFF)) ;
-			ProcessManager::Instance().SignalInterruptOccured(PIC::Instance().KEYBOARD_IRQ);
+			KBDriver::Instance().PutToQueueBuffer((key & 0xFF)) ;
+      PIC::Instance().KEYBOARD_IRQ.Signal();
 		}
 	}
 
@@ -78,70 +59,62 @@ void KBDriver_Handler()
 	__asm__ __volatile__("IRET") ;
 }
 
-byte KBDriver_GetCharInBlockMode(byte *data)
+KBDriver::KBDriver() : _qBuffer(1024)
+{
+	PIC::Instance().DisableInterrupt(PIC::Instance().KEYBOARD_IRQ) ;
+	PIC::Instance().RegisterIRQ(PIC::Instance().KEYBOARD_IRQ, (unsigned)&KBDriver_Handler) ;
+	PIC::Instance().EnableInterrupt(PIC::Instance().KEYBOARD_IRQ) ;
+
+	PortCom_ReceiveByte(KB_DATA_PORT) ;	
+
+	KC::MDisplay().LoadMessage("Keyboard Initialization", Success) ;
+}
+
+bool KBDriver::GetCharInBlockMode(byte *data)
 {		
-	while(KBDriver_GetFromQueueBuffer(data) == KBDriver_ERR_BUFFER_EMPTY) 
-	{
-//		unsigned i ; for(i = 0; i < 999; i++) asm("nop") ;
-//		ProcessManager_Sleep(10) ;
+	while(!GetFromQueueBuffer(data))
 		ProcessManager::Instance().WaitOnInterrupt(PIC::Instance().KEYBOARD_IRQ);
-	}
-
-	return KBDriver_SUCCESS ;
+	return true;
 }
 
-byte KBDriver_GetCharInNonBlockMode(byte *data)
+bool KBDriver::GetCharInNonBlockMode(byte *data)
 {
-	return KBDriver_GetFromQueueBuffer(data) ;
+	return GetFromQueueBuffer(data) ;
 }
 
-byte KBDriver_GetFromQueueBuffer(byte *data)
+bool KBDriver::GetFromQueueBuffer(byte *data)
 {
-	unsigned uiData ;
-
-	if(DSUtil_ReadFromQueue(&KBDriver_QueueBuffer, &uiData) == DSUtil_ERR_QUEUE_EMPTY)
-		return  KBDriver_ERR_BUFFER_EMPTY ;
-
-	*data = (byte)(uiData) ;
-
-	return KBDriver_SUCCESS ;
+  if(_qBuffer.empty())
+    return false;
+  *data = _qBuffer.front();
+  _qBuffer.pop_front();
+  return true;
 }
 
-byte KBDriver_PutToQueueBuffer(byte data)
+bool KBDriver::PutToQueueBuffer(byte data)
 {
-	unsigned uiData = (unsigned)data ;
-
-	if(DSUtil_WriteToQueue(&KBDriver_QueueBuffer, uiData) == DSUtil_ERR_QUEUE_FULL)
-		return KBDriver_ERR_BUFFER_FULL ;
-	
-	return KBDriver_SUCCESS ;
+  return _qBuffer.push_back(data);
 }
 
-byte KBDriver_WaitForWrite()
+bool KBDriver::WaitForWrite()
 {
 	int iTimeOut = 0xFFFFF ;
-
 	while((iTimeOut > 0) && (PortCom_ReceiveByte(KB_STAT_PORT) & KB_STAT_IBF))
-		iTimeOut-- ;
-
+		iTimeOut--;
 	return (iTimeOut > 0) ;
 }
 
-byte KBDriver_WaitForRead()
+bool KBDriver::WaitForRead()
 {
 	int iTimeOut = 0xFFFFF ;
-
 	while((iTimeOut > 0) && !(PortCom_ReceiveByte(KB_STAT_PORT) & KB_STAT_OBF))
-		iTimeOut-- ;
-
+		iTimeOut--;
 	return (iTimeOut > 0) ;
 }
 
-void KBDriver_Reboot()
+void KBDriver::Reboot()
 {
-	KBDriver_WaitForWrite() ;
-
-	PortCom_SendByte(KB_STAT_PORT, KB_REBOOT) ;
-
-	__asm__ __volatile__("cli; hlt") ;
+	WaitForWrite();
+	PortCom_SendByte(KB_STAT_PORT, KB_REBOOT);
+	__asm__ __volatile__("cli; hlt");
 }

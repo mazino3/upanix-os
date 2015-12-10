@@ -298,6 +298,7 @@ void MemManager::DeAllocatePhysicalPage(const unsigned uiPageNumber)
 }
 
 extern __volatile__ int SYS_CALL_ID;
+extern __volatile__ int KERNEL_DMM_ON;
 
 Result MemManager::AllocatePage(int iProcessID, unsigned uiFaultyAddress)
 {

@@ -18,9 +18,9 @@
 #ifndef _FS_STRUCTURES_H_
 #define _FS_STRUCTURES_H_
 
-#define ENTRIES_PER_TABLE_SECTOR	(128)
+#include <queue.h>
 
-# include <DSUtil.h>
+#define ENTRIES_PER_TABLE_SECTOR	(128)
 
 typedef struct
 {
@@ -104,15 +104,23 @@ typedef struct
 	int iSize ;
 } PACKED FileSystem_TableCache ;
 
-typedef struct 
+class FileSystemMountInfo
 {
-	DSUtil_Queue FreePoolQueue ;
-	FileSystem_TableCache FSTableCache ;
-	
-	//Ouput
-	FileSystem_BootBlock FSBootBlock ; 
-	FileSystem_PresentWorkingDirectory FSpwd ;
-} PACKED FileSystem_MountInfo ;
+  public:
+    FileSystemMountInfo() : pFreePoolQueue(nullptr)
+    {
+    }
+    ~FileSystemMountInfo()
+    {
+      if(pFreePoolQueue)
+        delete pFreePoolQueue;
+    }
+    upan::queue<unsigned>* pFreePoolQueue;
+    FileSystem_TableCache FSTableCache;
+    //Ouput
+    FileSystem_BootBlock FSBootBlock; 
+    FileSystem_PresentWorkingDirectory FSpwd;
+};
 
 typedef struct
 {

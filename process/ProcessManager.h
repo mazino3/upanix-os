@@ -19,12 +19,12 @@
 #define _PROCESS_MANAGER_H_
 
 #include <Global.h>
-#include <DSUtil.h>
 #include <MemConstants.h>
 #include <FileSystem.h>
 #include <ElfSectionHeader.h>
 #include <PIC.h>
 #include <ResourceManager.h>
+#include <list.h>
 
 #define ProcessManager_SUCCESS						0
 #define ProcessManager_ERR_MAX_PROCESS_EXCEEDED		1
@@ -242,9 +242,6 @@ class ProcessManager
     void InsertIntoProcessList(int iProcessID);
     void DeleteFromProcessList(int iProcessID);
     bool WakeupProcessOnInterrupt(__volatile__ int iProcessID);
-    void SignalInterruptOccured(const IRQ&);
-    bool ConsumeInterrupt(const IRQ&);
-    bool GetFromInterruptQueue(const IRQ&);
     bool IsResourceBusy(__volatile__ unsigned uiType);
     void SetResourceBusy(unsigned uiType, bool bVal);
     void Sleep(unsigned uiSleepTime);
@@ -271,8 +268,6 @@ class ProcessManager
     void Destroy(int iDeleteProcessID);
     void DoContextSwitch(int iProcessID);
     PS* GetProcListASync();
-    void SetInterruptOccured(const IRQ&);
-    bool QueueInterrupt(const IRQ&);
     void Load(int iProcessID);
     void Store(int iProcessID);
     void DeAllocateProcessInitDockMem(ProcessAddressSpace& pas);
@@ -288,14 +283,8 @@ class ProcessManager
     void BuildIntGate(unsigned short usGateSelector, unsigned uiOffset, unsigned short usSelector, byte bParameterCount);
 
     static int _iCurrentProcessID;
-
-    static const int MAX_PROC_ON_INT_QUEUE = 100;
-
-    unsigned _interruptOccured[PIC::MAX_INTERRUPT];
-    DSUtil_Queue _interruptQueue[PIC::MAX_INTERRUPT];
-    unsigned _interruptQueueBuffer[PIC::MAX_INTERRUPT][MAX_PROC_ON_INT_QUEUE];
-
-    DSUtil_SLL _processList;
+  
+    upan::list<int> _processList;
     bool _resourceList[MAX_RESOURCE];
 
     unsigned _uiProcessCount;

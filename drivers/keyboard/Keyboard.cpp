@@ -229,7 +229,7 @@ static int Keyboard_HandleExtraKeys(int key)
 
 void Keyboard_Initialize()
 {
-	KBDriver_Initialize() ;
+	KBDriver::Instance();
 
 	Keyboard_bShiftKey = false ;
 	Keyboard_bCapsLosk = false ;
@@ -249,7 +249,7 @@ int Keyboard_GetKeyInBlockMode()
 
 	while(SUCCESS)
 	{
-		KBDriver_GetCharInBlockMode(&key) ;
+		KBDriver::Instance().GetCharInBlockMode(&key) ;
 
 		if(key == EXTRA_KEYS)
 		{

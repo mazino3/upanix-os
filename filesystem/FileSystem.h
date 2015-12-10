@@ -19,7 +19,6 @@
 #define _FileSystem_H_
 
 #include <Global.h>
-#include <DSUtil.h>
 #include <FSStructures.h>
 #include <DeviceDrive.h>
 
@@ -70,7 +69,6 @@ byte FileSystem_VerifyBootBlock(DriveInfo* pDriveInfo) ;
 //void FileSystem_UpdateTime(FileSystem_Time* pTime) ;
 byte FileSystem_IsFreePoolCacheEnabled(const DriveInfo* pDriveInfo) ;
 byte FileSystem_IsTableCacheEnabled(const DriveInfo* pDriveInfo) ;
-unsigned FileSystem_GetSizeForFreePool(unsigned uiNoOfSectorsInFreePool) ;
 unsigned FileSystem_GetSizeForTableCache(unsigned uiNoOfSectorsInTableCache) ;
 
 #endif

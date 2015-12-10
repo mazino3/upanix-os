@@ -18,8 +18,6 @@
 #ifndef _MOUSE_DRIVER_H_
 #define _MOUSE_DRIVER_H_
 
-#include <DSUtil.h>
-
 #define MouseDriver_SUCCESS				0
 #define MouseDriver_ERR_BUFFER_FULL		1
 #define MouseDriver_ERR_BUFFER_EMPTY	2
