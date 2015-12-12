@@ -68,11 +68,11 @@ byte ResourceManager_GetDiskResourceType(RAW_DISK_TYPES iType, unsigned* uiResou
 	/*
 	ProcessAddressSpace* pAddrSpace = &ProcessManager_processAddressSpace[ProcessManager_iCurrentProcessID] ;
 
-	DriveInfo* pDriveInfo = DeviceDrive_GetByID(pAddrSpace->iDriveID, false) ;
-	if(pDriveInfo == NULL)
+	DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByID(pAddrSpace->iDriveID, false) ;
+	if(pDiskDrive == NULL)
 		return ResourceManager_FAILURE ;
 
-	switch(pDriveInfo->drive.deviceType)
+	switch(pDiskDrive->drive.deviceType)
 	{
 		case DEV_FLOPPY:
 			*uiResourceType = RESOURCE_FDD ;

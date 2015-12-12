@@ -27,26 +27,20 @@
 
 void SystemUtil_Reboot()
 {
-	DriveInfo* pDriveInfo = NULL ;
-
-	while((pDriveInfo = DeviceDrive_GetNextDrive(pDriveInfo)) != NULL)
-	{
-		if(pDriveInfo->drive.bMounted)
+  for(auto pDiskDrive : DiskDriveManager::Instance().DiskDriveList())
+  {
+		if(pDiskDrive->Mounted())
 		{
-			printf("\n UnMounting Drive: %-20s", pDriveInfo->drive.driveName) ;
-			
-			byte bStatus = FSCommand_Mounter(pDriveInfo, FS_UNMOUNT) ;
-			
-			DiskCache_StopReleaseCacheTask(pDriveInfo) ;
-			DiskCache_FlushDirtyCacheSectors(pDriveInfo) ;
-
+			printf("\n UnMounting Drive: %-20s", pDiskDrive->DriveName().c_str());
+			byte bStatus = FSCommand_Mounter(pDiskDrive, FS_UNMOUNT) ;
+			DiskCache_StopReleaseCacheTask(pDiskDrive) ;
+      pDiskDrive->FlushDirtyCacheSectors();
 			if(bStatus != FSCommand_SUCCESS)
 				printf("\n Failed to UnMount Drive\n") ;
 			else
 				printf("[ Done ]") ;
 		}
 	}
-
 	ProcessManager::Instance().Sleep(2000) ;
 	KBDriver::Instance().Reboot() ;
 }

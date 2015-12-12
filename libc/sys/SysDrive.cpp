@@ -53,9 +53,9 @@ int SysDrive_Format(const char* szDriveName)
 	return iRetStatus ;
 }
 
-int SysDrive_GetCurrentDrive(Drive* pDrive)
+int SysDrive_GetCurrentDriveStat(DriveStat* pDriveStat)
 {
 	__volatile__ int iRetStatus ;
-	SysCallDrive_Handle(&iRetStatus, SYS_CALL_CURRENT_DRIVE, false, (unsigned)pDrive, 2, 3, 4, 5, 6, 7, 8, 9) ;
+	SysCallDrive_Handle(&iRetStatus, SYS_CALL_CURRENT_DRIVE_STAT, false, (unsigned)pDriveStat, 2, 3, 4, 5, 6, 7, 8, 9) ;
 	return iRetStatus ;
 }

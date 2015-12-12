@@ -25,6 +25,6 @@ bool MountManager_GetInitStatus() ;
 void MountManager_MountDrives() ;
 const char* MountManager_GetRootDriveName() ;
 int MountManager_GetRootDriveID() ;
-void MountManager_SetRootDrive(DriveInfo* pDriveInfo) ;
+void MountManager_SetRootDrive(DiskDrive* pDiskDrive) ;
 
 #endif

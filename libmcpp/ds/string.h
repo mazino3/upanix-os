@@ -44,12 +44,12 @@ class string
 
 		string(const string& r) : _pVal(0)
 		{
-			Value(r.Value());
+			Value(r.c_str());
 		}
 
 		string& operator=(const string& r)
 		{
-      Value(r.Value());
+      Value(r.c_str());
 			return *this;
 		}
 
@@ -65,20 +65,20 @@ class string
 			if(Large(newLen))
 			{
 				char* newVal = AllocPtr(newLen);
-				strcpy(newVal, Value());
-				strcat(newVal, r.Value());
+				strcpy(newVal, c_str());
+				strcat(newVal, r.c_str());
 				DeletePtr();
 				_pVal = newVal;
 			}
 			else
-				strcat(_sVal, r.Value());
+				strcat(_sVal, r.c_str());
       _len = newLen;
 			return *this;
 		}
 
 		bool operator==(const string& r) const
 		{
-			return strcmp(Value(), r.Value()) == 0;
+			return strcmp(c_str(), r.c_str()) == 0;
 		}
 
 		bool operator!=(const string& r) const
@@ -86,7 +86,7 @@ class string
 			return !(*this == r);
 		}
 
-		const char* Value() const
+		const char* c_str() const
 		{
 			if(Large())
 				return _pVal;

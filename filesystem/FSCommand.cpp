@@ -21,11 +21,11 @@
 #include <DMM.h>
 #include <Display.h>
 
-byte FSCommand_Mounter(DriveInfo* pDriveInfo, MOUNT_TYPE mountType)
+byte FSCommand_Mounter(DiskDrive* pDiskDrive, MOUNT_TYPE mountType)
 {
 	byte bStatus ;
 
-	if(pDriveInfo == NULL)
+	if(pDiskDrive == NULL)
 		return FSCommand_FAILURE ;
 
 	if(!KERNEL_MOUNT_DRIVE)
@@ -36,34 +36,34 @@ byte FSCommand_Mounter(DriveInfo* pDriveInfo, MOUNT_TYPE mountType)
 
 	if(mountType == FS_MOUNT)
 	{
-		RETURN_IF_NOT(bStatus, FileSystem_Mount(pDriveInfo), FileSystem_SUCCESS) ;
-		RETURN_IF_NOT(bStatus, FileSystem_VerifyBootBlock(pDriveInfo), FileSystem_SUCCESS) ;
+		RETURN_IF_NOT(bStatus, FileSystem_Mount(pDiskDrive), FileSystem_SUCCESS) ;
+		RETURN_IF_NOT(bStatus, FileSystem_VerifyBootBlock(pDiskDrive), FileSystem_SUCCESS) ;
 	}
 	else
 	{
-		RETURN_IF_NOT(bStatus, FileSystem_UnMount(pDriveInfo), FileSystem_SUCCESS) ;
+		RETURN_IF_NOT(bStatus, FileSystem_UnMount(pDiskDrive), FileSystem_SUCCESS) ;
 	}
 
 	return FSCommand_SUCCESS ;
 }
 
-byte FSCommand_Format(DriveInfo* pDriveInfo)
+byte FSCommand_Format(DiskDrive* pDiskDrive)
 {	
 	byte bStatus ;
 
-	if(pDriveInfo == NULL)
+	if(pDiskDrive == NULL)
 		return FSCommand_FAILURE ;
 
-	RETURN_IF_NOT(bStatus, FileSystem_Format(pDriveInfo), FileSystem_SUCCESS) ;
+	RETURN_IF_NOT(bStatus, FileSystem_Format(pDiskDrive), FileSystem_SUCCESS) ;
 
-	DiskCache_FlushDirtyCacheSectors(pDriveInfo) ;
+	pDiskDrive->FlushDirtyCacheSectors();
 
 	return FSCommand_SUCCESS ;
 }
 
-void FSCommand_GetDriveSpace(DriveInfo* pDriveInfo, DriveSpace* pDriveSpace)
+void FSCommand_GetDriveSpace(DiskDrive* pDiskDrive, DriveStat* pDriveStat)
 {
-	FileSystem_BootBlock* pFSBootBlock = &pDriveInfo->FSMountInfo.FSBootBlock ;
-	pDriveSpace->ulTotalSize = pFSBootBlock->BPB_FSTableSize * ENTRIES_PER_TABLE_SECTOR * 512 ;
-	pDriveSpace->ulUsedSize = pFSBootBlock->uiUsedSectors * 512 ;
+	FileSystem_BootBlock* pFSBootBlock = &pDiskDrive->FSMountInfo.FSBootBlock ;
+	pDriveStat->ulTotalSize = pFSBootBlock->BPB_FSTableSize * ENTRIES_PER_TABLE_SECTOR * 512 ;
+	pDriveStat->ulUsedSize = pFSBootBlock->uiUsedSectors * 512 ;
 }

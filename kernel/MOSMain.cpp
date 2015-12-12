@@ -160,7 +160,7 @@ void Initialize()
   //types of bus like ISA, PCI etc... 
     PCIBusHandler_Initialize() ;
 
-    DeviceDrive_Initialize() ;
+    DiskDriveManager::Instance();
 
     Keyboard_Initialize() ;
 
@@ -186,7 +186,7 @@ void Initialize()
   }
   catch(const upan::exception& ex)
   {
-    printf("%s\n", ex.Error().Value());
+    printf("%s\n", ex.Error().c_str());
     printf("KERNEL PANIC!\n");
     while(1);
   }

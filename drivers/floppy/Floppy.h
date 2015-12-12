@@ -54,8 +54,8 @@ void Floppy_Initialize() ;
 bool Floppy_GetInitStatus() ;
 void Floppy_Handler() ;
 byte Floppy_IsEnhancedController(bool* boolEnhanced) ;
-byte Floppy_Read(const Drive* pDriveInfo, unsigned uiStartSectorNo, unsigned uiEndSectorNo, byte* bSectorBuffer) ;
-byte Floppy_Write(const Drive* pDriveInfo, unsigned uiStartSectorNo, unsigned uiEndSectorNo, byte* bSectorBuffer) ;
-byte Floppy_Format(const Drive* pDriveInfo) ;
+byte Floppy_Read(const DiskDrive* pDiskDrive, unsigned uiStartSectorNo, unsigned uiEndSectorNo, byte* bSectorBuffer) ;
+byte Floppy_Write(const DiskDrive* pDiskDrive, unsigned uiStartSectorNo, unsigned uiEndSectorNo, byte* bSectorBuffer) ;
+byte Floppy_Format(const DiskDrive* pDiskDrive) ;
 
 #endif

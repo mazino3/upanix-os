@@ -118,11 +118,11 @@ static void FileOperations_ParseFilePathWithDrive(const char* szFileNameWithDriv
 	}
 	else
 	{
-		DriveInfo* pDriveInfo = DeviceDrive_GetByDriveName(szDriveName, false) ;
-		if(pDriveInfo == NULL)
+		DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByDriveName(szDriveName, false) ;
+		if(pDiskDrive == NULL)
 			*pDriveID = ROOT_DRIVE_ID ;
 		else
-			*pDriveID = pDriveInfo->drive.iID ;
+			*pDriveID = pDiskDrive->Id();
 	}
 }
 
@@ -159,7 +159,7 @@ byte FileOperations_Open(int* fd, const char* szFileName, const byte mode)
 	}
 
 	char szFullFilePath[256] ;
-	RETURN_IF_NOT(bStatus, Directory_FindFullDirPath(pDriveInfo, &dirEntry, szFullFilePath), Directory_SUCCESS) ;
+	RETURN_IF_NOT(bStatus, Directory_FindFullDirPath(pDiskDrive, &dirEntry, szFullFilePath), Directory_SUCCESS) ;
 
 	RETURN_X_IF_NOT(ProcFileManager_AllocateFD(fd, szFullFilePath, mode, iDriveID, dirEntry.uiSize, dirEntry.uiStartSectorID), ProcFileManager_SUCCESS, FileOperations_FAILURE) ;
 
@@ -193,13 +193,13 @@ byte FileOperations_Read(int fd, char* buffer, int len, unsigned* pReadLen)
 	}
 	else
 	{
-		CWD.pDirEntry = &(pDriveInfo->FSMountInfo.FSpwd.DirEntry) ;
-		CWD.uiSectorNo = pDriveInfo->FSMountInfo.FSpwd.uiSectorNo ;
-		CWD.bSectorEntryPosition = pDriveInfo->FSMountInfo.FSpwd.bSectorEntryPosition ;
+		CWD.pDirEntry = &(pDiskDrive->FSMountInfo.FSpwd.DirEntry) ;
+		CWD.uiSectorNo = pDiskDrive->FSMountInfo.FSpwd.uiSectorNo ;
+		CWD.bSectorEntryPosition = pDiskDrive->FSMountInfo.FSpwd.bSectorEntryPosition ;
 	}
 
 	byte bStatus ;
-	RETURN_IF_NOT(bStatus, Directory_FileRead(pDriveInfo, &CWD, pFDEntry, (byte*)buffer, len, pReadLen), Directory_SUCCESS) ;
+	RETURN_IF_NOT(bStatus, Directory_FileRead(pDiskDrive, &CWD, pFDEntry, (byte*)buffer, len, pReadLen), Directory_SUCCESS) ;
 
 	RETURN_IF_NOT(bStatus, FileOperations_UpdateTime(pFDEntry->szFileName, iDriveID, DIR_ACCESS_TIME), FileOperations_SUCCESS) ;
 
@@ -241,9 +241,9 @@ byte FileOperations_Write(int fd, const char* buffer, int len, int* pWriteLen)
 	}
 	else
 	{
-		CWD.pDirEntry = &(pDriveInfo->FSMountInfo.FSpwd.DirEntry) ;
-		CWD.uiSectorNo = pDriveInfo->FSMountInfo.FSpwd.uiSectorNo ;
-		CWD.bSectorEntryPosition = pDriveInfo->FSMountInfo.FSpwd.bSectorEntryPosition ;
+		CWD.pDirEntry = &(pDiskDrive->FSMountInfo.FSpwd.DirEntry) ;
+		CWD.uiSectorNo = pDiskDrive->FSMountInfo.FSpwd.uiSectorNo ;
+		CWD.bSectorEntryPosition = pDiskDrive->FSMountInfo.FSpwd.bSectorEntryPosition ;
 	}
 
 	unsigned uiIncLen = len ;
@@ -254,7 +254,7 @@ byte FileOperations_Write(int fd, const char* buffer, int len, int* pWriteLen)
 	{
 		n = (uiIncLen > uiLimit) ? uiLimit : uiIncLen ;
 		
-		RETURN_X_IF_NOT(Directory_FileWrite(pDriveInfo, &CWD, pFDEntry, (byte*)buffer, n), Directory_SUCCESS, FileOperations_FAILURE) ;
+		RETURN_X_IF_NOT(Directory_FileWrite(pDiskDrive, &CWD, pFDEntry, (byte*)buffer, n), Directory_SUCCESS, FileOperations_FAILURE) ;
 
 		pFDEntry->uiOffset += n ;
 
@@ -390,7 +390,7 @@ byte FileOperations_GetCWD(char* szPathBuf, int iBufSize)
 	GET_DRIVE_FOR_FS_OPS(iDriveID, Directory_FAILURE) ;
 
 	char szFullFilePath[256] ;
-	RETURN_IF_NOT(bStatus, Directory_FindFullDirPath(pDriveInfo, &pPWD->DirEntry, szFullFilePath), Directory_SUCCESS) ;
+	RETURN_IF_NOT(bStatus, Directory_FindFullDirPath(pDiskDrive, &pPWD->DirEntry, szFullFilePath), Directory_SUCCESS) ;
 
 	if(String_Length(szFullFilePath) > iBufSize)
 		return FileOperations_FAILURE ;
@@ -417,16 +417,16 @@ byte FileOperations_GetDirEntry(const char* szFileName, FileSystem_DIR_Entry* pD
 	}
 	else
 	{
-		CWD.pDirEntry = &(pDriveInfo->FSMountInfo.FSpwd.DirEntry) ;
-		CWD.uiSectorNo = pDriveInfo->FSMountInfo.FSpwd.uiSectorNo ;
-		CWD.bSectorEntryPosition = pDriveInfo->FSMountInfo.FSpwd.bSectorEntryPosition ;
+		CWD.pDirEntry = &(pDiskDrive->FSMountInfo.FSpwd.DirEntry) ;
+		CWD.uiSectorNo = pDiskDrive->FSMountInfo.FSpwd.uiSectorNo ;
+		CWD.bSectorEntryPosition = pDiskDrive->FSMountInfo.FSpwd.bSectorEntryPosition ;
 	}
 
 	unsigned uiSectorNo ;
 	byte bSectorPos ;
 	byte bDirectoryBuffer[512] ;
 	
-	RETURN_X_IF_NOT(Directory_GetDirEntryInfo(pDriveInfo, &CWD, szFile, &uiSectorNo, &bSectorPos, bDirectoryBuffer), Directory_SUCCESS, FileOperations_FAILURE) ;
+	RETURN_X_IF_NOT(Directory_GetDirEntryInfo(pDiskDrive, &CWD, szFile, &uiSectorNo, &bSectorPos, bDirectoryBuffer), Directory_SUCCESS, FileOperations_FAILURE) ;
 
 	FileSystem_DIR_Entry* pSrcDirEntry = &((FileSystem_DIR_Entry*)bDirectoryBuffer)[bSectorPos] ;
 
@@ -460,9 +460,9 @@ byte FileOperations_GetStat(const char* szFileName, int iDriveID, FileSystem_Fil
 	}
 	else
 	{
-		CWD.pDirEntry = &(pDriveInfo->FSMountInfo.FSpwd.DirEntry) ;
-		CWD.uiSectorNo = pDriveInfo->FSMountInfo.FSpwd.uiSectorNo ;
-		CWD.bSectorEntryPosition = pDriveInfo->FSMountInfo.FSpwd.bSectorEntryPosition ;
+		CWD.pDirEntry = &(pDiskDrive->FSMountInfo.FSpwd.DirEntry) ;
+		CWD.uiSectorNo = pDiskDrive->FSMountInfo.FSpwd.uiSectorNo ;
+		CWD.bSectorEntryPosition = pDiskDrive->FSMountInfo.FSpwd.bSectorEntryPosition ;
 	}
 
 	unsigned uiSectorNo ;
@@ -470,11 +470,11 @@ byte FileOperations_GetStat(const char* szFileName, int iDriveID, FileSystem_Fil
 	byte bDirectoryBuffer[512] ;
 	
 	printf("\n Debug... Searching: %s", szFile) ;
-	RETURN_X_IF_NOT(Directory_GetDirEntryInfo(pDriveInfo, &CWD, szFile, &uiSectorNo, &bSectorPos, bDirectoryBuffer), Directory_SUCCESS, FileOperations_FAILURE) ;
+	RETURN_X_IF_NOT(Directory_GetDirEntryInfo(pDiskDrive, &CWD, szFile, &uiSectorNo, &bSectorPos, bDirectoryBuffer), Directory_SUCCESS, FileOperations_FAILURE) ;
 
 	FileSystem_DIR_Entry* pSrcDirEntry = &((FileSystem_DIR_Entry*)bDirectoryBuffer)[bSectorPos] ;
 
-	pFileStat->st_dev = pDriveInfo->drive.driveNumber ;
+	pFileStat->st_dev = pDiskDrive->DriveNumber();
 	pFileStat->st_mode = pSrcDirEntry->usAttribute ;
 	pFileStat->st_uid = pSrcDirEntry->iUserID ;
 	pFileStat->st_size = pSrcDirEntry->uiSize ;
@@ -521,16 +521,16 @@ byte FileOperations_UpdateTime(const char* szFileName, int iDriveID, byte bTimeT
 	}
 	else
 	{
-		CWD.pDirEntry = &(pDriveInfo->FSMountInfo.FSpwd.DirEntry) ;
-		CWD.uiSectorNo = pDriveInfo->FSMountInfo.FSpwd.uiSectorNo ;
-		CWD.bSectorEntryPosition = pDriveInfo->FSMountInfo.FSpwd.bSectorEntryPosition ;
+		CWD.pDirEntry = &(pDiskDrive->FSMountInfo.FSpwd.DirEntry) ;
+		CWD.uiSectorNo = pDiskDrive->FSMountInfo.FSpwd.uiSectorNo ;
+		CWD.bSectorEntryPosition = pDiskDrive->FSMountInfo.FSpwd.bSectorEntryPosition ;
 	}
 
 	unsigned uiSectorNo ;
 	byte bSectorPos ;
 	byte bDirectoryBuffer[512] ;
 	
-	RETURN_X_IF_NOT(Directory_GetDirEntryInfo(pDriveInfo, &CWD, szFileName, &uiSectorNo, &bSectorPos, bDirectoryBuffer), Directory_SUCCESS, FileOperations_FAILURE) ;
+	RETURN_X_IF_NOT(Directory_GetDirEntryInfo(pDiskDrive, &CWD, szFileName, &uiSectorNo, &bSectorPos, bDirectoryBuffer), Directory_SUCCESS, FileOperations_FAILURE) ;
 
 	FileSystem_DIR_Entry* pSrcDirEntry = &((FileSystem_DIR_Entry*)bDirectoryBuffer)[bSectorPos] ;
 	if(bTimeType & DIR_ACCESS_TIME)
@@ -539,7 +539,7 @@ byte FileOperations_UpdateTime(const char* szFileName, int iDriveID, byte bTimeT
 	if(bTimeType & DIR_MODIFIED_TIME)
 		SystemUtil_GetTimeOfDay(&(pSrcDirEntry->ModifiedTime)) ;
 
-	RETURN_X_IF_NOT(Directory_RawWrite(pDriveInfo, uiSectorNo, uiSectorNo + 1, bDirectoryBuffer), Directory_SUCCESS, FileOperations_FAILURE) ;
+	RETURN_X_IF_NOT(Directory_RawWrite(pDiskDrive, uiSectorNo, uiSectorNo + 1, bDirectoryBuffer), Directory_SUCCESS, FileOperations_FAILURE) ;
 
 	return FileOperations_SUCCESS ;
 }

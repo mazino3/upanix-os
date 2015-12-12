@@ -52,9 +52,6 @@ static void USBMassBulkStorageDisk_AddDeviceDrive(RawDiskDrive* pDisk)
 		KC::MDisplay().Number("\n Disk Not Partitioned: ", bStatus) ;
 		return ;
 	}
-
-	DriveInfo* pDriveInfo ;
-	Drive* pDrive ;
 	
 	unsigned i ;
 	unsigned uiTotalPartitions = partitionTable.uiNoOfPrimaryPartitions + partitionTable.uiNoOfExtPartitions ;
@@ -92,60 +89,38 @@ static void USBMassBulkStorageDisk_AddDeviceDrive(RawDiskDrive* pDisk)
 	
 	for(i = 0; i < uiTotalPartitions; i++)
 	{
-		pDriveInfo = DeviceDrive_CreateDriveInfo(true) ;
-		pDrive = &pDriveInfo->drive ;
+    unsigned uiMountPointStart = 0;
+    unsigned uiMountPointEnd = 0;
+		if(i < uiNoOfParitions)
+		{
+			uiMountPointStart = MEM_USD_FS_START + uiMountSpaceAvailablePerDrive * i ;
+			uiMountPointEnd = MEM_USD_FS_START + uiMountSpaceAvailablePerDrive * (i + 1) ;
+		}
 
+    unsigned uiLBAStartSector;
 		if(i < partitionTable.uiNoOfPrimaryPartitions)
 		{
 			pPartitionInfo = &partitionTable.PrimaryParitions[i] ;
-			pDrive->uiLBAStartSector = pPartitionInfo->LBAStartSector ;
+			uiLBAStartSector = pPartitionInfo->LBAStartSector ;
 		}
 		else
 		{
 			pPartitionInfo = &partitionTable.ExtPartitions[i - partitionTable.uiNoOfPrimaryPartitions].CurrentPartition ;
-			pDrive->uiLBAStartSector = partitionTable.ExtPartitions[i - partitionTable.uiNoOfPrimaryPartitions].uiActualStartSector + pPartitionInfo->LBAStartSector ;
+			uiLBAStartSector = partitionTable.ExtPartitions[i - partitionTable.uiNoOfPrimaryPartitions].uiActualStartSector + pPartitionInfo->LBAStartSector ;
 		}
 
-		driveName[3] = driveCh + USDDeviceId++ ;
+		driveName[3] = driveCh + USDDeviceId++;
 
-		String_Copy(pDrive->driveName, driveName) ;
-
-		pDrive->deviceType = DEV_SCSI_USB_DISK ;
-		pDrive->fsType = FS_UNKNOWN ; 
-		pDrive->driveNumber = USD_DRIVE0 ;
-
-		pDrive->uiStartCynlider = pPartitionInfo->StartCylinder ;
-		pDrive->uiStartHead = pPartitionInfo->StartHead ;
-		pDrive->uiStartSector = pPartitionInfo->StartSector ;
-		
-		pDrive->uiEndCynlider = pPartitionInfo->EndCylinder ;
-		pDrive->uiEndHead = pPartitionInfo->EndHead ;
-		pDrive->uiEndSector = pPartitionInfo->EndSector ;
-		
-		pDrive->uiSizeInSectors = pPartitionInfo->LBANoOfSectors ;
-
-		pDrive->uiSectorsPerTrack = 1 ;
-		pDrive->uiTracksPerHead = 1 ;
-		pDrive->uiNoOfHeads = 1 ;
-		
-		pDriveInfo->pDevice = pDevice ;
-
-		pDriveInfo->uiMaxSectorsInFreePoolCache = uiSectorsInFreePool ;
-		pDriveInfo->uiNoOfSectorsInTableCache = uiSectorsInTableCache ;
-
-		if(i < uiNoOfParitions)
-		{
-			pDriveInfo->uiMountPointStart = MEM_USD_FS_START + uiMountSpaceAvailablePerDrive * i ;
-			pDriveInfo->uiMountPointEnd = MEM_USD_FS_START + uiMountSpaceAvailablePerDrive * (i + 1) ;
-		}
-		else
-		{
-			pDriveInfo->uiMountPointStart = 0 ;
-			pDriveInfo->uiMountPointEnd = 0 ;
-		}
-
-		pDriveInfo->pRawDisk = pDisk ;
-		DeviceDrive_AddEntry(pDriveInfo) ;
+    DiskDriveManager::Instance().Create(driveName, DEV_SCSI_USB_DISK, USD_DRIVE0,
+      uiLBAStartSector,
+      pPartitionInfo->LBANoOfSectors,
+      pPartitionInfo->StartCylinder,
+      pPartitionInfo->StartHead,
+      pPartitionInfo->StartSector,
+      pPartitionInfo->EndCylinder,
+      pPartitionInfo->EndHead,
+      pPartitionInfo->EndSector,
+      1, 1, 1, true, pDevice, pDisk, uiSectorsInFreePool, uiSectorsInTableCache, uiMountPointStart, uiMountPointEnd);
 	}
 }
 
@@ -472,7 +447,7 @@ static void USBMassBulkStorageDisk_Remove(USBDevice* pUSBDevice)
 		public:
 			USBDriveRemoveClause(SCSIDevice** p, int iMaxLun) : m_pSCSIDeviceList(p), m_iMaxLun(iMaxLun) { }
 
-			bool operator()(const DriveInfo* pDriveInfo) const
+			bool operator()(const DiskDrive* pDiskDrive) const
 			{
 				int iLun ;
 				for(iLun = 0; iLun <= m_iMaxLun; iLun++)
@@ -480,7 +455,7 @@ static void USBMassBulkStorageDisk_Remove(USBDevice* pUSBDevice)
 					if(m_pSCSIDeviceList[ iLun ] == NULL)
 						break ;
 
-					if(pDriveInfo->pDevice == m_pSCSIDeviceList[ iLun ])
+					if(pDiskDrive->Device() == m_pSCSIDeviceList[ iLun ])
 						return true ;
 				}
 
@@ -493,7 +468,7 @@ static void USBMassBulkStorageDisk_Remove(USBDevice* pUSBDevice)
 	} ;
 
 	if(pSCSIDeviceList != NULL)
-		DeviceDrive_RemoveEntryByCondition(USBDriveRemoveClause(pSCSIDeviceList, pDisk->bMaxLun)) ;
+		DiskDriveManager::Instance().RemoveEntryByCondition(USBDriveRemoveClause(pSCSIDeviceList, pDisk->bMaxLun)) ;
 
 	DMM_DeAllocateForKernel((unsigned)pHost) ;
 	DMM_DeAllocateForKernel((unsigned)pDisk->pRawAlignedBuffer) ;
@@ -699,15 +674,7 @@ static bool USBMassBulkStorageDisk_Add(USBDevice* pUSBDevice)
 		}
 
 		szName[ iCntIndex ] += iLun ;
-		RawDiskDrive* pDisk = DeviceDrive_CreateRawDisk(szName, USB_SCSI_DISK, pSCSIDevice) ;
-
-		if(!pDisk)
-		{
-			printf("\n Failed to add Raw Disk Drive for %s", szName) ;
-			continue ;
-		}
-
-		DeviceDrive_AddRawDiskEntry(pDisk) ;
+		RawDiskDrive* pDisk = DiskDriveManager::Instance().CreateRawDisk(szName, USB_SCSI_DISK, pSCSIDevice) ;
 		USBMassBulkStorageDisk_AddDeviceDrive(pDisk) ;
 
 		bDeviceFound = true ;

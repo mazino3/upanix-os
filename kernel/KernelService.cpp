@@ -106,9 +106,9 @@ void KernelService::ProcessExec::Process()
 {
 	int iOldDDriveID ;
 	FileSystem_PresentWorkingDirectory mOldPWD ;
-	ProcessManager::Instance().CopyDriveInfo(GetRequestProcessID(), iOldDDriveID, mOldPWD) ;
+	ProcessManager::Instance().CopyDiskDrive(GetRequestProcessID(), iOldDDriveID, mOldPWD) ;
 
-	byte bStatus = ProcessManager::Instance().Create(_szFile.Value(), GetRequestProcessID(), true, &m_iNewProcId, DERIVE_FROM_PARENT, m_iNoOfArgs, m_szArgs) ;
+	byte bStatus = ProcessManager::Instance().Create(_szFile.c_str(), GetRequestProcessID(), true, &m_iNewProcId, DERIVE_FROM_PARENT, m_iNoOfArgs, m_szArgs) ;
 	if(bStatus != ProcessManager_SUCCESS)
 		m_iNewProcId = -1 ;
 
@@ -249,11 +249,11 @@ int KernelService::Spawn()
 	iID++ ;
 
 	int pid ;
-	if(ProcessManager::Instance().CreateKernelImage((unsigned)&(KernelService::Server), ProcessManager::GetCurrentProcessID(), false, (unsigned)this, NULL, &pid, szName.Value()) !=
+	if(ProcessManager::Instance().CreateKernelImage((unsigned)&(KernelService::Server), ProcessManager::GetCurrentProcessID(), false, (unsigned)this, NULL, &pid, szName.c_str()) !=
 			ProcessManager_SUCCESS)
 	{
 		m_mutexServer.UnLock() ;
-		printf("\n Failed to create Kernel Service Process %s", szName.Value()) ;
+		printf("\n Failed to create Kernel Service Process %s", szName.c_str()) ;
 		return -1 ;
 	}
 

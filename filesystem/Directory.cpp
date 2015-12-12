@@ -28,7 +28,7 @@
 #define MAX_SECTORS_PER_RW 8
 
 /************************************* Static Functions ***********************************/
-static byte Directory_BufferedWrite(DriveInfo* pDriveInfo, unsigned uiSectorID, byte* bSectorBuffer, byte* bBuffer, 
+static byte Directory_BufferedWrite(DiskDrive* pDiskDrive, unsigned uiSectorID, byte* bSectorBuffer, byte* bBuffer, 
 									unsigned* uiStartSectorID, unsigned* uiPrevSectorID, unsigned* iCount, byte bFlush)
 {
 	byte bNewBuffering = false ;
@@ -38,7 +38,7 @@ static byte Directory_BufferedWrite(DriveInfo* pDriveInfo, unsigned uiSectorID, 
 	{
 		if(*iCount > 0)
 		{
-			RETURN_IF_NOT(bStatus, Directory_RawWrite(pDriveInfo, *uiStartSectorID, *uiStartSectorID + *iCount, bBuffer), Directory_SUCCESS) ;
+			RETURN_IF_NOT(bStatus, Directory_RawWrite(pDiskDrive, *uiStartSectorID, *uiStartSectorID + *iCount, bBuffer), Directory_SUCCESS) ;
 		}
 
 		*iCount = 0 ;
@@ -68,7 +68,7 @@ static byte Directory_BufferedWrite(DriveInfo* pDriveInfo, unsigned uiSectorID, 
 
 	if((*iCount) == MAX_SECTORS_PER_RW || bNewBuffering)
 	{
-		RETURN_IF_NOT(bStatus, Directory_RawWrite(pDriveInfo, *uiStartSectorID, *uiStartSectorID + *iCount, bBuffer), Directory_SUCCESS) ;
+		RETURN_IF_NOT(bStatus, Directory_RawWrite(pDiskDrive, *uiStartSectorID, *uiStartSectorID + *iCount, bBuffer), Directory_SUCCESS) ;
 
 		*iCount = 0 ;
 		
@@ -115,7 +115,7 @@ byte Directory_Create(ProcessAddressSpace* processAddressSpace, int iDriveID, by
 
 	if(pCWD->pDirEntry->uiStartSectorID == EOC)
 	{
-		RETURN_IF_NOT(bStatus, FileSystem_AllocateSector(pDriveInfo, &uiFreeSectorID), FileSystem_SUCCESS) ;
+		RETURN_IF_NOT(bStatus, FileSystem_AllocateSector(pDiskDrive, &uiFreeSectorID), FileSystem_SUCCESS) ;
 
 		uiSectorNo = uiFreeSectorID ;
 		bSectorPos = 0 ;
@@ -124,16 +124,16 @@ byte Directory_Create(ProcessAddressSpace* processAddressSpace, int iDriveID, by
 	}
 	else
 	{
-		RETURN_IF_NOT(bStatus, Directory_FindDirectory(pDriveInfo, pCWD, szDirName, &uiSectorNo, &bSectorPos, &bIsPresent, bSectorBuffer), Directory_SUCCESS) ;
+		RETURN_IF_NOT(bStatus, Directory_FindDirectory(pDiskDrive, pCWD, szDirName, &uiSectorNo, &bSectorPos, &bIsPresent, bSectorBuffer), Directory_SUCCESS) ;
 
 		if(bIsPresent == true)
 			return Directory_ERR_EXISTS ;
 
 		if(bSectorPos == EOC_B)
 		{
-			RETURN_IF_NOT(bStatus, FileSystem_AllocateSector(pDriveInfo, &uiFreeSectorID), FileSystem_SUCCESS) ;
+			RETURN_IF_NOT(bStatus, FileSystem_AllocateSector(pDiskDrive, &uiFreeSectorID), FileSystem_SUCCESS) ;
 
-			RETURN_IF_NOT(bStatus, FileSystem_SetSectorEntryValue(pDriveInfo, uiSectorNo, uiFreeSectorID), FileSystem_SUCCESS) ;
+			RETURN_IF_NOT(bStatus, FileSystem_SetSectorEntryValue(pDiskDrive, uiSectorNo, uiFreeSectorID), FileSystem_SUCCESS) ;
 
 			uiSectorNo = uiFreeSectorID ;
 			bSectorPos = 0 ;
@@ -143,13 +143,13 @@ byte Directory_Create(ProcessAddressSpace* processAddressSpace, int iDriveID, by
 	Directory_PopulateDirEntry(((FileSystem_DIR_Entry*)bSectorBuffer) + bSectorPos, szDirName, usDirAttribute, 
 		processAddressSpace->iUserID, pCWD->uiSectorNo, pCWD->bSectorEntryPosition) ;
 
-	RETURN_IF_NOT(bStatus, Directory_RawWrite(pDriveInfo, uiSectorNo, uiSectorNo + 1, bSectorBuffer), Directory_SUCCESS) ;
+	RETURN_IF_NOT(bStatus, Directory_RawWrite(pDiskDrive, uiSectorNo, uiSectorNo + 1, bSectorBuffer), Directory_SUCCESS) ;
 
 	pCWD->pDirEntry->uiSize++ ;
 
-	RETURN_IF_NOT(bStatus, Directory_RawWrite(pDriveInfo, pCWD->uiSectorNo, pCWD->uiSectorNo + 1, bParentDirectoryBuffer), Directory_SUCCESS) ;
+	RETURN_IF_NOT(bStatus, Directory_RawWrite(pDiskDrive, pCWD->uiSectorNo, pCWD->uiSectorNo + 1, bParentDirectoryBuffer), Directory_SUCCESS) ;
 
-	if(pDriveInfo->drive.iID == processAddressSpace->iDriveID
+	if(pDiskDrive->Id() == processAddressSpace->iDriveID
 			&& pCWD->uiSectorNo == pPWD->uiSectorNo
 			&& pCWD->bSectorEntryPosition == pPWD->bSectorEntryPosition)
 	{
@@ -160,7 +160,7 @@ byte Directory_Create(ProcessAddressSpace* processAddressSpace, int iDriveID, by
 	if(String_Compare((const char*)pCWD->pDirEntry->Name, FS_ROOT_DIR) == 0)
 	{
 		MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)pCWD->pDirEntry, MemUtil_GetDS(), 
-							(unsigned)&(pDriveInfo->FSMountInfo.FSpwd.DirEntry),
+							(unsigned)&(pDiskDrive->FSMountInfo.FSpwd.DirEntry),
 							sizeof(FileSystem_DIR_Entry)) ;
 	}
 
@@ -185,7 +185,7 @@ byte Directory_Delete(ProcessAddressSpace* processAddressSpace, int iDriveID, by
 	}
 	else
 	{
-		RETURN_IF_NOT(bStatus, Directory_FindDirectory(pDriveInfo, pCWD, szDirName, &uiSectorNo, &bSectorPos, &bIsPresent, bSectorBuffer), Directory_SUCCESS) ;
+		RETURN_IF_NOT(bStatus, Directory_FindDirectory(pDiskDrive, pCWD, szDirName, &uiSectorNo, &bSectorPos, &bIsPresent, bSectorBuffer), Directory_SUCCESS) ;
 
 		if(bIsPresent == false)
 			return Directory_ERR_NOT_EXISTS ;
@@ -204,20 +204,20 @@ byte Directory_Delete(ProcessAddressSpace* processAddressSpace, int iDriveID, by
 
 	while(uiCurrentSectorID != EOC)
 	{
-		RETURN_IF_NOT(bStatus, FileSystem_DeAllocateSector(pDriveInfo, uiCurrentSectorID, &uiNextSectorID), FileSystem_SUCCESS) ;
+		RETURN_IF_NOT(bStatus, FileSystem_DeAllocateSector(pDiskDrive, uiCurrentSectorID, &uiNextSectorID), FileSystem_SUCCESS) ;
 
 		uiCurrentSectorID = uiNextSectorID ;
 	}
 
 	delDir->usAttribute |= ATTR_DELETED_DIR ;
 
-	RETURN_IF_NOT(bStatus, Directory_RawWrite(pDriveInfo, uiSectorNo, uiSectorNo + 1, bSectorBuffer), Directory_SUCCESS) ;
+	RETURN_IF_NOT(bStatus, Directory_RawWrite(pDiskDrive, uiSectorNo, uiSectorNo + 1, bSectorBuffer), Directory_SUCCESS) ;
 
 	pCWD->pDirEntry->uiSize-- ;
 
-	RETURN_IF_NOT(bStatus, Directory_RawWrite(pDriveInfo, pCWD->uiSectorNo, pCWD->uiSectorNo + 1, bParentDirectoryBuffer), Directory_SUCCESS) ;
+	RETURN_IF_NOT(bStatus, Directory_RawWrite(pDiskDrive, pCWD->uiSectorNo, pCWD->uiSectorNo + 1, bParentDirectoryBuffer), Directory_SUCCESS) ;
 	
-	if(pDriveInfo->drive.iID == processAddressSpace->iDriveID
+	if(pDiskDrive->Id() == processAddressSpace->iDriveID
 			&& pCWD->uiSectorNo == pPWD->uiSectorNo
 			&& pCWD->bSectorEntryPosition == pPWD->bSectorEntryPosition)
 	{
@@ -228,7 +228,7 @@ byte Directory_Delete(ProcessAddressSpace* processAddressSpace, int iDriveID, by
 	if(String_Compare((const char*)pCWD->pDirEntry->Name, FS_ROOT_DIR) == 0)
 	{
 		MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)pCWD->pDirEntry, MemUtil_GetDS(), 
-							(unsigned)&(pDriveInfo->FSMountInfo.FSpwd.DirEntry),
+							(unsigned)&(pDiskDrive->FSMountInfo.FSpwd.DirEntry),
 							sizeof(FileSystem_DIR_Entry)) ;
 	}
 
@@ -243,7 +243,7 @@ byte Directory_GetDirEntryForCreateDelete(const ProcessAddressSpace* processAddr
 	FileSystem_CWD CWD ;
 
 	GET_DRIVE_FOR_FS_OPS(iDriveID, Directory_FAILURE) ;
-	FileSystemMountInfo* pFSMountInfo = &pDriveInfo->FSMountInfo ;
+	FileSystemMountInfo* pFSMountInfo = &pDiskDrive->FSMountInfo ;
 
 	if(String_Length(szDirPath) == 0 ||	String_Compare(FS_ROOT_DIR, szDirPath) == 0)
 		return Directory_ERR_EXISTS ;
@@ -261,7 +261,7 @@ byte Directory_GetDirEntryForCreateDelete(const ProcessAddressSpace* processAddr
 		CWD.bSectorEntryPosition = *bSectorPos = processAddressSpace->processPWD.bSectorEntryPosition ;
 	}
 
-	RETURN_IF_NOT(bStatus, Directory_RawRead(pDriveInfo, *uiSectorNo, *uiSectorNo + 1, bDirectoryBuffer), Directory_SUCCESS) ;
+	RETURN_IF_NOT(bStatus, Directory_RawRead(pDiskDrive, *uiSectorNo, *uiSectorNo + 1, bDirectoryBuffer), Directory_SUCCESS) ;
 
 	int iListSize, i ;
 
@@ -271,7 +271,7 @@ byte Directory_GetDirEntryForCreateDelete(const ProcessAddressSpace* processAddr
 
 	for(i = 0; i < iListSize - 1; i++)
 	{
-		RETURN_IF_NOT(bStatus, Directory_FindDirectory(pDriveInfo, &CWD, tokenizer.szToken[i], uiSectorNo, bSectorPos, &bIsPresent, bDirectoryBuffer), Directory_SUCCESS) ;
+		RETURN_IF_NOT(bStatus, Directory_FindDirectory(pDiskDrive, &CWD, tokenizer.szToken[i], uiSectorNo, bSectorPos, &bIsPresent, bDirectoryBuffer), Directory_SUCCESS) ;
 
 		if(bIsPresent == false)
 			return Directory_ERR_NOT_EXISTS ;
@@ -305,9 +305,9 @@ byte Directory_GetDirectoryContent(const char* szFileName, ProcessAddressSpace* 
 	}
 	else
 	{
-		CWD.pDirEntry = &(pDriveInfo->FSMountInfo.FSpwd.DirEntry) ;
-		CWD.uiSectorNo = pDriveInfo->FSMountInfo.FSpwd.uiSectorNo ;
-		CWD.bSectorEntryPosition = pDriveInfo->FSMountInfo.FSpwd.bSectorEntryPosition ;
+		CWD.pDirEntry = &(pDiskDrive->FSMountInfo.FSpwd.DirEntry) ;
+		CWD.uiSectorNo = pDiskDrive->FSMountInfo.FSpwd.uiSectorNo ;
+		CWD.bSectorEntryPosition = pDiskDrive->FSMountInfo.FSpwd.bSectorEntryPosition ;
 	}
 
 	FileSystem_DIR_Entry* dirFile ;
@@ -322,7 +322,7 @@ byte Directory_GetDirectoryContent(const char* szFileName, ProcessAddressSpace* 
 		unsigned uiSectorNo ;
 		byte bSectorPos ;
 
-		RETURN_IF_NOT(bStatus, Directory_GetDirEntryInfo(pDriveInfo, &CWD, szFileName, &uiSectorNo, &bSectorPos, bDirectoryBuffer), Directory_SUCCESS) ;
+		RETURN_IF_NOT(bStatus, Directory_GetDirEntryInfo(pDiskDrive, &CWD, szFileName, &uiSectorNo, &bSectorPos, bDirectoryBuffer), Directory_SUCCESS) ;
 
 		dirFile = ((FileSystem_DIR_Entry*)bDirectoryBuffer) + bSectorPos ;
 
@@ -373,7 +373,7 @@ byte Directory_GetDirectoryContent(const char* szFileName, ProcessAddressSpace* 
 
 	while(uiCurrentSectorID != EOC)
 	{
-		RETURN_IF_NOT(bStatus, Directory_RawRead(pDriveInfo, uiCurrentSectorID, uiCurrentSectorID + 1, bDirectoryBuffer), Directory_SUCCESS) ;
+		RETURN_IF_NOT(bStatus, Directory_RawRead(pDiskDrive, uiCurrentSectorID, uiCurrentSectorID + 1, bDirectoryBuffer), Directory_SUCCESS) ;
 
 		for(bSectorPosIndex = 0; bSectorPosIndex < DIR_ENTRIES_PER_SECTOR; bSectorPosIndex++)
 		{
@@ -393,7 +393,7 @@ byte Directory_GetDirectoryContent(const char* szFileName, ProcessAddressSpace* 
 			}
 		}
 
-		RETURN_IF_NOT(bStatus, FileSystem_GetSectorEntryValue(pDriveInfo, uiCurrentSectorID, &uiCurrentSectorID), FileSystem_SUCCESS) ;
+		RETURN_IF_NOT(bStatus, FileSystem_GetSectorEntryValue(pDiskDrive, uiCurrentSectorID, &uiCurrentSectorID), FileSystem_SUCCESS) ;
 	}
 
 	return Directory_SUCCESS ;
@@ -418,7 +418,7 @@ void Directory_PopulateDirEntry(FileSystem_DIR_Entry* dirEntry, char* szDirName,
 	dirEntry->iUserID = iUserID ;
 }
 
-byte Directory_FindDirectory(DriveInfo* pDriveInfo, const FileSystem_CWD* pCWD, const char* szDirName, unsigned* uiSectorNo, byte* bSectorPos, byte* bIsPresent, byte* bDestSectorBuffer)
+byte Directory_FindDirectory(DiskDrive* pDiskDrive, const FileSystem_CWD* pCWD, const char* szDirName, unsigned* uiSectorNo, byte* bSectorPos, byte* bIsPresent, byte* bDestSectorBuffer)
 {
 	if((pCWD->pDirEntry->usAttribute & ATTR_TYPE_DIRECTORY) == 0)
 		return Directory_ERR_NOT_DIR ;
@@ -432,7 +432,7 @@ byte Directory_FindDirectory(DriveInfo* pDriveInfo, const FileSystem_CWD* pCWD, 
 		*bSectorPos = pCWD->bSectorEntryPosition ;
 		*bIsPresent = true ;
 
-		RETURN_IF_NOT(bStatus, Directory_RawRead(pDriveInfo, *uiSectorNo, *uiSectorNo + 1, bDestSectorBuffer), Directory_SUCCESS) ;
+		RETURN_IF_NOT(bStatus, Directory_RawRead(pDiskDrive, *uiSectorNo, *uiSectorNo + 1, bDestSectorBuffer), Directory_SUCCESS) ;
 			
 		return Directory_SUCCESS ;
 	}
@@ -453,7 +453,7 @@ byte Directory_FindDirectory(DriveInfo* pDriveInfo, const FileSystem_CWD* pCWD, 
 		}
 		*bIsPresent = true ;
 	
-		RETURN_IF_NOT(bStatus, Directory_RawRead(pDriveInfo, *uiSectorNo, *uiSectorNo + 1, bDestSectorBuffer), Directory_SUCCESS) ;
+		RETURN_IF_NOT(bStatus, Directory_RawRead(pDiskDrive, *uiSectorNo, *uiSectorNo + 1, bDestSectorBuffer), Directory_SUCCESS) ;
 			
 		return Directory_SUCCESS ;
 	}
@@ -476,7 +476,7 @@ byte Directory_FindDirectory(DriveInfo* pDriveInfo, const FileSystem_CWD* pCWD, 
 
 	while(uiCurrentSectorID != EOC)
 	{
-		RETURN_IF_NOT(bStatus, Directory_RawRead(pDriveInfo, uiCurrentSectorID, uiCurrentSectorID + 1, bSectorBuffer), Directory_SUCCESS) ;
+		RETURN_IF_NOT(bStatus, Directory_RawRead(pDiskDrive, uiCurrentSectorID, uiCurrentSectorID + 1, bSectorBuffer), Directory_SUCCESS) ;
 
 		for(bSectorPosIndex = 0; bSectorPosIndex < DIR_ENTRIES_PER_SECTOR; bSectorPosIndex++)
 		{
@@ -511,7 +511,7 @@ byte Directory_FindDirectory(DriveInfo* pDriveInfo, const FileSystem_CWD* pCWD, 
 			}
 		}
 
-		RETURN_IF_NOT(bStatus, FileSystem_GetSectorEntryValue(pDriveInfo, uiCurrentSectorID, &uiNextSectorID), FileSystem_SUCCESS) ;
+		RETURN_IF_NOT(bStatus, FileSystem_GetSectorEntryValue(pDiskDrive, uiCurrentSectorID, &uiNextSectorID), FileSystem_SUCCESS) ;
 
 		if(uiScanDirCount >= pDirEntry->uiSize)
 		{
@@ -549,31 +549,31 @@ byte Directory_FindDirectory(DriveInfo* pDriveInfo, const FileSystem_CWD* pCWD, 
 	return Directory_ERR_FS_TABLE_CORRUPTED ;
 }
 
-byte Directory_RawRead(DriveInfo* pDriveInfo, unsigned uiStartSectorID, unsigned uiEndSectorID, byte* bSectorBuffer)
+byte Directory_RawRead(DiskDrive* pDiskDrive, unsigned uiStartSectorID, unsigned uiEndSectorID, byte* bSectorBuffer)
 {
 	byte bStatus ;
 
-	uiStartSectorID = FileSystem_GetRealSectorNumber(uiStartSectorID, pDriveInfo) ;
-	uiEndSectorID = FileSystem_GetRealSectorNumber(uiEndSectorID, pDriveInfo);
+	uiStartSectorID = FileSystem_GetRealSectorNumber(uiStartSectorID, pDiskDrive) ;
+	uiEndSectorID = FileSystem_GetRealSectorNumber(uiEndSectorID, pDiskDrive);
 
-	RETURN_IF_NOT(bStatus, DeviceDrive_Read(pDriveInfo, uiStartSectorID, (uiEndSectorID - uiStartSectorID), bSectorBuffer), DeviceDrive_SUCCESS) ;
+	RETURN_IF_NOT(bStatus, pDiskDrive->Read(uiStartSectorID, (uiEndSectorID - uiStartSectorID), bSectorBuffer), DeviceDrive_SUCCESS) ;
 
 	return Directory_SUCCESS ;
 }
 
-byte Directory_RawWrite(DriveInfo* pDriveInfo, unsigned uiStartSectorID, unsigned uiEndSectorID, byte* bSectorBuffer)
+byte Directory_RawWrite(DiskDrive* pDiskDrive, unsigned uiStartSectorID, unsigned uiEndSectorID, byte* bSectorBuffer)
 {
 	byte bStatus ;
 
-	uiStartSectorID = FileSystem_GetRealSectorNumber(uiStartSectorID, pDriveInfo) ;
-	uiEndSectorID = FileSystem_GetRealSectorNumber(uiEndSectorID, pDriveInfo) ;
+	uiStartSectorID = FileSystem_GetRealSectorNumber(uiStartSectorID, pDiskDrive) ;
+	uiEndSectorID = FileSystem_GetRealSectorNumber(uiEndSectorID, pDiskDrive) ;
 
-	RETURN_IF_NOT(bStatus, DeviceDrive_Write(pDriveInfo, uiStartSectorID, (uiEndSectorID - uiStartSectorID), bSectorBuffer), DeviceDrive_SUCCESS) ;
+	RETURN_IF_NOT(bStatus, pDiskDrive->Write(uiStartSectorID, (uiEndSectorID - uiStartSectorID), bSectorBuffer), DeviceDrive_SUCCESS) ;
 
 	return Directory_SUCCESS ;
 }
 
-byte Directory_FileWrite(DriveInfo* pDriveInfo, FileSystem_CWD* pCWD, ProcFileDescriptor* pFDEntry, byte* bDataBuffer, unsigned uiDataSize)
+byte Directory_FileWrite(DiskDrive* pDiskDrive, FileSystem_CWD* pCWD, ProcFileDescriptor* pFDEntry, byte* bDataBuffer, unsigned uiDataSize)
 {
 	if(uiDataSize == 0)
 		return Directory_ERR_ZERO_WRITE_SIZE ;
@@ -585,26 +585,26 @@ byte Directory_FileWrite(DriveInfo* pDriveInfo, FileSystem_CWD* pCWD, ProcFileDe
 	const char* szFileName = pFDEntry->szFileName ;
 	unsigned uiOffset = pFDEntry->uiOffset ;
 
-	RETURN_IF_NOT(bStatus, Directory_GetDirEntryInfo(pDriveInfo, pCWD, szFileName, &uiSectorNo, &bSectorPos, bDirectoryBuffer), Directory_SUCCESS) ;
+	RETURN_IF_NOT(bStatus, Directory_GetDirEntryInfo(pDiskDrive, pCWD, szFileName, &uiSectorNo, &bSectorPos, bDirectoryBuffer), Directory_SUCCESS) ;
 
 	FileSystem_DIR_Entry* dirFile = ((FileSystem_DIR_Entry*)bDirectoryBuffer) + bSectorPos ;
 
 	if((dirFile->usAttribute & ATTR_TYPE_DIRECTORY) != 0)
 		return Directory_ERR_IS_DIRECTORY ;
 
-	RETURN_IF_NOT(bStatus, Directory_ActualFileWrite(pDriveInfo, bDataBuffer, pFDEntry, uiDataSize, dirFile), Directory_SUCCESS) ;
+	RETURN_IF_NOT(bStatus, Directory_ActualFileWrite(pDiskDrive, bDataBuffer, pFDEntry, uiDataSize, dirFile), Directory_SUCCESS) ;
 
 	if(dirFile->uiSize < (uiOffset + uiDataSize))
 	{
 		dirFile->uiSize = uiOffset + uiDataSize ;
 
-		RETURN_IF_NOT(bStatus, Directory_RawWrite(pDriveInfo, uiSectorNo, uiSectorNo + 1, bDirectoryBuffer), Directory_SUCCESS) ;
+		RETURN_IF_NOT(bStatus, Directory_RawWrite(pDiskDrive, uiSectorNo, uiSectorNo + 1, bDirectoryBuffer), Directory_SUCCESS) ;
 	}
 
 	return Directory_SUCCESS ;
 }
 
-byte Directory_ActualFileWrite(DriveInfo* pDriveInfo, byte* bDataBuffer, ProcFileDescriptor* pFDEntry,
+byte Directory_ActualFileWrite(DiskDrive* pDiskDrive, byte* bDataBuffer, ProcFileDescriptor* pFDEntry,
 	   							unsigned uiDataSize, FileSystem_DIR_Entry* dirFile)
 {
 	unsigned uiCurrentSectorID, uiNextSectorID, uiPrevSectorID = EOC ;
@@ -633,7 +633,7 @@ byte Directory_ActualFileWrite(DriveInfo* pDriveInfo, byte* bDataBuffer, ProcFil
 	
 	while(iSectorIndex < iStartWriteSectorNo && uiCurrentSectorID != EOC)
 	{
-		RETURN_IF_NOT(bStatus, FileSystem_GetSectorEntryValue(pDriveInfo, uiCurrentSectorID, &uiNextSectorID), FileSystem_SUCCESS) ;
+		RETURN_IF_NOT(bStatus, FileSystem_GetSectorEntryValue(pDiskDrive, uiCurrentSectorID, &uiNextSectorID), FileSystem_SUCCESS) ;
 
 		iSectorIndex++ ;
 		uiPrevSectorID = uiCurrentSectorID ;
@@ -646,7 +646,7 @@ byte Directory_ActualFileWrite(DriveInfo* pDriveInfo, byte* bDataBuffer, ProcFil
 
 		do
 		{
-			RETURN_IF_NOT(bStatus, FileSystem_AllocateSector(pDriveInfo, &uiCurrentSectorID), FileSystem_SUCCESS) ;
+			RETURN_IF_NOT(bStatus, FileSystem_AllocateSector(pDiskDrive, &uiCurrentSectorID), FileSystem_SUCCESS) ;
 
 			if(dirFile->uiStartSectorID == EOC)
 			{
@@ -654,12 +654,12 @@ byte Directory_ActualFileWrite(DriveInfo* pDriveInfo, byte* bDataBuffer, ProcFil
 			}
 			else
 			{
-				RETURN_IF_NOT(bStatus, FileSystem_SetSectorEntryValue(pDriveInfo, uiPrevSectorID, uiCurrentSectorID), FileSystem_SUCCESS) ;
+				RETURN_IF_NOT(bStatus, FileSystem_SetSectorEntryValue(pDiskDrive, uiPrevSectorID, uiCurrentSectorID), FileSystem_SUCCESS) ;
 			}
 			
 			uiPrevSectorID = uiCurrentSectorID ;
 
-			RETURN_IF_NOT(bStatus, Directory_RawWrite(pDriveInfo, uiCurrentSectorID, uiCurrentSectorID + 1, bSectorBuffer), Directory_SUCCESS) ;
+			RETURN_IF_NOT(bStatus, Directory_RawWrite(pDiskDrive, uiCurrentSectorID, uiCurrentSectorID + 1, bSectorBuffer), Directory_SUCCESS) ;
 			
 			Directory_SetLastReadSectorDetails(pFDEntry, iSectorIndex, uiCurrentSectorID) ;
 
@@ -677,7 +677,7 @@ byte Directory_ActualFileWrite(DriveInfo* pDriveInfo, byte* bDataBuffer, ProcFil
 
 	if(iStartWriteSectorPos != 0)
 	{
-		RETURN_IF_NOT(bStatus, Directory_RawRead(pDriveInfo, uiCurrentSectorID, uiCurrentSectorID + 1, bSectorBuffer), Directory_SUCCESS) ;
+		RETURN_IF_NOT(bStatus, Directory_RawRead(pDiskDrive, uiCurrentSectorID, uiCurrentSectorID + 1, bSectorBuffer), Directory_SUCCESS) ;
 
 		uiWrittenCount = 512 - iStartWriteSectorPos ;
 		if(uiDataSize <= uiWrittenCount)
@@ -687,12 +687,12 @@ byte Directory_ActualFileWrite(DriveInfo* pDriveInfo, byte* bDataBuffer, ProcFil
 						(unsigned)(bSectorBuffer + iStartWriteSectorPos), uiWrittenCount) ;
 
 		RETURN_IF_NOT(bStatus,
-			Directory_RawWrite(pDriveInfo, uiCurrentSectorID, uiCurrentSectorID + 1, bSectorBuffer), Directory_SUCCESS) ;
+			Directory_RawWrite(pDiskDrive, uiCurrentSectorID, uiCurrentSectorID + 1, bSectorBuffer), Directory_SUCCESS) ;
 			
 		if(uiWrittenCount == uiDataSize)
 			return Directory_SUCCESS ;
 
-       RETURN_IF_NOT(bStatus, FileSystem_GetSectorEntryValue(pDriveInfo, uiCurrentSectorID, &uiNextSectorID), FileSystem_SUCCESS) ;
+       RETURN_IF_NOT(bStatus, FileSystem_GetSectorEntryValue(pDiskDrive, uiCurrentSectorID, &uiNextSectorID), FileSystem_SUCCESS) ;
 
         uiPrevSectorID = uiCurrentSectorID ;
         uiCurrentSectorID = uiNextSectorID ;
@@ -711,8 +711,8 @@ byte Directory_ActualFileWrite(DriveInfo* pDriveInfo, byte* bDataBuffer, ProcFil
 		if(uiCurrentSectorID == EOC || bStartAllocation == true)
 		{
 			bStartAllocation = true ;
-			RETURN_IF_NOT(bStatus, FileSystem_AllocateSector(pDriveInfo, &uiCurrentSectorID), FileSystem_SUCCESS) ;
-			RETURN_IF_NOT(bStatus, FileSystem_SetSectorEntryValue(pDriveInfo, uiPrevSectorID, uiCurrentSectorID), FileSystem_SUCCESS) ;
+			RETURN_IF_NOT(bStatus, FileSystem_AllocateSector(pDiskDrive, &uiCurrentSectorID), FileSystem_SUCCESS) ;
+			RETURN_IF_NOT(bStatus, FileSystem_SetSectorEntryValue(pDiskDrive, uiPrevSectorID, uiCurrentSectorID), FileSystem_SUCCESS) ;
 		}
 		
 		if(uiWriteRemainingCount < 512)
@@ -720,7 +720,7 @@ byte Directory_ActualFileWrite(DriveInfo* pDriveInfo, byte* bDataBuffer, ProcFil
 			if(bStartAllocation == false && (uiOffset + uiDataSize) < uiCurrentFileSize)
 			{
 				RETURN_IF_NOT(bStatus, 
-							Directory_RawRead(pDriveInfo, uiCurrentSectorID, uiCurrentSectorID + 1, bSectorBuffer),
+							Directory_RawRead(pDiskDrive, uiCurrentSectorID, uiCurrentSectorID + 1, bSectorBuffer),
 							FileSystem_SUCCESS) ;
 			}
 
@@ -728,13 +728,13 @@ byte Directory_ActualFileWrite(DriveInfo* pDriveInfo, byte* bDataBuffer, ProcFil
 							(unsigned)bSectorBuffer, uiWriteRemainingCount) ;
 							
 			RETURN_IF_NOT(bStatus, 
-						Directory_BufferedWrite(pDriveInfo, uiCurrentSectorID, bSectorBuffer,
+						Directory_BufferedWrite(pDiskDrive, uiCurrentSectorID, bSectorBuffer,
 						bWriteBuffer, &uiBufStartSectorID, &uiBufPrecSectorID, (unsigned*)&iBufCount, 
 						false),
 						Directory_SUCCESS) ;
 
 			RETURN_IF_NOT(bStatus, 
-						Directory_BufferedWrite(pDriveInfo, EOC, NULL,
+						Directory_BufferedWrite(pDiskDrive, EOC, NULL,
 						bWriteBuffer, &uiBufStartSectorID, &uiBufPrecSectorID, (unsigned*)&iBufCount, 
 						true),
 						Directory_SUCCESS) ;
@@ -743,7 +743,7 @@ byte Directory_ActualFileWrite(DriveInfo* pDriveInfo, byte* bDataBuffer, ProcFil
 		}
 
 		RETURN_IF_NOT(bStatus,
-				Directory_BufferedWrite(pDriveInfo, uiCurrentSectorID, 
+				Directory_BufferedWrite(pDiskDrive, uiCurrentSectorID, 
 				bDataBuffer + uiWrittenCount,
 				bWriteBuffer, &uiBufStartSectorID, &uiBufPrecSectorID, (unsigned*)&iBufCount, false),
 				Directory_SUCCESS) ;
@@ -754,7 +754,7 @@ byte Directory_ActualFileWrite(DriveInfo* pDriveInfo, byte* bDataBuffer, ProcFil
 		if(uiWriteRemainingCount == 0)
 		{
 			RETURN_IF_NOT(bStatus, 
-						Directory_BufferedWrite(pDriveInfo, EOC, NULL,
+						Directory_BufferedWrite(pDiskDrive, EOC, NULL,
 						bWriteBuffer, &uiBufStartSectorID, &uiBufPrecSectorID, (unsigned*)&iBufCount, 
 						true),
 						Directory_SUCCESS) ;
@@ -762,7 +762,7 @@ byte Directory_ActualFileWrite(DriveInfo* pDriveInfo, byte* bDataBuffer, ProcFil
 			return Directory_SUCCESS ;
 		}
 
-		RETURN_IF_NOT(bStatus, FileSystem_GetSectorEntryValue(pDriveInfo, uiCurrentSectorID, &uiNextSectorID), FileSystem_SUCCESS) ;
+		RETURN_IF_NOT(bStatus, FileSystem_GetSectorEntryValue(pDiskDrive, uiCurrentSectorID, &uiNextSectorID), FileSystem_SUCCESS) ;
 
 		uiPrevSectorID = uiCurrentSectorID ;
 		uiCurrentSectorID = uiNextSectorID ;
@@ -771,7 +771,7 @@ byte Directory_ActualFileWrite(DriveInfo* pDriveInfo, byte* bDataBuffer, ProcFil
 	return Directory_ERR_FS_TABLE_CORRUPTED ;
 }
 
-byte Directory_FileRead(DriveInfo* pDriveInfo, FileSystem_CWD* pCWD, ProcFileDescriptor* pFDEntry, byte* bDataBuffer, 
+byte Directory_FileRead(DiskDrive* pDiskDrive, FileSystem_CWD* pCWD, ProcFileDescriptor* pFDEntry, byte* bDataBuffer, 
 						unsigned uiDataSize, unsigned* uiReadFileSize)
 
 {
@@ -787,7 +787,7 @@ byte Directory_FileRead(DriveInfo* pDriveInfo, FileSystem_CWD* pCWD, ProcFileDes
 	byte bSectorPos ;
 
 
-	RETURN_IF_NOT(bStatus, Directory_GetDirEntryInfo(pDriveInfo, pCWD, szFileName, &uiSectorNo, &bSectorPos, bDirectoryBuffer), Directory_SUCCESS) ;
+	RETURN_IF_NOT(bStatus, Directory_GetDirEntryInfo(pDiskDrive, pCWD, szFileName, &uiSectorNo, &bSectorPos, bDirectoryBuffer), Directory_SUCCESS) ;
 		
 	pDirFile = ((FileSystem_DIR_Entry*)bDirectoryBuffer) + bSectorPos ;
 	if((pDirFile->usAttribute & ATTR_TYPE_DIRECTORY) != 0)
@@ -825,7 +825,7 @@ byte Directory_FileRead(DriveInfo* pDriveInfo, FileSystem_CWD* pCWD, ProcFileDes
 	
 	while(iSectorIndex != iStartReadSectorNo)
 	{
-		RETURN_IF_NOT(bStatus, FileSystem_GetSectorEntryValue(pDriveInfo, uiCurrentSectorID, &uiNextSectorID), FileSystem_SUCCESS) ;
+		RETURN_IF_NOT(bStatus, FileSystem_GetSectorEntryValue(pDiskDrive, uiCurrentSectorID, &uiNextSectorID), FileSystem_SUCCESS) ;
 
 		iSectorIndex++ ;
 		uiCurrentSectorID = uiNextSectorID ;
@@ -858,7 +858,7 @@ byte Directory_FileRead(DriveInfo* pDriveInfo, FileSystem_CWD* pCWD, ProcFileDes
 
 		for(;;)
 		{
-			RETURN_IF_NOT(bStatus, FileSystem_GetSectorEntryValue(pDriveInfo, uiCurrentSectorID, &uiNextSectorID), FileSystem_SUCCESS) ;
+			RETURN_IF_NOT(bStatus, FileSystem_GetSectorEntryValue(pDiskDrive, uiCurrentSectorID, &uiNextSectorID), FileSystem_SUCCESS) ;
 
 			if(uiCurrentSectorID + 1 == uiNextSectorID)
 			{
@@ -878,7 +878,7 @@ byte Directory_FileRead(DriveInfo* pDriveInfo, FileSystem_CWD* pCWD, ProcFileDes
 
 				if(iSectorCount == MAX_SECTORS_PER_RW)
 				{
-					RETURN_IF_NOT(bStatus, FileSystem_GetSectorEntryValue(pDriveInfo, uiCurrentSectorID, &uiNextSectorID), FileSystem_SUCCESS) ;
+					RETURN_IF_NOT(bStatus, FileSystem_GetSectorEntryValue(pDiskDrive, uiCurrentSectorID, &uiNextSectorID), FileSystem_SUCCESS) ;
 
 					uiCurrentSectorID = uiNextSectorID ;
 
@@ -897,7 +897,7 @@ byte Directory_FileRead(DriveInfo* pDriveInfo, FileSystem_CWD* pCWD, ProcFileDes
 			}
 		}
 
-		RETURN_IF_NOT(bStatus, Directory_RawRead(pDriveInfo, uiStartSectorID, uiStartSectorID + iSectorCount, bSectorBuffer), FileSystem_SUCCESS) ;
+		RETURN_IF_NOT(bStatus, Directory_RawRead(pDiskDrive, uiStartSectorID, uiStartSectorID + iSectorCount, bSectorBuffer), FileSystem_SUCCESS) ;
 
 		MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)bSectorBuffer + iStartReadSectorPos, MemUtil_GetDS(), (unsigned)bDataBuffer + iReadCount, iCurrentReadSize) ;
 
@@ -917,12 +917,12 @@ byte Directory_FileRead(DriveInfo* pDriveInfo, FileSystem_CWD* pCWD, ProcFileDes
 	return Directory_ERR_FS_TABLE_CORRUPTED ;
 }
 
-byte Directory_GetDirEntryInfo(DriveInfo* pDriveInfo, FileSystem_CWD* pCWD, const char* szFileName, unsigned* uiSectorNo, byte* bSectorPos, byte* bDirectoryBuffer)
+byte Directory_GetDirEntryInfo(DiskDrive* pDiskDrive, FileSystem_CWD* pCWD, const char* szFileName, unsigned* uiSectorNo, byte* bSectorPos, byte* bDirectoryBuffer)
 {
 	byte bStatus ;
 	byte bIsPresent ;
 	FileSystem_CWD CWD ;
-	FileSystemMountInfo* pFSMountInfo = &(pDriveInfo->FSMountInfo) ;
+	FileSystemMountInfo* pFSMountInfo = &(pDiskDrive->FSMountInfo) ;
 
 	if(String_Length(szFileName) == 0)
 		return Directory_ERR_INVALID_NAME ;
@@ -931,7 +931,7 @@ byte Directory_GetDirEntryInfo(DriveInfo* pDriveInfo, FileSystem_CWD* pCWD, cons
 	{
 		if(String_Compare(FS_ROOT_DIR, szFileName) == 0)
 		{
-			RETURN_IF_NOT(bStatus, Directory_RawRead(pDriveInfo, pFSMountInfo->FSpwd.uiSectorNo, pFSMountInfo->FSpwd.uiSectorNo + 1, bDirectoryBuffer), Directory_SUCCESS) ;
+			RETURN_IF_NOT(bStatus, Directory_RawRead(pDiskDrive, pFSMountInfo->FSpwd.uiSectorNo, pFSMountInfo->FSpwd.uiSectorNo + 1, bDirectoryBuffer), Directory_SUCCESS) ;
 			*uiSectorNo = pFSMountInfo->FSpwd.uiSectorNo ;
 			*bSectorPos = pFSMountInfo->FSpwd.bSectorEntryPosition ;
 			return Directory_SUCCESS ;
@@ -956,7 +956,7 @@ byte Directory_GetDirEntryInfo(DriveInfo* pDriveInfo, FileSystem_CWD* pCWD, cons
 
 	for(i = 0; i < iListSize; i++)
 	{
-		RETURN_IF_NOT(bStatus, Directory_FindDirectory(pDriveInfo, &CWD, tokenizer.szToken[i], uiSectorNo, bSectorPos, &bIsPresent, bDirectoryBuffer), Directory_SUCCESS) ;
+		RETURN_IF_NOT(bStatus, Directory_FindDirectory(pDiskDrive, &CWD, tokenizer.szToken[i], uiSectorNo, bSectorPos, &bIsPresent, bDirectoryBuffer), Directory_SUCCESS) ;
 
 		if(bIsPresent == false)
 		{
@@ -978,7 +978,7 @@ byte Directory_Change(const char* szFileName, int iDriveID, ProcessAddressSpace*
 	byte bDirectoryBuffer[512] ;
 
 	GET_DRIVE_FOR_FS_OPS(iDriveID, Directory_FAILURE) ;
-	if(pDriveInfo == NULL)
+	if(pDiskDrive == NULL)
 		return Directory_ERR_INVALID_DRIVE ;
 
 	FileSystem_CWD CWD ;
@@ -991,12 +991,12 @@ byte Directory_Change(const char* szFileName, int iDriveID, ProcessAddressSpace*
 	}
 	else
 	{
-		CWD.pDirEntry = &(pDriveInfo->FSMountInfo.FSpwd.DirEntry) ;
-		CWD.uiSectorNo = pDriveInfo->FSMountInfo.FSpwd.uiSectorNo ;
-		CWD.bSectorEntryPosition = pDriveInfo->FSMountInfo.FSpwd.bSectorEntryPosition ;
+		CWD.pDirEntry = &(pDiskDrive->FSMountInfo.FSpwd.DirEntry) ;
+		CWD.uiSectorNo = pDiskDrive->FSMountInfo.FSpwd.uiSectorNo ;
+		CWD.bSectorEntryPosition = pDiskDrive->FSMountInfo.FSpwd.bSectorEntryPosition ;
 	}
 
-	RETURN_IF_NOT(bStatus, Directory_GetDirEntryInfo(pDriveInfo, &CWD, szFileName, &uiSectorNo, &bSectorPos, bDirectoryBuffer), Directory_SUCCESS) ;
+	RETURN_IF_NOT(bStatus, Directory_GetDirEntryInfo(pDiskDrive, &CWD, szFileName, &uiSectorNo, &bSectorPos, bDirectoryBuffer), Directory_SUCCESS) ;
 
 	FileSystem_DIR_Entry* dirFile = ((FileSystem_DIR_Entry*)bDirectoryBuffer) + bSectorPos ;
 
@@ -1028,7 +1028,7 @@ byte Directory_Change(const char* szFileName, int iDriveID, ProcessAddressSpace*
 			uiSecNo = dirFile->uiParentSecID ;
 			bSecPos = dirFile->bParentSectorPos ;
 
-			RETURN_IF_NOT(bStatus, Directory_RawRead(pDriveInfo, uiSecNo, uiSecNo + 1, bDirectoryBuffer), Directory_SUCCESS) ;
+			RETURN_IF_NOT(bStatus, Directory_RawRead(pDiskDrive, uiSecNo, uiSecNo + 1, bDirectoryBuffer), Directory_SUCCESS) ;
 
 			dirFile = ((FileSystem_DIR_Entry*)bDirectoryBuffer) + bSecPos ;
 
@@ -1040,7 +1040,7 @@ byte Directory_Change(const char* szFileName, int iDriveID, ProcessAddressSpace*
 	}
 
 	String_Copy(szTempPwd, szPWD) ;
-	String_Copy(szPWD, pDriveInfo->drive.driveName) ;
+	String_Copy(szPWD, pDiskDrive->DriveName().c_str());
 	String_CanCat(szPWD, "@") ;
 	String_CanCat(szPWD, szTempPwd) ;
 
@@ -1092,9 +1092,9 @@ byte Directory_GetDirEntry(const char* szFileName, ProcessAddressSpace* processA
 	}
 	else
 	{
-		CWD.pDirEntry = &(pDriveInfo->FSMountInfo.FSpwd.DirEntry) ;
-		CWD.uiSectorNo = pDriveInfo->FSMountInfo.FSpwd.uiSectorNo ;
-		CWD.bSectorEntryPosition = pDriveInfo->FSMountInfo.FSpwd.bSectorEntryPosition ;
+		CWD.pDirEntry = &(pDiskDrive->FSMountInfo.FSpwd.DirEntry) ;
+		CWD.uiSectorNo = pDiskDrive->FSMountInfo.FSpwd.uiSectorNo ;
+		CWD.bSectorEntryPosition = pDiskDrive->FSMountInfo.FSpwd.bSectorEntryPosition ;
 	}
 
 	FileSystem_DIR_Entry* dirFile ;
@@ -1102,7 +1102,7 @@ byte Directory_GetDirEntry(const char* szFileName, ProcessAddressSpace* processA
 	unsigned uiSectorNo ;
 	byte bSectorPos ;
 
-	RETURN_IF_NOT(bStatus, Directory_GetDirEntryInfo(pDriveInfo, &CWD, szFileName, &uiSectorNo, &bSectorPos, bDirectoryBuffer), Directory_SUCCESS) ;
+	RETURN_IF_NOT(bStatus, Directory_GetDirEntryInfo(pDiskDrive, &CWD, szFileName, &uiSectorNo, &bSectorPos, bDirectoryBuffer), Directory_SUCCESS) ;
 
 	dirFile = ((FileSystem_DIR_Entry*)bDirectoryBuffer) + bSectorPos ;
 
@@ -1114,7 +1114,7 @@ byte Directory_GetDirEntry(const char* szFileName, ProcessAddressSpace* processA
 	return Directory_SUCCESS ;
 }
 
-byte Directory_FindFullDirPath(DriveInfo* pDriveInfo, const FileSystem_DIR_Entry* pDirEntry, char* szFullDirPath)
+byte Directory_FindFullDirPath(DiskDrive* pDiskDrive, const FileSystem_DIR_Entry* pDirEntry, char* szFullDirPath)
 {
 	byte bStatus ;
 	byte bSectorBuffer[512] ;
@@ -1153,7 +1153,7 @@ byte Directory_FindFullDirPath(DriveInfo* pDriveInfo, const FileSystem_DIR_Entry
 		unsigned uiParSectorNo = pParseDirEntry->uiParentSecID ;
 		byte bParSectorPos = pParseDirEntry->bParentSectorPos ;
 
-		RETURN_IF_NOT(bStatus, Directory_RawRead(pDriveInfo, uiParSectorNo, uiParSectorNo + 1, bSectorBuffer), Directory_SUCCESS) ;
+		RETURN_IF_NOT(bStatus, Directory_RawRead(pDiskDrive, uiParSectorNo, uiParSectorNo + 1, bSectorBuffer), Directory_SUCCESS) ;
 		
 		pParseDirEntry = &((const FileSystem_DIR_Entry*)bSectorBuffer)[bParSectorPos] ;
 	}
@@ -1172,7 +1172,7 @@ byte Directory_SyncPWD(ProcessAddressSpace* processAddressSpace)
 	byte bStatus ;
 	byte bSectorBuffer[512] ;
 
-	RETURN_IF_NOT(bStatus, Directory_RawRead(pDriveInfo, uiSectorNo, uiSectorNo + 1, bSectorBuffer), Directory_SUCCESS) ;
+	RETURN_IF_NOT(bStatus, Directory_RawRead(pDiskDrive, uiSectorNo, uiSectorNo + 1, bSectorBuffer), Directory_SUCCESS) ;
 
 	FileSystem_DIR_Entry* pSrcDirEntry = &(((FileSystem_DIR_Entry*)bSectorBuffer)[bSectorEntryPos]) ;
 	
@@ -1181,14 +1181,14 @@ byte Directory_SyncPWD(ProcessAddressSpace* processAddressSpace)
 	return Directory_SUCCESS ;
 }
 
-byte Directory_RawDirEntryRead(DriveInfo* pDriveInfo, unsigned uiSectorID, byte bSecPos, FileSystem_DIR_Entry* pDestDirEntry)
+byte Directory_RawDirEntryRead(DiskDrive* pDiskDrive, unsigned uiSectorID, byte bSecPos, FileSystem_DIR_Entry* pDestDirEntry)
 {
 	byte bStatus ;
 	byte bSectorBuffer[512] ;
 	
-	uiSectorID = FileSystem_GetRealSectorNumber(uiSectorID, pDriveInfo) ;
+	uiSectorID = FileSystem_GetRealSectorNumber(uiSectorID, pDiskDrive) ;
 
-	RETURN_IF_NOT(bStatus, DeviceDrive_Read(pDriveInfo, uiSectorID, 1, bSectorBuffer), DeviceDrive_SUCCESS) ;
+	RETURN_IF_NOT(bStatus, pDiskDrive->Read(uiSectorID, 1, bSectorBuffer), DeviceDrive_SUCCESS) ;
 
 	FileSystem_DIR_Entry* pDirEntry = &((FileSystem_DIR_Entry*)bSectorBuffer)[bSecPos] ; 
 

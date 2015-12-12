@@ -247,7 +247,7 @@ class ProcessManager
     void Sleep(unsigned uiSleepTime);
     void WaitOnInterrupt(const IRQ&);
     int GetCurProcId();
-    bool CopyDriveInfo(int iProcessID, int& iOldDriveId, FileSystem_PresentWorkingDirectory& mOldPWD);
+    bool CopyDiskDrive(int iProcessID, int& iOldDriveId, FileSystem_PresentWorkingDirectory& mOldPWD);
     void Kill(int iProcessID);
     void WakeUpFromKSWait(int iProcessID);
     bool IsChildAlive(int iChildProcessID);

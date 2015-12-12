@@ -26,10 +26,10 @@
 
 # include <DeviceDrive.h>
 
-byte FSManager_Mount(DriveInfo* pDriveInfo) ;
-byte FSManager_UnMount(DriveInfo* pDriveInfo) ;
-byte FSManager_GetSectorEntryValue(DriveInfo* pDriveInfo, const unsigned uiSectorID, unsigned* uiSectorEntryValue, byte bFromCahceOnly) ;
-byte FSManager_SetSectorEntryValue(DriveInfo* pDriveInfo, const unsigned uiSectorID, unsigned uiSectorEntryValue, byte bFromCahceOnly) ;
-byte FSManager_AllocateSector(DriveInfo* pDriveInfo, unsigned* uiFreeSectorID) ;
+byte FSManager_Mount(DiskDrive* pDiskDrive) ;
+byte FSManager_UnMount(DiskDrive* pDiskDrive) ;
+byte FSManager_GetSectorEntryValue(DiskDrive* pDiskDrive, const unsigned uiSectorID, unsigned* uiSectorEntryValue, byte bFromCahceOnly) ;
+byte FSManager_SetSectorEntryValue(DiskDrive* pDiskDrive, const unsigned uiSectorID, unsigned uiSectorEntryValue, byte bFromCahceOnly) ;
+byte FSManager_AllocateSector(DiskDrive* pDiskDrive, unsigned* uiFreeSectorID) ;
 
 #endif

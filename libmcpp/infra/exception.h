@@ -57,7 +57,7 @@ class exception
     }
     void Print() const
     {
-      printf("\n%s\n", _error.Value());
+      printf("\n%s\n", _error.c_str());
     }
   private:
     const upan::string _fileName;

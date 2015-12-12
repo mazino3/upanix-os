@@ -27,8 +27,8 @@
 #define DiskCache_SUCCESS 0
 #define DiskCache_FAILURE 1
 
-struct DriveInfo ;
-typedef struct DriveInfo DriveInfo ;
+struct DiskDrive ;
+typedef struct DiskDrive DiskDrive ;
 
 class DiskCacheKey : public BTreeKey
 {
@@ -100,7 +100,7 @@ class LFUSectorManager : public BTree::InOrderVisitor
 
 		upan::list<CacheRankNode> m_mReleaseList ;
 
-		DriveInfo* m_pDriveInfo ;
+		DiskDrive* m_pDiskDrive ;
 		unsigned m_bReleaseListBuilt ; 
 		unsigned m_uiMaxRelListSize ;
 		unsigned m_uiBuildBreak ;
@@ -113,7 +113,7 @@ class LFUSectorManager : public BTree::InOrderVisitor
 		inline bool IsCacheFull() ;
 
 	public:
-		LFUSectorManager(DriveInfo* pDriveInfo) ;
+		LFUSectorManager(DiskDrive* pDiskDrive) ;
 
 		void Run() ;
 		bool ReplaceCache(unsigned uiSectorID, byte* bDataBuffer) ;
@@ -124,7 +124,7 @@ class LFUSectorManager : public BTree::InOrderVisitor
 
 class DestroyDiskCacheKeyValue ;
 
-struct DiskCache
+class DiskCache
 {
 	public:
 		class SecKeyCacheValue
@@ -142,13 +142,16 @@ struct DiskCache
 				{
 					m_uiSectorID = rhs.m_uiSectorID ;
 					m_pSectorBuffer = rhs.m_pSectorBuffer ;
-
 					return *this ;
 				}
 
 				unsigned m_uiSectorID ;
 				byte* m_pSectorBuffer ;
-		} ;
+		};
+
+    DiskCacheKey* CreateKey(unsigned uiSectorID);
+    DiskCacheValue* CreateValue(const byte* pSrc);
+    void InsertToDirtyList(const DiskCache::SecKeyCacheValue& v);
 
 	public:
 		BTree* m_pTree ;
@@ -160,7 +163,7 @@ struct DiskCache
 		upan::list<SecKeyCacheValue>* m_pDirtyCacheList ;
 		LFUSectorManager* m_pLFUSectorManager ;
 
-		DriveInfo* pDriveInfo ;
+		DiskDrive* pDiskDrive ;
 		int iMaxCacheSectors ;
 		int bStopReleaseCacheTask ;
 };
@@ -184,11 +187,8 @@ class DestroyDiskCacheKeyValue : public BTree::DestroyKeyValue
 		}
 } ;
 
-void DiskCache_Setup(DriveInfo* pDriveInfo) ;
-byte DiskCache_Read(DriveInfo* pDriveInfo, unsigned uiStartSector, unsigned uiNoOfSectors, byte* bDataBuffer) ;
-byte DiskCache_Write(DriveInfo* pDriveInfo, unsigned uiStartSector, unsigned uiNoOfSectors, byte* bDataBuffer) ;
-void DiskCache_StopReleaseCacheTask(DriveInfo* pDriveInfo) ;
-void DiskCache_StartReleaseCacheTask(DriveInfo* pDriveInfo) ;
-byte DiskCache_FlushDirtyCacheSectors(DriveInfo* pDriveInfo, int iCount = -1) ; // Negative iCount => All Dirty Sectors
+void DiskCache_Setup(DiskDrive& diskDrive) ;
+void DiskCache_StopReleaseCacheTask(DiskDrive* pDiskDrive) ;
+void DiskCache_StartReleaseCacheTask(DiskDrive& pDiskDrive) ;
 
 #endif 

@@ -464,9 +464,6 @@ static void ATADeviceController_AddATADrive(RawDiskDrive* pDisk)
 		return ;
 	}
 
-	DriveInfo* pDriveInfo ;
-	Drive* pDrive ;
-	
 	unsigned i ;
 	unsigned uiTotalPartitions = partitionTable.uiNoOfPrimaryPartitions + partitionTable.uiNoOfExtPartitions ;
 	PartitionInfo* pPartitionInfo ;
@@ -484,15 +481,10 @@ static void ATADeviceController_AddATADrive(RawDiskDrive* pDisk)
 	{
 		if(uiNoOfParitions == 0)
 			break ;
-
 		uiMountSpaceAvailablePerDrive = uiTotalMountSpaceAvailable / uiNoOfParitions ;
-
-		if( uiMountSpaceAvailablePerDrive > uiMinMountSpaceRequired )
-		{
+		if(uiMountSpaceAvailablePerDrive > uiMinMountSpaceRequired)
 			break ;	
-		}
-
-		uiNoOfParitions-- ;
+		uiNoOfParitions--;
 	}
 	
 	if( uiMountSpaceAvailablePerDrive > uiMinMountSpaceRequired )
@@ -503,61 +495,46 @@ static void ATADeviceController_AddATADrive(RawDiskDrive* pDisk)
 	
 	for(i = 0; i < uiTotalPartitions; i++)
 	{
-		pDriveInfo = DeviceDrive_CreateDriveInfo(true) ;
-		pDrive = &pDriveInfo->drive ;
+    unsigned uiMountPointStart = 0;
+    unsigned uiMountPointEnd = 0;
+		if(i < uiNoOfParitions)
+		{
+			uiMountPointStart = MEM_HDD_FS_START + uiMountSpaceAvailablePerDrive * i ;
+			uiMountPointEnd = MEM_HDD_FS_START + uiMountSpaceAvailablePerDrive * (i + 1) ;
+		}
 
+    unsigned uiLBAStartSector;
 		if(i < partitionTable.uiNoOfPrimaryPartitions)
 		{
 			pPartitionInfo = &partitionTable.PrimaryParitions[i] ;
-			pDrive->uiLBAStartSector = pPartitionInfo->LBAStartSector ;
+			uiLBAStartSector = pPartitionInfo->LBAStartSector ;
 		}
 		else
 		{
 			pPartitionInfo = &partitionTable.ExtPartitions[i - partitionTable.uiNoOfPrimaryPartitions].CurrentPartition ;
-			pDrive->uiLBAStartSector = partitionTable.ExtPartitions[i - partitionTable.uiNoOfPrimaryPartitions].uiActualStartSector + pPartitionInfo->LBAStartSector ;
+			uiLBAStartSector = partitionTable.ExtPartitions[i - partitionTable.uiNoOfPrimaryPartitions].uiActualStartSector + pPartitionInfo->LBAStartSector ;
 		}
 
 		driveName[3] = driveCh + ATADeviceController_uiHDDDeviceID++ ;
-
-		String_Copy(pDrive->driveName, driveName) ;
-
-		pDrive->deviceType = DEV_ATA_IDE ;
-		pDrive->fsType = FS_UNKNOWN ; 
-		pDrive->driveNumber = HDD_DRIVE0 ;
-
-		pDrive->uiStartCynlider = pPartitionInfo->StartCylinder ;
-		pDrive->uiStartHead = pPartitionInfo->StartHead ;
-		pDrive->uiStartSector = pPartitionInfo->StartSector ;
-		
-		pDrive->uiEndCynlider = pPartitionInfo->EndCylinder ;
-		pDrive->uiEndHead = pPartitionInfo->EndHead ;
-		pDrive->uiEndSector = pPartitionInfo->EndSector ;
-		
-		pDrive->uiSizeInSectors = pPartitionInfo->LBANoOfSectors ;
-
-		pDrive->uiSectorsPerTrack = pPort->id.usSectors ;
-		pDrive->uiTracksPerHead = pPort->id.usCylinders ;
-		pDrive->uiNoOfHeads = pPort->id.usHead ;
-		
-		pDriveInfo->pDevice = pPort ;
-
-		pDriveInfo->uiMaxSectorsInFreePoolCache = uiSectorsInFreePool ;
-		pDriveInfo->uiNoOfSectorsInTableCache = uiSectorsInTableCache ;
-
-		if(i < uiNoOfParitions)
-		{
-			pDriveInfo->uiMountPointStart = MEM_HDD_FS_START + uiMountSpaceAvailablePerDrive * i ;
-			pDriveInfo->uiMountPointEnd = MEM_HDD_FS_START + uiMountSpaceAvailablePerDrive * (i + 1) ;
-		}
-		else
-		{
-			pDriveInfo->uiMountPointStart = 0 ;
-			pDriveInfo->uiMountPointEnd = 0 ;
-		}
-
-		pDriveInfo->pRawDisk = pDisk ;
-
-		DeviceDrive_AddEntry(pDriveInfo) ;
+    DiskDriveManager::Instance().Create(driveName, DEV_ATA_IDE, HDD_DRIVE0,
+      uiLBAStartSector,
+      pPartitionInfo->LBANoOfSectors,
+      pPartitionInfo->StartCylinder,
+      pPartitionInfo->StartHead,
+      pPartitionInfo->StartSector,
+      pPartitionInfo->EndCylinder,
+      pPartitionInfo->EndHead,
+      pPartitionInfo->EndSector,
+      pPort->id.usSectors,
+      pPort->id.usCylinders,
+      pPort->id.usHead,
+      true,
+      pPort,
+      pDisk,
+      uiSectorsInFreePool,
+      uiSectorsInTableCache,
+      uiMountPointStart,
+      uiMountPointEnd);
 	}
 }
 
@@ -565,42 +542,31 @@ static void ATADeviceController_AddATAPIDrive(ATAPort* pPort)
 {
 	char driveCh = 'a' ;
 	char driveName[4] = { 'c', 'd', '\0', '\0' } ;
+	driveName[2] = driveCh + ATADeviceController_uiCDDeviceID++;
 
-	DriveInfo* pDriveInfo = DeviceDrive_CreateDriveInfo(true) ;
-	Drive* pDrive = &pDriveInfo->drive ;
-
-	driveName[2] = driveCh + ATADeviceController_uiCDDeviceID++ ;
-	String_Copy(pDrive->driveName, driveName) ;
-
-	pDrive->deviceType = DEV_ATAPI ;
-	pDrive->fsType = FS_UNKNOWN ;
-	pDrive->driveNumber = CD_DRIVE0 ;
-
-	pDrive->uiLBAStartSector = 0 ;
-
-	pDrive->uiStartCynlider = 0 ;
-	pDrive->uiStartHead = 0 ;
-	pDrive->uiStartSector = 0 ;
+	const unsigned uiSectorsInFreePool = 4096 ;
+	unsigned uiSectorsInTableCache = 1024 ;
 	
-	pDrive->uiEndCynlider = pPort->id.usCylinders ;
-	pDrive->uiEndHead = pPort->id.usHead ;
-	pDrive->uiEndSector = pPort->id.usSectors ;
+	const unsigned uiMinMountSpaceRequired =  FileSystem_GetSizeForTableCache(uiSectorsInTableCache) ;
+	const unsigned uiTotalMountSpaceAvailable = MEM_CD_FS_END - MEM_CD_FS_START;
 	
+  if(uiTotalMountSpaceAvailable < uiMinMountSpaceRequired)
+    printf("\n insufficient mount space available for %s", driveName);
+	
+  unsigned uiSizeInSectors;
 	if(pPort->bLBA48Bit)
-		pDrive->uiSizeInSectors = pPort->id.uiLBACapacity48 ;
+		uiSizeInSectors = pPort->id.uiLBACapacity48 ;
 	else
-		pDrive->uiSizeInSectors = pPort->id.uiLBASectors ;
+		uiSizeInSectors = pPort->id.uiLBASectors ;
 
-	pDrive->uiSectorsPerTrack = pPort->id.usSectors ;
-	pDrive->uiTracksPerHead = pPort->id.usCylinders ;
-	pDrive->uiNoOfHeads = pPort->id.usHead ;
-	
-	pDriveInfo->pDevice = pPort ;
-
-	pDriveInfo->uiMountPointStart = MEM_CD_FS_START ;
-	pDriveInfo->uiMountPointEnd = MEM_CD_FS_END ;
-
-	DeviceDrive_AddEntry(pDriveInfo) ;
+	DiskDriveManager::Instance().Create(driveName, DEV_ATAPI, CD_DRIVE0,
+    0,
+    uiSizeInSectors, 
+    0, 0, 0,
+    pPort->id.usCylinders, pPort->id.usHead, pPort->id.usSectors,
+    pPort->id.usSectors, pPort->id.usCylinders, pPort->id.usHead,
+    true, pPort, nullptr, uiSectorsInFreePool, uiSectorsInTableCache,
+    MEM_CD_FS_START, MEM_CD_FS_END);
 }
 
 static byte ATADeviceController_Add(ATAController* pController)
@@ -661,14 +627,7 @@ static byte ATADeviceController_Add(ATAController* pController)
 		if(pController->pPort[i]->uiDevice == ATA_DEV_ATA)
 		{
 			szName[iCntIndex] += i ;
-			RawDiskDrive* pDisk = DeviceDrive_CreateRawDisk(szName, ATA_HARD_DISK, pController->pPort[ i ]) ;
-			if(!pDisk)
-			{
-				printf("\n Failed to create Raw Disk Drive for %s", szName) ;
-				return ATADeviceController_FAILURE ;
-			}
-
-			DeviceDrive_AddRawDiskEntry(pDisk) ;
+			RawDiskDrive* pDisk = DiskDriveManager::Instance().CreateRawDisk(szName, ATA_HARD_DISK, pController->pPort[ i ]) ;
 			ATADeviceController_AddATADrive(pDisk) ;
 		}
 		else if(pController->pPort[i]->uiDevice == ATA_DEV_ATAPI)

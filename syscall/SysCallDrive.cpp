@@ -46,7 +46,7 @@ __volatile__ unsigned uiP9)
 				char* szDriveName = KERNEL_ADDR(bDoAddrTranslation, char*, uiP1) ;
 
 				*piRetVal = 0 ;
-				if(DeviceDrive_Change(szDriveName) != DeviceDrive_SUCCESS)
+				if(DiskDriveManager::Instance().Change(szDriveName) != DeviceDrive_SUCCESS)
 					*piRetVal = -1 ;
 			}
 			break ;
@@ -59,7 +59,7 @@ __volatile__ unsigned uiP9)
 				int* iListSize = KERNEL_ADDR(bDoAddrTranslation, int*, uiP2) ;
 
 				*piRetVal = 0 ;
-				if(DeviceDrive_GetList(pDriveList, iListSize) != DeviceDrive_SUCCESS)
+				if(DiskDriveManager::Instance().GetList(pDriveList, iListSize) != DeviceDrive_SUCCESS)
 					*piRetVal = -1 ;
 			}
 			break ;
@@ -68,7 +68,7 @@ __volatile__ unsigned uiP9)
 			//P1 => Drive Name
 			{
 				char* szDriveName = KERNEL_ADDR(bDoAddrTranslation, char*, uiP1) ;
-				*piRetVal = -(DeviceDrive_MountDrive(szDriveName)) ;
+				*piRetVal = -(DiskDriveManager::Instance().MountDrive(szDriveName)) ;
 			}
 			break ;
 
@@ -76,7 +76,7 @@ __volatile__ unsigned uiP9)
 			//P1 => Drive Name
 			{
 				char* szDriveName = KERNEL_ADDR(bDoAddrTranslation, char*, uiP1) ;
-				*piRetVal = -(DeviceDrive_UnMountDrive(szDriveName)) ;
+				*piRetVal = -(DiskDriveManager::Instance().UnMountDrive(szDriveName)) ;
 			}
 			break ;
 
@@ -84,15 +84,15 @@ __volatile__ unsigned uiP9)
 			//P1 => Drive Name
 			{
 				char* szDriveName = KERNEL_ADDR(bDoAddrTranslation, char*, uiP1) ;
-				*piRetVal = -(DeviceDrive_FormatDrive(szDriveName)) ;
+				*piRetVal = -(DiskDriveManager::Instance().FormatDrive(szDriveName)) ;
 			}
 			break ;
 
-		case SYS_CALL_CURRENT_DRIVE : //Current Drive
+		case SYS_CALL_CURRENT_DRIVE_STAT : //Current Drive
 			//P1 => Ret Drive
 			{
-				Drive* pDrive = KERNEL_ADDR(bDoAddrTranslation, Drive*, uiP1) ;
-				*piRetVal = -(DeviceDrive_GetCurrentDrive(pDrive)) ;
+				DriveStat* pDriveStat = KERNEL_ADDR(bDoAddrTranslation, DriveStat*, uiP1) ;
+				*piRetVal = -(DiskDriveManager::Instance().GetCurrentDriveStat(pDriveStat)) ;
 			}
 			break ;
 	}

@@ -29,15 +29,15 @@
 
 static byte FSManager_BinarySearch(SectorBlockEntry* pList, int iSize, unsigned uiBlockID, int* iPos) ;
 static SectorBlockEntry* FSManager_GetSectorEntryFromCache(const FileSystem_TableCache* pFSTableCache, unsigned uiSectorEntry) ;
-static byte FSManager_FlushEntries(DriveInfo* pDriveInfo, int iFlushSize) ;
-static byte FSManager_AddSectorEntryIntoCache(DriveInfo* pDriveInfo, unsigned uiSectorEntry) ;
+static byte FSManager_FlushEntries(DiskDrive* pDiskDrive, int iFlushSize) ;
+static byte FSManager_AddSectorEntryIntoCache(DiskDrive* pDiskDrive, unsigned uiSectorEntry) ;
 static void FSManager_UpdateReadCount(SectorBlockEntry* pSectorBlockEntry) ;
 static void FSManager_UpdateWriteCount(SectorBlockEntry* pSectorBlockEntry) ;
-static byte FSManager_LoadFreeSectors(DriveInfo* pDriveInfo) ;
-static byte FSManager_GetFreeSector(DriveInfo* pDriveInfo, unsigned* uiSectorID) ;
-static byte FSManager_GetSectorEntryValueDirect(DriveInfo* pDriveInfo, unsigned uiSectorID, unsigned* uiValue) ;
-static byte FSManager_SetSectorEntryValueDirect(DriveInfo* pDriveInfo, unsigned uiSectorID, unsigned uiValue) ;
-static void FSManager_UpdateUsedSectors(DriveInfo* pDriveInfo, unsigned uiSectorEntryValue) ;
+static byte FSManager_LoadFreeSectors(DiskDrive* pDiskDrive) ;
+static byte FSManager_GetFreeSector(DiskDrive* pDiskDrive, unsigned* uiSectorID) ;
+static byte FSManager_GetSectorEntryValueDirect(DiskDrive* pDiskDrive, unsigned uiSectorID, unsigned* uiValue) ;
+static byte FSManager_SetSectorEntryValueDirect(DiskDrive* pDiskDrive, unsigned uiSectorID, unsigned uiValue) ;
+static void FSManager_UpdateUsedSectors(DiskDrive* pDiskDrive, unsigned uiSectorEntryValue) ;
 
 static byte FSManager_BinarySearch(SectorBlockEntry* pList, int iSize, unsigned uiBlockID, int* iPos)
 {
@@ -90,13 +90,13 @@ static SectorBlockEntry* FSManager_GetSectorEntryFromCache(const FileSystem_Tabl
 	return &pSectorBlockEntryList[iPos] ;
 }
 
-static byte FSManager_FlushEntries(DriveInfo* pDriveInfo, int iFlushSize)
+static byte FSManager_FlushEntries(DiskDrive* pDiskDrive, int iFlushSize)
 {
-	if(!FileSystem_IsTableCacheEnabled(pDriveInfo))
+	if(!FileSystem_IsTableCacheEnabled(pDiskDrive))
 		return FSManager_SUCCESS ;
 
-	FileSystem_TableCache* pFSTableCache = (FileSystem_TableCache*)&pDriveInfo->FSMountInfo.FSTableCache ;
-	FileSystem_BootBlock* pFSBootBlock = (FileSystem_BootBlock*)&pDriveInfo->FSMountInfo.FSBootBlock ;
+	FileSystem_TableCache* pFSTableCache = (FileSystem_TableCache*)&pDiskDrive->FSMountInfo.FSTableCache ;
+	FileSystem_BootBlock* pFSBootBlock = (FileSystem_BootBlock*)&pDiskDrive->FSMountInfo.FSBootBlock ;
 	SectorBlockEntry* pSectorBlockEntryList = pFSTableCache->pSectorBlockEntryList ;
 	int iSize = pFSTableCache->iSize ;
 
@@ -114,8 +114,7 @@ static byte FSManager_FlushEntries(DriveInfo* pDriveInfo, int iFlushSize)
 		if(pBlock->uiWriteCount == 0)
 			continue ;
 
-		RETURN_IF_NOT(bStatus, DeviceDrive_Write(pDriveInfo, 
-						pBlock->uiBlockID + pFSBootBlock->BPB_RsvdSecCnt + 1, 1, 
+		RETURN_IF_NOT(bStatus, pDiskDrive->Write(pBlock->uiBlockID + pFSBootBlock->BPB_RsvdSecCnt + 1, 1, 
 						(byte*)(pBlock->uiSectorBlock)), DeviceDrive_SUCCESS) ;
 	}
 
@@ -132,9 +131,9 @@ static byte FSManager_FlushEntries(DriveInfo* pDriveInfo, int iFlushSize)
 	return FSManager_SUCCESS ;
 }
 
-static byte FSManager_AddSectorEntryIntoCache(DriveInfo* pDriveInfo, unsigned uiSectorEntry)
+static byte FSManager_AddSectorEntryIntoCache(DiskDrive* pDiskDrive, unsigned uiSectorEntry)
 {	
-	FileSystemMountInfo* pFSMountInfo = (FileSystemMountInfo*)&pDriveInfo->FSMountInfo ;
+	FileSystemMountInfo* pFSMountInfo = (FileSystemMountInfo*)&pDiskDrive->FSMountInfo ;
 	FileSystem_BootBlock* pFSBootBlock = (FileSystem_BootBlock*)&pFSMountInfo->FSBootBlock ;
 	FileSystem_TableCache* pFSTableCache = (FileSystem_TableCache*)&pFSMountInfo->FSTableCache ;
 	SectorBlockEntry* pSectorBlockEntryList = pFSTableCache->pSectorBlockEntryList ;
@@ -142,9 +141,9 @@ static byte FSManager_AddSectorEntryIntoCache(DriveInfo* pDriveInfo, unsigned ui
 	int iPos ;
 	byte bStatus ;
 
-	if((unsigned)iSize == pDriveInfo->uiNoOfSectorsInTableCache)
+	if((unsigned)iSize == pDiskDrive->NoOfSectorsInTableCache())
 	{
-		RETURN_IF_NOT(bStatus, FSManager_FlushEntries(pDriveInfo, 1), FSManager_SUCCESS) ;
+		RETURN_IF_NOT(bStatus, FSManager_FlushEntries(pDiskDrive, 1), FSManager_SUCCESS) ;
 		iSize = pFSTableCache->iSize ;
 	}
 
@@ -157,8 +156,7 @@ static byte FSManager_AddSectorEntryIntoCache(DriveInfo* pDriveInfo, unsigned ui
 	MemUtil_CopyMemoryBack(MemUtil_GetDS(), uiSrc, MemUtil_GetDS(), uiDest, (iSize - iPos) * sizeof(SectorBlockEntry)) ;
 //	memmove((void*)uiDest, (void*)uiSrc, (iSize - iPos) * sizeof(SectorBlockEntry)) ;
 
-	RETURN_X_IF_NOT(DeviceDrive_Read(pDriveInfo, 
-					pFSBootBlock->BPB_RsvdSecCnt + BLOCK_ID(uiSectorEntry) + 1, 1, 
+	RETURN_X_IF_NOT(pDiskDrive->Read(pFSBootBlock->BPB_RsvdSecCnt + BLOCK_ID(uiSectorEntry) + 1, 1, 
 					(byte*)&(pSectorBlockEntryList[iPos].uiSectorBlock)),
 					DeviceDrive_SUCCESS, FSManager_FAILURE) ;
 
@@ -181,17 +179,17 @@ static void FSManager_UpdateWriteCount(SectorBlockEntry* pSectorBlockEntry)
 	pSectorBlockEntry->uiWriteCount++ ;
 }
 
-static byte FSManager_LoadFreeSectors(DriveInfo* pDriveInfo)
+static byte FSManager_LoadFreeSectors(DiskDrive* pDiskDrive)
 { 
-	if(!FileSystem_IsFreePoolCacheEnabled(pDriveInfo))
+	if(!FileSystem_IsFreePoolCacheEnabled(pDiskDrive))
 		return FSManager_SUCCESS ;
 
-  auto& freePoolQueue = *pDriveInfo->FSMountInfo.pFreePoolQueue;
+  auto& freePoolQueue = *pDiskDrive->FSMountInfo.pFreePoolQueue;
   if(freePoolQueue.full())
     return FSManager_SUCCESS;
 
 	byte bStatus;
-	FileSystem_BootBlock* pFSBootBlock = &pDriveInfo->FSMountInfo.FSBootBlock ;
+	FileSystem_BootBlock* pFSBootBlock = &pDiskDrive->FSMountInfo.FSBootBlock ;
 	byte bBuffer[ 4096 ] ;
 
 	unsigned* pTable ;
@@ -201,9 +199,9 @@ static byte FSManager_LoadFreeSectors(DriveInfo* pDriveInfo)
 	SectorBlockEntry* pSectorBlockEntryList = NULL ;
 	int iSize = 0 ;
 
-	if(FileSystem_IsTableCacheEnabled(pDriveInfo))
+	if(FileSystem_IsTableCacheEnabled(pDiskDrive))
 	{
-		FileSystem_TableCache* pFSTableCache = &(pDriveInfo->FSMountInfo.FSTableCache) ;
+		FileSystem_TableCache* pFSTableCache = &(pDiskDrive->FSMountInfo.FSTableCache) ;
 		iSize = pFSTableCache->iSize ;
 		unsigned* uiSectorBlock ;
 
@@ -243,7 +241,7 @@ static byte FSManager_LoadFreeSectors(DriveInfo* pDriveInfo)
 		if(bStop)
 			break ;
 
-		if(FileSystem_IsTableCacheEnabled(pDriveInfo))
+		if(FileSystem_IsTableCacheEnabled(pDiskDrive))
 		{
 			if(FSManager_BinarySearch(pSectorBlockEntryList, iSize, i, &iPos))
 			{
@@ -255,7 +253,7 @@ static byte FSManager_LoadFreeSectors(DriveInfo* pDriveInfo)
 		uiBlockSize = (pFSBootBlock->BPB_FSTableSize - i) ;
 		if(uiBlockSize > 8) uiBlockSize = 8 ;
 
-		RETURN_IF_NOT(bStatus, DeviceDrive_Read(pDriveInfo, i + pFSBootBlock->BPB_RsvdSecCnt + 1, uiBlockSize, (byte*)bBuffer), DeviceDrive_SUCCESS) ;
+		RETURN_IF_NOT(bStatus, pDiskDrive->Read(i + pFSBootBlock->BPB_RsvdSecCnt + 1, uiBlockSize, (byte*)bBuffer), DeviceDrive_SUCCESS) ;
 
 		pTable = (unsigned*)bBuffer ;
 
@@ -278,18 +276,18 @@ static byte FSManager_LoadFreeSectors(DriveInfo* pDriveInfo)
 	return FSManager_SUCCESS ;
 }
 
-static byte FSManager_GetFreeSector(DriveInfo* pDriveInfo, unsigned* uiSectorID)
+static byte FSManager_GetFreeSector(DiskDrive* pDiskDrive, unsigned* uiSectorID)
 {
 	byte bStatus ;
 	unsigned i, j ;
 	byte bBuffer[512] ;
 	unsigned* pTable ;
 
-	FileSystem_BootBlock* pFSBootBlock = &pDriveInfo->FSMountInfo.FSBootBlock ;
+	FileSystem_BootBlock* pFSBootBlock = &pDiskDrive->FSMountInfo.FSBootBlock ;
 	
 	for(i = 0; i < pFSBootBlock->BPB_FSTableSize; i++)
 	{
-		RETURN_IF_NOT(bStatus, DeviceDrive_Read(pDriveInfo, i + pFSBootBlock->BPB_RsvdSecCnt + 1, 1, (byte*)bBuffer), DeviceDrive_SUCCESS) ;
+		RETURN_IF_NOT(bStatus, pDiskDrive->Read(i + pFSBootBlock->BPB_RsvdSecCnt + 1, 1, (byte*)bBuffer), DeviceDrive_SUCCESS) ;
 
 		pTable = (unsigned*)bBuffer ;
 
@@ -306,13 +304,12 @@ static byte FSManager_GetFreeSector(DriveInfo* pDriveInfo, unsigned* uiSectorID)
 	return FSManager_FAILURE ;
 }
 
-static byte FSManager_GetSectorEntryValueDirect(DriveInfo* pDriveInfo, unsigned uiSectorID, unsigned* uiValue)
+static byte FSManager_GetSectorEntryValueDirect(DiskDrive* pDiskDrive, unsigned uiSectorID, unsigned* uiValue)
 {
 	unsigned pTable[ ENTRIES_PER_TABLE_SECTOR ] ;
-	FileSystem_BootBlock* pFSBootBlock = &pDriveInfo->FSMountInfo.FSBootBlock ;
+	FileSystem_BootBlock* pFSBootBlock = &pDiskDrive->FSMountInfo.FSBootBlock ;
 
-	RETURN_X_IF_NOT(DeviceDrive_Read(pDriveInfo, 
-									pFSBootBlock->BPB_RsvdSecCnt + BLOCK_ID(uiSectorID) + 1, 1, 
+	RETURN_X_IF_NOT(pDiskDrive->Read(pFSBootBlock->BPB_RsvdSecCnt + BLOCK_ID(uiSectorID) + 1, 1, 
 									(byte*)pTable),
 					DeviceDrive_SUCCESS, FSManager_FAILURE) ;
 
@@ -321,55 +318,53 @@ static byte FSManager_GetSectorEntryValueDirect(DriveInfo* pDriveInfo, unsigned 
 	return FSManager_SUCCESS ;
 }
 
-static byte FSManager_SetSectorEntryValueDirect(DriveInfo* pDriveInfo, unsigned uiSectorID, unsigned uiValue)
+static byte FSManager_SetSectorEntryValueDirect(DiskDrive* pDiskDrive, unsigned uiSectorID, unsigned uiValue)
 {
 	unsigned pTable[ ENTRIES_PER_TABLE_SECTOR ] ;
 
-	FileSystem_BootBlock* pFSBootBlock = &pDriveInfo->FSMountInfo.FSBootBlock ;
+	FileSystem_BootBlock* pFSBootBlock = &pDiskDrive->FSMountInfo.FSBootBlock ;
 
-	RETURN_X_IF_NOT(DeviceDrive_Read(pDriveInfo, 
-									pFSBootBlock->BPB_RsvdSecCnt + BLOCK_ID(uiSectorID) + 1, 1, 
+	RETURN_X_IF_NOT(pDiskDrive->Read(pFSBootBlock->BPB_RsvdSecCnt + BLOCK_ID(uiSectorID) + 1, 1, 
 									(byte*)pTable),
 					DeviceDrive_SUCCESS, FSManager_FAILURE) ;
 
 	pTable[ BLOCK_OFFSET(uiSectorID) ] = uiValue ;
 
-	RETURN_X_IF_NOT(DeviceDrive_Write(pDriveInfo, 
-									pFSBootBlock->BPB_RsvdSecCnt + BLOCK_ID(uiSectorID) + 1, 1, 
+	RETURN_X_IF_NOT(pDiskDrive->Write(pFSBootBlock->BPB_RsvdSecCnt + BLOCK_ID(uiSectorID) + 1, 1, 
 									(byte*)pTable), 
 					DeviceDrive_SUCCESS, FSManager_FAILURE) ;
 
 	return FSManager_SUCCESS ;
 }
 
-static void FSManager_UpdateUsedSectors(DriveInfo* pDriveInfo, unsigned uiSectorEntryValue)
+static void FSManager_UpdateUsedSectors(DiskDrive* pDiskDrive, unsigned uiSectorEntryValue)
 {
 	if(uiSectorEntryValue == EOC)
-		pDriveInfo->FSMountInfo.FSBootBlock.uiUsedSectors++ ;
+		pDiskDrive->FSMountInfo.FSBootBlock.uiUsedSectors++ ;
 	else if(uiSectorEntryValue == 0)
-		pDriveInfo->FSMountInfo.FSBootBlock.uiUsedSectors-- ;
+		pDiskDrive->FSMountInfo.FSBootBlock.uiUsedSectors-- ;
 }
 
 /**************************************************************************************/
 
-byte FSManager_Mount(DriveInfo* pDriveInfo)
+byte FSManager_Mount(DiskDrive* pDiskDrive)
 {
-	return FSManager_LoadFreeSectors(pDriveInfo) ;
+	return FSManager_LoadFreeSectors(pDiskDrive) ;
 }
 
-byte FSManager_UnMount(DriveInfo* pDriveInfo)
+byte FSManager_UnMount(DiskDrive* pDiskDrive)
 {
-	return FSManager_FlushEntries(pDriveInfo, pDriveInfo->uiNoOfSectorsInTableCache) ;
+	return FSManager_FlushEntries(pDiskDrive, pDiskDrive->NoOfSectorsInTableCache());
 }
 
-byte FSManager_GetSectorEntryValue(DriveInfo* pDriveInfo, const unsigned uiSectorID, unsigned* uiSectorEntryValue, byte bFromCahceOnly)
+byte FSManager_GetSectorEntryValue(DiskDrive* pDiskDrive, const unsigned uiSectorID, unsigned* uiSectorEntryValue, byte bFromCahceOnly)
 {
-	if(!FileSystem_IsTableCacheEnabled(pDriveInfo))
+	if(!FileSystem_IsTableCacheEnabled(pDiskDrive))
 	{
-		return FSManager_GetSectorEntryValueDirect(const_cast<DriveInfo*>(pDriveInfo), uiSectorID, uiSectorEntryValue) ;
+		return FSManager_GetSectorEntryValueDirect(const_cast<DiskDrive*>(pDiskDrive), uiSectorID, uiSectorEntryValue) ;
 	}
 	
-	FileSystemMountInfo* pFSMountInfo = (FileSystemMountInfo*)&pDriveInfo->FSMountInfo ;
+	FileSystemMountInfo* pFSMountInfo = (FileSystemMountInfo*)&pDiskDrive->FSMountInfo ;
 	SectorBlockEntry* pSectorBlockEntry = FSManager_GetSectorEntryFromCache(&pFSMountInfo->FSTableCache, uiSectorID) ;
 
 	if(pSectorBlockEntry != NULL)
@@ -386,33 +381,33 @@ byte FSManager_GetSectorEntryValue(DriveInfo* pDriveInfo, const unsigned uiSecto
 
 	byte bStatus ;
 
-	RETURN_IF_NOT(bStatus, FSManager_AddSectorEntryIntoCache(pDriveInfo, uiSectorID), FSManager_SUCCESS) ;
+	RETURN_IF_NOT(bStatus, FSManager_AddSectorEntryIntoCache(pDiskDrive, uiSectorID), FSManager_SUCCESS) ;
 	
-	RETURN_IF_NOT(bStatus, FSManager_GetSectorEntryValue(pDriveInfo, uiSectorID, uiSectorEntryValue, true), FSManager_SUCCESS) ;
+	RETURN_IF_NOT(bStatus, FSManager_GetSectorEntryValue(pDiskDrive, uiSectorID, uiSectorEntryValue, true), FSManager_SUCCESS) ;
 	
 	return FSManager_SUCCESS ;
 }
 
-byte FSManager_SetSectorEntryValue(DriveInfo* pDriveInfo, const unsigned uiSectorID, unsigned uiSectorEntryValue, byte bFromCahceOnly)
+byte FSManager_SetSectorEntryValue(DiskDrive* pDiskDrive, const unsigned uiSectorID, unsigned uiSectorEntryValue, byte bFromCahceOnly)
 {
 	byte bStatus ;
 
-	if(!FileSystem_IsTableCacheEnabled(pDriveInfo))
+	if(!FileSystem_IsTableCacheEnabled(pDiskDrive))
 	{
-		RETURN_IF_NOT(bStatus, FSManager_SetSectorEntryValueDirect(pDriveInfo, uiSectorID, uiSectorEntryValue),
+		RETURN_IF_NOT(bStatus, FSManager_SetSectorEntryValueDirect(pDiskDrive, uiSectorID, uiSectorEntryValue),
 						FSManager_SUCCESS) ;
 
-		FSManager_UpdateUsedSectors(pDriveInfo, uiSectorEntryValue) ;
+		FSManager_UpdateUsedSectors(pDiskDrive, uiSectorEntryValue) ;
 
 		return FSManager_SUCCESS ;
 	}
 	
 	if(!bFromCahceOnly)
 	{
-		FSManager_UpdateUsedSectors(pDriveInfo, uiSectorEntryValue) ;
+		FSManager_UpdateUsedSectors(pDiskDrive, uiSectorEntryValue) ;
 	}
 
-	FileSystemMountInfo* pFSMountInfo = (FileSystemMountInfo*)&pDriveInfo->FSMountInfo ;
+	FileSystemMountInfo* pFSMountInfo = (FileSystemMountInfo*)&pDiskDrive->FSMountInfo ;
 	SectorBlockEntry* pSectorBlockEntry = FSManager_GetSectorEntryFromCache(&pFSMountInfo->FSTableCache, uiSectorID) ;
 
 	if(pSectorBlockEntry != NULL)
@@ -432,45 +427,45 @@ byte FSManager_SetSectorEntryValue(DriveInfo* pDriveInfo, const unsigned uiSecto
 	if(bFromCahceOnly)
 		return FSManager_FAILURE ;
 	
-	RETURN_IF_NOT(bStatus, FSManager_AddSectorEntryIntoCache(pDriveInfo, uiSectorID), FSManager_SUCCESS) ;
+	RETURN_IF_NOT(bStatus, FSManager_AddSectorEntryIntoCache(pDiskDrive, uiSectorID), FSManager_SUCCESS) ;
 
-	RETURN_IF_NOT(bStatus, FSManager_SetSectorEntryValue(pDriveInfo, uiSectorID, uiSectorEntryValue, true), FSManager_SUCCESS) ;
+	RETURN_IF_NOT(bStatus, FSManager_SetSectorEntryValue(pDiskDrive, uiSectorID, uiSectorEntryValue, true), FSManager_SUCCESS) ;
 		
 	return FSManager_SUCCESS ;
 }
 
-byte FSManager_AllocateSector(DriveInfo* pDriveInfo, unsigned* uiFreeSectorID)
+byte FSManager_AllocateSector(DiskDrive* pDiskDrive, unsigned* uiFreeSectorID)
 {
 	byte bStatus ;
 
-	if(!FileSystem_IsFreePoolCacheEnabled(pDriveInfo))
+	if(!FileSystem_IsFreePoolCacheEnabled(pDiskDrive))
 	{
-		RETURN_IF_NOT(bStatus, FSManager_GetFreeSector(pDriveInfo, uiFreeSectorID), FSManager_SUCCESS) ;
+		RETURN_IF_NOT(bStatus, FSManager_GetFreeSector(pDiskDrive, uiFreeSectorID), FSManager_SUCCESS) ;
 	}
 	else
 	{
-		if(pDriveInfo->FSMountInfo.pFreePoolQueue->empty())
+		if(pDiskDrive->FSMountInfo.pFreePoolQueue->empty())
     {
-			RETURN_IF_NOT(bStatus, FSManager_LoadFreeSectors(pDriveInfo), FSManager_SUCCESS) ;
-      if(pDriveInfo->FSMountInfo.pFreePoolQueue->empty())
+			RETURN_IF_NOT(bStatus, FSManager_LoadFreeSectors(pDiskDrive), FSManager_SUCCESS) ;
+      if(pDiskDrive->FSMountInfo.pFreePoolQueue->empty())
         return FSManager_FAILURE;
 		}
-    *uiFreeSectorID = pDriveInfo->FSMountInfo.pFreePoolQueue->front();
-    pDriveInfo->FSMountInfo.pFreePoolQueue->pop_front();
+    *uiFreeSectorID = pDiskDrive->FSMountInfo.pFreePoolQueue->front();
+    pDiskDrive->FSMountInfo.pFreePoolQueue->pop_front();
 	}
 
-	RETURN_IF_NOT(bStatus, FSManager_SetSectorEntryValue(pDriveInfo, *uiFreeSectorID, EOC, false), FSManager_SUCCESS) ;
+	RETURN_IF_NOT(bStatus, FSManager_SetSectorEntryValue(pDiskDrive, *uiFreeSectorID, EOC, false), FSManager_SUCCESS) ;
 
 	return FSManager_SUCCESS ;
 }
 
-void display_cahce(DriveInfo* pDriveInfo)
+void display_cahce(DiskDrive* pDiskDrive)
 {
 	int i ;
 	KC::MDisplay().Message("\nSTART\n", ' ') ;
-	for(i = 0; i < pDriveInfo->FSMountInfo.FSTableCache.iSize; i++)
+	for(i = 0; i < pDiskDrive->FSMountInfo.FSTableCache.iSize; i++)
 	{
-		KC::MDisplay().Address(", ", pDriveInfo->FSMountInfo.FSTableCache.pSectorBlockEntryList[i].uiBlockID) ;
+		KC::MDisplay().Address(", ", pDiskDrive->FSMountInfo.FSTableCache.pSectorBlockEntryList[i].uiBlockID) ;
 	}
-	KC::MDisplay().Address(" :: SIZE = ", pDriveInfo->FSMountInfo.FSTableCache.iSize) ;
+	KC::MDisplay().Address(" :: SIZE = ", pDiskDrive->FSMountInfo.FSTableCache.iSize) ;
 }

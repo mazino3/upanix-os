@@ -61,7 +61,7 @@ class MutexGuard
       _m.UnLock();
     }
   private:
-    Mutex _m;
+    Mutex& _m;
 };
 
 #endif

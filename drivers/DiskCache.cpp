@@ -26,22 +26,18 @@
 # include <ProcessManager.h>
 # include <Display.h>
 
-static byte DiskCache_RawWrite(DriveInfo* pDriveInfo, unsigned uiStartSector, unsigned uiNoOfSectors, byte* bDataBuffer) ;
-static DiskCacheKey* DiskCache_CreateKey(DiskCache* pCache, unsigned uiSectorID) ;
-static DiskCacheValue* DiskCache_CreateValue(DiskCache* pCache, const byte* pSrc) ;
-
-LFUSectorManager::LFUSectorManager(DriveInfo* pDriveInfo) : 
-	m_pDriveInfo(pDriveInfo), 
+LFUSectorManager::LFUSectorManager(DiskDrive* pDiskDrive) : 
+	m_pDiskDrive(pDiskDrive), 
 	m_bReleaseListBuilt(false),
-	m_uiMaxRelListSize(0.1 * m_pDriveInfo->mCache.iMaxCacheSectors),
-	m_uiBuildBreak(0.05 * m_pDriveInfo->mCache.iMaxCacheSectors),
+	m_uiMaxRelListSize(0.1 * m_pDiskDrive->mCache.iMaxCacheSectors),
+	m_uiBuildBreak(0.05 * m_pDiskDrive->mCache.iMaxCacheSectors),
 	m_bAbort(false)
 {
 }
 
 bool LFUSectorManager::IsCacheFull()
 {
-	return (m_pDriveInfo->mCache.m_pTree->GetTotalElements() >= m_pDriveInfo->mCache.iMaxCacheSectors) ;
+	return (m_pDiskDrive->mCache.m_pTree->GetTotalElements() >= m_pDiskDrive->mCache.iMaxCacheSectors) ;
 }
 
 void LFUSectorManager::Run()
@@ -58,7 +54,7 @@ void LFUSectorManager::Run()
 	m_uiCurrent = PIT_GetClockCount() ;
 	m_uiBuildCount = 0 ;
 
-	m_pDriveInfo->mCache.m_pTree->InOrderTraverse(*this) ;
+	m_pDiskDrive->mCache.m_pTree->InOrderTraverse(*this) ;
 
 	if(m_bAbort)
 		return ;
@@ -93,7 +89,7 @@ bool LFUSectorManager::ReplaceCache(unsigned uiSectorID, byte* bDataBuffer)
     m_mReleaseList.pop_front();
 		// Skip dirty sectors from replacing
     DiskCache::SecKeyCacheValue skey(node.m_uiSectorID, NULL);
-    auto l = m_pDriveInfo->mCache.m_pDirtyCacheList;
+    auto l = m_pDiskDrive->mCache.m_pDirtyCacheList;
     if(upan::find(l->begin(), l->end(), skey) != l->end())
 			continue;
 		bFound = true;
@@ -107,17 +103,17 @@ bool LFUSectorManager::ReplaceCache(unsigned uiSectorID, byte* bDataBuffer)
 		return true ;
 	}
 
-	if(!(m_pDriveInfo->mCache.m_pTree->Delete(DiskCacheKey(node.m_uiSectorID))))
+	if(!(m_pDiskDrive->mCache.m_pTree->Delete(DiskCacheKey(node.m_uiSectorID))))
 	{
 		printf("\n Failed to delete ranked sector: %u from the Cache BTree", node.m_uiSectorID) ;
 		ProcessManager::Instance().Sleep(10000); 
 		return false ;
 	}
 
-	DiskCacheKey* pKey = DiskCache_CreateKey(&(m_pDriveInfo->mCache), uiSectorID) ;
-	DiskCacheValue* pVal = DiskCache_CreateValue(&(m_pDriveInfo->mCache), bDataBuffer) ;
+	DiskCacheKey* pKey = m_pDiskDrive->mCache.CreateKey(uiSectorID) ;
+	DiskCacheValue* pVal = m_pDiskDrive->mCache.CreateValue(bDataBuffer) ;
 
-	if(!m_pDriveInfo->mCache.m_pTree->Insert(pKey, pVal))
+	if(!m_pDiskDrive->mCache.m_pTree->Insert(pKey, pVal))
 	{
 		printf("\n Disk Cache Insert failed!!! %s:%d", __FILE__, __LINE__) ;
 		return false ;
@@ -136,7 +132,7 @@ void LFUSectorManager::operator()(const BTreeKey& rKey, BTreeValue* pValue)
 
 	// Skip dirty sectors from lfu ranking
   DiskCache::SecKeyCacheValue skey(key.GetSectorID(), NULL);
-  auto l = m_pDriveInfo->mCache.m_pDirtyCacheList;
+  auto l = m_pDiskDrive->mCache.m_pDirtyCacheList;
   if(upan::find(l->begin(), l->end(), skey) != l->end())
 		return ;
 
@@ -155,385 +151,94 @@ void LFUSectorManager::operator()(const BTreeKey& rKey, BTreeValue* pValue)
 	m_mReleaseList.sorted_insert_asc(node);
 }
 
-static void DiskCache_InsertToDirtyList(DiskCache* pCache, const DiskCache::SecKeyCacheValue& v)
+void DiskCache::InsertToDirtyList(const DiskCache::SecKeyCacheValue& v)
 {
-  auto l = pCache->m_pDirtyCacheList;
-  if(upan::find(l->begin(), l->end(), v) == l->end())
-		pCache->m_pDirtyCacheList->push_back(v);
+  if(upan::find(m_pDirtyCacheList->begin(), m_pDirtyCacheList->end(), v) == m_pDirtyCacheList->end())
+    m_pDirtyCacheList->push_back(v);
 }
 
-static DiskCacheKey* DiskCache_CreateKey(DiskCache* pCache, unsigned uiSectorID)
+DiskCacheKey* DiskCache::CreateKey(unsigned uiSectorID)
 {
-	DiskCacheKey* pKey = pCache->m_pCacheKeyMemPool->Create() ;
+	DiskCacheKey* pKey = m_pCacheKeyMemPool->Create() ;
 	pKey->SetSectorID(uiSectorID) ;
 	return pKey ;
 }
 
-static DiskCacheValue* DiskCache_CreateValue(DiskCache* pCache, const byte* pSrc)
+DiskCacheValue* DiskCache::CreateValue(const byte* pSrc)
 {
-	DiskCacheValue* pValue = pCache->m_pCacheValueMemPool->Create() ;
+	DiskCacheValue* pValue = m_pCacheValueMemPool->Create() ;
 	pValue->Write(pSrc) ;
 	return pValue ;
 }
 
-bool DiskCache_FlushSector(DriveInfo* pDriveInfo, const unsigned& uiSectorID, const byte* pBuffer)
-{
-	if(!pBuffer)
-		return false ;
-
-	if(DiskCache_RawWrite(pDriveInfo, uiSectorID, 1, (byte*)pBuffer) != DiskCache_SUCCESS)
-		return false ;
-
-	return true ;
-}
-
-static unsigned uiTotalFloppyDiskReads = 0;
-static unsigned uiTotalATADiskReads = 0;
-static unsigned uiTotalUSBDiskReads = 0;
-
-void DiskCache_ShowTotalDiskReads()
-{
-	printf("\n Total Floppy Disk Reads: %u", uiTotalFloppyDiskReads) ;
-	printf("\n Total ATA Disk Reads: %u", uiTotalATADiskReads) ;
-	printf("\n Total USB Disk Reads: %u", uiTotalUSBDiskReads) ;
-}
-
-static byte DiskCache_RawRead(DriveInfo* pDriveInfo, unsigned uiStartSector, unsigned uiNoOfSectors, byte* bDataBuffer)
-{
-	byte bStatus ;
-	switch(pDriveInfo->drive.deviceType)
-	{
-	case DEV_FLOPPY:
-		uiTotalFloppyDiskReads++ ;
-		bStatus = Floppy_Read(&pDriveInfo->drive, uiStartSector, uiStartSector + uiNoOfSectors, bDataBuffer) ;
-		break ;
-
-	case DEV_ATA_IDE:
-		uiTotalATADiskReads++ ;
-		bStatus = ATADrive_Read((ATAPort*)pDriveInfo->pDevice, uiStartSector, bDataBuffer, uiNoOfSectors) ;
-		break ;
-
-	case DEV_SCSI_USB_DISK:
-		uiTotalUSBDiskReads++ ;
-		bStatus = SCSIHandler_GenericRead((SCSIDevice*)pDriveInfo->pDevice, uiStartSector, uiNoOfSectors, bDataBuffer) ;
-		break ;
-
-	default:
-		bStatus = DeviceDrive_ERR_UNKNOWN_DEVICE_TYPE ;
-	}
-
-	return bStatus ;
-}
-
-static byte DiskCache_RawWrite(DriveInfo* pDriveInfo, unsigned uiStartSector, unsigned uiNoOfSectors, byte* bDataBuffer)
-{
-	byte bStatus ;
-	switch(pDriveInfo->drive.deviceType)
-	{
-	case DEV_FLOPPY:
-		bStatus = Floppy_Write(&pDriveInfo->drive, uiStartSector, uiStartSector + uiNoOfSectors, bDataBuffer) ;
-		break ;
-
-	case DEV_ATA_IDE:
-		bStatus = ATADrive_Write((ATAPort*)pDriveInfo->pDevice, uiStartSector, bDataBuffer, uiNoOfSectors) ;
-		break ;
-
-	case DEV_SCSI_USB_DISK:
-		bStatus = SCSIHandler_GenericWrite((SCSIDevice*)pDriveInfo->pDevice, uiStartSector, uiNoOfSectors, bDataBuffer) ;
-		break ;
-
-	default:
-		bStatus = DeviceDrive_ERR_UNKNOWN_DEVICE_TYPE ;
-	}
-
-	return bStatus ;
-}
-
-static void DiskCache_TaskFlushCache(DriveInfo* pDriveInfo, unsigned uiParam2)
+static void DiskCache_TaskFlushCache(DiskDrive* pDiskDrive, unsigned uiParam2)
 {
 	do
 	{
-	//	if(pDriveInfo->drive.bMounted)
-			DiskCache_FlushDirtyCacheSectors(pDriveInfo, 10) ;
-
+	//	if(pDiskDrive->Mounted())
+    pDiskDrive->FlushDirtyCacheSectors(10) ;
 		ProcessManager::Instance().Sleep(200) ;
-	} while(!pDriveInfo->mCache.bStopReleaseCacheTask) ;
+	} while(!pDiskDrive->mCache.bStopReleaseCacheTask) ;
 
 	ProcessManager_EXIT() ;
 }
 
-static void DiskCache_TaskReleaseCache(DriveInfo* pDriveInfo, unsigned uiParam2)
+static void DiskCache_TaskReleaseCache(DiskDrive* pDiskDrive, unsigned uiParam2)
 {
 	do
 	{
-		if(pDriveInfo->drive.bMounted)
-			pDriveInfo->mCache.m_pLFUSectorManager->Run() ;
+		if(pDiskDrive->Mounted())
+			pDiskDrive->mCache.m_pLFUSectorManager->Run() ;
 
 		ProcessManager::Instance().Sleep(50) ;
-	} while(!pDriveInfo->mCache.bStopReleaseCacheTask) ;
+	} while(!pDiskDrive->mCache.bStopReleaseCacheTask) ;
 
 	ProcessManager_EXIT() ;
 }
 
 /***************************************************************************************************************************************/
 
-void DiskCache_Setup(DriveInfo* pDriveInfo)
+void DiskCache_Setup(DiskDrive& diskDrive)
 {
-	pDriveInfo->bEnableDiskCache = true ;
-	pDriveInfo->mCache.pDriveInfo = pDriveInfo ;
+  diskDrive.EnableDiskCache(true);
+	diskDrive.mCache.pDiskDrive = &diskDrive ;
 
-	pDriveInfo->mCache.iMaxCacheSectors = 16384 ;
-	pDriveInfo->mCache.m_pDestroyKeyValue = new DestroyDiskCacheKeyValue(&(pDriveInfo->mCache)) ;
+	diskDrive.mCache.iMaxCacheSectors = 16384 ;
+	diskDrive.mCache.m_pDestroyKeyValue = new DestroyDiskCacheKeyValue(&(diskDrive.mCache)) ;
 
-	pDriveInfo->mCache.m_pTree = new BTree(pDriveInfo->mCache.iMaxCacheSectors) ;
-	pDriveInfo->mCache.m_pTree->SetDestoryKeyValueCallBack(pDriveInfo->mCache.m_pDestroyKeyValue) ;
+	diskDrive.mCache.m_pTree = new BTree(diskDrive.mCache.iMaxCacheSectors) ;
+	diskDrive.mCache.m_pTree->SetDestoryKeyValueCallBack(diskDrive.mCache.m_pDestroyKeyValue) ;
 
-	pDriveInfo->mCache.m_pCacheKeyMemPool = MemPool<DiskCacheKey>::CreateMemPool(pDriveInfo->mCache.iMaxCacheSectors) ;
-	pDriveInfo->mCache.m_pCacheValueMemPool = MemPool<DiskCacheValue>::CreateMemPool(pDriveInfo->mCache.iMaxCacheSectors) ;
+	diskDrive.mCache.m_pCacheKeyMemPool = MemPool<DiskCacheKey>::CreateMemPool(diskDrive.mCache.iMaxCacheSectors) ;
+	diskDrive.mCache.m_pCacheValueMemPool = MemPool<DiskCacheValue>::CreateMemPool(diskDrive.mCache.iMaxCacheSectors) ;
 
-	if(pDriveInfo->mCache.m_pCacheValueMemPool == NULL || pDriveInfo->mCache.m_pCacheKeyMemPool == NULL)
+	if(diskDrive.mCache.m_pCacheValueMemPool == NULL || diskDrive.mCache.m_pCacheKeyMemPool == NULL)
 	{
 		printf("\n DiskCache Setup Failed due to MemPool creation failure") ;
 		return ;
 	}
 
-	//pDriveInfo->mCache.m_pTree->SetMaxElements(pDriveInfo->mCache.iMaxCacheSectors) ;
-	pDriveInfo->mCache.m_pDirtyCacheList = new upan::list<DiskCache::SecKeyCacheValue>() ;
-	pDriveInfo->mCache.m_pLFUSectorManager = new LFUSectorManager(pDriveInfo) ;
+	//pDiskDrive->mCache.m_pTree->SetMaxElements(pDiskDrive->mCache.iMaxCacheSectors) ;
+	diskDrive.mCache.m_pDirtyCacheList = new upan::list<DiskCache::SecKeyCacheValue>() ;
+	diskDrive.mCache.m_pLFUSectorManager = new LFUSectorManager(&diskDrive) ;
 }
 
-byte DiskCache_Read(DriveInfo* pDriveInfo, unsigned uiStartSector, unsigned uiNoOfSectors, byte* bDataBuffer)
+void DiskCache_StartReleaseCacheTask(DiskDrive& diskDrive)
 {
-	uiStartSector += pDriveInfo->drive.uiLBAStartSector ;
+	diskDrive.mCache.bStopReleaseCacheTask = false;
 
-	if(!pDriveInfo->bEnableDiskCache)
-	{
-		return DiskCache_RawRead(pDriveInfo, uiStartSector, uiNoOfSectors, bDataBuffer) ;
-	}
+	int pid;
+	char szDCFName[64] = "dcf-";
+	String_CanCat(szDCFName, diskDrive.DriveName().c_str());
+	ProcessManager::Instance().CreateKernelImage((unsigned)&DiskCache_TaskFlushCache, ProcessManager::Instance().GetCurProcId(), false, (unsigned)&diskDrive, 0, &pid, szDCFName);
 
-	DiskCacheValue* pCacheValue[ uiNoOfSectors ] ;
-	DiskCache* pCache = &(pDriveInfo->mCache) ;
-
-	unsigned uiEndSector = uiStartSector + uiNoOfSectors ;
-	unsigned uiSectorIndex ;
-	unsigned uiFirstBreak, uiLastBreak ;
-	uiFirstBreak = uiLastBreak = uiEndSector ;
-
-	for(uiSectorIndex = uiStartSector; uiSectorIndex < uiEndSector; uiSectorIndex++)
-	{
-		unsigned uiIndex = uiSectorIndex - uiStartSector ;
-		pCacheValue[ uiIndex ] = static_cast<DiskCacheValue*>(pCache->m_pTree->Find(DiskCacheKey(uiSectorIndex))) ;
-		if(!pCacheValue[ uiIndex ])
-		{
-			if(uiFirstBreak == uiEndSector)
-				uiFirstBreak = uiSectorIndex ;
-
-			uiLastBreak = uiSectorIndex ;
-		}
-	}
-
-	__volatile__ unsigned uiIndex ;
-	for(uiSectorIndex = uiStartSector; uiSectorIndex < uiFirstBreak; uiSectorIndex++)
-	{
-		uiIndex = uiSectorIndex - uiStartSector ;
-		pCacheValue[ uiIndex ]->Read(bDataBuffer + (uiIndex * 512)) ;
-	}
-
-	for(uiSectorIndex = uiLastBreak + 1; uiSectorIndex < uiEndSector; uiSectorIndex++)
-	{
-		uiIndex = uiSectorIndex - uiStartSector ;
-		pCacheValue[ uiIndex ]->Read(bDataBuffer + (uiIndex * 512)) ;
-	}
-
-	if(uiFirstBreak < uiEndSector)
-	{
-		uiIndex = uiFirstBreak - uiStartSector ;
-
-		byte bStatus ;
-		RETURN_IF_NOT(bStatus, DiskCache_RawRead(pDriveInfo, uiFirstBreak, uiLastBreak - uiFirstBreak + 1, (bDataBuffer + uiIndex * 512)), DiskCache_SUCCESS) ;
-
-		for(uiSectorIndex = uiFirstBreak; uiSectorIndex <= uiLastBreak; uiSectorIndex++)
-		{
-			uiIndex = uiSectorIndex - uiStartSector ;
-
-			if(!pCacheValue[ uiIndex ])
-			{
-				if(pCache->m_pTree->GetTotalElements() >= pCache->iMaxCacheSectors)
-				{
-					if(!pCache->m_pLFUSectorManager->ReplaceCache(uiSectorIndex, bDataBuffer + (uiIndex * 512)))
-					{
-						printf("\n Cache Error: Disabling Disk Cache") ;
-						pDriveInfo->bEnableDiskCache = false ;
-						return DiskCache_SUCCESS ;
-					}
-
-					continue ;
-				}
-
-				DiskCacheKey* pKey = DiskCache_CreateKey(pCache, uiSectorIndex) ;
-				DiskCacheValue* pVal = DiskCache_CreateValue(pCache, bDataBuffer + (uiIndex * 512)) ;
-
-				if(!pCache->m_pTree->Insert(pKey, pVal))
-				{
-					printf("\n Disk Cache failed Insert for SectorID: %d", uiSectorIndex) ;
-					printf("\n Disabling Disk Cache!!! %s:%d", __FILE__, __LINE__) ;
-					pDriveInfo->bEnableDiskCache = false ;
-					return DiskCache_SUCCESS ;
-				}
-			}
-			else
-			{
-				pCacheValue[ uiIndex ]->Read(bDataBuffer + (uiIndex * 512)) ;
-			}
-		}
-	}
-	
-	return DiskCache_SUCCESS ;
+	char szDCRName[64] = "dcr-";
+	String_CanCat(szDCRName, diskDrive.DriveName().c_str());
+	ProcessManager::Instance().CreateKernelImage((unsigned)&DiskCache_TaskReleaseCache, ProcessManager::Instance().GetCurProcId(), false, (unsigned)&diskDrive, 0, &pid, szDCRName);
 }
 
-byte DiskCache_Write(DriveInfo* pDriveInfo, unsigned uiStartSector, unsigned uiNoOfSectors, byte* bDataBuffer)
+void DiskCache_StopReleaseCacheTask(DiskDrive* pDiskDrive)
 {
-	uiStartSector += pDriveInfo->drive.uiLBAStartSector ;
-	
-	if(!pDriveInfo->bEnableDiskCache)
-	{
-		return DiskCache_RawWrite(pDriveInfo, uiStartSector, uiNoOfSectors, bDataBuffer) ;
-	}
-
-	DiskCacheValue* pCacheValue[ uiNoOfSectors ] ;
-	DiskCache* pCache = &(pDriveInfo->mCache) ;
-
-	unsigned uiEndSector = uiStartSector + uiNoOfSectors ;
-	unsigned uiSectorIndex ;
-	unsigned uiFirstBreak, uiLastBreak ;
-	uiFirstBreak = uiLastBreak = uiEndSector ;
-
-	for(uiSectorIndex = uiStartSector; uiSectorIndex < uiEndSector; uiSectorIndex++)
-	{
-		unsigned uiIndex = uiSectorIndex - uiStartSector ;
-		pCacheValue[ uiIndex ] = static_cast<DiskCacheValue*>(pCache->m_pTree->Find(DiskCacheKey(uiSectorIndex))) ;
-
-		if(!pCacheValue[ uiIndex ])
-		{
-			if(uiFirstBreak == uiEndSector)
-				uiFirstBreak = uiSectorIndex ;
-
-			uiLastBreak = uiSectorIndex ;
-		}
-	}
-
-	__volatile__ unsigned uiIndex ;
-	for(uiSectorIndex = uiStartSector; uiSectorIndex < uiFirstBreak; uiSectorIndex++)
-	{
-		uiIndex = uiSectorIndex - uiStartSector ;
-		pCacheValue[ uiIndex ]->Write(bDataBuffer + (uiIndex * 512)) ;
-		DiskCache_InsertToDirtyList(pCache, DiskCache::SecKeyCacheValue(uiSectorIndex, pCacheValue[ uiIndex ]->GetSectorBuffer())) ;
-	}
-
-	for(uiSectorIndex = uiLastBreak + 1; uiSectorIndex < uiEndSector; uiSectorIndex++)
-	{
-		uiIndex = uiSectorIndex - uiStartSector ;
-		pCacheValue[ uiIndex ]->Write(bDataBuffer + (uiIndex * 512)) ;
-		DiskCache_InsertToDirtyList(pCache, DiskCache::SecKeyCacheValue(uiSectorIndex, pCacheValue[ uiIndex ]->GetSectorBuffer())) ;
-	}
-
-	if(uiFirstBreak < uiEndSector)
-	{
-		uiIndex = uiFirstBreak - uiStartSector ;
-
-		//byte bStatus ;
-		//RETURN_IF_NOT(bStatus, DiskCache_RawWrite(pDriveInfo, uiFirstBreak, uiLastBreak - uiFirstBreak + 1, (bDataBuffer + uiIndex * 512)), DiskCache_SUCCESS) ;
-
-		for(uiSectorIndex = uiFirstBreak; uiSectorIndex <= uiLastBreak; uiSectorIndex++)
-		{
-			uiIndex = uiSectorIndex - uiStartSector ;
-
-			if(!pCacheValue[ uiIndex ])
-			{
-				if(pCache->m_pTree->GetTotalElements() >= pCache->iMaxCacheSectors)
-				{
-					byte bStatus ;
-					RETURN_IF_NOT(bStatus, 
-							DiskCache_RawWrite(pDriveInfo, uiSectorIndex, 1, (bDataBuffer + uiIndex * 512)), 
-							DiskCache_SUCCESS) ;
-
-					if(!pCache->m_pLFUSectorManager->ReplaceCache(uiSectorIndex, bDataBuffer + (uiIndex * 512)))
-					{
-						printf("\n Cache Error: Disabling Disk Cache") ;
-						pDriveInfo->bEnableDiskCache = false ;
-						return DiskCache_RawWrite(pDriveInfo, uiFirstBreak, uiLastBreak - uiFirstBreak + 1, (bDataBuffer + uiIndex * 512)) ;
-					}
-					continue ;
-				}
-			
-				DiskCacheKey* pKey = DiskCache_CreateKey(pCache, uiSectorIndex) ;
-				DiskCacheValue* pVal = DiskCache_CreateValue(pCache, bDataBuffer + (uiIndex * 512)) ;
-
-				if(!pCache->m_pTree->Insert(pKey, pVal))
-				{
-					printf("\n Disk Cache failed Insert. Disabling Disk Cache!!! %s:%d", __FILE__, __LINE__) ;
-					pDriveInfo->bEnableDiskCache = false ;
-					return DiskCache_SUCCESS ;
-				}
-
-				DiskCache_InsertToDirtyList(pCache, DiskCache::SecKeyCacheValue(uiSectorIndex, pVal->GetSectorBuffer())) ;
-			}
-			else
-			{
-				pCacheValue[ uiIndex ]->Write(bDataBuffer + (uiIndex * 512)) ;
-				DiskCache_InsertToDirtyList(pCache, DiskCache::SecKeyCacheValue(uiSectorIndex, pCacheValue[ uiIndex ]->GetSectorBuffer())) ;
-			}
-		}
-	}
-	
-	return DiskCache_SUCCESS ;
-}
-
-byte DiskCache_FlushDirtyCacheSectors(DriveInfo* pDriveInfo, int iCount)
-{
-	if(!pDriveInfo->bEnableDiskCache)
-		return DiskCache_SUCCESS ;
-
-	pDriveInfo->mDriveMutex.Lock() ;
-
-	DiskCache* pCache = &(pDriveInfo->mCache) ;
-
-  while(iCount != 0)
-  {
-    if(pCache->m_pDirtyCacheList->empty())
-      break;
-	  const DiskCache::SecKeyCacheValue& v = pCache->m_pDirtyCacheList->front();
-	  pCache->m_pDirtyCacheList->pop_front();
-    if(!DiskCache_FlushSector(pDriveInfo, v.m_uiSectorID, v.m_pSectorBuffer))
-    {
-      printf("\n Flushing Sector %u to Drive %s failed !!", v.m_uiSectorID, pDriveInfo->drive.driveName) ;
-      pDriveInfo->mDriveMutex.UnLock() ;
-      return DiskCache_FAILURE ;
-    }
-    --iCount ;
-	}
-
-	pDriveInfo->mDriveMutex.UnLock() ;
-
-	return DiskCache_SUCCESS ;
-}
-
-void DiskCache_StartReleaseCacheTask(DriveInfo* pDriveInfo)
-{
-	pDriveInfo->mCache.bStopReleaseCacheTask = false ;
-
-	int pid ;
-	char szDCFName[64] = "dcf-" ;
-	String_CanCat(szDCFName, pDriveInfo->drive.driveName) ;
-	ProcessManager::Instance().CreateKernelImage((unsigned)&DiskCache_TaskFlushCache, ProcessManager::Instance().GetCurProcId(), false, (unsigned)pDriveInfo, 0, &pid, szDCFName) ;
-
-	char szDCRName[64] = "dcr-" ;
-	String_CanCat(szDCRName, pDriveInfo->drive.driveName) ;
-	ProcessManager::Instance().CreateKernelImage((unsigned)&DiskCache_TaskReleaseCache, ProcessManager::Instance().GetCurProcId(), false, (unsigned)pDriveInfo, 0, &pid, szDCRName) ;
-}
-
-void DiskCache_StopReleaseCacheTask(DriveInfo* pDriveInfo)
-{
-	pDriveInfo->mCache.bStopReleaseCacheTask = true ;
+	pDiskDrive->mCache.bStopReleaseCacheTask = true ;
 }
 

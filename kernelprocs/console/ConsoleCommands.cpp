@@ -107,7 +107,6 @@ static void ConsoleCommands_InitFloppyController() ;
 static void ConsoleCommands_InitATAController() ;
 static void ConsoleCommands_InitMountManager() ;
 static void ConsoleCommands_Test() ;
-static void ConsoleCommands_Testd() ;
 static void ConsoleCommands_Testv() ;
 static void ConsoleCommands_TestNet() ;
 static void ConsoleCommands_TestCPP() ;
@@ -170,7 +169,6 @@ static const ConsoleCommand ConsoleCommands_CommandList[] = {
 	{ "initata",	&ConsoleCommands_InitATAController },
 	{ "initmntmgr",	&ConsoleCommands_InitMountManager },
 	{ "test",		&ConsoleCommands_Test },
-	{ "testd",		&ConsoleCommands_Testd },
 	{ "testv",		&ConsoleCommands_Testv },
 	{ "testn",		&ConsoleCommands_TestNet },
 	{ "testcpp", &ConsoleCommands_TestCPP },
@@ -208,16 +206,16 @@ bool ConsoleCommands_ExecuteInternalCommand(const char* szCommand)
 
 void ConsoleCommands_ChangeDrive()
 {
-	DriveInfo* pDriveInfo = DeviceDrive_GetByDriveName(CommandLineParser_GetParameterAt(0), false) ;
-	if(pDriveInfo == NULL)
+	DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByDriveName(CommandLineParser_GetParameterAt(0), false) ;
+	if(pDiskDrive == NULL)
 	{
 		KC::MDisplay().Message("\n Invalid Drive", ' ') ;
 		return ;
 	}
 
-	ProcessManager::Instance().GetCurrentPAS().iDriveID = pDriveInfo->drive.iID ;
+	ProcessManager::Instance().GetCurrentPAS().iDriveID = pDiskDrive->Id();
 
-	MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&(pDriveInfo->FSMountInfo.FSpwd), 
+	MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&(pDiskDrive->FSMountInfo.FSpwd), 
 	MemUtil_GetDS(), 
 	(unsigned)&ProcessManager::Instance().GetCurrentPAS().processPWD, 
 	sizeof(FileSystem_PresentWorkingDirectory)) ;
@@ -225,18 +223,18 @@ void ConsoleCommands_ChangeDrive()
 
 void ConsoleCommands_ShowDrive()
 {
-	DeviceDrive_DisplayList() ;
+	DiskDriveManager::Instance().DisplayList() ;
 }
 
 void ConsoleCommands_MountDrive()
 {
-	DriveInfo* pDriveInfo = DeviceDrive_GetByDriveName(CommandLineParser_GetParameterAt(0), false) ;
-	if(pDriveInfo == NULL)
+	DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByDriveName(CommandLineParser_GetParameterAt(0), false) ;
+	if(pDiskDrive == NULL)
 	{
 		KC::MDisplay().Message("\n Invalid Drive", ' ') ;
 		return ;
 	}
-	if(FSCommand_Mounter(pDriveInfo, FS_MOUNT) != FSCommand_SUCCESS)
+	if(FSCommand_Mounter(pDiskDrive, FS_MOUNT) != FSCommand_SUCCESS)
 		KC::MDisplay().Message("\nFailed to Mount Drive", Display::WHITE_ON_BLACK()) ;
 	else
 		KC::MDisplay().Message("\nDrive Mounted", Display::WHITE_ON_BLACK()) ;
@@ -244,13 +242,13 @@ void ConsoleCommands_MountDrive()
 
 void ConsoleCommands_UnMountDrive()
 {
-	DriveInfo* pDriveInfo = DeviceDrive_GetByDriveName(CommandLineParser_GetParameterAt(0), false) ;
-	if(pDriveInfo == NULL)
+	DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByDriveName(CommandLineParser_GetParameterAt(0), false) ;
+	if(pDiskDrive == NULL)
 	{
 		KC::MDisplay().Message("\n Invalid Drive", ' ') ;
 		return ;
 	}
-	if(FSCommand_Mounter(pDriveInfo, FS_UNMOUNT) != FSCommand_SUCCESS)
+	if(FSCommand_Mounter(pDiskDrive, FS_UNMOUNT) != FSCommand_SUCCESS)
 		KC::MDisplay().Message("\nFailed to UnMount Drive", Display::WHITE_ON_BLACK()) ;
 	else
 		KC::MDisplay().Message("\nDrive UnMounted", Display::WHITE_ON_BLACK()) ;
@@ -258,7 +256,7 @@ void ConsoleCommands_UnMountDrive()
 
 void ConsoleCommands_FormatDrive()
 {
-	if(DeviceDrive_FormatDrive(CommandLineParser_GetParameterAt(0)) != DeviceDrive_SUCCESS)
+	if(DiskDriveManager::Instance().FormatDrive(CommandLineParser_GetParameterAt(0)) != DeviceDrive_SUCCESS)
 		KC::MDisplay().Message("\nFailed to Format Drive", Display::WHITE_ON_BLACK()) ;
 	else
 		KC::MDisplay().Message("\nDrive Formated", Display::WHITE_ON_BLACK()) ;
@@ -565,7 +563,7 @@ RawDiskDrive* ConsoleCommands_CheckDiskParam()
 		return NULL ;
 	}
 
-	RawDiskDrive* pDisk = DeviceDrive_GetRawDiskByName(CommandLineParser_GetParameterAt(0)) ;
+	RawDiskDrive* pDisk = DiskDriveManager::Instance().GetRawDiskByName(CommandLineParser_GetParameterAt(0)) ;
 
 	if(!pDisk)
 	{
@@ -951,14 +949,14 @@ void ConsoleCommands_ListProcess()
 
 void ConsoleCommands_ChangeRootDrive()
 {
-	DriveInfo* pDriveInfo = DeviceDrive_GetByDriveName(CommandLineParser_GetParameterAt(0), false) ;
-	if(pDriveInfo == NULL)
+	DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByDriveName(CommandLineParser_GetParameterAt(0), false) ;
+	if(pDiskDrive == NULL)
 	{
 		KC::MDisplay().Message("\n Invalid Drive", ' ') ;
 		return ;
 	}
 
-	MountManager_SetRootDrive(pDriveInfo) ;
+	MountManager_SetRootDrive(pDiskDrive) ;
 }
 
 void ConsoleCommands_Echo()
@@ -1044,14 +1042,13 @@ void ConsoleCommands_ShowRawDiskList()
 		for(unsigned i = 0; i < uiCount; i++)
 		{
 			char* szName = CommandLineParser_GetParameterAt(i) ;
-			pDisk = DeviceDrive_GetRawDiskByName(szName) ;
+			pDisk = DiskDriveManager::Instance().GetRawDiskByName(szName) ;
 			lamdaDisplay(pDisk) ;
 		}
 	}
 	else
 	{
-		pDisk = DeviceDrive_GetFirstRawDiskEntry() ;
-		for(; pDisk != NULL; pDisk = pDisk->pNext)
+    for(auto pDisk : DiskDriveManager::Instance().RawDiskDriveList())
 			lamdaDisplay(pDisk) ;
 	}
 }
@@ -1092,7 +1089,7 @@ extern void DiskCache_ShowTotalDiskReads() ;
 class DisplayCache : public BTree::InOrderVisitor
 {
 	public:
-		DisplayCache(DriveInfo* pDriveInfo) : m_pDriveInfo(pDriveInfo), m_iCount(0), m_bAbort(false) { }
+		DisplayCache(DiskDrive* pDiskDrive) : m_pDiskDrive(pDiskDrive), m_iCount(0), m_bAbort(false) { }
 
 		void operator()(const BTreeKey& rKey, BTreeValue* pValue) const
 		{
@@ -1110,7 +1107,7 @@ class DisplayCache : public BTree::InOrderVisitor
 		bool Abort() const { return m_bAbort ; }
 
 	private:
-		DriveInfo* m_pDriveInfo ;
+		DiskDrive* m_pDiskDrive ;
 		mutable int m_iCount ;
 		mutable bool m_bAbort ;
 } ;
@@ -1146,27 +1143,6 @@ class RankInOrderVisitor : public BTree::InOrderVisitor
 
 		bool Abort() const { return false ; }
 } ;
-
-void ConsoleCommands_Testd()
-{
-//	printf("\n Total Kernel Heap Used: %d", DMM_uiTotalKernelAllocation) ;
-
-	DiskCache_ShowTotalDiskReads() ;
-	DriveInfo* pDriveInfo = DeviceDrive_GetByDriveName(CommandLineParser_GetParameterAt(0), false) ;
-	if(pDriveInfo == NULL)
-	{
-		KC::MDisplay().Message("\n Invalid Drive", ' ') ;
-		return ;
-	}
-
-	printf("\n Total Sectors cached: %d", pDriveInfo->mCache.m_pTree->GetTotalElements()) ;
-	//DisplayCache dc(pDriveInfo) ;
-	//pDriveInfo->mCache.m_pTree->InOrderTraverse(dc) ;
-	
-	RankInOrderVisitor r ;
-	pDriveInfo->mCache.m_pTree->InOrderTraverse(r) ;
-	printf("\n Cache Replace Sector: %u, Rank: %lf", r.GetSectorID(), r.GetRank()) ;
-}
 
 typedef struct
 {

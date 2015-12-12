@@ -33,39 +33,358 @@
 # include <MountManager.h>
 # include <DiskCache.h>
 
-DriveInfo* DeviceDrive_pCurrentDrive ;
+static unsigned uiTotalFloppyDiskReads = 0;
+static unsigned uiTotalATADiskReads = 0;
+static unsigned uiTotalUSBDiskReads = 0;
 
-static Mutex mDriveListMutex ;
-static DriveInfo* DeviceDrive_pList ;
-
-RawDiskDrive* DeviceDrive_pRawDiskList ;
-
-int DeviceDrive_iID ;
-unsigned DeviceDrive_uiCount ;
-
-void DeviceDrive_Initialize()
+void DiskCache_ShowTotalDiskReads()
 {
-	DeviceDrive_pCurrentDrive = NULL ;
-	new (&mDriveListMutex)Mutex() ;
-	DeviceDrive_pList = NULL ;
-	DeviceDrive_iID = 0 ;
-	DeviceDrive_uiCount = 0 ;
-
-	DeviceDrive_pRawDiskList = NULL ;
+  printf("\n Total Floppy Disk Reads: %u", uiTotalFloppyDiskReads) ;
+  printf("\n Total ATA Disk Reads: %u", uiTotalATADiskReads) ;
+  printf("\n Total USB Disk Reads: %u", uiTotalUSBDiskReads) ;
 }
 
-RawDiskDrive* DeviceDrive_GetFirstRawDiskEntry()
+DiskDrive::DiskDrive(int id,
+  const upan::string& driveName, 
+  DEVICE_TYPE deviceType,
+  DRIVE_NO driveNumber,
+  unsigned uiLBAStartSector,
+  unsigned uiSizeInSectors,
+  unsigned uiStartCynlider,
+  unsigned uiStartHead,
+  unsigned uiStartSector,
+  unsigned uiEndCynlider,
+  unsigned uiEndHead,
+  unsigned uiEndSector,
+  unsigned uiSectorsPerTrack,
+  unsigned uiTracksPerHead,
+  unsigned uiNoOfHeads,
+  bool bEnableDiskCache,
+  void* device,
+  RawDiskDrive* rawDisk,
+  unsigned uiMaxSectorsInFreePoolCache,
+  unsigned uiNoOfSectorsInTableCache,
+  unsigned uiMountPointStart,
+  unsigned uiMountPointEnd) : _id(id),
+    _driveName(driveName),
+    _deviceType(deviceType),
+    _driveNumber(driveNumber),
+    _uiLBAStartSector(uiLBAStartSector),
+    _uiSizeInSectors(uiSizeInSectors),
+    _uiStartCynlider(uiStartCynlider),
+    _uiStartHead(uiStartHead),
+    _uiStartSector(uiStartSector),
+    _uiEndCynlider(uiEndCynlider),
+    _uiEndHead(uiEndHead),
+    _uiEndSector(uiEndSector),
+    _uiSectorsPerTrack(uiSectorsPerTrack),
+    _uiTracksPerHead(uiTracksPerHead),
+    _uiNoOfHeads(uiNoOfHeads),
+    _bEnableDiskCache(bEnableDiskCache),
+    _device(device),
+    _rawDisk(rawDisk),
+    _uiMaxSectorsInFreePoolCache(uiMaxSectorsInFreePoolCache),
+    _uiNoOfSectorsInTableCache(uiNoOfSectorsInTableCache),
+    _uiMountPointStart(uiMountPointStart),
+    _uiMountPointEnd(uiMountPointEnd),
+    _fsType(FS_UNKNOWN),
+    _mounted(false),
+    _next(nullptr)
 {
-	return DeviceDrive_pRawDiskList ;
+  if(_bEnableDiskCache)
+	  DiskCache_Setup(*this);
 }
 
-RawDiskDrive* DeviceDrive_CreateRawDisk(const char* szName, RAW_DISK_TYPES iType, void* pDevice)
+byte DiskDrive::Read(unsigned uiStartSector, unsigned uiNoOfSectors, byte* bDataBuffer)
 {
+  MutexGuard g(_driveMutex);
+	uiStartSector += LBAStartSector();
+
+	if(!EnableDiskCache())
+		return RawRead(uiStartSector, uiNoOfSectors, bDataBuffer) ;
+
+	DiskCacheValue* pCacheValue[ uiNoOfSectors ] ;
+
+	unsigned uiEndSector = uiStartSector + uiNoOfSectors ;
+	unsigned uiSectorIndex ;
+	unsigned uiFirstBreak, uiLastBreak ;
+	uiFirstBreak = uiLastBreak = uiEndSector ;
+
+	for(uiSectorIndex = uiStartSector; uiSectorIndex < uiEndSector; uiSectorIndex++)
+	{
+		unsigned uiIndex = uiSectorIndex - uiStartSector ;
+		pCacheValue[ uiIndex ] = static_cast<DiskCacheValue*>(mCache.m_pTree->Find(DiskCacheKey(uiSectorIndex))) ;
+		if(!pCacheValue[ uiIndex ])
+		{
+			if(uiFirstBreak == uiEndSector)
+				uiFirstBreak = uiSectorIndex ;
+
+			uiLastBreak = uiSectorIndex ;
+		}
+	}
+
+	__volatile__ unsigned uiIndex ;
+	for(uiSectorIndex = uiStartSector; uiSectorIndex < uiFirstBreak; uiSectorIndex++)
+	{
+		uiIndex = uiSectorIndex - uiStartSector ;
+		pCacheValue[ uiIndex ]->Read(bDataBuffer + (uiIndex * 512)) ;
+	}
+
+	for(uiSectorIndex = uiLastBreak + 1; uiSectorIndex < uiEndSector; uiSectorIndex++)
+	{
+		uiIndex = uiSectorIndex - uiStartSector ;
+		pCacheValue[ uiIndex ]->Read(bDataBuffer + (uiIndex * 512)) ;
+	}
+
+	if(uiFirstBreak < uiEndSector)
+	{
+		uiIndex = uiFirstBreak - uiStartSector ;
+
+		byte bStatus ;
+		RETURN_IF_NOT(bStatus, RawRead(uiFirstBreak, uiLastBreak - uiFirstBreak + 1, (bDataBuffer + uiIndex * 512)), DiskCache_SUCCESS) ;
+
+		for(uiSectorIndex = uiFirstBreak; uiSectorIndex <= uiLastBreak; uiSectorIndex++)
+		{
+			uiIndex = uiSectorIndex - uiStartSector ;
+
+			if(!pCacheValue[ uiIndex ])
+			{
+				if(mCache.m_pTree->GetTotalElements() >= mCache.iMaxCacheSectors)
+				{
+					if(!mCache.m_pLFUSectorManager->ReplaceCache(uiSectorIndex, bDataBuffer + (uiIndex * 512)))
+					{
+						printf("\n Cache Error: Disabling Disk Cache") ;
+						EnableDiskCache(false);
+						return DiskCache_SUCCESS ;
+					}
+
+					continue ;
+				}
+
+				DiskCacheKey* pKey = mCache.CreateKey(uiSectorIndex) ;
+				DiskCacheValue* pVal = mCache.CreateValue(bDataBuffer + (uiIndex * 512)) ;
+
+				if(!mCache.m_pTree->Insert(pKey, pVal))
+				{
+					printf("\n Disk Cache failed Insert for SectorID: %d", uiSectorIndex) ;
+					printf("\n Disabling Disk Cache!!! %s:%d", __FILE__, __LINE__) ;
+					EnableDiskCache(false);
+					return DiskCache_SUCCESS ;
+				}
+			}
+			else
+			{
+				pCacheValue[ uiIndex ]->Read(bDataBuffer + (uiIndex * 512)) ;
+			}
+		}
+	}
+	
+	return DiskCache_SUCCESS ;
+}
+
+byte DiskDrive::RawRead(unsigned uiStartSector, unsigned uiNoOfSectors, byte* bDataBuffer)
+{
+	switch(DeviceType())
+	{
+    case DEV_FLOPPY:
+      uiTotalFloppyDiskReads++ ;
+      return Floppy_Read(this, uiStartSector, uiStartSector + uiNoOfSectors, bDataBuffer) ;
+
+    case DEV_ATA_IDE:
+      uiTotalATADiskReads++ ;
+      return ATADrive_Read((ATAPort*)Device(), uiStartSector, bDataBuffer, uiNoOfSectors) ;
+
+    case DEV_SCSI_USB_DISK:
+      uiTotalUSBDiskReads++ ;
+      return SCSIHandler_GenericRead((SCSIDevice*)Device(), uiStartSector, uiNoOfSectors, bDataBuffer) ;
+	}
+  return DeviceDrive_ERR_UNKNOWN_DEVICE_TYPE ;
+}
+
+byte DiskDrive::Write(unsigned uiStartSector, unsigned uiNoOfSectors, byte* bDataBuffer)
+{
+	uiStartSector += LBAStartSector();
+	
+	if(!EnableDiskCache())
+	{
+		return RawWrite(uiStartSector, uiNoOfSectors, bDataBuffer) ;
+	}
+
+	DiskCacheValue* pCacheValue[ uiNoOfSectors ] ;
+
+	unsigned uiEndSector = uiStartSector + uiNoOfSectors ;
+	unsigned uiSectorIndex ;
+	unsigned uiFirstBreak, uiLastBreak ;
+	uiFirstBreak = uiLastBreak = uiEndSector ;
+
+	for(uiSectorIndex = uiStartSector; uiSectorIndex < uiEndSector; uiSectorIndex++)
+	{
+		unsigned uiIndex = uiSectorIndex - uiStartSector ;
+		pCacheValue[ uiIndex ] = static_cast<DiskCacheValue*>(mCache.m_pTree->Find(DiskCacheKey(uiSectorIndex))) ;
+
+		if(!pCacheValue[ uiIndex ])
+		{
+			if(uiFirstBreak == uiEndSector)
+				uiFirstBreak = uiSectorIndex ;
+
+			uiLastBreak = uiSectorIndex ;
+		}
+	}
+
+	__volatile__ unsigned uiIndex ;
+	for(uiSectorIndex = uiStartSector; uiSectorIndex < uiFirstBreak; uiSectorIndex++)
+	{
+		uiIndex = uiSectorIndex - uiStartSector ;
+		pCacheValue[ uiIndex ]->Write(bDataBuffer + (uiIndex * 512)) ;
+		mCache.InsertToDirtyList(DiskCache::SecKeyCacheValue(uiSectorIndex, pCacheValue[ uiIndex ]->GetSectorBuffer())) ;
+	}
+
+	for(uiSectorIndex = uiLastBreak + 1; uiSectorIndex < uiEndSector; uiSectorIndex++)
+	{
+		uiIndex = uiSectorIndex - uiStartSector ;
+		pCacheValue[ uiIndex ]->Write(bDataBuffer + (uiIndex * 512)) ;
+		mCache.InsertToDirtyList(DiskCache::SecKeyCacheValue(uiSectorIndex, pCacheValue[ uiIndex ]->GetSectorBuffer())) ;
+	}
+
+	if(uiFirstBreak < uiEndSector)
+	{
+		uiIndex = uiFirstBreak - uiStartSector ;
+
+		//byte bStatus ;
+		//RETURN_IF_NOT(bStatus, RawWrite(uiFirstBreak, uiLastBreak - uiFirstBreak + 1, (bDataBuffer + uiIndex * 512)), DiskCache_SUCCESS) ;
+
+		for(uiSectorIndex = uiFirstBreak; uiSectorIndex <= uiLastBreak; uiSectorIndex++)
+		{
+			uiIndex = uiSectorIndex - uiStartSector ;
+
+			if(!pCacheValue[ uiIndex ])
+			{
+				if(mCache.m_pTree->GetTotalElements() >= mCache.iMaxCacheSectors)
+				{
+					byte bStatus ;
+					RETURN_IF_NOT(bStatus, RawWrite(uiSectorIndex, 1, (bDataBuffer + uiIndex * 512)), DiskCache_SUCCESS) ;
+
+					if(!mCache.m_pLFUSectorManager->ReplaceCache(uiSectorIndex, bDataBuffer + (uiIndex * 512)))
+					{
+						printf("\n Cache Error: Disabling Disk Cache") ;
+						EnableDiskCache(false);
+						return RawWrite(uiFirstBreak, uiLastBreak - uiFirstBreak + 1, (bDataBuffer + uiIndex * 512)) ;
+					}
+					continue ;
+				}
+			
+				DiskCacheKey* pKey = mCache.CreateKey(uiSectorIndex) ;
+				DiskCacheValue* pVal = mCache.CreateValue(bDataBuffer + (uiIndex * 512)) ;
+
+				if(!mCache.m_pTree->Insert(pKey, pVal))
+				{
+					printf("\n Disk Cache failed Insert. Disabling Disk Cache!!! %s:%d", __FILE__, __LINE__) ;
+					EnableDiskCache(false);
+					return DiskCache_SUCCESS ;
+				}
+
+				mCache.InsertToDirtyList(DiskCache::SecKeyCacheValue(uiSectorIndex, pVal->GetSectorBuffer())) ;
+			}
+			else
+			{
+				pCacheValue[ uiIndex ]->Write(bDataBuffer + (uiIndex * 512)) ;
+				mCache.InsertToDirtyList(DiskCache::SecKeyCacheValue(uiSectorIndex, pCacheValue[ uiIndex ]->GetSectorBuffer())) ;
+			}
+		}
+	}
+	
+	return DiskCache_SUCCESS ;
+}
+
+byte DiskDrive::RawWrite(unsigned uiStartSector, unsigned uiNoOfSectors, byte* bDataBuffer)
+{
+	switch(DeviceType())
+	{
+	case DEV_FLOPPY:
+		return Floppy_Write(this, uiStartSector, uiStartSector + uiNoOfSectors, bDataBuffer) ;
+
+	case DEV_ATA_IDE:
+		return ATADrive_Write((ATAPort*)Device(), uiStartSector, bDataBuffer, uiNoOfSectors) ;
+
+	case DEV_SCSI_USB_DISK:
+		return SCSIHandler_GenericWrite((SCSIDevice*)Device(), uiStartSector, uiNoOfSectors, bDataBuffer) ;
+	}
+
+  return DeviceDrive_ERR_UNKNOWN_DEVICE_TYPE ;
+}
+
+byte DiskDrive::FlushDirtyCacheSectors(int iCount)
+{
+	if(!EnableDiskCache())
+		return DiskCache_SUCCESS ;
+
+  MutexGuard g(_driveMutex);
+
+  while(iCount != 0)
+  {
+    if(mCache.m_pDirtyCacheList->empty())
+      break;
+	  const DiskCache::SecKeyCacheValue& v = mCache.m_pDirtyCacheList->front();
+	  mCache.m_pDirtyCacheList->pop_front();
+    if(!FlushSector(v.m_uiSectorID, v.m_pSectorBuffer))
+    {
+      printf("\n Flushing Sector %u to Drive %s failed !!", v.m_uiSectorID, DriveName().c_str()) ;
+      return DiskCache_FAILURE ;
+    }
+    --iCount ;
+	}
+	return DiskCache_SUCCESS ;
+}
+
+bool DiskDrive::FlushSector(unsigned uiSectorID, const byte* pBuffer)
+{
+	if(!pBuffer)
+		return false;
+	if(RawWrite(uiSectorID, 1, (byte*)pBuffer) != DiskCache_SUCCESS)
+		return false;
+	return true;
+}
+
+DiskDriveManager::DiskDriveManager() : _idSequence(0)
+{
+}
+
+void DiskDriveManager::Create(const upan::string& driveName, 
+  DEVICE_TYPE deviceType, DRIVE_NO driveNumber,
+  unsigned uiLBAStartSector, unsigned uiSizeInSectors,
+  unsigned uiStartCynlider, unsigned uiStartHead, unsigned uiStartSector,
+  unsigned uiEndCynlider, unsigned uiEndHead, unsigned uiEndSector,
+  unsigned uiSectorsPerTrack, unsigned uiTracksPerHead, unsigned uiNoOfHeads,
+  bool bEnableDiskCache, void* device, RawDiskDrive* rawDisk,
+  unsigned uiMaxSectorsInFreePoolCache, unsigned uiNoOfSectorsInTableCache,
+  unsigned uiMountPointStart, unsigned uiMountPointEnd)
+{
+  MutexGuard g(_driveListMutex);
+  DiskDrive* pDiskDrive = new DiskDrive(_idSequence++, driveName,
+    deviceType, driveNumber,
+    uiLBAStartSector, uiSizeInSectors,
+    uiStartCynlider, uiStartHead, uiStartSector,
+    uiEndCynlider, uiEndHead, uiEndSector,
+    uiSectorsPerTrack, uiTracksPerHead, uiNoOfHeads,
+    bEnableDiskCache, device, rawDisk,
+    uiMaxSectorsInFreePoolCache, uiNoOfSectorsInTableCache,
+    uiMountPointStart, uiMountPointEnd);
+  _driveList.push_back(pDiskDrive);
+	DiskCache_StartReleaseCacheTask(*pDiskDrive);
+}
+
+RawDiskDrive* DiskDriveManager::CreateRawDisk(const char* szName, RAW_DISK_TYPES iType, void* pDevice)
+{
+  for(auto d : _rawDiskList)
+  {
+		if(String_Compare(d->szNameID, szName) == 0)
+      throw upan::exception(XLOC, "\n Raw Drive '%s' already in the list", szName);
+	}
+
 	RawDiskDrive* pDisk = (RawDiskDrive*)DMM_AllocateForKernel(sizeof(RawDiskDrive)) ;
 
 	if(pDisk)
 	{
-		pDisk->pNext = NULL ;
 		pDisk->iType = iType ;
 		pDisk->pDevice = pDevice ;
 		String_Copy(pDisk->szNameID, szName) ;
@@ -94,273 +413,113 @@ RawDiskDrive* DeviceDrive_CreateRawDisk(const char* szName, RAW_DISK_TYPES iType
 		}
 	}
 
+  _rawDiskList.push_back(pDisk);
 	return pDisk ;
 }
 
-byte DeviceDrive_AddRawDiskEntry(RawDiskDrive* pRawDisk)
+byte DiskDriveManager::RemoveRawDiskEntry(const char* szName)
 {
-	RawDiskDrive* pCur = DeviceDrive_pRawDiskList ;
-
-	for(; pCur != NULL; pCur = pCur->pNext)
-	{
-		if(String_Compare(pCur->szNameID, pRawDisk->szNameID) == 0)
-		{
-			printf("\n Raw Drive '%s' already in the list", pRawDisk->szNameID) ;
-			return DeviceDrive_ERR_DUPLICATE ;
+  for(auto it = _rawDiskList.begin(); it != _rawDiskList.end(); ++it)
+  {
+		if(String_Compare((*it)->szNameID, szName) == 0)
+    {
+      _rawDiskList.erase(it);
+			return DeviceDrive_SUCCESS;
 		}
-	}
-
-	pCur = DeviceDrive_pRawDiskList ;
-	DeviceDrive_pRawDiskList = pRawDisk ;
-	DeviceDrive_pRawDiskList->pNext = pCur ;
-
-	return DeviceDrive_SUCCESS ;
+  }
+	return DeviceDrive_ERR_NOTFOUND;
 }
 
-byte DeviceDrive_RemoveRawDiskEntry(const char* szName)
+RawDiskDrive* DiskDriveManager::GetRawDiskByName(const char* szName)
 {
-	RawDiskDrive* pCur = DeviceDrive_pRawDiskList ;
-	RawDiskDrive* pPrev = NULL ;
+  for(auto d : _rawDiskList)
+		if(String_Compare(d->szNameID, szName) == 0)
+			return d;
+	return nullptr;
+}
 
-	for(; pCur != NULL; pCur = pCur->pNext)
-	{
-		if(String_Compare(pCur->szNameID, szName) == 0)
+void DiskDriveManager::RemoveEntryByCondition(const DriveRemoveClause& removeClause)
+{
+  MutexGuard g(_driveListMutex);
+
+  for(auto it = _driveList.begin(); it != _driveList.end();)
+  {
+		if(removeClause(*it))
 		{
-			if(pPrev == NULL)
-				DeviceDrive_pRawDiskList = pCur->pNext ;
-			else
-				pPrev->pNext = pCur->pNext ;
-
-			DMM_DeAllocateForKernel((unsigned)pCur) ;
-			return DeviceDrive_SUCCESS ;
+			if((*it)->Mounted())
+				FSCommand_Mounter(*it, FS_UNMOUNT) ;
+      delete *it;
+      _driveList.erase(it++);
 		}
-
-		pPrev = pCur ;
+    else
+      ++it;
 	}
-
-	return DeviceDrive_ERR_NOTFOUND ;
 }
 
-RawDiskDrive* DeviceDrive_GetRawDiskByName(const char* szName)
+DiskDrive* DiskDriveManager::GetByDriveName(const upan::string& driveName, bool bCheckMount)
 {
-	RawDiskDrive* pCur = DeviceDrive_pRawDiskList ;
-
-	for(; pCur != NULL; pCur = pCur->pNext)
-	{
-		if(String_Compare(pCur->szNameID, szName) == 0)
-			return pCur ;
-	}
-
-	return NULL ;
+  MutexGuard g(_driveListMutex);
+  for(auto d : _driveList)
+    if(d->DriveName() == driveName)
+      return d;
+  return nullptr;
 }
 
-void DeviceDrive_AddEntry(DriveInfo* pDriveInfo)
-{
-	mDriveListMutex.Lock() ;
-
-	pDriveInfo->pNext = DeviceDrive_pList ;
-	DeviceDrive_pList = pDriveInfo ;
-	DeviceDrive_uiCount++ ;
-	DiskCache_StartReleaseCacheTask(pDriveInfo) ;
-
-	mDriveListMutex.UnLock() ;
-}
-
-void DeviceDrive_RemoveEntryByCondition(const DriveRemoveClause& removeClause)
-{
-	mDriveListMutex.Lock() ;
-
-	DriveInfo* pCur = DeviceDrive_pList ;
-	DriveInfo* pPrev = NULL ;
-
-	while(pCur != NULL)
-	{
-		if(removeClause(pCur))
-		{
-			if(pPrev != NULL)
-				pPrev->pNext = pCur->pNext ;
-			else
-				DeviceDrive_pList = pCur->pNext ;
-
-			DriveInfo* pTemp = pCur->pNext ;
-
-			if(pCur->drive.bMounted)
-				FSCommand_Mounter(pCur, FS_UNMOUNT) ;
-
-      delete pCur;
-			DeviceDrive_uiCount-- ;
-
-			pCur = pTemp ;
-		}
-		else
-		{
-			pPrev = pCur ;
-			pCur = pCur->pNext ;
-		}
-	}
-
-	mDriveListMutex.UnLock() ;
-}
-
-DriveInfo* DeviceDrive_CreateDriveInfo(bool bEnableDiskCache)
-{
-	DriveInfo* pDriveInfo = new DriveInfo();
-
-	if(!pDriveInfo)
-		return pDriveInfo ;
-
-	pDriveInfo->pNext = NULL ;
-	pDriveInfo->drive.iID = DeviceDrive_iID++ ;
-	pDriveInfo->drive.bMounted = false ;
-	pDriveInfo->pRawDisk = NULL ;
-	pDriveInfo->bEnableDiskCache = false ;
-
-	if(bEnableDiskCache)
-		DiskCache_Setup(pDriveInfo) ;
-
-	new (&(pDriveInfo->mDriveMutex))Mutex() ;
-
-	//TODO:Temp Sol
-	DeviceDrive_pCurrentDrive = pDriveInfo ;
-
-	return pDriveInfo ;
-}
-
-byte DeviceDrive_Read(DriveInfo* pDriveInfo, unsigned uiStartSector, unsigned uiNoOfSectors, byte* bDataBuffer)
-{
-	byte bStatus = DeviceDrive_SUCCESS ;
-
-	pDriveInfo->mDriveMutex.Lock() ;
-
-	bStatus = DiskCache_Read(const_cast<DriveInfo*>(pDriveInfo), uiStartSector, uiNoOfSectors, bDataBuffer) ;
-
-	pDriveInfo->mDriveMutex.UnLock() ;
-
-	return bStatus ;
-}
-
-byte DeviceDrive_Write(DriveInfo* pDriveInfo, unsigned uiStartSector, unsigned uiNoOfSectors, byte* bDataBuffer)
-{
-	byte bStatus = DeviceDrive_SUCCESS ;
-	
-	pDriveInfo->mDriveMutex.Lock() ;
-
-	bStatus = DiskCache_Write(const_cast<DriveInfo*>(pDriveInfo), uiStartSector, uiNoOfSectors, bDataBuffer) ;
-
-	pDriveInfo->mDriveMutex.UnLock() ;
-
-	return bStatus ;
-}
-
-DriveInfo* DeviceDrive_GetByDriveName(const char* szDriveName, bool bCheckMount)
+DiskDrive* DiskDriveManager::GetByID(int iID, bool bCheckMount)
 {	
-	mDriveListMutex.Lock() ;
-
-	DriveInfo* pCur = DeviceDrive_pList ;
-
-	while(pCur != NULL)
-	{
-		if(String_Compare(pCur->drive.driveName, szDriveName) == 0)
-		{
-			if(bCheckMount)
-				pCur = (pCur->drive.bMounted) ? pCur : NULL ;
-
-			break ;
-		}
-
-		pCur = pCur->pNext ;
-	}
-
-	mDriveListMutex.UnLock() ;
-
-	return pCur ;
-}
-
-DriveInfo* DeviceDrive_GetByID(int iID, bool bCheckMount)
-{	
+  MutexGuard g(_driveListMutex);
 	if(iID == ROOT_DRIVE)
-	{
 		iID = ROOT_DRIVE_ID ;
-	}
 	else if(iID == CURRENT_DRIVE)
-	{
 		iID = ProcessManager::Instance().GetCurrentPAS().iDriveID ;
-	}
-
-	mDriveListMutex.Lock() ;
-
-	DriveInfo* pCur = DeviceDrive_pList ;
-
-	while(pCur != NULL)
-	{
-		if(pCur->drive.iID == iID)
-		{
-			if(bCheckMount)
-				pCur = (pCur->drive.bMounted) ? pCur : NULL ;
-
-			break ;
-		}
-
-		pCur = pCur->pNext ;
-	}
-
-	mDriveListMutex.UnLock() ;
-
-	return pCur ;
+  for(auto d : _driveList)
+  {
+    if(d->Id() == iID)
+    {
+      if(bCheckMount && d->Mounted())
+        return d;
+      return nullptr;
+    }
+  }
+  return nullptr;
 }
 
-void DeviceDrive_DisplayList()
+void DiskDriveManager::DisplayList()
 {	
-	DriveInfo* pCur = DeviceDrive_pList ;
-
-	while(pCur != NULL)
-	{
-		KC::MDisplay().Message("\n", Display::WHITE_ON_BLACK()) ;
-		KC::MDisplay().Message(pCur->drive.driveName, Display::WHITE_ON_BLACK()) ;
-		KC::MDisplay().Number(" (", pCur->drive.uiSizeInSectors) ;
-		DDWORD i = (DDWORD)pCur->drive.uiSizeInSectors * (DDWORD)512 ;
-		printf(" - %llu", i) ;
-		KC::MDisplay().DDNumberInHex(" - ", i) ;
-		KC::MDisplay().Message(")", Display::WHITE_ON_BLACK()) ;
-
-		pCur = pCur->pNext ;
+  for(auto d : _driveList)
+  {
+		DDWORD i = (DDWORD)d->SizeInSectors() * (DDWORD)512;
+    printf("\n %s (%u - %llu - %x)", d->DriveName().c_str(), d->SizeInSectors(), i, i);
 	}
 }
 
-DriveInfo* DeviceDrive_GetNextDrive(const DriveInfo* pDriveInfo)
+byte DiskDriveManager::Change(const upan::string& szDriveName)
 {
-	if(pDriveInfo == NULL)
-		return DeviceDrive_pList ;
-	return pDriveInfo->pNext ;
-}
-
-byte DeviceDrive_Change(const char* szDriveName)
-{
-	DriveInfo* pDriveInfo = DeviceDrive_GetByDriveName(szDriveName, false) ;
-	if(pDriveInfo == NULL)
+	DiskDrive* pDiskDrive = GetByDriveName(szDriveName, false) ;
+	if(pDiskDrive == NULL)
 		return DeviceDrive_ERR_INVALID_DRIVE_NAME ;
 
-	ProcessManager::Instance().GetCurrentPAS().iDriveID = pDriveInfo->drive.iID ;
+	ProcessManager::Instance().GetCurrentPAS().iDriveID = pDiskDrive->Id();
 
 	MemUtil_CopyMemory(MemUtil_GetDS(), 
-	(unsigned)&(pDriveInfo->FSMountInfo.FSpwd), 
+	(unsigned)&(pDiskDrive->FSMountInfo.FSpwd), 
 	MemUtil_GetDS(), 
 	(unsigned)&ProcessManager::Instance().GetCurrentPAS().processPWD, 
 	sizeof(FileSystem_PresentWorkingDirectory)) ;
 
-	ProcessEnv_Set("PWD", (const char*)pDriveInfo->FSMountInfo.FSpwd.DirEntry.Name) ;
+	ProcessEnv_Set("PWD", (const char*)pDiskDrive->FSMountInfo.FSpwd.DirEntry.Name) ;
 
 	return DeviceDrive_SUCCESS ;
 }
 
-byte DeviceDrive_GetList(DriveStat** pDriveList, int* iListSize)
+byte DiskDriveManager::GetList(DriveStat** pDriveList, int* iListSize)
 {	
-	mDriveListMutex.Lock() ;
+  MutexGuard g(_driveListMutex);
 
 	*pDriveList = NULL ;
-	*iListSize = DeviceDrive_uiCount ;
+	*iListSize = _driveList.size();
 	
-	if(DeviceDrive_uiCount == 0)
+	if(_driveList.empty())
 		return DeviceDrive_SUCCESS ;
 
 	ProcessAddressSpace* pAddrSpace = &ProcessManager::Instance().GetCurrentPAS() ;
@@ -368,87 +527,80 @@ byte DeviceDrive_GetList(DriveStat** pDriveList, int* iListSize)
 	
 	if(pAddrSpace->bIsKernelProcess == true)
 	{
-		*pDriveList = (DriveStat*)DMM_AllocateForKernel(sizeof(DriveStat) * DeviceDrive_uiCount) ;
+		*pDriveList = (DriveStat*)DMM_AllocateForKernel(sizeof(DriveStat) * _driveList.size());
 		pAddress = *pDriveList ;
 	}
 	else
 	{
-		*pDriveList = (DriveStat*)DMM_Allocate(pAddrSpace, sizeof(DriveStat) * DeviceDrive_uiCount) ;
+		*pDriveList = (DriveStat*)DMM_Allocate(pAddrSpace, sizeof(DriveStat) * _driveList.size());
 		pAddress = (DriveStat*)(((unsigned)*pDriveList + PROCESS_BASE) - GLOBAL_DATA_SEGMENT_BASE) ;
 	}
 
 	if(pAddress == NULL)
-	{
-		mDriveListMutex.UnLock() ;
 		return DeviceDrive_FAILURE ;
-	}
 
-	DriveInfo* pCur = DeviceDrive_pList ;
-
-	int i = 0 ;
-	while(pCur != NULL)
+	int i = 0;
+  for(auto d : _driveList)
 	{
-		MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&pCur->drive, MemUtil_GetDS(), 
-							(unsigned)&(pAddress[i].drive), sizeof(Drive)) ;
+    strncpy(pAddress[i].driveName, d->DriveName().c_str(), 32);
+    pAddress[i].bMounted = d->Mounted();
+    pAddress[i].uiSizeInSectors = d->SizeInSectors();
+		pAddress[i].ulTotalSize = 0;
+		pAddress[i].ulUsedSize = 0;
 
-		pAddress[i].driveSpace.ulTotalSize = 0 ;
-		pAddress[i].driveSpace.ulUsedSize = 0 ;
-
-		if(pCur->drive.bMounted)
-			FSCommand_GetDriveSpace(pCur, &(pAddress[i].driveSpace)) ;
+		if(d->Mounted())
+			FSCommand_GetDriveSpace(d, &(pAddress[i])) ;
 		
-		pCur = pCur->pNext ;
-		i++ ;
+		++i;
 	}
 
-	mDriveListMutex.UnLock() ;
 	return DeviceDrive_SUCCESS ;
 }
 
-byte DeviceDrive_MountDrive(const char* szDriveName)
+byte DiskDriveManager::MountDrive(const upan::string& szDriveName)
 {
-	DriveInfo* pDriveInfo = DeviceDrive_GetByDriveName(szDriveName, false) ;
-	if(pDriveInfo == NULL)
+	DiskDrive* pDiskDrive = GetByDriveName(szDriveName, false) ;
+	if(pDiskDrive == NULL)
 		return DeviceDrive_ERR_INVALID_DRIVE_NAME ;
 
-	RETURN_X_IF_NOT(FSCommand_Mounter(pDriveInfo, FS_MOUNT), FSCommand_SUCCESS, DeviceDrive_ERR_MOUNT) ;
+	RETURN_X_IF_NOT(FSCommand_Mounter(pDiskDrive, FS_MOUNT), FSCommand_SUCCESS, DeviceDrive_ERR_MOUNT) ;
 	
 	return DeviceDrive_SUCCESS ;
 }
 
-byte DeviceDrive_UnMountDrive(const char* szDriveName)
+byte DiskDriveManager::UnMountDrive(const upan::string& szDriveName)
 {
-	DriveInfo* pDriveInfo = DeviceDrive_GetByDriveName(szDriveName, false) ;
+	DiskDrive* pDiskDrive = GetByDriveName(szDriveName, false) ;
 
-	if(pDriveInfo == NULL)
+	if(pDiskDrive == NULL)
 		return DeviceDrive_ERR_INVALID_DRIVE_NAME ;
 
 	bool bKernel = IS_KERNEL() ? true : IS_KERNEL_PROCESS(ProcessManager::GetCurrentProcessID()) ;
 	if(!bKernel)
 	{
-		if(pDriveInfo->drive.iID == ProcessManager::Instance().GetCurrentPAS().iDriveID)
+		if(pDiskDrive->Id() == ProcessManager::Instance().GetCurrentPAS().iDriveID)
 			return DeviceDrive_ERR_CURR_DRIVE_UMOUNT ;
 	}
 
-	RETURN_X_IF_NOT(FSCommand_Mounter(pDriveInfo, FS_UNMOUNT), FSCommand_SUCCESS, DeviceDrive_ERR_UNMOUNT) ;
+	RETURN_X_IF_NOT(FSCommand_Mounter(pDiskDrive, FS_UNMOUNT), FSCommand_SUCCESS, DeviceDrive_ERR_UNMOUNT) ;
 	
 	return DeviceDrive_SUCCESS ;
 }
 
-byte DeviceDrive_FormatDrive(const char* szDriveName)
+byte DiskDriveManager::FormatDrive(const upan::string& szDriveName)
 {
-	DriveInfo* pDriveInfo = DeviceDrive_GetByDriveName(szDriveName, false) ;
-	if(pDriveInfo == NULL)
+	DiskDrive* pDiskDrive = GetByDriveName(szDriveName, false) ;
+	if(pDiskDrive == NULL)
 		return DeviceDrive_ERR_INVALID_DRIVE_NAME ;
 
-	if(FSCommand_Format(pDriveInfo) != FSCommand_SUCCESS)
+	if(FSCommand_Format(pDiskDrive) != FSCommand_SUCCESS)
 		return DeviceDrive_ERR_FORMAT ;
 
-	switch((int)pDriveInfo->drive.deviceType)
+	switch((int)pDiskDrive->DeviceType())
 	{
 		case DEV_ATA_IDE:
 		case DEV_SCSI_USB_DISK:
-			if(PartitionManager_UpdateSystemIndicator(pDriveInfo->pRawDisk, pDriveInfo->drive.uiLBAStartSector, 0x93) != PartitionManager_SUCCESS)
+			if(PartitionManager_UpdateSystemIndicator(pDiskDrive->RawDisk(), pDiskDrive->LBAStartSector(), 0x93) != PartitionManager_SUCCESS)
 				return DeviceDrive_ERR_PARTITION_UPDATE ;
 			break ;
 	}
@@ -456,77 +608,62 @@ byte DeviceDrive_FormatDrive(const char* szDriveName)
 	return DeviceDrive_SUCCESS ;
 }
 
-byte DeviceDrive_GetCurrentDrive(Drive* pDrive)
+byte DiskDriveManager::GetCurrentDriveStat(DriveStat* pDriveStat)
 {
-	DriveInfo* pDriveInfo = DeviceDrive_GetByID(ProcessManager::Instance().GetCurrentPAS().iDriveID, true) ;
+	DiskDrive* pDiskDrive = GetByID(ProcessManager::Instance().GetCurrentPAS().iDriveID, true) ;
 
-	if(pDriveInfo == NULL)
+	if(pDiskDrive == NULL)
 		return DeviceDrive_FAILURE ;
-	
-	MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&(pDriveInfo->drive), MemUtil_GetDS(), (unsigned)pDrive, sizeof(Drive)) ;
+
+  strncpy(pDriveStat->driveName, pDiskDrive->DriveName().c_str(), 32);
+  pDriveStat->bMounted = pDiskDrive->Mounted();
+  pDriveStat->uiSizeInSectors = pDiskDrive->SizeInSectors();
+  pDriveStat->ulTotalSize = 0;
+  pDriveStat->ulUsedSize = 0;
 
 	return DeviceDrive_SUCCESS ;
 }
 
-byte DeviceDrive_RawDiskRead(RawDiskDrive* pDisk, unsigned uiStartSector, unsigned uiNoOfSectors, byte* pDataBuffer)
+byte DiskDriveManager::RawDiskRead(RawDiskDrive* pDisk, unsigned uiStartSector, unsigned uiNoOfSectors, byte* pDataBuffer)
 {
-	byte bStatus = DeviceDrive_SUCCESS ;
-
 //	unsigned uiResourceType ;
 //	RETURN_X_IF_NOT(ResourceManager_GetDiskResourceType(pDisk->iType, &uiResourceType), ResourceManager_SUCCESS, DeviceDrive_FAILURE) ;
 //	ResourceManager_Acquire(uiResourceType, RESOURCE_ACQUIRE_BLOCK) ;
 
-	pDisk->mDiskMutex.Lock() ;
+  MutexGuard g(pDisk->mDiskMutex);
 
 	switch(pDisk->iType)
 	{
 		case ATA_HARD_DISK:
-			bStatus = ATADrive_Read((ATAPort*)pDisk->pDevice, uiStartSector, pDataBuffer, uiNoOfSectors) ;
-			break ;
+			return ATADrive_Read((ATAPort*)pDisk->pDevice, uiStartSector, pDataBuffer, uiNoOfSectors) ;
 
 		case USB_SCSI_DISK:
-			bStatus = SCSIHandler_GenericRead((SCSIDevice*)pDisk->pDevice, uiStartSector, uiNoOfSectors, pDataBuffer) ;
-			break ;
-
-		default:
-			bStatus = DeviceDrive_ERR_UNKNOWN_DEVICE_TYPE ;
+			return SCSIHandler_GenericRead((SCSIDevice*)pDisk->pDevice, uiStartSector, uiNoOfSectors, pDataBuffer) ;
 	}
 
 //	ResourceManager_Release(uiResourceType) ;
 
-	pDisk->mDiskMutex.UnLock() ;
-
-	return bStatus ;
+  return DeviceDrive_ERR_UNKNOWN_DEVICE_TYPE ;
 }
 
-byte DeviceDrive_RawDiskWrite(RawDiskDrive* pDisk, unsigned uiStartSector, unsigned uiNoOfSectors, byte* pDataBuffer)
+byte DiskDriveManager::RawDiskWrite(RawDiskDrive* pDisk, unsigned uiStartSector, unsigned uiNoOfSectors, byte* pDataBuffer)
 {
-	byte bStatus = DeviceDrive_SUCCESS ;
-
 //	unsigned uiResourceType ;
 //	RETURN_X_IF_NOT(ResourceManager_GetDiskResourceType(pDisk->iType, &uiResourceType), ResourceManager_SUCCESS, DeviceDrive_FAILURE) ;
 //	ResourceManager_Acquire(uiResourceType, RESOURCE_ACQUIRE_BLOCK) ;
 
-	pDisk->mDiskMutex.Lock() ;
+	MutexGuard g(pDisk->mDiskMutex);
 
 	switch(pDisk->iType)
 	{
 		case ATA_HARD_DISK:
-			bStatus = ATADrive_Write((ATAPort*)pDisk->pDevice, uiStartSector, pDataBuffer, uiNoOfSectors) ;
-			break ;
+			return ATADrive_Write((ATAPort*)pDisk->pDevice, uiStartSector, pDataBuffer, uiNoOfSectors) ;
 
 		case USB_SCSI_DISK:
-			bStatus = SCSIHandler_GenericWrite((SCSIDevice*)pDisk->pDevice, uiStartSector, uiNoOfSectors, pDataBuffer) ;
-			break ;
-
-		default:
-			bStatus = DeviceDrive_ERR_UNKNOWN_DEVICE_TYPE ;
+			return SCSIHandler_GenericWrite((SCSIDevice*)pDisk->pDevice, uiStartSector, uiNoOfSectors, pDataBuffer) ;
 	}
 
 //	ResourceManager_Release(uiResourceType) ;
-
-	pDisk->mDiskMutex.UnLock() ;
-
-	return bStatus ;
+  return DeviceDrive_ERR_UNKNOWN_DEVICE_TYPE ;
 }
 

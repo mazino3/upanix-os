@@ -101,10 +101,9 @@ static byte Floppy_SenseInterruptStatus() ;
 static byte Floppy_WaitForInterrupt() ;
 static byte Floppy_ReCaliberate(DRIVE_NO driveNo) ;
 static byte Floppy_Seek(DRIVE_NO driveNo, Floppy_HEAD_NO headNo, unsigned uiSeekTrack) ;
-static byte Floppy_FormatTrack(const Drive* pDrive, const Floppy_HEAD_NO headNo) ;
-static byte Floppy_ReadWrite(const Drive* pDrive, unsigned uiStartSectorNo, unsigned uiEndSectorNo, Floppy_MODE mode) ;
-static byte Floppy_FullFormat(const Drive* pDrive) ;
-static void Floppy_CreateDriveInfo() ;
+static byte Floppy_FormatTrack(const DiskDrive* pDiskDrive, const Floppy_HEAD_NO headNo) ;
+static byte Floppy_ReadWrite(const DiskDrive* pDiskDrive, unsigned uiStartSectorNo, unsigned uiEndSectorNo, Floppy_MODE mode) ;
+static byte Floppy_FullFormat(const DiskDrive* pDiskDrive) ;
 
 static int Floppy_MotorController()
 {
@@ -307,14 +306,14 @@ Floppy_Seek(DRIVE_NO driveNo, Floppy_HEAD_NO headNo, unsigned uiSeekTrack)
 }
 
 static byte
-Floppy_FormatTrack(const Drive* pDrive, const Floppy_HEAD_NO headNo)
+Floppy_FormatTrack(const DiskDrive* pDiskDrive, const Floppy_HEAD_NO headNo)
 {
 	byte bStatus ;
 	
 	if(Floppy_SendControlCommand(FDD_FORMAT_TRACK_CMD) == Floppy_SUCCESS)
-		if(Floppy_SendControlCommand(((headNo << 2) & 4) | pDrive->driveNumber) == Floppy_SUCCESS) //Drive 1
+		if(Floppy_SendControlCommand(((headNo << 2) & 4) | pDiskDrive->DriveNumber()) == Floppy_SUCCESS) //Drive 1
 			if(Floppy_SendControlCommand(2) == Floppy_SUCCESS) // No of Bytes/Sector = 512
-				if(Floppy_SendControlCommand(pDrive->uiSectorsPerTrack) == Floppy_SUCCESS)
+				if(Floppy_SendControlCommand(pDiskDrive->SectorsPerTrack()) == Floppy_SUCCESS)
 					if(Floppy_SendControlCommand(GAP) == Floppy_SUCCESS)
 						if(Floppy_SendControlCommand(0x00) == Floppy_SUCCESS) // Data Field Filler Value	
 						{
@@ -330,23 +329,23 @@ Floppy_FormatTrack(const Drive* pDrive, const Floppy_HEAD_NO headNo)
 	return Floppy_ERR_FORMAT ;	
 }
 
-static byte Floppy_ReadWrite(const Drive* pDrive, unsigned uiStartSectorNo, unsigned uiEndSectorNo, Floppy_MODE mode)
+static byte Floppy_ReadWrite(const DiskDrive* pDiskDrive, unsigned uiStartSectorNo, unsigned uiEndSectorNo, Floppy_MODE mode)
 {
 	byte bStatus ;
 	
-	if(uiStartSectorNo + 1 > pDrive->uiSizeInSectors
-			|| uiEndSectorNo + 1 > pDrive->uiSizeInSectors
+	if(uiStartSectorNo + 1 > pDiskDrive->SizeInSectors()
+			|| uiEndSectorNo + 1 > pDiskDrive->SizeInSectors()
 			|| uiStartSectorNo >= uiEndSectorNo)
 		return Floppy_INVALID_SECTOR ;
 		
-	unsigned uiStartSector = uiStartSectorNo % pDrive->uiSectorsPerTrack ;
-//	unsigned uiEndSector = uiEndSectorNo % pDrive->uiSectorsPerTrack ;
-	unsigned uiRawTrack = uiStartSectorNo /	pDrive->uiSectorsPerTrack ;
-	unsigned uiHead = uiRawTrack % pDrive->uiNoOfHeads ;
-	unsigned uiTrack = uiRawTrack / pDrive->uiNoOfHeads ;
+	unsigned uiStartSector = uiStartSectorNo % pDiskDrive->SectorsPerTrack();
+//	unsigned uiEndSector = uiEndSectorNo % pDiskDrive->SectorsPerTrack();
+	unsigned uiRawTrack = uiStartSectorNo /	pDiskDrive->SectorsPerTrack();
+	unsigned uiHead = uiRawTrack % pDiskDrive->NoOfHeads();
+	unsigned uiTrack = uiRawTrack / pDiskDrive->NoOfHeads() ;
 	unsigned uiSeekTrack = uiTrack ;
 
-	Floppy_StartMotor(pDrive->driveNumber) ;
+	Floppy_StartMotor(pDiskDrive->DriveNumber()) ;
 
 //	ProcessManager_Sleep(100) ;
 	
@@ -368,12 +367,12 @@ static byte Floppy_ReadWrite(const Drive* pDrive, unsigned uiStartSectorNo, unsi
 	for(uiSeekRetryCount = 0; uiSeekRetryCount < uiNoOfRetrys; uiSeekRetryCount++)
 	{
 		if(uiSeekRetryCount > 0)
-			if((bStatus = Floppy_ReCaliberate(pDrive->driveNumber)) != Floppy_SUCCESS)
+			if((bStatus = Floppy_ReCaliberate(pDiskDrive->DriveNumber())) != Floppy_SUCCESS)
 				continue ;
 
 //		ProcessManager_Sleep(100) ;
 
-		if((bStatus = Floppy_Seek(pDrive->driveNumber, (Floppy_HEAD_NO)uiHead, uiSeekTrack)) != Floppy_SUCCESS)
+		if((bStatus = Floppy_Seek(pDiskDrive->DriveNumber(), (Floppy_HEAD_NO)uiHead, uiSeekTrack)) != Floppy_SUCCESS)
 			continue ;
 
 		for(uiOperationRetryCount = 0; uiOperationRetryCount < uiNoOfRetrys; uiOperationRetryCount++)
@@ -383,12 +382,12 @@ static byte Floppy_ReadWrite(const Drive* pDrive, unsigned uiStartSectorNo, unsi
 				continue ;
 
 			if(Floppy_SendControlCommand(bFloppyCmd) == Floppy_SUCCESS)
-				if(Floppy_SendControlCommand(((uiHead << 2) & 4) | pDrive->driveNumber) == Floppy_SUCCESS) //Drive 1
+				if(Floppy_SendControlCommand(((uiHead << 2) & 4) | pDiskDrive->DriveNumber()) == Floppy_SUCCESS) //Drive 1
 					if(Floppy_SendControlCommand(uiTrack) == Floppy_SUCCESS) //Track 0
 						if(Floppy_SendControlCommand(uiHead) == Floppy_SUCCESS) // Head 0
 							if(Floppy_SendControlCommand(uiStartSector + 1) == Floppy_SUCCESS) //sector 1
 								if(Floppy_SendControlCommand(2) == Floppy_SUCCESS) // No of Bytes/Sector = 512
-									if(Floppy_SendControlCommand(pDrive->uiSectorsPerTrack)== Floppy_SUCCESS) 
+									if(Floppy_SendControlCommand(pDiskDrive->SectorsPerTrack())== Floppy_SUCCESS) 
 										if(Floppy_SendControlCommand(GAP) == Floppy_SUCCESS)
 											if(Floppy_SendControlCommand(0xFF) == Floppy_SUCCESS) // DTL = 0xFF
 											{
@@ -397,7 +396,7 @@ static byte Floppy_ReadWrite(const Drive* pDrive, unsigned uiStartSectorNo, unsi
 												if((bStatus = Floppy_CompleteResultPhase1(MAX_RESULT_PHASE_REPLIES)) != Floppy_SUCCESS)
 													continue ;
 
-												if(Floppy_ReplyBuffer[0] & (0x00 | ((uiHead << 2) & 4) | pDrive->driveNumber))
+												if(Floppy_ReplyBuffer[0] & (0x00 | ((uiHead << 2) & 4) | pDiskDrive->DriveNumber()))
 													return Floppy_SUCCESS ;
 								
 											}
@@ -407,10 +406,10 @@ static byte Floppy_ReadWrite(const Drive* pDrive, unsigned uiStartSectorNo, unsi
 	return bStatus ;
 }
 
-static byte Floppy_FullFormat(const Drive* pDrive)
+static byte Floppy_FullFormat(const DiskDrive* pDiskDrive)
 {
 	byte bStatus ;
-	DRIVE_NO driveNo = pDrive->driveNumber ;
+	DRIVE_NO driveNo = pDiskDrive->DriveNumber();
 	
 	if(driveNo != FD_DRIVE0 && driveNo != FD_DRIVE1)
 		return Floppy_ERR_INVALID_DRIVE ;
@@ -419,18 +418,18 @@ static byte Floppy_FullFormat(const Drive* pDrive)
 	
 	Floppy_SetDataRate(RATE) ;
 
-	if((bStatus = Floppy_ReCaliberate(pDrive->driveNumber)) != Floppy_SUCCESS)
+	if((bStatus = Floppy_ReCaliberate(pDiskDrive->DriveNumber())) != Floppy_SUCCESS)
 		return bStatus ;
 
-	Floppy_FormatFields Floppy_FormatData[pDrive->uiSectorsPerTrack] ;
+	Floppy_FormatFields Floppy_FormatData[pDiskDrive->SectorsPerTrack()] ;
 	
-	unsigned uiWordCount = pDrive->uiSectorsPerTrack * sizeof(Floppy_FormatFields)/* = 4 bytes */ ;
+	unsigned uiWordCount = pDiskDrive->SectorsPerTrack() * sizeof(Floppy_FormatFields)/* = 4 bytes */ ;
 	unsigned uiTrackCount ;
-	for(uiTrackCount = 0; uiTrackCount < pDrive->uiTracksPerHead; uiTrackCount++)
+	for(uiTrackCount = 0; uiTrackCount < pDiskDrive->TracksPerHead(); uiTrackCount++)
 	{
 		ProcessManager::Instance().Sleep(100) ;
 
-		if((bStatus = Floppy_Seek(pDrive->driveNumber, (Floppy_HEAD_NO)0, uiTrackCount)) != Floppy_SUCCESS)
+		if((bStatus = Floppy_Seek(pDiskDrive->DriveNumber(), (Floppy_HEAD_NO)0, uiTrackCount)) != Floppy_SUCCESS)
 			return bStatus ;
 
 		DMA_ReleaseChannel(DMA_CH2) ;
@@ -439,10 +438,10 @@ static byte Floppy_FullFormat(const Drive* pDrive)
 			return bStatus ;
 			
 		unsigned uiHeadCount ;
-		for(uiHeadCount = 0; uiHeadCount < pDrive->uiNoOfHeads; uiHeadCount++)
+		for(uiHeadCount = 0; uiHeadCount < pDiskDrive->NoOfHeads(); uiHeadCount++)
 		{
 			unsigned uiSectorCount ;
-			for(uiSectorCount = 0; uiSectorCount < pDrive->uiSectorsPerTrack; uiSectorCount++)
+			for(uiSectorCount = 0; uiSectorCount < pDiskDrive->SectorsPerTrack(); uiSectorCount++)
 			{
 				Floppy_FormatData[uiSectorCount].bTrack = uiTrackCount ; /* 0 based Index */
 				Floppy_FormatData[uiSectorCount].bHead = uiHeadCount ;
@@ -453,7 +452,7 @@ static byte Floppy_FullFormat(const Drive* pDrive)
 			MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&Floppy_FormatData,
 								SYS_LINEAR_SELECTOR_DEFINED, MEM_DMA_FLOPPY_START, uiWordCount) ;
 
-			if((bStatus = Floppy_FormatTrack(pDrive, (Floppy_HEAD_NO)uiHeadCount)) != Floppy_SUCCESS)
+			if((bStatus = Floppy_FormatTrack(pDiskDrive, (Floppy_HEAD_NO)uiHeadCount)) != Floppy_SUCCESS)
 				return bStatus ;
 		}
 	}
@@ -500,45 +499,6 @@ Floppy_CompleteResultPhase1(byte bNoOfResultReplies)
 	}
 
 	return bErrCode ;
-}
-
-static void Floppy_CreateDriveInfo()
-{
-	DriveInfo* pDriveInfo = DeviceDrive_CreateDriveInfo(true) ;
-	Drive* pDrive = &pDriveInfo->drive ;
-
-	String_Copy(pDrive->driveName, "floppya") ;
-
-	pDrive->deviceType = DEV_FLOPPY ;
-	pDrive->fsType = FS_UNKNOWN ;
-	pDrive->driveNumber = FD_DRIVE1 ;
-
-	pDrive->uiLBAStartSector = 0 ;
-
-	pDrive->uiStartCynlider = 0 ;
-	pDrive->uiStartHead = 0 ;
-	pDrive->uiStartSector = 0 ;
-	
-	pDrive->uiEndCynlider = 80 ;
-	pDrive->uiEndHead = 1 ;
-	pDrive->uiEndSector = 17 ;
-	
-	pDrive->uiSizeInSectors = 2880 ;
-	pDrive->uiSectorsPerTrack = 18 ;
-	pDrive->uiTracksPerHead = 80 ;
-	pDrive->uiNoOfHeads = 2 ;	
-	
-	pDriveInfo->pDevice = NULL ;
-
-	pDriveInfo->uiMountPointStart = MEM_FD1_FS_START ;
-	pDriveInfo->uiMountPointEnd = MEM_FD1_FS_END ;
-
-	pDriveInfo->uiMaxSectorsInFreePoolCache = 2048;
-	pDriveInfo->uiNoOfSectorsInTableCache = 24;
-
-	pDriveInfo->pRawDisk = DeviceDrive_CreateRawDisk("floppy", FLOPPY_DISK, NULL) ;
-
-	DeviceDrive_AddEntry(pDriveInfo) ;
 }
 
 /********************************************************************************************/
@@ -607,7 +567,13 @@ void Floppy_Initialize()
 		else
 			KC::MDisplay().Message("\n\tFailed To Get Floppy Controller Version", Display::WHITE_ON_BLACK()) ;
 	
-		Floppy_CreateDriveInfo() ;
+    DiskDriveManager::Instance().Create("floppya", DEV_FLOPPY, FD_DRIVE1,
+      0, 2880,
+      0, 0, 0,
+      80, 1, 17,
+      18, 80, 2,
+      true, nullptr, DiskDriveManager::Instance().CreateRawDisk("floppy", FLOPPY_DISK, NULL),
+      2048, 24, MEM_FD1_FS_START, MEM_FD1_FS_END);
 		
 		unsigned i ;
 		for(i = 0; i < MAX_DRIVES; i++)
@@ -642,10 +608,10 @@ byte Floppy_IsEnhancedController(bool* boolEnhanced)
 	return Floppy_SUCCESS ;
 }
 
-byte Floppy_Read(const Drive* pDrive, unsigned uiStartSectorNo, unsigned uiEndSectorNo, byte* bSectorBuffer)
+byte Floppy_Read(const DiskDrive* pDiskDrive, unsigned uiStartSectorNo, unsigned uiEndSectorNo, byte* bSectorBuffer)
 {
-	byte bStatus = Floppy_ReadWrite(pDrive, uiStartSectorNo, uiEndSectorNo, FD_READ) ;
-	Floppy_StopMotor(pDrive->driveNumber) ;
+	byte bStatus = Floppy_ReadWrite(pDiskDrive, uiStartSectorNo, uiEndSectorNo, FD_READ) ;
+	Floppy_StopMotor(pDiskDrive->DriveNumber()) ;
 	DMA_ReleaseChannel(DMA_CH2) ;
 	
 	if(bStatus == Floppy_SUCCESS)
@@ -655,23 +621,23 @@ byte Floppy_Read(const Drive* pDrive, unsigned uiStartSectorNo, unsigned uiEndSe
 	return bStatus ;
 }
 
-byte Floppy_Write(const Drive* pDrive, unsigned uiStartSectorNo, unsigned uiEndSectorNo, byte* bSectorBuffer)
+byte Floppy_Write(const DiskDrive* pDiskDrive, unsigned uiStartSectorNo, unsigned uiEndSectorNo, byte* bSectorBuffer)
 {
 	MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)bSectorBuffer, SYS_LINEAR_SELECTOR_DEFINED, 
 					MEM_DMA_FLOPPY_START, (uiEndSectorNo - uiStartSectorNo) * 512) ;
 					
-	byte bStatus = Floppy_ReadWrite(pDrive, uiStartSectorNo, uiEndSectorNo, FD_WRITE) ;
-	Floppy_StopMotor(pDrive->driveNumber) ;
+	byte bStatus = Floppy_ReadWrite(pDiskDrive, uiStartSectorNo, uiEndSectorNo, FD_WRITE) ;
+	Floppy_StopMotor(pDiskDrive->DriveNumber()) ;
 	DMA_ReleaseChannel(DMA_CH2) ;
 
 	return bStatus ;
 }
 
 byte
-Floppy_Format(const Drive* pDrive)
+Floppy_Format(const DiskDrive* pDiskDrive)
 {
-	byte bStatus = Floppy_FullFormat(pDrive) ;
-	Floppy_StopMotor(pDrive->driveNumber) ;
+	byte bStatus = Floppy_FullFormat(pDiskDrive) ;
+	Floppy_StopMotor(pDiskDrive->DriveNumber()) ;
 	return bStatus ;	
 }
 

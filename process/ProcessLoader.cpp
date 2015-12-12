@@ -51,11 +51,11 @@ byte* ProcessLoader::LoadInitSection(ProcessAddressSpace& pas, unsigned& uiSecti
 {
 	FileSystem_DIR_Entry DirEntry ;
 
-  if(FileOperations_GetDirEntry(szSectionName.Value(), &DirEntry) != FileOperations_SUCCESS)
-    throw upan::exception(XLOC, "failed to get dir entry for: %s", szSectionName.Value());
+  if(FileOperations_GetDirEntry(szSectionName.c_str(), &DirEntry) != FileOperations_SUCCESS)
+    throw upan::exception(XLOC, "failed to get dir entry for: %s", szSectionName.c_str());
 	
 	if((DirEntry.usAttribute & ATTR_TYPE_DIRECTORY) == ATTR_TYPE_DIRECTORY)
-    throw upan::exception(XLOC, "%s is a directory!", szSectionName.Value());
+    throw upan::exception(XLOC, "%s is a directory!", szSectionName.c_str());
 
 	uiSectionSize = DirEntry.uiSize ;
 	byte* bSectionImage = (byte*)DMM_AllocateForKernel(sizeof(char) * (uiSectionSize));
@@ -65,17 +65,17 @@ byte* ProcessLoader::LoadInitSection(ProcessAddressSpace& pas, unsigned& uiSecti
     int fd;
     unsigned n;
 
-    if(FileOperations_Open(&fd, szSectionName.Value(), O_RDONLY) != FileOperations_SUCCESS)
-      throw upan::exception(XLOC, "failed to open file: %s", szSectionName.Value());
+    if(FileOperations_Open(&fd, szSectionName.c_str(), O_RDONLY) != FileOperations_SUCCESS)
+      throw upan::exception(XLOC, "failed to open file: %s", szSectionName.c_str());
 
     if(FileOperations_Read(fd, (char*)bSectionImage, 0, &n) != FileOperations_SUCCESS)
-      throw upan::exception(XLOC, "error reading file: %s", szSectionName.Value());
+      throw upan::exception(XLOC, "error reading file: %s", szSectionName.c_str());
 
     if(FileOperations_Close(fd) != FileOperations_SUCCESS)
-      throw upan::exception(XLOC, "error closing file: %s", szSectionName.Value());
+      throw upan::exception(XLOC, "error closing file: %s", szSectionName.c_str());
 
     if(n != uiSectionSize)
-      throw upan::exception(XLOC, "could read only %u of %u bytes of %s section", n, uiSectionSize, szSectionName.Value());
+      throw upan::exception(XLOC, "could read only %u of %u bytes of %s section", n, uiSectionSize, szSectionName.c_str());
   }
   catch(...)
   {

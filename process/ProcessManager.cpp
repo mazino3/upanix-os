@@ -662,13 +662,13 @@ byte ProcessManager::CreateKernelImage(const unsigned uiTaskAddress, int iParent
 
 		if(iDriveID != CURRENT_DRIVE)
 		{
-			DriveInfo* pDriveInfo = DeviceDrive_GetByID(iDriveID, false) ;
-			if(pDriveInfo == NULL)
+			DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByID(iDriveID, false) ;
+			if(pDiskDrive == NULL)
 				return ProcessManager_FAILURE ;
 
-			if(pDriveInfo->drive.bMounted)
+			if(pDiskDrive->Mounted())
 			{
-				MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&(pDriveInfo->FSMountInfo.FSpwd), MemUtil_GetDS(), 
+				MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&(pDiskDrive->FSMountInfo.FSpwd), MemUtil_GetDS(), 
 						(unsigned)&newPAS.processPWD, sizeof(FileSystem_PresentWorkingDirectory)) ;
 			}
 		}
@@ -682,9 +682,9 @@ byte ProcessManager::CreateKernelImage(const unsigned uiTaskAddress, int iParent
 
 	ProcessEnv_InitializeForKernelProcess() ;
 
-//	DriveInfo* pDriveInfo = DeviceDrive_GetByID(GetAddressSpace(iNewProcessID).iDriveID) ;
+//	DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByID(GetAddressSpace(iNewProcessID).iDriveID) ;
 //
-//	MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&(pDriveInfo->FSMountInfo.FSpwd), 
+//	MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&(pDiskDrive->FSMountInfo.FSpwd), 
 //	MemUtil_GetDS(), (unsigned)&GetAddressSpace(iNewProcessID).processPWD, sizeof(FileSystem_PresentWorkingDirectory)) ;
 
 	unsigned uiStackTop = uiStackAddress - GLOBAL_DATA_SEGMENT_BASE + (PROCESS_KERNEL_STACK_PAGES * PAGE_SIZE) - 1 ;
@@ -766,13 +766,13 @@ byte ProcessManager::Create(const char* szProcessName, int iParentProcessID, byt
 
 		if(iDriveID != CURRENT_DRIVE)
 		{
-			DriveInfo* pDriveInfo = DeviceDrive_GetByID(iDriveID, false) ;
-			if(pDriveInfo == NULL)
+			DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByID(iDriveID, false) ;
+			if(pDiskDrive == NULL)
 				return ProcessManager_FAILURE ;
 
-			if(pDriveInfo->drive.bMounted)
+			if(pDiskDrive->Mounted())
 			{
-				MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&(pDriveInfo->FSMountInfo.FSpwd), MemUtil_GetDS(), 
+				MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&(pDiskDrive->FSMountInfo.FSpwd), MemUtil_GetDS(), 
 						(unsigned)&newPAS.processPWD, sizeof(FileSystem_PresentWorkingDirectory)) ;
 			}
 		}
@@ -972,7 +972,7 @@ void ProcessManager::WaitOnKernelService()
 	ProcessManager_Yield() ;
 }
 
-bool ProcessManager::CopyDriveInfo(int iProcessID, int& iOldDriveId, FileSystem_PresentWorkingDirectory& mOldPWD)
+bool ProcessManager::CopyDiskDrive(int iProcessID, int& iOldDriveId, FileSystem_PresentWorkingDirectory& mOldPWD)
 {
 	if(GetCurProcId() < 0)
 		return false ;

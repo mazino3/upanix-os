@@ -18,10 +18,12 @@
 #ifndef _DEVICE_DRIVE_H_
 #define _DEVICE_DRIVE_H_
 
-# include <Global.h>
-# include <FSStructures.h>
-# include <Atomic.h>
-# include <DiskCache.h>
+#include <Global.h>
+#include <FSStructures.h>
+#include <Atomic.h>
+#include <DiskCache.h>
+#include <string.h>
+#include <drive.h>
 
 #define DeviceDrive_SUCCESS						0
 #define DeviceDrive_ERR_UNKNOWN_DEVICE_TYPE		1
@@ -36,15 +38,15 @@
 #define DeviceDrive_FAILURE						10
 
 #define GET_DRIVE_FOR_FS_OPS(DRIVE_ID, ERR) \
-	DriveInfo* pDriveInfo = DeviceDrive_GetByID(DRIVE_ID, true) ; \
-	if(pDriveInfo == NULL) \
+	DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByID(DRIVE_ID, true) ; \
+	if(pDiskDrive == NULL) \
 		return ERR ;
 
 typedef enum
 {
 	FS_UNKNOWN = 0x0,
-	MOSFS = 0x83
-} FS_TYPE ;
+	UPANFS = 0x83
+} FS_TYPE;
 
 typedef enum
 {
@@ -53,7 +55,7 @@ typedef enum
 	DEV_ATA_IDE = 0x80,
 	DEV_ATAPI,
 	DEV_SCSI_USB_DISK = 0x90
-} DEVICE_TYPE ;
+} DEVICE_TYPE;
 
 typedef enum
 {
@@ -74,71 +76,113 @@ typedef enum
 	USD_DRIVE3,
 	USD_DRIVE4,
 	USD_DRIVE5
-} DRIVE_NO ;
+} DRIVE_NO;
 
-typedef struct 
-{
-	char			driveName[33] ;
-	int				iID ;
-	byte			bMounted ;
-
-	DEVICE_TYPE		deviceType ;
-	FS_TYPE			fsType ;
-	DRIVE_NO		driveNumber ;
-	
-	unsigned		uiLBAStartSector ;
-	unsigned		uiSizeInSectors ;
-
-	unsigned		uiStartCynlider ;
-	unsigned		uiStartHead ;
-	unsigned		uiStartSector ;
-
-	unsigned		uiEndCynlider ;
-	unsigned		uiEndHead ;
-	unsigned		uiEndSector ;
-
-	unsigned 		uiSectorsPerTrack ;
-	unsigned 		uiTracksPerHead ;
-	unsigned		uiNoOfHeads ;
-} Drive ;
-
-typedef struct DriveInfo DriveInfo ;
 typedef struct RawDiskDrive RawDiskDrive ;
 
-struct DriveInfo
+class DiskDrive
 {
-	Drive			drive ;
-	void*			pDevice ;
-	RawDiskDrive*	pRawDisk ;
+  private:
+    DiskDrive(int id,
+      const upan::string& driveName, 
+      DEVICE_TYPE deviceType,
+      DRIVE_NO driveNumber,
+      unsigned uiLBAStartSector,
+      unsigned uiSizeInSectors,
+      unsigned uiStartCynlider,
+      unsigned uiStartHead,
+      unsigned uiStartSector,
+      unsigned uiEndCynlider,
+      unsigned uiEndHead,
+      unsigned uiEndSector,
+      unsigned uiSectorsPerTrack,
+      unsigned uiTracksPerHead,
+      unsigned uiNoOfHeads,
+      bool bEnableDiskCache,
+      void* device, 
+      RawDiskDrive* rawDisk,
+      unsigned uiMaxSectorsInFreePoolCache, 
+      unsigned uiNoOfSectorsInTableCache,
+      unsigned uiMountPointStart, 
+      unsigned uiMountPointEnd);
 
-	bool			bEnableDiskCache ;
-	DiskCache		mCache ;
+  public:
+    byte Read(unsigned uiStartSector, unsigned uiNoOfSectors, byte* bDataBuffer);
+    byte Write(unsigned uiStartSector, unsigned uiNoOfSectors, byte* bDataBuffer);
+    byte FlushDirtyCacheSectors(int iCount = -1);
 
-	// FileSystem Mount Info
-	unsigned				uiMountPointStart ;
-	unsigned				uiMountPointEnd ;
-	FileSystemMountInfo	FSMountInfo ;
+    const upan::string& DriveName() const { return _driveName; }
+    DEVICE_TYPE DeviceType() const { return _deviceType; }
+    FS_TYPE FSType() const { return _fsType; }
+    DRIVE_NO DriveNumber() const { return _driveNumber; }
+    unsigned LBAStartSector() const { return _uiLBAStartSector; }
+    unsigned SizeInSectors() const { return _uiSizeInSectors; }
+    unsigned StartCynlider() const { return _uiStartCynlider; }
+    unsigned StartHead() const { return _uiStartHead; }
+    unsigned StartSector() const { return _uiStartSector; }
+    unsigned EndCynlider() const { return _uiEndCynlider; }
+    unsigned EndHead() const { return _uiEndHead; }
+    unsigned EndSector() const { return _uiEndSector; }
+    unsigned SectorsPerTrack() const { return _uiSectorsPerTrack; }
+    unsigned TracksPerHead() const { return _uiTracksPerHead; }
+    unsigned NoOfHeads() const { return _uiNoOfHeads; }
+    bool EnableDiskCache() const { return _bEnableDiskCache; }
+    unsigned MaxSectorsInFreePoolCache() const { return _uiMaxSectorsInFreePoolCache; }
+    unsigned NoOfSectorsInTableCache() const { return _uiNoOfSectorsInTableCache; }
+    unsigned MountPointStart() const { return _uiMountPointStart; }
+    unsigned MountPointEnd() const { return _uiMountPointEnd; }
 
-	unsigned				uiMaxSectorsInFreePoolCache;
-	unsigned				uiNoOfSectorsInTableCache;
-	byte					bFSCacheFlag ;
+    int Id() const { return _id; }
+    bool Mounted() const { return _mounted; }
+    DiskDrive* Next() const { return _next; }
+    RawDiskDrive* RawDisk() const { return _rawDisk; }
+    void* Device() const { return _device; }
 
-	Mutex			mDriveMutex ;
+    void FSType(FS_TYPE t) { _fsType = t; }
+    void Mounted(bool mounted) { _mounted = mounted; }
+    void EnableDiskCache(bool enable) { _bEnableDiskCache = enable; }
+    void Next(DiskDrive* n) { _next = n; }
 
-	DriveInfo* 		pNext ;
-} ;
+    // FileSystem Mount Info
+    FileSystemMountInfo	FSMountInfo ;
+    byte					bFSCacheFlag ;
+    DiskCache		  mCache;
 
-typedef struct
-{
-	unsigned long	ulTotalSize ;
-	unsigned long	ulUsedSize ;
-} DriveSpace ;
+  private:
+    byte RawRead(unsigned uiStartSector, unsigned uiNoOfSectors, byte* bDataBuffer);
+    byte RawWrite(unsigned uiStartSector, unsigned uiNoOfSectors, byte* bDataBuffer);
+    bool FlushSector(unsigned uiSectorID, const byte* pBuffer);
 
-typedef struct
-{
-	Drive		drive ;
-	DriveSpace	driveSpace ;
-} DriveStat ;
+    int          _id;
+    upan::string _driveName;
+    DEVICE_TYPE  _deviceType;
+    DRIVE_NO     _driveNumber;
+    unsigned     _uiLBAStartSector;
+    unsigned     _uiSizeInSectors;
+    unsigned     _uiStartCynlider;
+    unsigned     _uiStartHead;
+    unsigned     _uiStartSector;
+    unsigned     _uiEndCynlider;
+    unsigned     _uiEndHead;
+    unsigned     _uiEndSector;
+    unsigned     _uiSectorsPerTrack;
+    unsigned     _uiTracksPerHead;
+    unsigned     _uiNoOfHeads;
+    bool		     _bEnableDiskCache;
+	  void*			    _device;
+    RawDiskDrive* _rawDisk;
+    unsigned      _uiMaxSectorsInFreePoolCache;
+    unsigned      _uiNoOfSectorsInTableCache;
+    unsigned      _uiMountPointStart;
+    unsigned      _uiMountPointEnd;
+
+    FS_TYPE       _fsType;
+    bool          _mounted;
+  	DiskDrive* 	  _next;
+    Mutex			    _driveMutex;
+
+    friend class DiskDriveManager;
+};
 
 typedef enum
 {
@@ -154,45 +198,62 @@ struct RawDiskDrive
 	unsigned uiSectorSize ;
 	unsigned uiSizeInSectors ;
 	void* pDevice ;
-
 	Mutex mDiskMutex ;
-
-	RawDiskDrive* pNext ;
 } ;
-
-extern DriveInfo* DeviceDrive_pCurrentDrive ;
 
 class DriveRemoveClause
 {
 	public:
-		virtual bool operator()(const DriveInfo* pDriveInfo) const = 0 ;
+		virtual bool operator()(const DiskDrive* pDiskDrive) const = 0 ;
 } ;
 
-void DeviceDrive_Initialize() ;
-void DeviceDrive_AddEntry(DriveInfo* pDriveInfo) ;
-void DeviceDrive_RemoveEntryByCondition(const DriveRemoveClause& removeClause) ;
-DriveInfo* DeviceDrive_CreateDriveInfo(bool bEnableDiskCache) ;
-byte DeviceDrive_Read(DriveInfo* pDriveInfo, unsigned uiStartSector, unsigned uiNoOfSectors, byte* bDataBuffer) ;
-byte DeviceDrive_Write(DriveInfo* pDriveInfo, unsigned uiStartSector, unsigned uiNoOfSectors, byte* bDataBuffer) ;
-DriveInfo* DeviceDrive_GetByDriveName(const char* szDriveName, bool bCheckMount) ;
-DriveInfo* DeviceDrive_GetByID(int iID, bool bCheckMount) ;
-void DeviceDrive_DisplayList() ;
-DriveInfo* DeviceDrive_GetNextDrive(const DriveInfo* pDriveInfo) ;
+class DiskDriveManager
+{
+  private:
+    DiskDriveManager();
 
-byte DeviceDrive_Change(const char* szDriveName) ;
-byte DeviceDrive_GetList(DriveStat** pDriveList, int* iListSize) ;
-byte DeviceDrive_MountDrive(const char* szDriveName) ;
-byte DeviceDrive_UnMountDrive(const char* szDriveName) ;
-byte DeviceDrive_FormatDrive(const char* szDriveName) ;
-byte DeviceDrive_GetCurrentDrive(Drive* pDrive) ;
+  public:
+    static DiskDriveManager& Instance()
+    {
+      static DiskDriveManager instance;
+      return instance;
+    }
 
-RawDiskDrive* DeviceDrive_GetFirstRawDiskEntry() ;
-RawDiskDrive* DeviceDrive_CreateRawDisk(const char* szName, RAW_DISK_TYPES iType, void* pDevice) ;
-byte DeviceDrive_AddRawDiskEntry(RawDiskDrive* pRawDisk) ;
-byte DeviceDrive_RemoveRawDiskEntry(const char* szName) ;
-RawDiskDrive* DeviceDrive_GetRawDiskByName(const char* szName) ;
+    void Create(const upan::string& driveName, 
+      DEVICE_TYPE deviceType, DRIVE_NO driveNumber,
+      unsigned uiLBAStartSector, unsigned uiSizeInSectors,
+      unsigned uiStartCynlider, unsigned uiStartHead, unsigned uiStartSector,
+      unsigned uiEndCynlider, unsigned uiEndHead, unsigned uiEndSector,
+      unsigned uiSectorsPerTrack, unsigned uiTracksPerHead, unsigned uiNoOfHeads,
+      bool bEnableDiskCache, void* device, RawDiskDrive* rawDisk,
+      unsigned uiMaxSectorsInFreePoolCache, unsigned uiNoOfSectorsInTableCache,
+      unsigned uiMountPointStart, unsigned uiMountPointEnd);
+    void RemoveEntryByCondition(const DriveRemoveClause& removeClause);
+    DiskDrive* GetByDriveName(const upan::string& szDriveName, bool bCheckMount);
+    DiskDrive* GetByID(int iID, bool bCheckMount);
+    void DisplayList();
+    byte Change(const upan::string& szDriveName);
+    byte GetList(DriveStat** pDriveList, int* iListSize);
+    byte MountDrive(const upan::string& szDriveName);
+    byte UnMountDrive(const upan::string& szDriveName);
+    byte FormatDrive(const upan::string& szDriveName);
+    byte GetCurrentDriveStat(DriveStat* pDriveStat);
 
-byte DeviceDrive_RawDiskRead(RawDiskDrive* pDisk, unsigned uiStartSector, unsigned uiNoOfSectors, byte* pDataBuffer) ;
-byte DeviceDrive_RawDiskWrite(RawDiskDrive* pDisk, unsigned uiStartSector, unsigned uiNoOfSectors, byte* pDataBuffer) ;
+    RawDiskDrive* CreateRawDisk(const char* szName, RAW_DISK_TYPES iType, void* pDevice);
+    byte RemoveRawDiskEntry(const char* szName);
+    RawDiskDrive* GetRawDiskByName(const char* name);
+
+    byte Write(DiskDrive* pDiskDrive, unsigned uiStartSector, unsigned uiNoOfSectors, byte* bDataBuffer);
+    byte RawDiskRead(RawDiskDrive* pDisk, unsigned uiStartSector, unsigned uiNoOfSectors, byte* pDataBuffer);
+    byte RawDiskWrite(RawDiskDrive* pDisk, unsigned uiStartSector, unsigned uiNoOfSectors, byte* pDataBuffer);
+
+    const upan::list<DiskDrive*>& DiskDriveList() const { return _driveList; }
+    const upan::list<RawDiskDrive*>& RawDiskDriveList() const { return _rawDiskList; }
+  private:
+    Mutex _driveListMutex;
+    upan::list<DiskDrive*> _driveList;
+    upan::list<RawDiskDrive*> _rawDiskList;
+    int _idSequence;
+};
 
 #endif
