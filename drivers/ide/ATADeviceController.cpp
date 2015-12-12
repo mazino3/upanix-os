@@ -528,7 +528,6 @@ static void ATADeviceController_AddATADrive(RawDiskDrive* pDisk)
       pPort->id.usSectors,
       pPort->id.usCylinders,
       pPort->id.usHead,
-      true,
       pPort,
       pDisk,
       uiSectorsInFreePool,
@@ -565,7 +564,7 @@ static void ATADeviceController_AddATAPIDrive(ATAPort* pPort)
     0, 0, 0,
     pPort->id.usCylinders, pPort->id.usHead, pPort->id.usSectors,
     pPort->id.usSectors, pPort->id.usCylinders, pPort->id.usHead,
-    true, pPort, nullptr, uiSectorsInFreePool, uiSectorsInTableCache,
+    pPort, nullptr, uiSectorsInFreePool, uiSectorsInTableCache,
     MEM_CD_FS_START, MEM_CD_FS_END);
 }
 

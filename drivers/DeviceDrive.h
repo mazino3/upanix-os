@@ -98,7 +98,6 @@ class DiskDrive
       unsigned uiSectorsPerTrack,
       unsigned uiTracksPerHead,
       unsigned uiNoOfHeads,
-      bool bEnableDiskCache,
       void* device, 
       RawDiskDrive* rawDisk,
       unsigned uiMaxSectorsInFreePoolCache, 
@@ -110,6 +109,7 @@ class DiskDrive
     byte Read(unsigned uiStartSector, unsigned uiNoOfSectors, byte* bDataBuffer);
     byte Write(unsigned uiStartSector, unsigned uiNoOfSectors, byte* bDataBuffer);
     byte FlushDirtyCacheSectors(int iCount = -1);
+    void ReleaseCache();
 
     const upan::string& DriveName() const { return _driveName; }
     DEVICE_TYPE DeviceType() const { return _deviceType; }
@@ -126,32 +126,33 @@ class DiskDrive
     unsigned SectorsPerTrack() const { return _uiSectorsPerTrack; }
     unsigned TracksPerHead() const { return _uiTracksPerHead; }
     unsigned NoOfHeads() const { return _uiNoOfHeads; }
-    bool EnableDiskCache() const { return _bEnableDiskCache; }
     unsigned MaxSectorsInFreePoolCache() const { return _uiMaxSectorsInFreePoolCache; }
     unsigned NoOfSectorsInTableCache() const { return _uiNoOfSectorsInTableCache; }
     unsigned MountPointStart() const { return _uiMountPointStart; }
     unsigned MountPointEnd() const { return _uiMountPointEnd; }
+    bool StopReleaseCacheTask() const { return _bStopReleaseCacheTask; }
 
     int Id() const { return _id; }
     bool Mounted() const { return _mounted; }
     DiskDrive* Next() const { return _next; }
     RawDiskDrive* RawDisk() const { return _rawDisk; }
     void* Device() const { return _device; }
+    DiskCache& Cache() { return _mCache; }
 
+    void StopReleaseCacheTask(bool value) { _bStopReleaseCacheTask = value; }
     void FSType(FS_TYPE t) { _fsType = t; }
     void Mounted(bool mounted) { _mounted = mounted; }
-    void EnableDiskCache(bool enable) { _bEnableDiskCache = enable; }
     void Next(DiskDrive* n) { _next = n; }
 
     // FileSystem Mount Info
     FileSystemMountInfo	FSMountInfo ;
     byte					bFSCacheFlag ;
-    DiskCache		  mCache;
 
   private:
     byte RawRead(unsigned uiStartSector, unsigned uiNoOfSectors, byte* bDataBuffer);
     byte RawWrite(unsigned uiStartSector, unsigned uiNoOfSectors, byte* bDataBuffer);
     bool FlushSector(unsigned uiSectorID, const byte* pBuffer);
+    void StartReleaseCacheTask();
 
     int          _id;
     upan::string _driveName;
@@ -180,6 +181,8 @@ class DiskDrive
     bool          _mounted;
   	DiskDrive* 	  _next;
     Mutex			    _driveMutex;
+    DiskCache		  _mCache;
+		bool          _bStopReleaseCacheTask;
 
     friend class DiskDriveManager;
 };
@@ -225,7 +228,7 @@ class DiskDriveManager
       unsigned uiStartCynlider, unsigned uiStartHead, unsigned uiStartSector,
       unsigned uiEndCynlider, unsigned uiEndHead, unsigned uiEndSector,
       unsigned uiSectorsPerTrack, unsigned uiTracksPerHead, unsigned uiNoOfHeads,
-      bool bEnableDiskCache, void* device, RawDiskDrive* rawDisk,
+      void* device, RawDiskDrive* rawDisk,
       unsigned uiMaxSectorsInFreePoolCache, unsigned uiNoOfSectorsInTableCache,
       unsigned uiMountPointStart, unsigned uiMountPointEnd);
     void RemoveEntryByCondition(const DriveRemoveClause& removeClause);

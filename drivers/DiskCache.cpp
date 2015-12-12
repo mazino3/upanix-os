@@ -26,18 +26,18 @@
 # include <ProcessManager.h>
 # include <Display.h>
 
-LFUSectorManager::LFUSectorManager(DiskDrive* pDiskDrive) : 
-	m_pDiskDrive(pDiskDrive), 
+LFUSectorManager::LFUSectorManager(DiskCache& mCache) :
+  _mCache(mCache),
 	m_bReleaseListBuilt(false),
-	m_uiMaxRelListSize(0.1 * m_pDiskDrive->mCache.iMaxCacheSectors),
-	m_uiBuildBreak(0.05 * m_pDiskDrive->mCache.iMaxCacheSectors),
+	m_uiMaxRelListSize(0.1 * _mCache.iMaxCacheSectors),
+	m_uiBuildBreak(0.05 * _mCache.iMaxCacheSectors),
 	m_bAbort(false)
 {
 }
 
 bool LFUSectorManager::IsCacheFull()
 {
-	return (m_pDiskDrive->mCache.m_pTree->GetTotalElements() >= m_pDiskDrive->mCache.iMaxCacheSectors) ;
+	return (_mCache.m_pTree->GetTotalElements() >= _mCache.iMaxCacheSectors) ;
 }
 
 void LFUSectorManager::Run()
@@ -54,7 +54,7 @@ void LFUSectorManager::Run()
 	m_uiCurrent = PIT_GetClockCount() ;
 	m_uiBuildCount = 0 ;
 
-	m_pDiskDrive->mCache.m_pTree->InOrderTraverse(*this) ;
+	_mCache.m_pTree->InOrderTraverse(*this) ;
 
 	if(m_bAbort)
 		return ;
@@ -89,7 +89,7 @@ bool LFUSectorManager::ReplaceCache(unsigned uiSectorID, byte* bDataBuffer)
     m_mReleaseList.pop_front();
 		// Skip dirty sectors from replacing
     DiskCache::SecKeyCacheValue skey(node.m_uiSectorID, NULL);
-    auto l = m_pDiskDrive->mCache.m_pDirtyCacheList;
+    auto l = _mCache.m_pDirtyCacheList;
     if(upan::find(l->begin(), l->end(), skey) != l->end())
 			continue;
 		bFound = true;
@@ -103,17 +103,17 @@ bool LFUSectorManager::ReplaceCache(unsigned uiSectorID, byte* bDataBuffer)
 		return true ;
 	}
 
-	if(!(m_pDiskDrive->mCache.m_pTree->Delete(DiskCacheKey(node.m_uiSectorID))))
+	if(!(_mCache.m_pTree->Delete(DiskCacheKey(node.m_uiSectorID))))
 	{
 		printf("\n Failed to delete ranked sector: %u from the Cache BTree", node.m_uiSectorID) ;
 		ProcessManager::Instance().Sleep(10000); 
 		return false ;
 	}
 
-	DiskCacheKey* pKey = m_pDiskDrive->mCache.CreateKey(uiSectorID) ;
-	DiskCacheValue* pVal = m_pDiskDrive->mCache.CreateValue(bDataBuffer) ;
+	DiskCacheKey* pKey = _mCache.CreateKey(uiSectorID) ;
+	DiskCacheValue* pVal = _mCache.CreateValue(bDataBuffer) ;
 
-	if(!m_pDiskDrive->mCache.m_pTree->Insert(pKey, pVal))
+	if(!_mCache.m_pTree->Insert(pKey, pVal))
 	{
 		printf("\n Disk Cache Insert failed!!! %s:%d", __FILE__, __LINE__) ;
 		return false ;
@@ -132,7 +132,7 @@ void LFUSectorManager::operator()(const BTreeKey& rKey, BTreeValue* pValue)
 
 	// Skip dirty sectors from lfu ranking
   DiskCache::SecKeyCacheValue skey(key.GetSectorID(), NULL);
-  auto l = m_pDiskDrive->mCache.m_pDirtyCacheList;
+  auto l = _mCache.m_pDirtyCacheList;
   if(upan::find(l->begin(), l->end(), skey) != l->end())
 		return ;
 
@@ -149,6 +149,28 @@ void LFUSectorManager::operator()(const BTreeKey& rKey, BTreeValue* pValue)
 	node.m_uiSectorID = key.GetSectorID() ;
 	node.m_dRank = dRank ;
 	m_mReleaseList.sorted_insert_asc(node);
+}
+
+DiskCache::DiskCache(DiskDrive& diskDrive) :
+  pDiskDrive(&diskDrive),
+  iMaxCacheSectors(16384)
+{
+	m_pCacheKeyMemPool = MemPool<DiskCacheKey>::CreateMemPool(iMaxCacheSectors) ;
+	m_pCacheValueMemPool = MemPool<DiskCacheValue>::CreateMemPool(iMaxCacheSectors) ;
+
+	if(m_pCacheValueMemPool == NULL || m_pCacheKeyMemPool == NULL)
+	{
+		printf("\n DiskCache Setup Failed due to MemPool creation failure") ;
+		return;
+	}
+
+	m_pDestroyKeyValue = new DestroyDiskCacheKeyValue(this);
+
+	m_pTree = new BTree(iMaxCacheSectors) ;
+	m_pTree->SetDestoryKeyValueCallBack(m_pDestroyKeyValue) ;
+
+	m_pDirtyCacheList = new upan::list<DiskCache::SecKeyCacheValue>() ;
+	m_pLFUSectorManager = new LFUSectorManager(*this);
 }
 
 void DiskCache::InsertToDirtyList(const DiskCache::SecKeyCacheValue& v)
@@ -170,75 +192,3 @@ DiskCacheValue* DiskCache::CreateValue(const byte* pSrc)
 	pValue->Write(pSrc) ;
 	return pValue ;
 }
-
-static void DiskCache_TaskFlushCache(DiskDrive* pDiskDrive, unsigned uiParam2)
-{
-	do
-	{
-	//	if(pDiskDrive->Mounted())
-    pDiskDrive->FlushDirtyCacheSectors(10) ;
-		ProcessManager::Instance().Sleep(200) ;
-	} while(!pDiskDrive->mCache.bStopReleaseCacheTask) ;
-
-	ProcessManager_EXIT() ;
-}
-
-static void DiskCache_TaskReleaseCache(DiskDrive* pDiskDrive, unsigned uiParam2)
-{
-	do
-	{
-		if(pDiskDrive->Mounted())
-			pDiskDrive->mCache.m_pLFUSectorManager->Run() ;
-
-		ProcessManager::Instance().Sleep(50) ;
-	} while(!pDiskDrive->mCache.bStopReleaseCacheTask) ;
-
-	ProcessManager_EXIT() ;
-}
-
-/***************************************************************************************************************************************/
-
-void DiskCache_Setup(DiskDrive& diskDrive)
-{
-  diskDrive.EnableDiskCache(true);
-	diskDrive.mCache.pDiskDrive = &diskDrive ;
-
-	diskDrive.mCache.iMaxCacheSectors = 16384 ;
-	diskDrive.mCache.m_pDestroyKeyValue = new DestroyDiskCacheKeyValue(&(diskDrive.mCache)) ;
-
-	diskDrive.mCache.m_pTree = new BTree(diskDrive.mCache.iMaxCacheSectors) ;
-	diskDrive.mCache.m_pTree->SetDestoryKeyValueCallBack(diskDrive.mCache.m_pDestroyKeyValue) ;
-
-	diskDrive.mCache.m_pCacheKeyMemPool = MemPool<DiskCacheKey>::CreateMemPool(diskDrive.mCache.iMaxCacheSectors) ;
-	diskDrive.mCache.m_pCacheValueMemPool = MemPool<DiskCacheValue>::CreateMemPool(diskDrive.mCache.iMaxCacheSectors) ;
-
-	if(diskDrive.mCache.m_pCacheValueMemPool == NULL || diskDrive.mCache.m_pCacheKeyMemPool == NULL)
-	{
-		printf("\n DiskCache Setup Failed due to MemPool creation failure") ;
-		return ;
-	}
-
-	//pDiskDrive->mCache.m_pTree->SetMaxElements(pDiskDrive->mCache.iMaxCacheSectors) ;
-	diskDrive.mCache.m_pDirtyCacheList = new upan::list<DiskCache::SecKeyCacheValue>() ;
-	diskDrive.mCache.m_pLFUSectorManager = new LFUSectorManager(&diskDrive) ;
-}
-
-void DiskCache_StartReleaseCacheTask(DiskDrive& diskDrive)
-{
-	diskDrive.mCache.bStopReleaseCacheTask = false;
-
-	int pid;
-	char szDCFName[64] = "dcf-";
-	String_CanCat(szDCFName, diskDrive.DriveName().c_str());
-	ProcessManager::Instance().CreateKernelImage((unsigned)&DiskCache_TaskFlushCache, ProcessManager::Instance().GetCurProcId(), false, (unsigned)&diskDrive, 0, &pid, szDCFName);
-
-	char szDCRName[64] = "dcr-";
-	String_CanCat(szDCRName, diskDrive.DriveName().c_str());
-	ProcessManager::Instance().CreateKernelImage((unsigned)&DiskCache_TaskReleaseCache, ProcessManager::Instance().GetCurProcId(), false, (unsigned)&diskDrive, 0, &pid, szDCRName);
-}
-
-void DiskCache_StopReleaseCacheTask(DiskDrive* pDiskDrive)
-{
-	pDiskDrive->mCache.bStopReleaseCacheTask = true ;
-}
-

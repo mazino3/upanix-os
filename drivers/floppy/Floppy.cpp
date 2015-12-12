@@ -572,7 +572,7 @@ void Floppy_Initialize()
       0, 0, 0,
       80, 1, 17,
       18, 80, 2,
-      true, nullptr, DiskDriveManager::Instance().CreateRawDisk("floppy", FLOPPY_DISK, NULL),
+      nullptr, DiskDriveManager::Instance().CreateRawDisk("floppy", FLOPPY_DISK, NULL),
       2048, 24, MEM_FD1_FS_START, MEM_FD1_FS_END);
 		
 		unsigned i ;

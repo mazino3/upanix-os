@@ -33,7 +33,7 @@ void SystemUtil_Reboot()
 		{
 			printf("\n UnMounting Drive: %-20s", pDiskDrive->DriveName().c_str());
 			byte bStatus = FSCommand_Mounter(pDiskDrive, FS_UNMOUNT) ;
-			DiskCache_StopReleaseCacheTask(pDiskDrive) ;
+			pDiskDrive->StopReleaseCacheTask(true);
       pDiskDrive->FlushDirtyCacheSectors();
 			if(bStatus != FSCommand_SUCCESS)
 				printf("\n Failed to UnMount Drive\n") ;

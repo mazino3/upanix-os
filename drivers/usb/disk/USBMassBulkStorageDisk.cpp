@@ -120,7 +120,7 @@ static void USBMassBulkStorageDisk_AddDeviceDrive(RawDiskDrive* pDisk)
       pPartitionInfo->EndCylinder,
       pPartitionInfo->EndHead,
       pPartitionInfo->EndSector,
-      1, 1, 1, true, pDevice, pDisk, uiSectorsInFreePool, uiSectorsInTableCache, uiMountPointStart, uiMountPointEnd);
+      1, 1, 1, pDevice, pDisk, uiSectorsInFreePool, uiSectorsInTableCache, uiMountPointStart, uiMountPointEnd);
 	}
 }
 

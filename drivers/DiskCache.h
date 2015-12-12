@@ -83,6 +83,8 @@ class DiskCacheValue : public BTreeValue
 		}
 } ;
 
+class DiskCache;
+
 class LFUSectorManager : public BTree::InOrderVisitor
 {
 	private:
@@ -100,7 +102,7 @@ class LFUSectorManager : public BTree::InOrderVisitor
 
 		upan::list<CacheRankNode> m_mReleaseList ;
 
-		DiskDrive* m_pDiskDrive ;
+    DiskCache& _mCache;
 		unsigned m_bReleaseListBuilt ; 
 		unsigned m_uiMaxRelListSize ;
 		unsigned m_uiBuildBreak ;
@@ -113,7 +115,7 @@ class LFUSectorManager : public BTree::InOrderVisitor
 		inline bool IsCacheFull() ;
 
 	public:
-		LFUSectorManager(DiskDrive* pDiskDrive) ;
+		LFUSectorManager(DiskCache&);
 
 		void Run() ;
 		bool ReplaceCache(unsigned uiSectorID, byte* bDataBuffer) ;
@@ -127,6 +129,7 @@ class DestroyDiskCacheKeyValue ;
 class DiskCache
 {
 	public:
+    DiskCache(DiskDrive& diskDrive);
 		class SecKeyCacheValue
 		{
 			public:
@@ -165,7 +168,6 @@ class DiskCache
 
 		DiskDrive* pDiskDrive ;
 		int iMaxCacheSectors ;
-		int bStopReleaseCacheTask ;
 };
 
 class DestroyDiskCacheKeyValue : public BTree::DestroyKeyValue
