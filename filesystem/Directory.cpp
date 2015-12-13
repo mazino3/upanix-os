@@ -553,8 +553,8 @@ byte Directory_RawRead(DiskDrive* pDiskDrive, unsigned uiStartSectorID, unsigned
 {
 	byte bStatus ;
 
-	uiStartSectorID = FileSystem_GetRealSectorNumber(uiStartSectorID, pDiskDrive) ;
-	uiEndSectorID = FileSystem_GetRealSectorNumber(uiEndSectorID, pDiskDrive);
+	uiStartSectorID = pDiskDrive->GetRealSectorNumber(uiStartSectorID);
+	uiEndSectorID = pDiskDrive->GetRealSectorNumber(uiEndSectorID);
 
 	RETURN_IF_NOT(bStatus, pDiskDrive->Read(uiStartSectorID, (uiEndSectorID - uiStartSectorID), bSectorBuffer), DeviceDrive_SUCCESS) ;
 
@@ -565,8 +565,8 @@ byte Directory_RawWrite(DiskDrive* pDiskDrive, unsigned uiStartSectorID, unsigne
 {
 	byte bStatus ;
 
-	uiStartSectorID = FileSystem_GetRealSectorNumber(uiStartSectorID, pDiskDrive) ;
-	uiEndSectorID = FileSystem_GetRealSectorNumber(uiEndSectorID, pDiskDrive) ;
+	uiStartSectorID = pDiskDrive->GetRealSectorNumber(uiStartSectorID);
+	uiEndSectorID = pDiskDrive->GetRealSectorNumber(uiEndSectorID);
 
 	RETURN_IF_NOT(bStatus, pDiskDrive->Write(uiStartSectorID, (uiEndSectorID - uiStartSectorID), bSectorBuffer), DeviceDrive_SUCCESS) ;
 
@@ -1186,7 +1186,7 @@ byte Directory_RawDirEntryRead(DiskDrive* pDiskDrive, unsigned uiSectorID, byte 
 	byte bStatus ;
 	byte bSectorBuffer[512] ;
 	
-	uiSectorID = FileSystem_GetRealSectorNumber(uiSectorID, pDiskDrive) ;
+	uiSectorID = pDiskDrive->GetRealSectorNumber(uiSectorID);
 
 	RETURN_IF_NOT(bStatus, pDiskDrive->Read(uiSectorID, 1, bSectorBuffer), DeviceDrive_SUCCESS) ;
 

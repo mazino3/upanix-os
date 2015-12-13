@@ -21,13 +21,9 @@
 #define FSManager_SUCCESS	0
 #define FSManager_FAILURE	1
 
-#define ENABLE_TABLE_CAHCE 0x01
-#define ENABLE_FREE_POOL_CACHE 0x02
-
 # include <DeviceDrive.h>
 
-byte FSManager_Mount(DiskDrive* pDiskDrive) ;
-byte FSManager_UnMount(DiskDrive* pDiskDrive) ;
+byte FSManager_BinarySearch(SectorBlockEntry* pList, int iSize, unsigned uiBlockID, int* iPos) ;
 byte FSManager_GetSectorEntryValue(DiskDrive* pDiskDrive, const unsigned uiSectorID, unsigned* uiSectorEntryValue, byte bFromCahceOnly) ;
 byte FSManager_SetSectorEntryValue(DiskDrive* pDiskDrive, const unsigned uiSectorID, unsigned uiSectorEntryValue, byte bFromCahceOnly) ;
 byte FSManager_AllocateSector(DiskDrive* pDiskDrive, unsigned* uiFreeSectorID) ;

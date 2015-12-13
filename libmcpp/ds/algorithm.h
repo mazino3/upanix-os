@@ -21,14 +21,7 @@
 namespace upan {
 
 template <typename T>
-class unary_function
-{
-  public:
-    virtual bool operator()(const T&) const = 0;
-};
-
-template <typename T>
-class equal_to final : public unary_function<T>
+class equal_to final
 {
   public:
     equal_to(const T& value) : _value(value) {}
@@ -47,12 +40,12 @@ IT find(IT begin, IT end, const typename IT::value_type& value)
   return i;
 }
 
-template <typename IT>
-IT find(IT begin, IT end, const unary_function<typename IT::value_type>& ufunc)
+template <typename IT, typename MATCH>
+IT find_if(IT begin, IT end, MATCH match)
 {
   auto i = begin;
   for(; i != end; ++i)
-    if(ufunc(*i))
+    if(match(*i))
       break;
   return i;
 }

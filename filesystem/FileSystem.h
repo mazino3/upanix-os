@@ -53,22 +53,14 @@
 
 #define FS_ROOT_DIR "/"
 
- unsigned FileSystem_GetRealSectorNumber(const unsigned uiSectorID, const DiskDrive* pDiskDrive) ;
- byte FileSystem_GetSectorEntryValue(DiskDrive* pDiskDrive, const unsigned uiSectorID,
-		unsigned* uiSectorEntryValue) ;
- byte FileSystem_SetSectorEntryValue(DiskDrive* pDiskDrive, const unsigned uiSectorID,
-		unsigned uiSectorEntryValue) ;
+byte FileSystem_GetSectorEntryValue(DiskDrive* pDiskDrive, const unsigned uiSectorID,
+  unsigned* uiSectorEntryValue) ;
+byte FileSystem_SetSectorEntryValue(DiskDrive* pDiskDrive, const unsigned uiSectorID,
+  unsigned uiSectorEntryValue) ;
 
 byte FileSystem_Format(DiskDrive* pDiskDrive) ;
-byte FileSystem_Mount(DiskDrive* pDiskDrive) ;
-byte FileSystem_UnMount(DiskDrive* pDiskDrive) ;
 byte FileSystem_AllocateSector(DiskDrive* pDiskDrive, unsigned* uiFreeSectorID) ;
 byte FileSystem_DeAllocateSector(DiskDrive* pDiskDrive, unsigned uiCurrentSectorID, unsigned* uiNextSectorID) ;
-
-byte FileSystem_VerifyBootBlock(DiskDrive* pDiskDrive) ;
-//void FileSystem_UpdateTime(FileSystem_Time* pTime) ;
-byte FileSystem_IsFreePoolCacheEnabled(const DiskDrive* pDiskDrive) ;
-byte FileSystem_IsTableCacheEnabled(const DiskDrive* pDiskDrive) ;
 unsigned FileSystem_GetSizeForTableCache(unsigned uiNoOfSectorsInTableCache) ;
 
 #endif

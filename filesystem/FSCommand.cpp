@@ -35,14 +35,13 @@ byte FSCommand_Mounter(DiskDrive* pDiskDrive, MOUNT_TYPE mountType)
 	}
 
 	if(mountType == FS_MOUNT)
-	{
-		RETURN_IF_NOT(bStatus, FileSystem_Mount(pDiskDrive), FileSystem_SUCCESS) ;
-		RETURN_IF_NOT(bStatus, FileSystem_VerifyBootBlock(pDiskDrive), FileSystem_SUCCESS) ;
-	}
+  {
+		RETURN_IF_NOT(bStatus, pDiskDrive->Mount(), DeviceDrive_SUCCESS);
+  }
 	else
-	{
-		RETURN_IF_NOT(bStatus, FileSystem_UnMount(pDiskDrive), FileSystem_SUCCESS) ;
-	}
+  {
+		RETURN_IF_NOT(bStatus, pDiskDrive->UnMount(), DeviceDrive_SUCCESS);
+  }
 
 	return FSCommand_SUCCESS ;
 }

@@ -101,138 +101,7 @@ static void FileSystem_InitFSBootBlock(FileSystem_BootBlock* pFSBootBlock, DiskD
 	FileSystem_CalculateFileSystemSize(pFSBootBlock) ;
 }
 
-static byte FileSystem_GetFSBootBlock(DiskDrive* pDiskDrive)
-{
-	byte bArrFSBootBlock[512] ;
-	byte bStatus ;
-	
-	RETURN_IF_NOT(bStatus, pDiskDrive->Read(1, 1, bArrFSBootBlock), DeviceDrive_SUCCESS) ;
-
-	if(bArrFSBootBlock[510] != 0x55 || bArrFSBootBlock[511] != 0xAA)
-		return FileSystem_ERR_INVALID_BPB_SIGNATURE ;
-
-	FileSystem_BootBlock* pFSBootBlock = &(pDiskDrive->FSMountInfo.FSBootBlock) ;
-
-	MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&bArrFSBootBlock, MemUtil_GetDS(), 
-						(unsigned)pFSBootBlock, sizeof(FileSystem_BootBlock)) ;
-	
-	if(pFSBootBlock->BPB_BootSig != 0x29)
-		return FileSystem_ERR_INVALID_BOOT_SIGNATURE ;
-
-	// TODO: A write to HD image file from mos fs util is changing the CHS value !!
-	// Needs to be fixed. So, this check is skipped for the time being
-
-	/*
-	if(pFSBootBlock->BPB_SecPerTrk != pDiskDrive->uiSectorsPerTrack)
-		return FileSystem_ERR_INVALID_SECTORS_PER_TRACK ;
-
-	if(pFSBootBlock->BPB_NumHeads != pDiskDrive->uiNoOfHeads)
-		return FileSystem_ERR_INVALID_NO_OF_HEADS ;
-	*/
-	
-	if(pFSBootBlock->BPB_TotSec32 != pDiskDrive->SizeInSectors())
-		return FileSystem_ERR_INVALID_DRIVE_SIZE_IN_SECTORS ;
-	
-	if(pFSBootBlock->BPB_FSTableSize == 0)
-		return FileSystem_ERR_ZERO_FATSZ32 ;
-
-	if(pFSBootBlock->BPB_BytesPerSec != 0x200)
-		return FileSystem_ERR_UNSUPPORTED_SECTOR_SIZE ;
-		
-	return FileSystem_SUCCESS ;
-}
-
-static byte FileSystem_ReadRootDirectory(DiskDrive* pDiskDrive)
-{
-	byte bStatus ;
-	unsigned uiSec ;
-	FileSystem_PresentWorkingDirectory* pFSpwd = &pDiskDrive->FSMountInfo.FSpwd ;
-	byte bDataBuffer[512] ;
-
-	uiSec = FileSystem_GetRealSectorNumber(0, pDiskDrive) ;
-		
-	RETURN_IF_NOT(bStatus, pDiskDrive->Read(uiSec, 1, bDataBuffer), DeviceDrive_SUCCESS) ;
-	
-	MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)bDataBuffer, MemUtil_GetDS(), (unsigned)&pFSpwd->DirEntry, sizeof(FileSystem_DIR_Entry)) ;
-
-	pFSpwd->uiSectorNo = 0 ;
-	pFSpwd->bSectorEntryPosition = 0 ;
-		
-	return FileSystem_SUCCESS ;
-}
-
-static byte FileSystem_InitializeMountInfo(DiskDrive* pDiskDrive)
-{
-	FileSystemMountInfo *pFSMountInfo = &(pDiskDrive->FSMountInfo) ;
-	
-	unsigned uiMountPointStart = pDiskDrive->MountPointStart();
-	unsigned uiMountPointEnd = pDiskDrive->MountPointEnd();
-
-	unsigned uiMountSpaceLimit = uiMountPointEnd - uiMountPointStart ;
-
-	unsigned uiSizeOfTableCahce = FileSystem_GetSizeForTableCache(pDiskDrive->NoOfSectorsInTableCache());
-
-	pDiskDrive->bFSCacheFlag = ENABLE_TABLE_CAHCE | ENABLE_FREE_POOL_CACHE ;
-
-	if(uiSizeOfTableCahce > uiMountSpaceLimit)
-	{
-		KC::MDisplay().Message("\n Critical Error: FS Mount Cache size insufficient. ", ' ') ;
-		pDiskDrive->bFSCacheFlag &= ~((byte)ENABLE_TABLE_CAHCE) ;
-		KernelUtil::Wait(3000) ;
-	}
-
-  pFSMountInfo->pFreePoolQueue = new upan::queue<unsigned>(pDiskDrive->MaxSectorsInFreePoolCache());
-
-	pFSMountInfo->FSTableCache.pSectorBlockEntryList = NULL ;
-	pFSMountInfo->FSTableCache.iSize = 0 ;
-
-	if(FileSystem_IsTableCacheEnabled(pDiskDrive))
-	{
-		pFSMountInfo->FSTableCache.pSectorBlockEntryList = (SectorBlockEntry*)(uiMountPointStart) ;
-	}
-
-	return FileSystem_SUCCESS ;
-}
-
-
 /**********************************************************************************************/
-
-byte FileSystem_VerifyBootBlock(DiskDrive* pDiskDrive)
-{
-	FileSystem_BootBlock* pFSBootBlock = &pDiskDrive->FSMountInfo.FSBootBlock ;
-
-	if(pFSBootBlock->BPB_jmpBoot[0] != 0xEB || pFSBootBlock->BPB_jmpBoot[1] != 0xFE || pFSBootBlock->BPB_jmpBoot[2] != 0x90)
-		return FileSystem_ERR_BPB_JMP ;
-
-	if(pFSBootBlock->BPB_BytesPerSec != 0x200)
-		return FileSystem_ERR_UNSUPPORTED_SECTOR_SIZE ;
-	
-	if(pDiskDrive->DeviceType() == DEV_FLOPPY)
-		if(pFSBootBlock->BPB_Media  != 0xF0)
-			return FileSystem_ERR_UNSUPPORTED_MEDIA ;
-		
-	if(pFSBootBlock->BPB_ExtFlags  != 0x0080)
-		return FileSystem_ERR_INVALID_EXTFLAG ;
-		
-	if(pFSBootBlock->BPB_FSVer != 0x0100)
-		return FileSystem_ERR_FS_VERSION ;
-		
-	if(pFSBootBlock->BPB_FSInfo  != 1)
-		return FileSystem_ERR_FSINFO_SECTOR ;
-		
-	if(pFSBootBlock->BPB_VolID != 0x01)
-		return FileSystem_ERR_INVALID_VOL_ID ;
-
-	return FileSystem_SUCCESS ;
-}
-
-unsigned 
-FileSystem_GetRealSectorNumber(const unsigned uiSectorID, const DiskDrive* pDiskDrive)
-{
-	return uiSectorID + 1/*BPB*/ 
-					+ pDiskDrive->FSMountInfo.FSBootBlock.BPB_RsvdSecCnt 
-					+ pDiskDrive->FSMountInfo.FSBootBlock.BPB_FSTableSize ;
-}
 
 byte
 FileSystem_GetSectorEntryValue(DiskDrive* pDiskDrive, const unsigned uiSectorID, unsigned* uiSectorEntryValue)
@@ -305,58 +174,13 @@ byte FileSystem_Format(DiskDrive* pDiskDrive)
 						(unsigned)&(pDiskDrive->FSMountInfo.FSBootBlock), 
 						sizeof(FileSystem_BootBlock)) ;
 
-	unsigned uiSec = FileSystem_GetRealSectorNumber(0, pDiskDrive) ;
+	unsigned uiSec = pDiskDrive->GetRealSectorNumber(0);
 
 	FileSystem_PopulateRootDirEntry(((FileSystem_DIR_Entry*)&bSectorBuffer), uiSec) ;
 	
 	RETURN_IF_NOT(bStatus, pDiskDrive->Write(uiSec, 1, bSectorBuffer), DeviceDrive_SUCCESS) ;
 	/*************************** Root Directory [END] ********************************/
 
-	pDiskDrive->Mounted(false);
-
-	return FileSystem_SUCCESS ;
-}
-
-byte FileSystem_Mount(DiskDrive* pDiskDrive)
-{
-	byte bStatus ;
-	
-	if(pDiskDrive->Mounted())
-		return FileSystem_ERR_ALREADY_MOUNTED ;
-
-	RETURN_IF_NOT(bStatus, FileSystem_InitializeMountInfo(pDiskDrive), FileSystem_SUCCESS) ;
-
-	RETURN_IF_NOT(bStatus, FileSystem_GetFSBootBlock(pDiskDrive), FileSystem_SUCCESS) ;
-
-	RETURN_IF_NOT(bStatus, FSManager_Mount(pDiskDrive), FileSystem_SUCCESS) ;
-
-	RETURN_IF_NOT(bStatus, FileSystem_ReadRootDirectory(pDiskDrive), FileSystem_SUCCESS) ;
-
-	pDiskDrive->Mounted(true);
-
-	return FileSystem_SUCCESS ;
-}
-
-byte FileSystem_UnMount(DiskDrive* pDiskDrive)
-{
-	byte bStatus ;
-
-	if(!pDiskDrive->Mounted())
-		return FileSystem_ERR_NOT_MOUNTED ;
-
-	byte bSectorBuffer[512] ;
-
-	bSectorBuffer[510] = 0x55 ; /* BootSector Signature */
-	bSectorBuffer[511] = 0xAA ;
-
-	MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&pDiskDrive->FSMountInfo.FSBootBlock,
-	MemUtil_GetDS(), (unsigned)bSectorBuffer, sizeof(FileSystem_BootBlock)) ;
-
-	RETURN_IF_NOT(bStatus, pDiskDrive->Write(1, 1, bSectorBuffer), DeviceDrive_SUCCESS) ;
-
-	RETURN_IF_NOT(bStatus, FSManager_UnMount(pDiskDrive), FileSystem_SUCCESS) ;
-
-	pDiskDrive->FlushDirtyCacheSectors();
 	pDiskDrive->Mounted(false);
 
 	return FileSystem_SUCCESS ;
@@ -377,22 +201,12 @@ byte FileSystem_DeAllocateSector(DiskDrive* pDiskDrive, unsigned uiCurrentSector
 
 	RETURN_IF_NOT(bStatus, FileSystem_SetSectorEntryValue(pDiskDrive, uiCurrentSectorID, 0), FileSystem_SUCCESS) ;
 
-	if(FileSystem_IsFreePoolCacheEnabled(pDiskDrive))
+	if(pDiskDrive->IsFreePoolCacheEnabled())
 	{
     pDiskDrive->FSMountInfo.pFreePoolQueue->push_back(uiCurrentSectorID);
 	}
 
 	return FileSystem_SUCCESS ;
-}
-
-byte FileSystem_IsFreePoolCacheEnabled(const DiskDrive* pDiskDrive)
-{
-	return pDiskDrive->bFSCacheFlag & ENABLE_FREE_POOL_CACHE ;
-}
-
-byte FileSystem_IsTableCacheEnabled(const DiskDrive* pDiskDrive)
-{
-	return pDiskDrive->bFSCacheFlag & ENABLE_TABLE_CAHCE ;
 }
 
 unsigned FileSystem_GetSizeForTableCache(unsigned uiNoOfSectorsInTableCache)
