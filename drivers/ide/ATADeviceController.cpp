@@ -451,7 +451,7 @@ static void ATADeviceController_AddATADrive(RawDiskDrive* pDisk)
 	PartitionTable partitionTable ;
 	byte bStatus ;
 
-	ATAPort* pPort = (ATAPort*)pDisk->pDevice ;
+	ATAPort* pPort = (ATAPort*)pDisk->Device();
 	bStatus = PartitionManager_ReadPartitionInfo(pDisk, &partitionTable) ;
 	if(bStatus == PartitionManager_FAILURE)
 	{

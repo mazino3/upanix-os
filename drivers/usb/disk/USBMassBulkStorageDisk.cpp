@@ -39,7 +39,7 @@ static void USBMassBulkStorageDisk_AddDeviceDrive(RawDiskDrive* pDisk)
 	PartitionTable partitionTable ;
 	byte bStatus ;
 
-	SCSIDevice* pDevice = (SCSIDevice*)pDisk->pDevice ;
+	SCSIDevice* pDevice = (SCSIDevice*)pDisk->Device();
 	bStatus = PartitionManager_ReadPartitionInfo(pDisk, &partitionTable) ;
 
 	if(bStatus == PartitionManager_FAILURE)

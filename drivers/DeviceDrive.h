@@ -78,7 +78,7 @@ typedef enum
 	USD_DRIVE5
 } DRIVE_NO;
 
-typedef struct RawDiskDrive RawDiskDrive ;
+class RawDiskDrive;
 
 class DiskDrive
 {
@@ -134,7 +134,6 @@ class DiskDrive
 
     int Id() const { return _id; }
     bool Mounted() const { return _mounted; }
-    DiskDrive* Next() const { return _next; }
     RawDiskDrive* RawDisk() const { return _rawDisk; }
     void* Device() const { return _device; }
     DiskCache& Cache() { return _mCache; }
@@ -142,7 +141,6 @@ class DiskDrive
     void StopReleaseCacheTask(bool value) { _bStopReleaseCacheTask = value; }
     void FSType(FS_TYPE t) { _fsType = t; }
     void Mounted(bool mounted) { _mounted = mounted; }
-    void Next(DiskDrive* n) { _next = n; }
 
     // FileSystem Mount Info
     FileSystemMountInfo	FSMountInfo ;
@@ -179,7 +177,6 @@ class DiskDrive
 
     FS_TYPE       _fsType;
     bool          _mounted;
-  	DiskDrive* 	  _next;
     Mutex			    _driveMutex;
     DiskCache		  _mCache;
 		bool          _bStopReleaseCacheTask;
@@ -194,15 +191,29 @@ typedef enum
 	FLOPPY_DISK,
 } RAW_DISK_TYPES ;
 
-struct RawDiskDrive
+class RawDiskDrive
 {
-	char szNameID[32] ;
-	RAW_DISK_TYPES iType ;
-	unsigned uiSectorSize ;
-	unsigned uiSizeInSectors ;
-	void* pDevice ;
-	Mutex mDiskMutex ;
-} ;
+  private:
+    RawDiskDrive(const upan::string& name, RAW_DISK_TYPES type, void* device);
+  public:
+    byte Read(unsigned uiStartSector, unsigned uiNoOfSectors, byte* pDataBuffer);
+    byte Write(unsigned uiStartSector, unsigned uiNoOfSectors, byte* pDataBuffer);
+
+    const upan::string& Name() const { return _name; }
+    RAW_DISK_TYPES Type() const { return _type; }
+    unsigned SectorSize() const { return _sectorSize; }
+    unsigned SizeInSectors() const { return _sizeInSectors; }
+    void* Device() { return _device; }
+  private:
+    upan::string _name;
+    RAW_DISK_TYPES _type;
+    unsigned _sectorSize;
+    unsigned _sizeInSectors;
+    void* _device;
+    Mutex _diskMutex;
+
+    friend class DiskDriveManager;
+};
 
 class DriveRemoveClause
 {
@@ -242,13 +253,9 @@ class DiskDriveManager
     byte FormatDrive(const upan::string& szDriveName);
     byte GetCurrentDriveStat(DriveStat* pDriveStat);
 
-    RawDiskDrive* CreateRawDisk(const char* szName, RAW_DISK_TYPES iType, void* pDevice);
-    byte RemoveRawDiskEntry(const char* szName);
-    RawDiskDrive* GetRawDiskByName(const char* name);
-
-    byte Write(DiskDrive* pDiskDrive, unsigned uiStartSector, unsigned uiNoOfSectors, byte* bDataBuffer);
-    byte RawDiskRead(RawDiskDrive* pDisk, unsigned uiStartSector, unsigned uiNoOfSectors, byte* pDataBuffer);
-    byte RawDiskWrite(RawDiskDrive* pDisk, unsigned uiStartSector, unsigned uiNoOfSectors, byte* pDataBuffer);
+    RawDiskDrive* CreateRawDisk(const upan::string& name, RAW_DISK_TYPES iType, void* pDevice);
+    byte RemoveRawDiskEntry(const upan::string& name);
+    RawDiskDrive* GetRawDiskByName(const upan::string& name);
 
     const upan::list<DiskDrive*>& DiskDriveList() const { return _driveList; }
     const upan::list<RawDiskDrive*>& RawDiskDriveList() const { return _rawDiskList; }

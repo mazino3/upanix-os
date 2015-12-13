@@ -60,8 +60,8 @@ class DiskCacheValue : public BTreeValue
 
 	public:
 		DiskCacheValue() : m_uiLastAccess(PIT_GetClockCount()), m_uiHitCount(1)
-   		{ 
-		}
+    { 
+    }
 
 		byte* GetSectorBuffer() { return m_bSectorBuffer ; }
 
@@ -129,7 +129,8 @@ class DestroyDiskCacheKeyValue ;
 class DiskCache
 {
 	public:
-    DiskCache(DiskDrive& diskDrive);
+    DiskCache();
+    ~DiskCache();
 		class SecKeyCacheValue
 		{
 			public:
@@ -152,40 +153,64 @@ class DiskCache
 				byte* m_pSectorBuffer ;
 		};
 
+    bool Full() const 
+    { 
+      return _tree.GetTotalElements() >= MAX_CACHE_SECTORS; 
+    }
+		bool ReplaceCache(unsigned uiSectorID, byte* bDataBuffer)
+    {
+      return _LFUSectorManager.ReplaceCache(uiSectorID, bDataBuffer);
+    }
+    DiskCacheValue* Find(unsigned uiSectorID)
+    {
+      return static_cast<DiskCacheValue*>(_tree.Find(DiskCacheKey(uiSectorID)));
+    }
+    DiskCacheValue* Add(unsigned uiSectorID, byte* bDataBuffer)
+    {
+      DiskCacheValue* val = CreateValue(bDataBuffer);
+      if(!_tree.Insert(CreateKey(uiSectorID), val))
+        return nullptr;
+      return val;
+    }
+    void LFUCacheCleanUp()
+    {
+      _LFUSectorManager.Run();
+    }
+    void InsertToDirtyList(const DiskCache::SecKeyCacheValue& v);
+    bool Get(SecKeyCacheValue& v);
+
+	private:
     DiskCacheKey* CreateKey(unsigned uiSectorID);
     DiskCacheValue* CreateValue(const byte* pSrc);
-    void InsertToDirtyList(const DiskCache::SecKeyCacheValue& v);
 
-	public:
-		BTree* m_pTree ;
-		DestroyDiskCacheKeyValue* m_pDestroyKeyValue ;
+		static const int MAX_CACHE_SECTORS = 16384;
+		DestroyDiskCacheKeyValue* _destroyKeyValue;
+		MemPool<DiskCacheKey>& _cacheKeyMemPool;
+		MemPool<DiskCacheValue>& _cacheValueMemPool;
+		upan::list<SecKeyCacheValue> _dirtyCacheList;
+		BTree _tree;
+		LFUSectorManager _LFUSectorManager;
 
-		MemPool<DiskCacheKey>* m_pCacheKeyMemPool ;
-		MemPool<DiskCacheValue>* m_pCacheValueMemPool ;
-
-		upan::list<SecKeyCacheValue>* m_pDirtyCacheList ;
-		LFUSectorManager* m_pLFUSectorManager ;
-
-		DiskDrive* pDiskDrive ;
-		int iMaxCacheSectors ;
+    friend class DestroyDiskCacheKeyValue;
+    friend class LFUSectorManager;
 };
 
 class DestroyDiskCacheKeyValue : public BTree::DestroyKeyValue
 {
 	private:
-		DiskCache* m_pCache ;
+		DiskCache& _cache;
 
 	public:
-		DestroyDiskCacheKeyValue(DiskCache* pCache) : m_pCache(pCache) { }
+		DestroyDiskCacheKeyValue(DiskCache& cache) : _cache(cache) { }
 
 		void DestroyKey(BTreeKey* pKey)
 		{
-			m_pCache->m_pCacheKeyMemPool->Release(static_cast<DiskCacheKey*>(pKey)) ;
+			_cache._cacheKeyMemPool.Release(static_cast<DiskCacheKey*>(pKey)) ;
 		}
 
 		void DestroyValue(BTreeValue* pValue)
 		{
-			m_pCache->m_pCacheValueMemPool->Release(static_cast<DiskCacheValue*>(pValue)) ;
+			_cache._cacheValueMemPool.Release(static_cast<DiskCacheValue*>(pValue)) ;
 		}
 } ;
 

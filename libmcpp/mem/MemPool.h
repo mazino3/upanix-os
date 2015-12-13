@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <Alloc.h>
 #include <Stack.h>
+#include <exception.h>
 
 extern unsigned DMM_AllocateForKernel(unsigned uiSizeInBytes) ;
 extern byte DMM_DeAllocateForKernel(unsigned uiAddress) ;
@@ -92,15 +93,11 @@ class MemPool
 
 	public:
 		// Factory
-		static MemPool<T>* CreateMemPool(unsigned uiSize, unsigned uiChunkSize = 1024)
+		static MemPool<T>& CreateMemPool(unsigned uiSize, unsigned uiChunkSize = 1024)
 		{
 			if((uiSize % uiChunkSize) != 0)
-			{
-				printf("\n MemPool Creation Failure. MemPool Size: %u is not a multiple of Chunk Size: %u", uiSize, uiChunkSize) ;
-				return NULL ;
-			}
-
-			return new MemPool<T>(uiSize, uiChunkSize) ;
+        throw upan::exception(XLOC, "\n MemPool Creation Failure. MemPool Size: %u is not a multiple of Chunk Size: %u", uiSize, uiChunkSize);
+			return *new MemPool<T>(uiSize, uiChunkSize) ;
 		}
 
 		~MemPool()

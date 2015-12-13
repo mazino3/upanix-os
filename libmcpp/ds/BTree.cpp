@@ -35,11 +35,7 @@ BTree::BTree(int iMaxElements) :
 	if(iMaxElements < 1)
 		iMaxElements = 1024 ;
 
-	m_pElementMemPool = MemPool<BTreeElement>::CreateMemPool(iMaxElements) ;
-	if(m_pElementMemPool == NULL)
-	{
-		printf("\n BTree Initialization failed because of MemPool Creation Failure") ;
-	}
+	m_pElementMemPool = &MemPool<BTreeElement>::CreateMemPool(iMaxElements) ;
 }
 
 BTree::~BTree()

@@ -29,15 +29,15 @@
 LFUSectorManager::LFUSectorManager(DiskCache& mCache) :
   _mCache(mCache),
 	m_bReleaseListBuilt(false),
-	m_uiMaxRelListSize(0.1 * _mCache.iMaxCacheSectors),
-	m_uiBuildBreak(0.05 * _mCache.iMaxCacheSectors),
+	m_uiMaxRelListSize(0.1 * _mCache.MAX_CACHE_SECTORS),
+	m_uiBuildBreak(0.05 * _mCache.MAX_CACHE_SECTORS),
 	m_bAbort(false)
 {
 }
 
 bool LFUSectorManager::IsCacheFull()
 {
-	return (_mCache.m_pTree->GetTotalElements() >= _mCache.iMaxCacheSectors) ;
+	return _mCache.Full();
 }
 
 void LFUSectorManager::Run()
@@ -54,7 +54,7 @@ void LFUSectorManager::Run()
 	m_uiCurrent = PIT_GetClockCount() ;
 	m_uiBuildCount = 0 ;
 
-	_mCache.m_pTree->InOrderTraverse(*this) ;
+	_mCache._tree.InOrderTraverse(*this) ;
 
 	if(m_bAbort)
 		return ;
@@ -89,8 +89,7 @@ bool LFUSectorManager::ReplaceCache(unsigned uiSectorID, byte* bDataBuffer)
     m_mReleaseList.pop_front();
 		// Skip dirty sectors from replacing
     DiskCache::SecKeyCacheValue skey(node.m_uiSectorID, NULL);
-    auto l = _mCache.m_pDirtyCacheList;
-    if(upan::find(l->begin(), l->end(), skey) != l->end())
+    if(upan::find(_mCache._dirtyCacheList.begin(), _mCache._dirtyCacheList.end(), skey) != _mCache._dirtyCacheList.end())
 			continue;
 		bFound = true;
 		break ;
@@ -103,7 +102,7 @@ bool LFUSectorManager::ReplaceCache(unsigned uiSectorID, byte* bDataBuffer)
 		return true ;
 	}
 
-	if(!(_mCache.m_pTree->Delete(DiskCacheKey(node.m_uiSectorID))))
+	if(!(_mCache._tree.Delete(DiskCacheKey(node.m_uiSectorID))))
 	{
 		printf("\n Failed to delete ranked sector: %u from the Cache BTree", node.m_uiSectorID) ;
 		ProcessManager::Instance().Sleep(10000); 
@@ -113,7 +112,7 @@ bool LFUSectorManager::ReplaceCache(unsigned uiSectorID, byte* bDataBuffer)
 	DiskCacheKey* pKey = _mCache.CreateKey(uiSectorID) ;
 	DiskCacheValue* pVal = _mCache.CreateValue(bDataBuffer) ;
 
-	if(!_mCache.m_pTree->Insert(pKey, pVal))
+	if(!_mCache._tree.Insert(pKey, pVal))
 	{
 		printf("\n Disk Cache Insert failed!!! %s:%d", __FILE__, __LINE__) ;
 		return false ;
@@ -132,9 +131,8 @@ void LFUSectorManager::operator()(const BTreeKey& rKey, BTreeValue* pValue)
 
 	// Skip dirty sectors from lfu ranking
   DiskCache::SecKeyCacheValue skey(key.GetSectorID(), NULL);
-  auto l = _mCache.m_pDirtyCacheList;
-  if(upan::find(l->begin(), l->end(), skey) != l->end())
-		return ;
+  if(upan::find(_mCache._dirtyCacheList.begin(), _mCache._dirtyCacheList.end(), skey) != _mCache._dirtyCacheList.end())
+		return;
 
 	unsigned uiTimeDiff = m_uiCurrent - value->GetLastAccess() ;
 	double dRank = 	(double)uiTimeDiff / (double)value->GetHitCount() ;
@@ -151,44 +149,48 @@ void LFUSectorManager::operator()(const BTreeKey& rKey, BTreeValue* pValue)
 	m_mReleaseList.sorted_insert_asc(node);
 }
 
-DiskCache::DiskCache(DiskDrive& diskDrive) :
-  pDiskDrive(&diskDrive),
-  iMaxCacheSectors(16384)
+DiskCache::DiskCache() :
+	_cacheKeyMemPool(MemPool<DiskCacheKey>::CreateMemPool(MAX_CACHE_SECTORS)),
+	_cacheValueMemPool(MemPool<DiskCacheValue>::CreateMemPool(MAX_CACHE_SECTORS)),
+  _tree(MAX_CACHE_SECTORS),
+  _LFUSectorManager(*this)
 {
-	m_pCacheKeyMemPool = MemPool<DiskCacheKey>::CreateMemPool(iMaxCacheSectors) ;
-	m_pCacheValueMemPool = MemPool<DiskCacheValue>::CreateMemPool(iMaxCacheSectors) ;
+	_destroyKeyValue = new DestroyDiskCacheKeyValue(*this);
+	_tree.SetDestoryKeyValueCallBack(_destroyKeyValue);
+}
 
-	if(m_pCacheValueMemPool == NULL || m_pCacheKeyMemPool == NULL)
-	{
-		printf("\n DiskCache Setup Failed due to MemPool creation failure") ;
-		return;
-	}
-
-	m_pDestroyKeyValue = new DestroyDiskCacheKeyValue(this);
-
-	m_pTree = new BTree(iMaxCacheSectors) ;
-	m_pTree->SetDestoryKeyValueCallBack(m_pDestroyKeyValue) ;
-
-	m_pDirtyCacheList = new upan::list<DiskCache::SecKeyCacheValue>() ;
-	m_pLFUSectorManager = new LFUSectorManager(*this);
+DiskCache::~DiskCache()
+{
+  delete _destroyKeyValue;
+  delete &_cacheKeyMemPool;
+  delete &_cacheValueMemPool;
 }
 
 void DiskCache::InsertToDirtyList(const DiskCache::SecKeyCacheValue& v)
 {
-  if(upan::find(m_pDirtyCacheList->begin(), m_pDirtyCacheList->end(), v) == m_pDirtyCacheList->end())
-    m_pDirtyCacheList->push_back(v);
+  if(upan::find(_dirtyCacheList.begin(), _dirtyCacheList.end(), v) == _dirtyCacheList.end())
+    _dirtyCacheList.push_back(v);
 }
 
 DiskCacheKey* DiskCache::CreateKey(unsigned uiSectorID)
 {
-	DiskCacheKey* pKey = m_pCacheKeyMemPool->Create() ;
+	DiskCacheKey* pKey = _cacheKeyMemPool.Create() ;
 	pKey->SetSectorID(uiSectorID) ;
 	return pKey ;
 }
 
 DiskCacheValue* DiskCache::CreateValue(const byte* pSrc)
 {
-	DiskCacheValue* pValue = m_pCacheValueMemPool->Create() ;
+	DiskCacheValue* pValue = _cacheValueMemPool.Create() ;
 	pValue->Write(pSrc) ;
 	return pValue ;
+}
+
+bool DiskCache::Get(SecKeyCacheValue& v)
+{
+  if(_dirtyCacheList.empty())
+    return false;
+  v = _dirtyCacheList.front();
+  _dirtyCacheList.pop_front();
+  return true;
 }

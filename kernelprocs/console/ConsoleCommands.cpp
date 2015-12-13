@@ -584,7 +584,7 @@ void ConsoleCommands_ShowPartitionTable()
 	PartitionTable partitionTable ;
 	byte bStatus ;
 
-	printf("\n Total Sectors = %d", pDisk->uiSizeInSectors) ;
+	printf("\n Total Sectors = %d", pDisk->SizeInSectors());
 
 	bStatus = PartitionManager_ReadPartitionInfo(pDisk, &partitionTable) ;
 	if(bStatus == PartitionManager_FAILURE)
@@ -1031,8 +1031,11 @@ void ConsoleCommands_ShowRawDiskList()
 			{
 				static const char szTypes[2][32] = { "ATA Hard Disk", "USB SCSI Disk" } ;
 
-				printf("\n%-15s %-18s %-10d %-15d %-10d", pParamDisk->szNameID, szTypes[pParamDisk->iType - ATA_HARD_DISK], 
-						pParamDisk->uiSectorSize, pParamDisk->uiSizeInSectors, pParamDisk->uiSectorSize * pParamDisk->uiSizeInSectors / (1024 * 1024)) ;
+				printf("\n%-15s %-18s %-10d %-15d %-10d", pParamDisk->Name().c_str(), 
+          szTypes[pParamDisk->Type() - ATA_HARD_DISK], 
+					pParamDisk->SectorSize(), 
+          pParamDisk->SizeInSectors(), 
+          pParamDisk->SectorSize() * pParamDisk->SizeInSectors() / (1024 * 1024));
 			}
 
 	} lamdaDisplay ;

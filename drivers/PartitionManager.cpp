@@ -42,11 +42,11 @@ static void PartitionManager_PopulatePrimaryPartitionEntry(RawDiskDrive* pDisk, 
 	pPartitionEntry->LBANoOfSectors = uiLBAEndSector - uiLBAStartSector + 1 ;
 	
 	int iSectorsPerTrack, iHeadsPerCynlider ;
-	switch(pDisk->iType)
+	switch(pDisk->Type())
 	{
 		case ATA_HARD_DISK:
-				iSectorsPerTrack = ((ATAPort*)pDisk->pDevice)->id.usSectors ;
-				iHeadsPerCynlider = ((ATAPort*)pDisk->pDevice)->id.usHead ;
+				iSectorsPerTrack = ((ATAPort*)pDisk->Device())->id.usSectors ;
+				iHeadsPerCynlider = ((ATAPort*)pDisk->Device())->id.usHead ;
 
 				pPartitionEntry->StartCylinder = (uiLBAStartSector / iSectorsPerTrack) / iHeadsPerCynlider ;
 				pPartitionEntry->StartHead = (uiLBAStartSector / iSectorsPerTrack) % iHeadsPerCynlider ;
@@ -122,7 +122,7 @@ static byte PartitionManager_VerifyMBR(RawDiskDrive* pDisk, const PartitionInfo*
 			break ; 
 	}
 
-	unsigned uiSectorLimit = pDisk->uiSizeInSectors ;
+	unsigned uiSectorLimit = pDisk->SizeInSectors();
 
 	if(bPartitioned == false || uiActivePartitionCount != 1 || uiSectorCount > uiSectorLimit)
 		return PartitionManager_FAILURE ;
@@ -134,7 +134,7 @@ static byte PartitionManager_ReadPrimaryPartition(RawDiskDrive* pDisk, Partition
 {
 	byte bBootSectorBuffer[512] ;
 
-	RETURN_X_IF_NOT(DiskDriveManager::Instance().RawDiskRead(pDisk, 0, 1, bBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
+	RETURN_X_IF_NOT(pDisk->Read(0, 1, bBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
 
 	PartitionInfo* pPartitionInfo = ((PartitionInfo*)(bBootSectorBuffer + 0x1BE)) ;
 	
@@ -183,7 +183,7 @@ static byte PartitionManager_ReadExtPartition(RawDiskDrive* pDisk, PartitionTabl
 
 	for(;;)
 	{
-		RETURN_X_IF_NOT(DiskDriveManager::Instance().RawDiskRead(pDisk, uiExtSectorID, 1, bBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
+		RETURN_X_IF_NOT(pDisk->Read(uiExtSectorID, 1, bBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
 
 		pPartitionInfo = ((PartitionInfo*)(bBootSectorBuffer + 0x1BE)) ;
 	
@@ -238,7 +238,7 @@ byte PartitionManager_ClearPartitionTable(RawDiskDrive* pDisk)
 {
 	byte bBootSectorBuffer[512] ;
 
-	RETURN_X_IF_NOT(DiskDriveManager::Instance().RawDiskRead(pDisk, 0, 1, bBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
+	RETURN_X_IF_NOT(pDisk->Read(0, 1, bBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
 
 	PartitionInfo* pPartitionTable = ((PartitionInfo*)(bBootSectorBuffer + 0x1BE)) ;
 	
@@ -247,7 +247,7 @@ byte PartitionManager_ClearPartitionTable(RawDiskDrive* pDisk)
 	bBootSectorBuffer[510] = 0x55 ;
 	bBootSectorBuffer[511] = 0xAA ;
 
-	RETURN_X_IF_NOT(DiskDriveManager::Instance().RawDiskWrite(pDisk, 0, 1, bBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
+	RETURN_X_IF_NOT(pDisk->Write(0, 1, bBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
 
 	return PartitionManager_SUCCESS ;
 }
@@ -273,7 +273,7 @@ byte PartitionManager_CreatePrimaryPartitionEntry(RawDiskDrive* pDisk, Partition
 	if(pPartitionTable->uiNoOfPrimaryPartitions > 0)
 		uiUsedSizeInSectors = pPartitionTable->PrimaryParitions[ pPartitionTable->uiNoOfPrimaryPartitions - 1].LBAStartSector + pPartitionTable->PrimaryParitions[ pPartitionTable->uiNoOfPrimaryPartitions - 1].LBANoOfSectors ;
 		
-	unsigned uiTotalSizeInSectors = pDisk->uiSizeInSectors ;
+	unsigned uiTotalSizeInSectors = pDisk->SizeInSectors();
 
 	if(uiTotalSizeInSectors >= uiUsedSizeInSectors)
 		if((uiTotalSizeInSectors - uiUsedSizeInSectors) < uiSizeInSectors)
@@ -284,7 +284,7 @@ byte PartitionManager_CreatePrimaryPartitionEntry(RawDiskDrive* pDisk, Partition
 
 	byte bBootSectorBuffer[512] ;
 
-	RETURN_X_IF_NOT(DiskDriveManager::Instance().RawDiskRead(pDisk, 0, 1, bBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
+	RETURN_X_IF_NOT(pDisk->Read(0, 1, bBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
 
 	bBootSectorBuffer[510] = 0x55 ;
 	bBootSectorBuffer[511] = 0xAA ;
@@ -305,7 +305,7 @@ byte PartitionManager_CreatePrimaryPartitionEntry(RawDiskDrive* pDisk, Partition
 
 	PartitionManager_PopulatePrimaryPartitionEntry(pDisk, &(pRealPartitionTableEntry[pPartitionTable->uiNoOfPrimaryPartitions]), uiLBAStartSector, uiLBAEndSector, bIsActive, bIsExt) ;
 
-	RETURN_X_IF_NOT(DiskDriveManager::Instance().RawDiskWrite(pDisk, 0, 1, bBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
+	RETURN_X_IF_NOT(pDisk->Write(0, 1, bBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
 
 	pPartitionTable->uiNoOfPrimaryPartitions++ ;
 	
@@ -343,7 +343,7 @@ byte PartitionManager_CreateExtPartitionEntry(RawDiskDrive* pDisk, PartitionTabl
 	unsigned uiNewPartitionSector = uiUsedSizeInSectors + pPartitionTable->ExtPartitionEntry.LBAStartSector ;
 	pPartitionTable->ExtPartitions[pPartitionTable->uiNoOfExtPartitions].uiActualStartSector = uiNewPartitionSector ;
 
-	RETURN_X_IF_NOT(DiskDriveManager::Instance().RawDiskRead(pDisk, uiNewPartitionSector, 1, bBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
+	RETURN_X_IF_NOT(pDisk->Read(uiNewPartitionSector, 1, bBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
 
 	bBootSectorBuffer[510] = 0x55 ;
 	bBootSectorBuffer[511] = 0xAA ;
@@ -353,7 +353,7 @@ byte PartitionManager_CreateExtPartitionEntry(RawDiskDrive* pDisk, PartitionTabl
 	PartitionManager_PopulateExtPartitionEntry(&(pRealPartitionTableEntry[0]), uiLBAStartSector, uiLBANoOfSectors) ;
 	MemUtil_Set((byte*)&(pRealPartitionTableEntry[1]), 0, sizeof(PartitionInfo)) ;
 
-	RETURN_X_IF_NOT(DiskDriveManager::Instance().RawDiskWrite(pDisk, uiNewPartitionSector, 1, bBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
+	RETURN_X_IF_NOT(pDisk->Write(uiNewPartitionSector, 1, bBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
 
 	if(pPartitionTable->uiNoOfExtPartitions > 0)
 	{
@@ -363,7 +363,7 @@ byte PartitionManager_CreateExtPartitionEntry(RawDiskDrive* pDisk, PartitionTabl
 
 		uiPreviousExtPartitionStartSector = pPartitionTable->ExtPartitions[pPartitionTable->uiNoOfExtPartitions - 1].uiActualStartSector ;
 
-		RETURN_X_IF_NOT(DiskDriveManager::Instance().RawDiskRead(pDisk, uiPreviousExtPartitionStartSector, 1, bBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
+		RETURN_X_IF_NOT(pDisk->Read(uiPreviousExtPartitionStartSector, 1, bBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
 
 		pRealPartitionTableEntry = ((PartitionInfo*)(bBootSectorBuffer + 0x1BE)) ;
 
@@ -373,7 +373,7 @@ byte PartitionManager_CreateExtPartitionEntry(RawDiskDrive* pDisk, PartitionTabl
 		PartitionManager_PopulateExtPartitionEntry(&(pRealPartitionTableEntry[1]), uiLBAStartSector, uiLBANoOfSectors) ;
 		PartitionManager_PopulateExtPartitionEntry(&(pPartitionTable->ExtPartitions[pPartitionTable->uiNoOfExtPartitions - 1].NextPartition), uiLBAStartSector, uiLBANoOfSectors) ;
 
-		RETURN_X_IF_NOT(DiskDriveManager::Instance().RawDiskWrite(pDisk, uiPreviousExtPartitionStartSector, 1, bBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
+		RETURN_X_IF_NOT(pDisk->Write(uiPreviousExtPartitionStartSector, 1, bBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
 	}
 
 	pPartitionTable->uiNoOfExtPartitions++ ;
@@ -387,7 +387,7 @@ byte PartitionManager_DeletePrimaryPartition(RawDiskDrive* pDisk, PartitionTable
 		return PartitionManager_ERR_PARTITION_TABLE_EMPTY ;
 	
 	byte bBootSectorBuffer[512] ;
-	RETURN_X_IF_NOT(DiskDriveManager::Instance().RawDiskRead(pDisk, 0, 1, bBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
+	RETURN_X_IF_NOT(pDisk->Read(0, 1, bBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
 
 	PartitionInfo* pPartitionTableEntry ;
 	PartitionInfo* pRealPartitionTableEntry ;
@@ -404,7 +404,7 @@ byte PartitionManager_DeletePrimaryPartition(RawDiskDrive* pDisk, PartitionTable
 		for(i = 0; i < pPartitionTable->uiNoOfExtPartitions; i++)
 		{
 			uiExtSector = pPartitionTable->ExtPartitions[i].uiActualStartSector ;
-			RETURN_X_IF_NOT(DiskDriveManager::Instance().RawDiskRead(pDisk, uiExtSector, 1, bExtBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
+			RETURN_X_IF_NOT(pDisk->Read(uiExtSector, 1, bExtBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
 			pExtRealPartitionTable = ((PartitionInfo*)(bExtBootSectorBuffer + 0x1BE)) ;
 
 			MemUtil_Set((byte*)&pPartitionTable->ExtPartitions[i].CurrentPartition, 0, sizeof(PartitionInfo)) ;
@@ -412,7 +412,7 @@ byte PartitionManager_DeletePrimaryPartition(RawDiskDrive* pDisk, PartitionTable
 			MemUtil_Set((byte*)&pExtRealPartitionTable[0], 0, sizeof(PartitionInfo)) ;
 			MemUtil_Set((byte*)&pExtRealPartitionTable[1], 0, sizeof(PartitionInfo)) ;
 
-			RETURN_X_IF_NOT(DiskDriveManager::Instance().RawDiskWrite(pDisk, uiExtSector, 1, bExtBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
+			RETURN_X_IF_NOT(pDisk->Write(uiExtSector, 1, bExtBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
 		}
 
 		pPartitionTable->uiNoOfExtPartitions = 0 ;
@@ -429,7 +429,7 @@ byte PartitionManager_DeletePrimaryPartition(RawDiskDrive* pDisk, PartitionTable
 	MemUtil_Set((byte*)pPartitionTableEntry, 0, sizeof(PartitionInfo)) ;
 	MemUtil_Set((byte*)pRealPartitionTableEntry, 0, sizeof(PartitionInfo)) ;
 
-	RETURN_X_IF_NOT(DiskDriveManager::Instance().RawDiskWrite(pDisk, 0, 1, bBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
+	RETURN_X_IF_NOT(pDisk->Write(0, 1, bBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
 
 	return PartitionManager_SUCCESS ;
 }
@@ -449,21 +449,21 @@ byte PartitionManager_DeleteExtPartition(RawDiskDrive* pDisk, PartitionTable* pP
 		unsigned uiPreviousExtPartitionStartSector ;
 		uiPreviousExtPartitionStartSector = pPartitionTable->ExtPartitions[pPartitionTable->uiNoOfExtPartitions - 2].uiActualStartSector ;
 
-		RETURN_X_IF_NOT(DiskDriveManager::Instance().RawDiskRead(pDisk, uiPreviousExtPartitionStartSector, 1, bExtBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
+		RETURN_X_IF_NOT(pDisk->Read(uiPreviousExtPartitionStartSector, 1, bExtBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
 
 		PartitionInfo* pRealPartitionEntry = &((PartitionInfo*)(bExtBootSectorBuffer + 0x1BE))[1] ;
 		MemUtil_Set((byte*)(pRealPartitionEntry), 0, sizeof(PartitionInfo)) ;
 
 		MemUtil_Set((byte*)&pPartitionTable->ExtPartitions[pPartitionTable->uiNoOfExtPartitions - 2].NextPartition, 0, sizeof(PartitionInfo)) ;
 
-		RETURN_X_IF_NOT(DiskDriveManager::Instance().RawDiskWrite(pDisk, uiPreviousExtPartitionStartSector, 1, bExtBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
+		RETURN_X_IF_NOT(pDisk->Write(uiPreviousExtPartitionStartSector, 1, bExtBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
 	}
 
-	RETURN_X_IF_NOT(DiskDriveManager::Instance().RawDiskRead(pDisk, uiCurrentExtPartitionStartSector, 1, bExtBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
+	RETURN_X_IF_NOT(pDisk->Read(uiCurrentExtPartitionStartSector, 1, bExtBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
 
 	MemUtil_Set((byte*)(bExtBootSectorBuffer + 0x1BE), 0, sizeof(PartitionInfo) * 2) ;
 
-	RETURN_X_IF_NOT(DiskDriveManager::Instance().RawDiskWrite(pDisk, uiCurrentExtPartitionStartSector, 1, bExtBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
+	RETURN_X_IF_NOT(pDisk->Write(uiCurrentExtPartitionStartSector, 1, bExtBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
 
 	pPartitionTable->uiNoOfExtPartitions-- ;
 
@@ -474,7 +474,7 @@ byte PartitionManager_UpdateSystemIndicator(RawDiskDrive* pDisk, unsigned uiLBAS
 {
 	byte bBootSectorBuffer[512] ;
 
-	RETURN_X_IF_NOT(DiskDriveManager::Instance().RawDiskRead(pDisk, 0, 1, bBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
+	RETURN_X_IF_NOT(pDisk->Read(0, 1, bBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
 
 	PartitionInfo* pPartitionTable = ((PartitionInfo*)(bBootSectorBuffer + 0x1BE)) ;
 	
@@ -488,7 +488,7 @@ byte PartitionManager_UpdateSystemIndicator(RawDiskDrive* pDisk, unsigned uiLBAS
 		}
 	}
 
-	RETURN_X_IF_NOT(DiskDriveManager::Instance().RawDiskWrite(pDisk, 0, 1, bBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
+	RETURN_X_IF_NOT(pDisk->Write(0, 1, bBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
 
 	return PartitionManager_SUCCESS ;
 }
