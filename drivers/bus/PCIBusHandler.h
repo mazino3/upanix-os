@@ -19,9 +19,12 @@
 #define _PCI_BUS_HANDLER_H_
 
 #include <Global.h>
+#include <list.h>
 
-#define PCI_TYPE_ONE 1
-#define PCI_TYPE_TWO 2
+typedef enum {
+  PCI_TYPE_ONE = 1,
+  PCI_TYPE_TWO = 2,
+} PCI_TYPE;
 
 #define PCI_REG_1	0xCFB
 #define PCI_REG_2	0xCF8
@@ -68,8 +71,9 @@
 #define PCI_SERIAL_BUS		0x0C
 #define PCI_USB				0x03
 
-typedef struct
+class PCIEntry
 {
+  public:
 	unsigned uiBusNumber;
 	unsigned uiDeviceNumber;
 	unsigned uiFunction;
@@ -199,17 +203,44 @@ typedef struct
 			unsigned uiVendorSpecific[32];
 		} CardBus;
 	} BusEntity;
-} PCIEntry; 
 
-extern unsigned PCIBusHandler_uiDeviceCount;
+  Result ReadPCIConfig(unsigned uiPCIEntryOffset, unsigned uiPCIEntrySize, void* pValue) const;
+  Result WritePCIConfig(unsigned uiPCIEntryOffset, unsigned uiPCIEntrySize, unsigned uiValue) const;
+  unsigned GetPCIMemSize(int iAddressIndex) const;
+  unsigned PCISize(unsigned uiBase, unsigned uiMask) const;
+  void EnableBusMaster() const;
 
-void PCIBusHandler_Initialize();
-Result PCIBusHandler_GetPCIEntry(PCIEntry** pPCIEntry, unsigned uiIndex);
-Result PCIBusHandler_ReadPCIConfig(unsigned uiBusNumber, unsigned uiDeviceNumber, unsigned uiFunction, 
-						unsigned uiPCIEntryOffset, unsigned uiPCIEntrySize, void* pValue);
-Result PCIBusHandler_WritePCIConfig(unsigned uiBusNumber, unsigned uiDeviceNumber, unsigned uiFunction, 
-				unsigned uiPCIEntryOffset, unsigned uiPCIEntrySize, unsigned uiValue);
-unsigned PCIBusHandler_GetPCIMemSize(PCIEntry* pPCIEntry, int iAddressIndex);
-void PCIBusHandler_EnableBusMaster(const PCIEntry* pPCIEntry);
+  PCIEntry(unsigned uiBusNumber, unsigned uiDeviceNumber, unsigned uiFunction, byte bHeaderType);
+
+  private:
+    Result ReadNonBridgePCIHeader();
+    Result ReadBridgePCIHeader();
+
+}; 
+
+class PCIBusHandler
+{
+  private:
+    PCIBusHandler();
+  public:
+    static PCIBusHandler& Instance()
+    {
+      static PCIBusHandler instance;
+      return instance;
+    }
+    void Initialize();
+    Result ReadPCIConfig(unsigned uiBusNumber, unsigned uiDeviceNumber, unsigned uiFunction, 
+                unsigned uiPCIEntryOffset, unsigned uiPCIEntrySize, void* pValue);
+    Result WritePCIConfig(unsigned uiBusNumber, unsigned uiDeviceNumber, unsigned uiFunction, 
+            unsigned uiPCIEntryOffset, unsigned uiPCIEntrySize, unsigned uiValue);
+    const upan::list<PCIEntry*>& PCIEntries() const { return _pciEntries; }
+  private:
+    Result Find();
+    Result ScanBus(unsigned uiBusNumber);
+
+    PCI_TYPE _type;
+    unsigned _uiNoOfPCIBuses;
+    upan::list<PCIEntry*> _pciEntries;
+};
 
 #endif

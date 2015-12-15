@@ -169,21 +169,13 @@ static byte ATADeviceController_EnableDisabledController(const PCIEntry* pPCIEnt
 	unsigned short usCommand ;
 
 	RETURN_X_IF_NOT(
-	PCIBusHandler_ReadPCIConfig(pPCIEntry->uiBusNumber, pPCIEntry->uiDeviceNumber, pPCIEntry->uiFunction,
-	PCI_COMMAND, 2, &usCommand),
-	Success, ATADeviceController_FAILURE) ;
+	pPCIEntry->ReadPCIConfig(PCI_COMMAND, 2, &usCommand), Success, ATADeviceController_FAILURE) ;
 
 	if((usCommand & (PCI_COMMAND_IO | PCI_COMMAND_MASTER)) != (PCI_COMMAND_IO | PCI_COMMAND_MASTER))
 	{
-		RETURN_X_IF_NOT(
-		PCIBusHandler_WritePCIConfig(pPCIEntry->uiBusNumber, pPCIEntry->uiDeviceNumber, pPCIEntry->uiFunction,
-		PCI_COMMAND, 2, (usCommand | PCI_COMMAND_IO | PCI_COMMAND_MASTER)),
-		Success, ATADeviceController_FAILURE) ;
+		RETURN_X_IF_NOT(pPCIEntry->WritePCIConfig(PCI_COMMAND, 2, (usCommand | PCI_COMMAND_IO | PCI_COMMAND_MASTER)), Success, ATADeviceController_FAILURE) ;
 
-		RETURN_X_IF_NOT(
-		PCIBusHandler_ReadPCIConfig(pPCIEntry->uiBusNumber, pPCIEntry->uiDeviceNumber, pPCIEntry->uiFunction,
-		PCI_COMMAND, 2, &usCommand),
-		Success, ATADeviceController_FAILURE) ;
+		RETURN_X_IF_NOT(pPCIEntry->ReadPCIConfig(PCI_COMMAND, 2, &usCommand), Success, ATADeviceController_FAILURE) ;
 
 		if((usCommand & (PCI_COMMAND_IO | PCI_COMMAND_MASTER)) != (PCI_COMMAND_IO | PCI_COMMAND_MASTER))
 		{
@@ -211,9 +203,7 @@ static byte ATADeviceController_CheckControllerMode(const PCIEntry* pPCIEntry,
 	byte bInterface ;
 
 	RETURN_X_IF_NOT(
-	PCIBusHandler_ReadPCIConfig(pPCIEntry->uiBusNumber, pPCIEntry->uiDeviceNumber, pPCIEntry->uiFunction,
-	PCI_INTERFACE, 1, &bInterface),
-	Success, ATADeviceController_FAILURE) ;
+	pPCIEntry->ReadPCIConfig(PCI_INTERFACE, 1, &bInterface), Success, ATADeviceController_FAILURE) ;
 	
 	bNativeMode = false ;
 	bDMAPossible = true ;
@@ -234,10 +224,7 @@ static byte ATADeviceController_CheckControllerMode(const PCIEntry* pPCIEntry,
 				return ATADeviceController_ERR_SWITCH_NATIVE_MODE ;
 			}
 
-			RETURN_X_IF_NOT(
-			PCIBusHandler_WritePCIConfig(pPCIEntry->uiBusNumber, pPCIEntry->uiDeviceNumber, pPCIEntry->uiFunction,
-			PCI_INTERFACE, 1, (bInterface | 0x05)),
-			Success, ATADeviceController_FAILURE) ;
+			RETURN_X_IF_NOT(pPCIEntry->WritePCIConfig(PCI_INTERFACE, 1, (bInterface | 0x05)), Success, ATADeviceController_FAILURE) ;
 
 			bNativeMode = true ;
 		}
@@ -254,9 +241,7 @@ static byte ATADeviceController_CheckControllerMode(const PCIEntry* pPCIEntry,
 			uiPrimaryDMA = uiSecondaryDMA = 0 ;
 
 			RETURN_X_IF_NOT(
-			PCIBusHandler_ReadPCIConfig(pPCIEntry->uiBusNumber, pPCIEntry->uiDeviceNumber, pPCIEntry->uiFunction,
-			PCI_BASE_REGISTERS + 16, 4, &uiPrimaryDMA),
-			Success, ATADeviceController_FAILURE) ;
+			pPCIEntry->ReadPCIConfig(PCI_BASE_REGISTERS + 16, 4, &uiPrimaryDMA), Success, ATADeviceController_FAILURE) ;
 	
 			if(!((uiPrimaryDMA & 0x01) && (uiPrimaryDMA & PCI_ADDRESS_IO_MASK) ))
 			{
@@ -282,29 +267,19 @@ static byte ATADeviceController_CheckControllerMode(const PCIEntry* pPCIEntry,
 	if(bNativeMode == true)
 	{
 		RETURN_X_IF_NOT(
-		PCIBusHandler_ReadPCIConfig(pPCIEntry->uiBusNumber, pPCIEntry->uiDeviceNumber, pPCIEntry->uiFunction,
-		PCI_BASE_REGISTERS + 0, 4, &uiPrimaryCommand),
-		Success, ATADeviceController_FAILURE) ;
+		pPCIEntry->ReadPCIConfig(PCI_BASE_REGISTERS + 0, 4, &uiPrimaryCommand), Success, ATADeviceController_FAILURE) ;
 
 		RETURN_X_IF_NOT(
-		PCIBusHandler_ReadPCIConfig(pPCIEntry->uiBusNumber, pPCIEntry->uiDeviceNumber, pPCIEntry->uiFunction,
-		PCI_BASE_REGISTERS + 4, 4, &uiPrimaryControl),
-		Success, ATADeviceController_FAILURE) ;
+		pPCIEntry->ReadPCIConfig(PCI_BASE_REGISTERS + 4, 4, &uiPrimaryControl), Success, ATADeviceController_FAILURE) ;
 
 		RETURN_X_IF_NOT(
-		PCIBusHandler_ReadPCIConfig(pPCIEntry->uiBusNumber, pPCIEntry->uiDeviceNumber, pPCIEntry->uiFunction,
-		PCI_BASE_REGISTERS + 8, 4, &uiSecondaryCommand),
-		Success, ATADeviceController_FAILURE) ;
+		pPCIEntry->ReadPCIConfig(PCI_BASE_REGISTERS + 8, 4, &uiSecondaryCommand), Success, ATADeviceController_FAILURE) ;
 
 		RETURN_X_IF_NOT(
-		PCIBusHandler_ReadPCIConfig(pPCIEntry->uiBusNumber, pPCIEntry->uiDeviceNumber, pPCIEntry->uiFunction,
-		PCI_BASE_REGISTERS + 12, 4, &uiSecondaryControl),
-		Success, ATADeviceController_FAILURE) ;
+		pPCIEntry->ReadPCIConfig(PCI_BASE_REGISTERS + 12, 4, &uiSecondaryControl), Success, ATADeviceController_FAILURE) ;
 
 		RETURN_X_IF_NOT(
-		PCIBusHandler_ReadPCIConfig(pPCIEntry->uiBusNumber, pPCIEntry->uiDeviceNumber, pPCIEntry->uiFunction,
-		PCI_INTERRUPT_LINE, 1, &bPrimaryIRQ),
-		Success, ATADeviceController_FAILURE) ;
+		pPCIEntry->ReadPCIConfig(PCI_INTERRUPT_LINE, 1, &bPrimaryIRQ), Success, ATADeviceController_FAILURE) ;
 		bSecondaryIRQ = bPrimaryIRQ;
 		
 		unsigned uiMask ;
@@ -339,10 +314,7 @@ static byte ATADeviceController_CheckControllerMode(const PCIEntry* pPCIEntry,
 
 		uiPrimaryDMA = uiSecondaryDMA = 0 ;
 
-		RETURN_X_IF_NOT(
-		PCIBusHandler_ReadPCIConfig(pPCIEntry->uiBusNumber, pPCIEntry->uiDeviceNumber, pPCIEntry->uiFunction,
-		PCI_BASE_REGISTERS + 16, 4, &uiPrimaryDMA),
-		Success, ATADeviceController_FAILURE) ;
+		RETURN_X_IF_NOT(pPCIEntry->ReadPCIConfig(PCI_BASE_REGISTERS + 16, 4, &uiPrimaryDMA), Success, ATADeviceController_FAILURE) ;
 		
 		if( (!(uiPrimaryDMA & 0x01) != bMMIO) || !(uiPrimaryDMA & uiMask))
 		{
@@ -670,16 +642,11 @@ void ATADeviceController_Initialize()
 	ATADeviceController_uiPortIDSequence = 0 ;
 	ATADeviceController_pFirstController = NULL ;
 
-	PCIEntry* pPCIEntry ;
 	byte bControllerFound = false ;
+	unsigned uiDeviceIndex ;
 
-	unsigned uiPCIIndex, uiDeviceIndex ;
-
-	for(uiPCIIndex = 0; uiPCIIndex < PCIBusHandler_uiDeviceCount; uiPCIIndex++)
+	for(auto pPCIEntry : PCIBusHandler::Instance().PCIEntries())
 	{
-		if(PCIBusHandler_GetPCIEntry(&pPCIEntry, uiPCIIndex) != Success)
-			break ;
-	
 		if(pPCIEntry->bHeaderType & PCI_HEADER_BRIDGE)
 			continue ;
 

@@ -165,7 +165,7 @@ static byte EHCIController_AddEntry(PCIEntry* pPCIEntry)
 	printf("\n PCI Base Addr: %x", uiIOAddr) ;
 
 	uiIOAddr = uiIOAddr & PCI_ADDRESS_MEMORY_32_MASK ;
-	unsigned uiIOSize = PCIBusHandler_GetPCIMemSize(pPCIEntry, 0) ;
+	unsigned uiIOSize = pPCIEntry->GetPCIMemSize(0) ;
 	printf("\n Raw MMIO Base Addr: %x, IO Size: %d", uiIOAddr, uiIOSize) ;
 
 	if(uiIOSize > PAGE_SIZE)
@@ -217,11 +217,9 @@ static byte EHCIController_AddEntry(PCIEntry* pPCIEntry)
 	printf("\n Enabling Bus Master...") ;
 	/* Enable busmaster */
 	unsigned short usCommand ;
-	PCIBusHandler_ReadPCIConfig(pPCIEntry->uiBusNumber, pPCIEntry->uiDeviceNumber, pPCIEntry->uiFunction,
-								PCI_COMMAND, 2, &usCommand);
+	pPCIEntry->ReadPCIConfig(PCI_COMMAND, 2, &usCommand);
 	printf("\n Current value of PCI_COMMAND: %x", usCommand) ;
-	PCIBusHandler_WritePCIConfig(pPCIEntry->uiBusNumber, pPCIEntry->uiDeviceNumber, pPCIEntry->uiFunction,
-								PCI_COMMAND, 2, usCommand | PCI_COMMAND_IO | PCI_COMMAND_MASTER) ;
+	pPCIEntry->WritePCIConfig(PCI_COMMAND, 2, usCommand | PCI_COMMAND_IO | PCI_COMMAND_MASTER) ;
 	printf("\n After Bus Master Enable, value of PCI_COMMAND: %x", usCommand) ;
 
 	EHCIController_iCount++ ;
@@ -239,7 +237,7 @@ static byte EHCIController_PerformBiosToOSHandoff(EHCIController* pController)
 		printf("\n EECP Offset: %x", bEECPOffSet) ;
 
 		unsigned uiLegSup ;
-		PCIBusHandler_ReadPCIConfig(pPCIEntry->uiBusNumber, pPCIEntry->uiDeviceNumber, pPCIEntry->uiFunction, bEECPOffSet, 4, &uiLegSup) ;
+		pPCIEntry->ReadPCIConfig(bEECPOffSet, 4, &uiLegSup) ;
 
 		printf("\n USB EHCI LEGSUP: %x", uiLegSup) ;
 		if((uiLegSup & (1 << 24)) == 0x1)
@@ -250,9 +248,9 @@ static byte EHCIController_PerformBiosToOSHandoff(EHCIController* pController)
 
 		uiLegSup = uiLegSup | ( 1 << 24 ) ;
 
-		PCIBusHandler_WritePCIConfig(pPCIEntry->uiBusNumber, pPCIEntry->uiDeviceNumber, pPCIEntry->uiFunction, bEECPOffSet, 4, uiLegSup) ;
+		pPCIEntry->WritePCIConfig(bEECPOffSet, 4, uiLegSup) ;
 		ProcessManager::Instance().Sleep(500) ;
-		PCIBusHandler_ReadPCIConfig(pPCIEntry->uiBusNumber, pPCIEntry->uiDeviceNumber, pPCIEntry->uiFunction, bEECPOffSet, 4, &uiLegSup) ;
+		pPCIEntry->ReadPCIConfig(bEECPOffSet, 4, &uiLegSup) ;
 
 		printf("\n New USB EHCI LEGSUP: %x", uiLegSup) ;
 		if((uiLegSup & (1 << 24)) == 0x0)
@@ -1566,15 +1564,10 @@ byte EHCIController_Initialize()
 	for(i = 0; i < MAX_EHCI_ENTRIES; i++)
 		EHCIController_pList[ i ].bSetupSuccess = false ;
 
-	PCIEntry* pPCIEntry ;
 	byte bControllerFound = false ;
 
-	unsigned uiPCIIndex ;
-	for(uiPCIIndex = 0; uiPCIIndex < PCIBusHandler_uiDeviceCount; uiPCIIndex++)
+	for(auto pPCIEntry : PCIBusHandler::Instance().PCIEntries())
 	{
-		if(PCIBusHandler_GetPCIEntry(&pPCIEntry, uiPCIIndex) != Success)
-			break ;
-	
 		if(pPCIEntry->bHeaderType & PCI_HEADER_BRIDGE)
 			continue ;
 
@@ -1582,12 +1575,8 @@ byte EHCIController_Initialize()
 			pPCIEntry->bClassCode == PCI_SERIAL_BUS && 
 			pPCIEntry->bSubClass == PCI_USB)
 		{
-			KC::MDisplay().Address("\n Interface = ", pPCIEntry->bInterface);
-			KC::MDisplay().Address(", Class = ", pPCIEntry->bClassCode);
-			KC::MDisplay().Address(", SubClass = ", pPCIEntry->bSubClass);
-			
+      printf("\n Interface = %u, Class = %u, SubClass = %u", pPCIEntry->bInterface, pPCIEntry->bClassCode, pPCIEntry->bSubClass);
 			bControllerFound = true ;
-
 			EHCIController_AddEntry(pPCIEntry) ;
 		}
 	}

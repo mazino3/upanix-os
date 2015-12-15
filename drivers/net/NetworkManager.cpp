@@ -24,15 +24,10 @@
 
 NetworkManager::NetworkManager()
 {
-	PCIEntry* pPCIEntry ;
 	byte bControllerFound = false ;
 
-	unsigned uiPCIIndex ;
-	for(uiPCIIndex = 0; uiPCIIndex < PCIBusHandler_uiDeviceCount; uiPCIIndex++)
+	for(auto pPCIEntry : PCIBusHandler::Instance().PCIEntries())
 	{
-		if(PCIBusHandler_GetPCIEntry(&pPCIEntry, uiPCIIndex) != Success)
-			break ;
-	
 		if(pPCIEntry->bHeaderType & PCI_HEADER_BRIDGE)
 			continue ;
 

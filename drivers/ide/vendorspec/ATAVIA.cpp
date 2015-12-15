@@ -51,23 +51,19 @@ static byte ATAVIA_SetPortSpeed(VIAIDE* pVIAIDE, PCIEntry* pPCIEntry, ATAPort* p
 
 	if(!(pVIAIDE->usFlags & VIA_BAD_AST))
 	{
-		RETURN_X_IF_NOT(PCIBusHandler_ReadPCIConfig(pPCIEntry->uiBusNumber, pPCIEntry->uiDeviceNumber, 
-				pPCIEntry->uiFunction, VIA_ADDRESS_SETUP, 1, &bTemp), Success, ATAVIA_FAILURE) ;
+		RETURN_X_IF_NOT(pPCIEntry->ReadPCIConfig(VIA_ADDRESS_SETUP, 1, &bTemp), Success, ATAVIA_FAILURE);
 
 		bTemp = (bTemp & ~(3 << ((3 - uiDriveNumber) << 1))) |
 				((FIT(pTiming->usSetup, 1, 4) - 1) << ((3 - uiDriveNumber) << 1)) ;
 
-		RETURN_X_IF_NOT(PCIBusHandler_WritePCIConfig(pPCIEntry->uiBusNumber, pPCIEntry->uiDeviceNumber, 
-				pPCIEntry->uiFunction, VIA_ADDRESS_SETUP, 1, bTemp), Success, ATAVIA_FAILURE) ;
+		RETURN_X_IF_NOT(pPCIEntry->WritePCIConfig(VIA_ADDRESS_SETUP, 1, bTemp), Success, ATAVIA_FAILURE);
 	}
 
-	RETURN_X_IF_NOT(PCIBusHandler_WritePCIConfig(pPCIEntry->uiBusNumber, pPCIEntry->uiDeviceNumber, 
-			pPCIEntry->uiFunction, VIA_8BIT_TIMING + (1 - (uiDriveNumber >> 1)), 1, 
+	RETURN_X_IF_NOT(pPCIEntry->WritePCIConfig(VIA_8BIT_TIMING + (1 - (uiDriveNumber >> 1)), 1, 
 			((FIT(pTiming->usAct8b, 1, 16) - 1) << 4) | 
 			(FIT(pTiming->usRec8b, 1, 16) - 1)), Success, ATAVIA_FAILURE) ;
 
-	RETURN_X_IF_NOT(PCIBusHandler_WritePCIConfig(pPCIEntry->uiBusNumber, pPCIEntry->uiDeviceNumber, 
-			pPCIEntry->uiFunction, VIA_DRIVE_TIMING + (3 - uiDriveNumber), 1, 
+	RETURN_X_IF_NOT(pPCIEntry->WritePCIConfig(VIA_DRIVE_TIMING + (3 - uiDriveNumber), 1, 
 			((FIT(pTiming->usAct, 1, 16) - 1) << 4) | 
 			(FIT(pTiming->usRec, 1, 16) - 1)), Success, ATAVIA_FAILURE) ;
 
@@ -93,8 +89,7 @@ static byte ATAVIA_SetPortSpeed(VIAIDE* pVIAIDE, PCIEntry* pPCIEntry, ATAPort* p
 			return ATAVIA_SUCCESS ;
 	}
 
-	RETURN_X_IF_NOT(PCIBusHandler_WritePCIConfig(pPCIEntry->uiBusNumber, pPCIEntry->uiDeviceNumber, 
-		pPCIEntry->uiFunction, VIA_UDMA_TIMING + (3 - uiDriveNumber), 1, bTemp), Success, ATAVIA_FAILURE) ;
+	RETURN_X_IF_NOT(pPCIEntry->WritePCIConfig(VIA_UDMA_TIMING + (3 - uiDriveNumber), 1, bTemp), Success, ATAVIA_FAILURE) ;
 
 	return ATAVIA_SUCCESS ;
 }
@@ -210,25 +205,23 @@ void ATAVIA_InitController(const PCIEntry* pPCIEntry, ATAController* pController
 	}
 
 	// Scan PCI Bus
-	unsigned uiPCIIndex, uiDeviceIndex ;
+	unsigned uiDeviceIndex ;
 	byte bIDEFound = false ;
-	PCIEntry* pIDE ;
 	VIAIDE* pVIAIDE = NULL ;
+  PCIEntry* pIDE = nullptr;
 
-	for(uiPCIIndex = 0; uiPCIIndex < PCIBusHandler_uiDeviceCount; uiPCIIndex++)
+	for(auto p : PCIBusHandler::Instance().PCIEntries())
 	{
-		if(PCIBusHandler_GetPCIEntry(&pIDE, uiPCIIndex) != Success)
-			break ;
-	
-		if(pIDE->bHeaderType & PCI_HEADER_BRIDGE)
+		if(p->bHeaderType & PCI_HEADER_BRIDGE)
 			continue ;
 
 		for(uiDeviceIndex = 0; uiDeviceIndex < (sizeof(VIAIDEList) / sizeof(VIAIDE)); uiDeviceIndex++)
 		{
-			if(pIDE->usVendorID == VIA_VENDOR_ID && pIDE->usDeviceID == VIAIDEList[uiDeviceIndex].usDeviceID
-				&& pIDE->bRevisionID >= VIAIDEList[uiDeviceIndex].bMinRevision
-				&& pIDE->bRevisionID <= VIAIDEList[uiDeviceIndex].bMaxRevision)
+			if(p->usVendorID == VIA_VENDOR_ID && p->usDeviceID == VIAIDEList[uiDeviceIndex].usDeviceID
+				&& p->bRevisionID >= VIAIDEList[uiDeviceIndex].bMinRevision
+				&& p->bRevisionID <= VIAIDEList[uiDeviceIndex].bMaxRevision)
 			{
+        pIDE = p;
 				pVIAIDE = &VIAIDEList[uiDeviceIndex] ;
 				bIDEFound = true ;
 				break ;
@@ -255,17 +248,13 @@ void ATAVIA_InitController(const PCIEntry* pPCIEntry, ATAController* pController
 	switch(pVIAIDE->usFlags & VIA_UDMA)
 	{
 		case VIA_UDMA_66:
-			if(PCIBusHandler_ReadPCIConfig(pIDE->uiBusNumber, pIDE->uiDeviceNumber, pIDE->uiFunction, 
-				VIA_UDMA_TIMING, 4, &uiUDMATiming)
-				!= Success)
+			if(pIDE->ReadPCIConfig(VIA_UDMA_TIMING, 4, &uiUDMATiming) != Success)
 			{
 				KC::MDisplay().Message("\n\tFailed to Init VIA Controller", Display::WHITE_ON_BLACK()) ;
 				return ;
 			}
 
-			if(PCIBusHandler_WritePCIConfig(pIDE->uiBusNumber, pIDE->uiDeviceNumber, pIDE->uiFunction, 
-				VIA_UDMA_TIMING, 4, uiUDMATiming | 0x80008)
-				!= Success)
+			if(pIDE->WritePCIConfig(VIA_UDMA_TIMING, 4, uiUDMATiming | 0x80008) != Success)
 			{
 				KC::MDisplay().Message("\n\tFailed to Init VIA Controller", Display::WHITE_ON_BLACK()) ;
 				return ;
@@ -282,9 +271,7 @@ void ATAVIA_InitController(const PCIEntry* pPCIEntry, ATAController* pController
 			break ;
 
 		case VIA_UDMA_100:
-			if(PCIBusHandler_ReadPCIConfig(pIDE->uiBusNumber, pIDE->uiDeviceNumber, pIDE->uiFunction, 
-				VIA_UDMA_TIMING, 4, &uiUDMATiming)
-				!= Success)
+			if(pIDE->ReadPCIConfig(VIA_UDMA_TIMING, 4, &uiUDMATiming) != Success)
 			{
 				KC::MDisplay().Message("\n\tFailed to Init VIA Controller", Display::WHITE_ON_BLACK()) ;
 				return ;
@@ -301,9 +288,7 @@ void ATAVIA_InitController(const PCIEntry* pPCIEntry, ATAController* pController
 			break ;
 
 		case VIA_UDMA_133:
-			if(PCIBusHandler_ReadPCIConfig(pIDE->uiBusNumber, pIDE->uiDeviceNumber, pIDE->uiFunction, 
-				VIA_UDMA_TIMING, 4, &uiUDMATiming)
-				!= Success)
+			if(pIDE->ReadPCIConfig(VIA_UDMA_TIMING, 4, &uiUDMATiming) != Success)
 			{
 				KC::MDisplay().Message("\n\tFailed to Init VIA Controller", Display::WHITE_ON_BLACK()) ;
 				return ;
@@ -328,15 +313,13 @@ void ATAVIA_InitController(const PCIEntry* pPCIEntry, ATAController* pController
 
 	if(pVIAIDE->usFlags & VIA_BAD_CLK66)
 	{
-		if(PCIBusHandler_ReadPCIConfig(pIDE->uiBusNumber, pIDE->uiDeviceNumber, pIDE->uiFunction,
-				VIA_UDMA_TIMING, 4, &uiUDMATiming) != Success)
+		if(pIDE->ReadPCIConfig(VIA_UDMA_TIMING, 4, &uiUDMATiming) != Success)
 		{
 			KC::MDisplay().Message("\n\tFailed to Init VIA Controller", Display::WHITE_ON_BLACK()) ;
 			return ;
 		}
 
-		if(PCIBusHandler_WritePCIConfig(pIDE->uiBusNumber, pIDE->uiDeviceNumber, pIDE->uiFunction,
-				VIA_UDMA_TIMING, 4, uiUDMATiming & ~0x80008) != Success)
+		if(pIDE->WritePCIConfig(VIA_UDMA_TIMING, 4, uiUDMATiming & ~0x80008) != Success)
 		{
 			KC::MDisplay().Message("\n\tFailed to Init VIA Controller", Display::WHITE_ON_BLACK()) ;
 			return ;
@@ -346,15 +329,13 @@ void ATAVIA_InitController(const PCIEntry* pPCIEntry, ATAController* pController
 	// Check if Interfaces are Enabled
 	byte bIDEEnabled, bFIFOConfig ;
 
-	if(PCIBusHandler_ReadPCIConfig(pIDE->uiBusNumber, pIDE->uiDeviceNumber, pIDE->uiFunction,
-			VIA_IDE_ENABLE, 1, &bIDEEnabled) != Success)
+	if(pIDE->ReadPCIConfig(VIA_IDE_ENABLE, 1, &bIDEEnabled) != Success)
 	{
 		KC::MDisplay().Message("\n\tFailed to Init VIA Controller", Display::WHITE_ON_BLACK()) ;
 		return ;
 	}
 
-	if(PCIBusHandler_ReadPCIConfig(pIDE->uiBusNumber, pIDE->uiDeviceNumber, pIDE->uiFunction,
-			VIA_FIFO_CONFIG, 1, &bFIFOConfig) != Success)
+	if(pIDE->ReadPCIConfig(VIA_FIFO_CONFIG, 1, &bFIFOConfig) != Success)
 	{
 		KC::MDisplay().Message("\n\tFailed to Init VIA Controller", Display::WHITE_ON_BLACK()) ;
 		return ;
@@ -383,8 +364,7 @@ void ATAVIA_InitController(const PCIEntry* pPCIEntry, ATAController* pController
 		}
 	}	
 
-	if(PCIBusHandler_WritePCIConfig(pIDE->uiBusNumber, pIDE->uiDeviceNumber, pIDE->uiFunction,
-			VIA_FIFO_CONFIG, 1, bFIFOConfig) != Success)
+	if(pIDE->WritePCIConfig(VIA_FIFO_CONFIG, 1, bFIFOConfig) != Success)
 	{
 		KC::MDisplay().Message("\n\tFailed to Init VIA Controller", Display::WHITE_ON_BLACK()) ;
 		return ;

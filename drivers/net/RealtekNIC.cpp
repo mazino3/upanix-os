@@ -199,7 +199,7 @@ bool RealtekNIC::Setup()
 	m_uiIOPort &= PCI_ADDRESS_IO_MASK ;
 	m_bInterrupt = m_pPCIEntry->BusEntity.NonBridge.bInterruptLine ;
 
-	PCIBusHandler_EnableBusMaster(m_pPCIEntry) ;
+	m_pPCIEntry->EnableBusMaster();
 
 	// Bring old chips out of low-power mode
 	SendByte(REG_HLTCLK, 'R') ;

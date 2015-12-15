@@ -158,7 +158,7 @@ void Initialize()
   /* Start - Peripheral Device Initialization */
   //TODO: An Abstract Bus Handler which should internally take care of different
   //types of bus like ISA, PCI etc... 
-    PCIBusHandler_Initialize() ;
+    PCIBusHandler::Instance().Initialize();
 
     DiskDriveManager::Instance();
 

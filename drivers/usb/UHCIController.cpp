@@ -1383,7 +1383,7 @@ static byte UHCIController_Alloc(PCIEntry* pPCIEntry, unsigned uiIOAddr, unsigne
 	// End of Start Hub
 
 	/* Enable PIRQ - Legacy Mouse and Keyboard Support for 8042 */
-	PCIBusHandler_WritePCIConfig(pPCIEntry->uiBusNumber, pPCIEntry->uiDeviceNumber, pPCIEntry->uiFunction, USB_LEGSUP, 2, USB_LEGSUP_DEFAULT) ;
+	pPCIEntry->WritePCIConfig(USB_LEGSUP, 2, USB_LEGSUP_DEFAULT) ;
 
 	printf("\n USB UHCI at I/O: %x, IRQ: %d, Detected Ports: %d ", uiIOAddr, iIRQ, iNumPorts) ;
 
@@ -1544,15 +1544,10 @@ byte UHCIController_Initialize()
 	UHCIController_bFirstBulkRead = true ;
 	UHCIController_bFirstBulkWrite = true ;
 
-	PCIEntry* pPCIEntry ;
 	byte bControllerFound = false ;
 
-	unsigned uiPCIIndex ;
-	for(uiPCIIndex = 0; uiPCIIndex < PCIBusHandler_uiDeviceCount; uiPCIIndex++)
+	for(auto pPCIEntry : PCIBusHandler::Instance().PCIEntries())
 	{
-		if(PCIBusHandler_GetPCIEntry(&pPCIEntry, uiPCIIndex) != Success)
-			break ;
-	
 		if(pPCIEntry->bHeaderType & PCI_HEADER_BRIDGE)
 			continue ;
 
@@ -1560,12 +1555,8 @@ byte UHCIController_Initialize()
 			pPCIEntry->bClassCode == PCI_SERIAL_BUS && 
 			pPCIEntry->bSubClass == PCI_USB)
 		{
-			KC::MDisplay().Address("\n Interface = ", pPCIEntry->bInterface);
-			KC::MDisplay().Address(", Class = ", pPCIEntry->bClassCode);
-			KC::MDisplay().Address(", SubClass = ", pPCIEntry->bSubClass);
-			
+      printf("\n Interface = %u, Class = %u, SubClass = %u", pPCIEntry->bInterface, pPCIEntry->bClassCode, pPCIEntry->bSubClass);
 			bControllerFound = true ;
-
 			UHCIController_pPCIEntryList[ UHCIController_iPCIEntryCount ] = pPCIEntry ;
 			UHCIController_iPCIEntryCount++ ;
 		}
@@ -1601,11 +1592,9 @@ byte UHCIController_ProbeDevice()
 
 		/* Enable busmaster */
 		unsigned short usCommand ;
-		PCIBusHandler_ReadPCIConfig(pPCIEntry->uiBusNumber, pPCIEntry->uiDeviceNumber, pPCIEntry->uiFunction,
-									PCI_COMMAND, 2, &usCommand);
+		pPCIEntry->ReadPCIConfig(PCI_COMMAND, 2, &usCommand);
 
-		PCIBusHandler_WritePCIConfig(pPCIEntry->uiBusNumber, pPCIEntry->uiDeviceNumber, pPCIEntry->uiFunction,
-									PCI_COMMAND, 2, usCommand | PCI_COMMAND_IO | PCI_COMMAND_MASTER) ;
+		pPCIEntry->WritePCIConfig(PCI_COMMAND, 2, usCommand | PCI_COMMAND_IO | PCI_COMMAND_MASTER) ;
 		
 		/* Search for the IO base address */
 		int i ;
@@ -1617,18 +1606,18 @@ byte UHCIController_ProbeDevice()
 			if(!(uiIOAddr & PCI_IO_ADDRESS_SPACE))
 				continue ;
 
-			unsigned uiIOSize = PCIBusHandler_GetPCIMemSize(pPCIEntry, i) ;
+			unsigned uiIOSize = pPCIEntry->GetPCIMemSize(i) ;
 
 			printf("\n Bus: %d, Device: %d, Function: %d", pPCIEntry->uiBusNumber, pPCIEntry->uiDeviceNumber, pPCIEntry->uiFunction) ;
 
 			/* disable legacy emulation */
-			PCIBusHandler_WritePCIConfig(pPCIEntry->uiBusNumber, pPCIEntry->uiDeviceNumber, pPCIEntry->uiFunction, USB_LEGSUP, 2, 0) ;
-			//PCIBusHandler_WritePCIConfig(pPCIEntry->uiBusNumber, pPCIEntry->uiDeviceNumber, pPCIEntry->uiFunction, USB_LEGSUP, 2, 0x100) ;
+			pPCIEntry->WritePCIConfig(USB_LEGSUP, 2, 0) ;
+			//pPCIEntry->WritePCIConfig(USB_LEGSUP, 2, 0x100) ;
 			unsigned short usCommand ;
-			PCIBusHandler_ReadPCIConfig(pPCIEntry->uiBusNumber, pPCIEntry->uiDeviceNumber, pPCIEntry->uiFunction, USB_LEGSUP, 2, &usCommand) ;
+			pPCIEntry->ReadPCIConfig(USB_LEGSUP, 2, &usCommand) ;
 			printf("\n USB LEGSUP: %x", usCommand) ;
 //
-			PCIBusHandler_ReadPCIConfig(pPCIEntry->uiBusNumber, pPCIEntry->uiDeviceNumber, pPCIEntry->uiFunction, PCI_COMMAND, 2, &usCommand) ;
+			pPCIEntry->ReadPCIConfig(PCI_COMMAND, 2, &usCommand) ;
 			printf("\n PCI COMMAND: %x", usCommand) ;
   			//ProcessManager::Instance().Sleep(5000) ;
 

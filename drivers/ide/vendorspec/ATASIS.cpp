@@ -91,8 +91,7 @@ byte ATASIS_PortConfigure(ATAPort* pPort)
 	{
 		unsigned ui54 ;
 
-		if(PCIBusHandler_ReadPCIConfig(pPCIEntry->uiBusNumber, pPCIEntry->uiDeviceNumber, pPCIEntry->uiFunction, 0x54, 4, 
-			&ui54) != Success)
+		if(pPCIEntry->ReadPCIConfig(0x54, 4, &ui54) != Success)
 		{
 			KC::MDisplay().Message("\n\tFailed to Init SIS Controller", Display::WHITE_ON_BLACK()) ;
 			return ATASIS_FAILURE ;
@@ -103,8 +102,7 @@ byte ATASIS_PortConfigure(ATAPort* pPort)
 
 		bDrivePCI += uiDriveNumber * 0x04 ;
 
-		if(PCIBusHandler_ReadPCIConfig(pPCIEntry->uiBusNumber, pPCIEntry->uiDeviceNumber, pPCIEntry->uiFunction, 
-			(unsigned)bDrivePCI, 4, &uiRegDW) != Success)
+		if(pPCIEntry->ReadPCIConfig((unsigned)bDrivePCI, 4, &uiRegDW) != Success)
 		{
 			KC::MDisplay().Message("\n\tFailed to Init SIS Controller", Display::WHITE_ON_BLACK()) ;
 			return ATASIS_FAILURE ;
@@ -113,8 +111,7 @@ byte ATASIS_PortConfigure(ATAPort* pPort)
 		if(uiNewSpeed < ATA_SPEED_UDMA_0)
 		{
 			uiRegDW &= 0xFFFFFFFB ;
-			if(PCIBusHandler_WritePCIConfig(pPCIEntry->uiBusNumber, pPCIEntry->uiDeviceNumber, pPCIEntry->uiFunction, 
-				(unsigned)bDrivePCI, 4, uiRegDW) != Success)
+			if(pPCIEntry->WritePCIConfig((unsigned)bDrivePCI, 4, uiRegDW) != Success)
 			{
 				KC::MDisplay().Message("\n\tFailed to Init SIS Controller", Display::WHITE_ON_BLACK()) ;
 				return ATASIS_FAILURE ;
@@ -124,8 +121,7 @@ byte ATASIS_PortConfigure(ATAPort* pPort)
 	else
 	{
 		bDrivePCI += uiDriveNumber * 0x02 ;
-		if(PCIBusHandler_ReadPCIConfig(pPCIEntry->uiBusNumber, pPCIEntry->uiDeviceNumber, pPCIEntry->uiFunction, 
-			(unsigned)bDrivePCI + 1, 1, &bReg) != Success)
+		if(pPCIEntry->ReadPCIConfig((unsigned)bDrivePCI + 1, 1, &bReg) != Success)
 		{
 			KC::MDisplay().Message("\n\tFailed to Init SIS Controller", Display::WHITE_ON_BLACK()) ;
 			return ATASIS_FAILURE ;
@@ -134,8 +130,7 @@ byte ATASIS_PortConfigure(ATAPort* pPort)
 		if((uiNewSpeed < ATA_SPEED_UDMA_0) && (uiSpeed > SIS_16))
 		{
 			bReg &= 0x7F ;
-			if(PCIBusHandler_WritePCIConfig(pPCIEntry->uiBusNumber, pPCIEntry->uiDeviceNumber, pPCIEntry->uiFunction, 
-				(unsigned)bDrivePCI + 1, 1, bReg) != Success)
+			if(pPCIEntry->WritePCIConfig((unsigned)bDrivePCI + 1, 1, bReg) != Success)
 			{
 				KC::MDisplay().Message("\n\tFailed to Init SIS Controller", Display::WHITE_ON_BLACK()) ;
 				return ATASIS_FAILURE ;
@@ -171,8 +166,7 @@ byte ATASIS_PortConfigure(ATAPort* pPort)
 					uiRegDW |= (unsigned)ATASIS_bCVSTimeValue[SIS_UDMA_100][uiNewSpeed - ATA_SPEED_UDMA_0] << 8 ;
 				}
 
-				if(PCIBusHandler_WritePCIConfig(pPCIEntry->uiBusNumber, pPCIEntry->uiDeviceNumber, pPCIEntry->uiFunction, 
-					(unsigned)bDrivePCI, 4, uiRegDW) != Success)
+				if(pPCIEntry->WritePCIConfig((unsigned)bDrivePCI, 4, uiRegDW) != Success)
 				{
 					KC::MDisplay().Message("\n\tFailed to Init SIS Controller", Display::WHITE_ON_BLACK()) ;
 					return ATASIS_FAILURE ;
@@ -188,8 +182,7 @@ byte ATASIS_PortConfigure(ATAPort* pPort)
 				bReg |= ATASIS_bCycleTimeValue[uiSpeed][uiNewSpeed - ATA_SPEED_UDMA_0] 
 							<< ATASIS_bCycleTimeOffset[uiSpeed] ;
 	
-				if(PCIBusHandler_WritePCIConfig(pPCIEntry->uiBusNumber, pPCIEntry->uiDeviceNumber, pPCIEntry->uiFunction, 
-					(unsigned)bDrivePCI + 1, 1, bReg) != Success)
+				if(pPCIEntry->WritePCIConfig((unsigned)bDrivePCI + 1, 1, bReg) != Success)
 				{
 					KC::MDisplay().Message("\n\tFailed to Init SIS Controller", Display::WHITE_ON_BLACK()) ;
 					return ATASIS_FAILURE ;
@@ -203,31 +196,29 @@ byte ATASIS_PortConfigure(ATAPort* pPort)
 
 void ATASIS_InitController(const PCIEntry* pPCIEntry, ATAController* pController)
 {
-	PCIEntry* pIDE ;
 	unsigned uiSpeed = 0 ;
 	unsigned ui80W = 0 ;
 		
 	// Scan PCI Bus
-	unsigned uiPCIIndex, uiDeviceIndex ;
+	unsigned uiDeviceIndex ;
 	byte bIDEFound = false ;
+  PCIEntry* pIDE = nullptr;
 
-	for(uiPCIIndex = 0; uiPCIIndex < PCIBusHandler_uiDeviceCount; uiPCIIndex++)
+	for(auto p : PCIBusHandler::Instance().PCIEntries())
 	{
-		if(PCIBusHandler_GetPCIEntry(&pIDE, uiPCIIndex) != Success)
-			break ;
-	
-		if(pIDE->bHeaderType & PCI_HEADER_BRIDGE)
+		if(p->bHeaderType & PCI_HEADER_BRIDGE)
 			continue ;
 
 		for(uiDeviceIndex = 0; uiDeviceIndex < (sizeof(SISIDEList) / sizeof(SISIDE)); uiDeviceIndex++)
 		{
-			if(pIDE->usVendorID == SIS_VENDOR_ID && pIDE->usDeviceID == SISIDEList[uiDeviceIndex].usDeviceID)
+			if(p->usVendorID == SIS_VENDOR_ID && p->usDeviceID == SISIDEList[uiDeviceIndex].usDeviceID)
 			{
+        pIDE = p;
 				uiSpeed = SISIDEList[uiDeviceIndex].usFlags ;
 				bIDEFound = true ;
 
 				// Special case for SIS630 : 630S/ET is ATA_100a
-				if(pIDE->usDeviceID == 0x0630 && pIDE->bRevisionID >= 0x30)
+				if(p->usDeviceID == 0x0630 && p->bRevisionID >= 0x30)
 					uiSpeed = SIS_UDMA_100a ;	
 
 				KC::MDisplay().Message("\n\t", Display::WHITE_ON_BLACK()) ;
@@ -250,29 +241,25 @@ void ATASIS_InitController(const PCIEntry* pPCIEntry, ATAController* pController
 		byte bIDEConfig ;
 		byte bSBRev ;
 
-		if(PCIBusHandler_ReadPCIConfig(pIDE->uiBusNumber, pIDE->uiDeviceNumber, pIDE->uiFunction, 0x54, 4, &uiMisc)
-			!= Success)
+		if(pIDE->ReadPCIConfig(0x54, 4, &uiMisc) != Success)
 		{
 			KC::MDisplay().Message("\n\tFailed to Init SIS Controller", Display::WHITE_ON_BLACK()) ;
 			return ;
 		}
 
-		if(PCIBusHandler_WritePCIConfig(pIDE->uiBusNumber, pIDE->uiDeviceNumber, pIDE->uiFunction, 0x54, 4, 
-			(uiMisc & 0x7FFFFFFF)) != Success)
+		if(pIDE->WritePCIConfig(0x54, 4, (uiMisc & 0x7FFFFFFF)) != Success)
 		{
 			KC::MDisplay().Message("\n\tFailed to Init SIS Controller", Display::WHITE_ON_BLACK()) ;
 			return ;
 		}
 
-		if(PCIBusHandler_ReadPCIConfig(pIDE->uiBusNumber, pIDE->uiDeviceNumber, pIDE->uiFunction, PCI_DEVICE_ID, 2, 
-			&usTrueID) != Success)
+		if(pIDE->ReadPCIConfig(PCI_DEVICE_ID, 2, &usTrueID) != Success)
 		{
 			KC::MDisplay().Message("\n\tFailed to Init SIS Controller", Display::WHITE_ON_BLACK()) ;
 			return ;
 		}
 
-		if(PCIBusHandler_WritePCIConfig(pIDE->uiBusNumber, pIDE->uiDeviceNumber, pIDE->uiFunction, 0x54, 4, uiMisc) 
-			!= Success)
+		if(pIDE->WritePCIConfig(0x54, 4, uiMisc) != Success)
 		{
 			KC::MDisplay().Message("\n\tFailed to Init SIS Controller", Display::WHITE_ON_BLACK()) ;
 			return ;
@@ -285,29 +272,25 @@ void ATASIS_InitController(const PCIEntry* pPCIEntry, ATAController* pController
 		}
 		else
 		{
-			if(PCIBusHandler_ReadPCIConfig(pIDE->uiBusNumber, pIDE->uiDeviceNumber, pIDE->uiFunction, 0x4A, 1, 
-				&bIDEConfig) != Success)
+			if(pIDE->ReadPCIConfig(0x4A, 1, &bIDEConfig) != Success)
 			{
 				KC::MDisplay().Message("\n\tFailed to Init SIS Controller", Display::WHITE_ON_BLACK()) ;
 				return ;
 			}
 
-			if(PCIBusHandler_WritePCIConfig(pIDE->uiBusNumber, pIDE->uiDeviceNumber, pIDE->uiFunction, 0x4A, 1, 
-				bIDEConfig | 0x10) != Success)
+			if(pIDE->WritePCIConfig(0x4A, 1, bIDEConfig | 0x10) != Success)
 			{
 				KC::MDisplay().Message("\n\tFailed to Init SIS Controller", Display::WHITE_ON_BLACK()) ;
 				return ;
 			}
 
-			if(PCIBusHandler_ReadPCIConfig(pIDE->uiBusNumber, pIDE->uiDeviceNumber, pIDE->uiFunction, PCI_DEVICE_ID, 2, 
-				&usTrueID) != Success)
+			if(pIDE->ReadPCIConfig(PCI_DEVICE_ID, 2, &usTrueID) != Success)
 			{
 				KC::MDisplay().Message("\n\tFailed to Init SIS Controller", Display::WHITE_ON_BLACK()) ;
 				return ;
 			}
 
-			if(PCIBusHandler_WritePCIConfig(pIDE->uiBusNumber, pIDE->uiDeviceNumber, pIDE->uiFunction, 0x4A, 1, 
-				bIDEConfig) != Success)
+			if(pIDE->WritePCIConfig(0x4A, 1, bIDEConfig) != Success)
 			{
 				KC::MDisplay().Message("\n\tFailed to Init SIS Controller", Display::WHITE_ON_BLACK()) ;
 				return ;
@@ -315,14 +298,13 @@ void ATASIS_InitController(const PCIEntry* pPCIEntry, ATAController* pController
 			
 			if(usTrueID == 0x5517)
 			{
-				if(PCIBusHandler_ReadPCIConfig(0, 2, 0, PCI_REVISION, 1, &bSBRev) != Success)
+				if(PCIBusHandler::Instance().ReadPCIConfig(0, 2, 0, PCI_REVISION, 1, &bSBRev) != Success)
 				{
 					KC::MDisplay().Message("\n\tFailed to Init SIS Controller", Display::WHITE_ON_BLACK()) ;
 					return ;
 				}
 
-				if(PCIBusHandler_ReadPCIConfig(pIDE->uiBusNumber, pIDE->uiDeviceNumber, pIDE->uiFunction, 0x49, 1, 
-					&bPrefCtrl) != Success)
+				if(pIDE->ReadPCIConfig(0x49, 1, &bPrefCtrl) != Success)
 				{
 					KC::MDisplay().Message("\n\tFailed to Init SIS Controller", Display::WHITE_ON_BLACK()) ;
 					return ;
@@ -351,8 +333,7 @@ void ATASIS_InitController(const PCIEntry* pPCIEntry, ATAController* pController
 	switch(uiSpeed)
 	{
 		case SIS_UDMA_133:
-				if(PCIBusHandler_ReadPCIConfig(pIDE->uiBusNumber, pIDE->uiDeviceNumber, pIDE->uiFunction, 0x50, 2, 
-					&usRegW) != Success)
+				if(pIDE->ReadPCIConfig(0x50, 2, &usRegW) != Success)
 				{
 					KC::MDisplay().Message("\n\tFailed to Init SIS Controller", Display::WHITE_ON_BLACK()) ;
 					return ;
@@ -360,16 +341,14 @@ void ATASIS_InitController(const PCIEntry* pPCIEntry, ATAController* pController
 				
 				if(usRegW & 0x08)
 				{
-					if(PCIBusHandler_WritePCIConfig(pIDE->uiBusNumber, pIDE->uiDeviceNumber, pIDE->uiFunction, 0x50, 2, 
-						usRegW & 0xFFF7) != Success)
+					if(pIDE->WritePCIConfig(0x50, 2, usRegW & 0xFFF7) != Success)
 					{
 						KC::MDisplay().Message("\n\tFailed to Init SIS Controller", Display::WHITE_ON_BLACK()) ;
 						return ;
 					}
 				}
 
-				if(PCIBusHandler_ReadPCIConfig(pIDE->uiBusNumber, pIDE->uiDeviceNumber, pIDE->uiFunction, 0x52, 2, 
-					&usRegW) != Success)
+				if(pIDE->ReadPCIConfig(0x52, 2, &usRegW) != Success)
 				{
 					KC::MDisplay().Message("\n\tFailed to Init SIS Controller", Display::WHITE_ON_BLACK()) ;
 					return ;
@@ -377,8 +356,7 @@ void ATASIS_InitController(const PCIEntry* pPCIEntry, ATAController* pController
 
 				if(usRegW & 0x08)
 				{
-					if(PCIBusHandler_WritePCIConfig(pIDE->uiBusNumber, pIDE->uiDeviceNumber, pIDE->uiFunction, 0x52, 2, 
-						usRegW & 0xFFF7) != Success)
+					if(pIDE->WritePCIConfig(0x52, 2, usRegW & 0xFFF7) != Success)
 					{
 						KC::MDisplay().Message("\n\tFailed to Init SIS Controller", Display::WHITE_ON_BLACK()) ;
 						return ;
@@ -388,15 +366,13 @@ void ATASIS_InitController(const PCIEntry* pPCIEntry, ATAController* pController
 
 		case SIS_UDMA_133a:
 		case SIS_UDMA_100:
-				if(PCIBusHandler_WritePCIConfig(pIDE->uiBusNumber, pIDE->uiDeviceNumber, pIDE->uiFunction, PCI_LATENCY, 1, 
-					0x80) != Success)
+				if(pIDE->WritePCIConfig(PCI_LATENCY, 1, 0x80) != Success)
 				{
 					KC::MDisplay().Message("\n\tFailed to Init SIS Controller", Display::WHITE_ON_BLACK()) ;
 					return ;
 				}
 
-				if(PCIBusHandler_ReadPCIConfig(pIDE->uiBusNumber, pIDE->uiDeviceNumber, pIDE->uiFunction, 0x49, 1, 
-					&bReg) != Success)
+				if(pIDE->ReadPCIConfig(0x49, 1, &bReg) != Success)
 				{
 					KC::MDisplay().Message("\n\tFailed to Init SIS Controller", Display::WHITE_ON_BLACK()) ;
 					return ;
@@ -404,8 +380,7 @@ void ATASIS_InitController(const PCIEntry* pPCIEntry, ATAController* pController
 
 				if(!(bReg & 0x01))
 				{
-					if(PCIBusHandler_WritePCIConfig(pIDE->uiBusNumber, pIDE->uiDeviceNumber, pIDE->uiFunction, 0x49, 1, 
-						bReg | 0x01) != Success)
+					if(pIDE->WritePCIConfig(0x49, 1, bReg | 0x01) != Success)
 					{
 						KC::MDisplay().Message("\n\tFailed to Init SIS Controller", Display::WHITE_ON_BLACK()) ;
 						return ;
@@ -415,15 +390,13 @@ void ATASIS_InitController(const PCIEntry* pPCIEntry, ATAController* pController
 
 		case SIS_UDMA_100a:
 		case SIS_UDMA_66:
-				if(PCIBusHandler_WritePCIConfig(pIDE->uiBusNumber, pIDE->uiDeviceNumber, pIDE->uiFunction, PCI_LATENCY, 1, 
-					0x10) != Success)
+				if(pIDE->WritePCIConfig(PCI_LATENCY, 1, 0x10) != Success)
 				{
 					KC::MDisplay().Message("\n\tFailed to Init SIS Controller", Display::WHITE_ON_BLACK()) ;
 					return ;
 				}
 
-				if(PCIBusHandler_ReadPCIConfig(pIDE->uiBusNumber, pIDE->uiDeviceNumber, pIDE->uiFunction, 0x52, 1, 
-					&bReg) != Success)
+				if(pIDE->ReadPCIConfig(0x52, 1, &bReg) != Success)
 				{
 					KC::MDisplay().Message("\n\tFailed to Init SIS Controller", Display::WHITE_ON_BLACK()) ;
 					return ;
@@ -431,8 +404,7 @@ void ATASIS_InitController(const PCIEntry* pPCIEntry, ATAController* pController
 
 				if(!(bReg & 0x04))
 				{
-					if(PCIBusHandler_WritePCIConfig(pIDE->uiBusNumber, pIDE->uiDeviceNumber, pIDE->uiFunction, 0x52, 1, 
-						bReg | 0x04) != Success)
+					if(pIDE->WritePCIConfig(0x52, 1, bReg | 0x04) != Success)
 					{
 						KC::MDisplay().Message("\n\tFailed to Init SIS Controller", Display::WHITE_ON_BLACK()) ;
 						return ;
@@ -441,8 +413,7 @@ void ATASIS_InitController(const PCIEntry* pPCIEntry, ATAController* pController
 				break ;
 
 		case SIS_UDMA_33:
-				if(PCIBusHandler_ReadPCIConfig(pIDE->uiBusNumber, pIDE->uiDeviceNumber, pIDE->uiFunction, 0x09, 1, 
-					&bReg) != Success)
+				if(pIDE->ReadPCIConfig(0x09, 1, &bReg) != Success)
 				{
 					KC::MDisplay().Message("\n\tFailed to Init SIS Controller", Display::WHITE_ON_BLACK()) ;
 					return ;
@@ -450,8 +421,7 @@ void ATASIS_InitController(const PCIEntry* pPCIEntry, ATAController* pController
 
 				if(bReg & 0x0F)
 				{
-					if(PCIBusHandler_WritePCIConfig(pIDE->uiBusNumber, pIDE->uiDeviceNumber, pIDE->uiFunction, 0x09, 1, 
-						bReg | 0xF0) != Success)
+					if(pIDE->WritePCIConfig(0x09, 1, bReg | 0xF0) != Success)
 					{
 						KC::MDisplay().Message("\n\tFailed to Init SIS Controller", Display::WHITE_ON_BLACK()) ;
 						return ;
@@ -460,8 +430,7 @@ void ATASIS_InitController(const PCIEntry* pPCIEntry, ATAController* pController
 				break ;
 
 		case SIS_16:
-				if(PCIBusHandler_ReadPCIConfig(pIDE->uiBusNumber, pIDE->uiDeviceNumber, pIDE->uiFunction, 0x52, 1, 
-					&bReg) != Success)
+				if(pIDE->ReadPCIConfig(0x52, 1, &bReg) != Success)
 				{
 					KC::MDisplay().Message("\n\tFailed to Init SIS Controller", Display::WHITE_ON_BLACK()) ;
 					return ;
@@ -469,8 +438,7 @@ void ATASIS_InitController(const PCIEntry* pPCIEntry, ATAController* pController
 
 				if(!(bReg & 0x08))
 				{
-					if(PCIBusHandler_WritePCIConfig(pIDE->uiBusNumber, pIDE->uiDeviceNumber, pIDE->uiFunction, 0x52, 1, 
-						bReg | 0x08) != Success)
+					if(pIDE->WritePCIConfig(0x52, 1, bReg | 0x08) != Success)
 					{
 						KC::MDisplay().Message("\n\tFailed to Init SIS Controller", Display::WHITE_ON_BLACK()) ;
 						return ;
@@ -489,8 +457,7 @@ void ATASIS_InitController(const PCIEntry* pPCIEntry, ATAController* pController
 		{
 			usRegAddr = i ? 0x52 : 0x50 ;
 
-			if(PCIBusHandler_ReadPCIConfig(pIDE->uiBusNumber, pIDE->uiDeviceNumber, pIDE->uiFunction, usRegAddr, 2, 
-				&usRegW) != Success)
+			if(pIDE->ReadPCIConfig(usRegAddr, 2, &usRegW) != Success)
 			{
 				KC::MDisplay().Message("\n\tFailed to Init SIS Controller", Display::WHITE_ON_BLACK()) ;
 				return ;
@@ -505,8 +472,7 @@ void ATASIS_InitController(const PCIEntry* pPCIEntry, ATAController* pController
 		{
 			bMask = i ? 0x20 : 0x10 ;
 
-			if(PCIBusHandler_ReadPCIConfig(pIDE->uiBusNumber, pIDE->uiDeviceNumber, pIDE->uiFunction, 0x48, 1, 
-				&bReg) != Success)
+			if(pIDE->ReadPCIConfig(0x48, 1, &bReg) != Success)
 			{
 				KC::MDisplay().Message("\n\tFailed to Init SIS Controller", Display::WHITE_ON_BLACK()) ;
 				return ;
