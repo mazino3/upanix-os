@@ -539,7 +539,7 @@ byte FileOperations_UpdateTime(const char* szFileName, int iDriveID, byte bTimeT
 	if(bTimeType & DIR_MODIFIED_TIME)
 		SystemUtil_GetTimeOfDay(&(pSrcDirEntry->ModifiedTime)) ;
 
-	RETURN_X_IF_NOT(Directory_RawWrite(pDiskDrive, uiSectorNo, uiSectorNo + 1, bDirectoryBuffer), Directory_SUCCESS, FileOperations_FAILURE) ;
+	RETURN_X_IF_NOT(pDiskDrive->xWrite(bDirectoryBuffer, uiSectorNo, 1), DeviceDrive_SUCCESS, FileOperations_FAILURE);
 
 	return FileOperations_SUCCESS ;
 }

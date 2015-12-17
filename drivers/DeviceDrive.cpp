@@ -335,7 +335,7 @@ byte DiskDrive::ReadRootDirectory()
 	byte bDataBuffer[512];
 	FileSystem_PresentWorkingDirectory& FSpwd = FSMountInfo.FSpwd;
 
-	RETURN_IF_NOT(bStatus, Read(GetRealSectorNumber(0), 1, bDataBuffer), DeviceDrive_SUCCESS);
+	RETURN_IF_NOT(bStatus, xRead(bDataBuffer, 0, 1), DeviceDrive_SUCCESS);
 	
 	MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)bDataBuffer, MemUtil_GetDS(), (unsigned)&FSpwd.DirEntry, sizeof(FileSystem_DIR_Entry));
 	FSpwd.uiSectorNo = 0;
@@ -438,6 +438,11 @@ byte DiskDrive::Read(unsigned uiStartSector, unsigned uiNoOfSectors, byte* bData
 	}
 	
 	return DiskCache_SUCCESS ;
+}
+
+byte DiskDrive::xRead(byte* bDataBuffer, unsigned uiSector, unsigned uiNoOfSectors)
+{
+  return Read(GetRealSectorNumber(uiSector), uiNoOfSectors, bDataBuffer);
 }
 
 byte DiskDrive::RawRead(unsigned uiStartSector, unsigned uiNoOfSectors, byte* bDataBuffer)
@@ -550,6 +555,11 @@ byte DiskDrive::Write(unsigned uiStartSector, unsigned uiNoOfSectors, byte* bDat
 	}
 	
 	return DiskCache_SUCCESS ;
+}
+
+byte DiskDrive::xWrite(byte* bDataBuffer, unsigned uiSector, unsigned uiNoOfSectors)
+{
+  return Write(GetRealSectorNumber(uiSector), uiNoOfSectors, bDataBuffer);
 }
 
 byte DiskDrive::RawWrite(unsigned uiStartSector, unsigned uiNoOfSectors, byte* bDataBuffer)

@@ -31,7 +31,6 @@ static SectorBlockEntry* FSManager_GetSectorEntryFromCache(const FileSystem_Tabl
 static byte FSManager_AddSectorEntryIntoCache(DiskDrive* pDiskDrive, unsigned uiSectorEntry) ;
 static void FSManager_UpdateReadCount(SectorBlockEntry* pSectorBlockEntry) ;
 static void FSManager_UpdateWriteCount(SectorBlockEntry* pSectorBlockEntry) ;
-static byte FSManager_LoadFreeSectors(DiskDrive* pDiskDrive) ;
 static byte FSManager_GetSectorEntryValueDirect(DiskDrive* pDiskDrive, unsigned uiSectorID, unsigned* uiValue) ;
 static byte FSManager_SetSectorEntryValueDirect(DiskDrive* pDiskDrive, unsigned uiSectorID, unsigned uiValue) ;
 static void FSManager_UpdateUsedSectors(DiskDrive* pDiskDrive, unsigned uiSectorEntryValue) ;

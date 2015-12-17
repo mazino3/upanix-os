@@ -109,7 +109,9 @@ class DiskDrive
     byte Mount();
     byte UnMount();
     byte Read(unsigned uiStartSector, unsigned uiNoOfSectors, byte* bDataBuffer);
+    byte xRead(byte* bDataBuffer, unsigned uiSector, unsigned uiNoOfSectors);
     byte Write(unsigned uiStartSector, unsigned uiNoOfSectors, byte* bDataBuffer);
+    byte xWrite(byte* bDataBuffer, unsigned uiSector, unsigned uiNoOfSectors);
     byte FlushDirtyCacheSectors(int iCount = -1);
     byte FlushTableCache(int iFlushSize);
     void ReleaseCache();

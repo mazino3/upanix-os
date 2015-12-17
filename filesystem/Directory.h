@@ -57,8 +57,6 @@ byte Directory_ActualFileWrite(DiskDrive* pDiskDrive, byte* bDataBuffer, ProcFil
 byte Directory_FileRead(DiskDrive* pDiskDrive, FileSystem_CWD* pCWD, ProcFileDescriptor* pFDEntry, byte* bDataBuffer, 
 						unsigned uiDataSize, unsigned* uiReadFileSize) ;
 void Directory_PopulateDirEntry(FileSystem_DIR_Entry* dirEntry, char* szDirName, unsigned short usDirAttribute, int iUserID, unsigned uiParentSecNo, byte bParentSecPos) ;
-byte Directory_RawRead(DiskDrive* pDiskDrive, unsigned uiStartSectorID, unsigned uiEndSectorID, byte* bSectorBuffer) ;
-byte Directory_RawWrite(DiskDrive* pDiskDrive, unsigned uiStartSectorID, unsigned uiEndSectorID, byte* bSectorBuffer) ;
 byte Directory_GetDirEntryInfo(DiskDrive* pDiskDrive, FileSystem_CWD* pCWD, const char* szFileName, unsigned* uiSectorNo, byte* bSectorPos, byte* bDirectoryBuffer) ;
 byte Directory_Change(const char* szFileName, int iDriveID, ProcessAddressSpace* processAddressSpace) ;
 byte Directory_PresentWorkingDirectory(ProcessAddressSpace* processAddressSpace, char** uiReturnDirPathAddress) ;
