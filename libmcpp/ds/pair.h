@@ -15,17 +15,20 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
-#ifndef _PAIR_H_
-#define _PAIR_H_
+#ifndef _UPAN_PAIR_H_
+#define _UPAN_PAIR_H_
+
+namespace upan
+{
 
 template <typename F, typename S>
-class Pair
+class pair
 {
 	public:
-		Pair(F f, S s) : first(f), second(s) { }
+		pair(const F& f, const S& s) : first(f), second(s) { }
+		F first;
+		S second;
+};
 
-		F first ;
-		S second ;
-} ;
-
+};
 #endif

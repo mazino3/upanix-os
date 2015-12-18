@@ -197,7 +197,7 @@ BTreeNodeElement BTree::Lowest(BTreeNode* pNode)
 
 void BTree::SwapElement(BTreeElement* e1, BTreeElement* e2)
 {
-	Pair<BTreeKey*, BTreeValue*> kv(e1->GetKeyPtr(), e1->GetValue()) ;
+	upan::pair<BTreeKey*, BTreeValue*> kv(e1->GetKeyPtr(), e1->GetValue()) ;
 
 	e1->SetKey(e2->GetKeyPtr()) ;
 	e1->SetValue(e2->GetValue()) ;

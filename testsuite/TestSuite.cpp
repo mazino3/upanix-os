@@ -22,6 +22,7 @@
 #include <DMM.h>
 #include <BTree.h>
 #include <PIT.h>
+#include <map.h>
 
 #define TEST_ERROR printf("\n Error %d", __LINE__)
 #define ASSERT_CONDITION(COND) if(!(COND)) { TEST_ERROR; return false; }
@@ -55,6 +56,7 @@ void TestSuite::Run()
 	Assert(TestBTree1()) ;
 	Assert(TestBTree2()) ;
 	Assert(TestBTree3()) ;
+  Assert(TestMap());
 
 	printf("\n") ;
 
@@ -299,7 +301,6 @@ static void remove_arr(int* arr, int size, int index)
 bool TestSuite::TestBTree3()
 {
 	printf("\n Running TestBTree Case3...") ;
-
 	iNewCount = 0 ;
 	{
 		BTree tree ;
@@ -351,5 +352,33 @@ bool TestSuite::TestBTree3()
 	ASSERT(iNewCount, ==, 0) ;
 
 	return true ;
+}
+
+bool TestSuite::TestMap()
+{
+  printf("\n Running TestMap...");
+  upan::map<int, int> m;
+  for(int i = 0; i < 1000; ++i)
+    m.insert(upan::pair<int, int>(i, i));
+  for(int i = 0; i < 1000; ++i)
+    ASSERT_CONDITION(m[i] == i);
+  for(int i = 0; i < 2000; ++i)
+    m[i] = i;
+  for(int i = 0; i < 2000; ++i)
+  {
+    auto it = m.find(i);
+    ASSERT_CONDITION(it != m.end());
+    ASSERT_CONDITION((*it).first == i);
+    ASSERT_CONDITION(it->second == i);
+  }
+  int i = 0;
+  for(const auto& it : m)
+  {
+    ASSERT_CONDITION(it.first == i);
+    ASSERT_CONDITION(it.second == i);
+    ++i;
+  }
+  ASSERT_CONDITION(i == 2000);
+  return true;
 }
 

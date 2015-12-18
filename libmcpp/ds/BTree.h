@@ -21,7 +21,7 @@
 #include <Global.h>
 #include <MemPool.h>
 #include <MemUtil.h>
-#include <Pair.h>
+#include <pair.h>
 
 class BTreeKey
 {
@@ -50,7 +50,7 @@ class BTreeValue
 class BTreeNode ;
 class BTreeElement ;
 
-typedef Pair<BTreeNode*, BTreeElement*> BTreeNodeElement ;
+typedef upan::pair<BTreeNode*, BTreeElement*> BTreeNodeElement ;
 
 class BTree
 {

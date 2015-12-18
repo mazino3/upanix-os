@@ -32,6 +32,7 @@ class TestSuite
 		bool TestBTree1() ;
 		bool TestBTree2() ;
 		bool TestBTree3() ;
+    bool TestMap();
 } ;
 
 #endif
