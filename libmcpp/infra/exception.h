@@ -18,6 +18,26 @@
 #ifndef _EXERR_H_
 #define _EXERR_H_
 
+#ifdef __LOCAL_TEST__
+
+#include <string>
+
+namespace upan {
+
+#define XLOC __FILE__, __LINE__
+
+class exception
+{
+  public:
+    exception(const std::string& fileName, unsigned lineNo, const std::string& msg)
+    {
+    }
+};
+
+};
+
+#else
+
 #include <cstring.h>
 #include <StringUtil.h>
 #include <ctype.h>
@@ -67,5 +87,7 @@ class exception
 };
 
 };
+
+#endif
 
 #endif

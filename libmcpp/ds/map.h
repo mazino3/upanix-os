@@ -48,6 +48,9 @@ class map
     const_iterator begin() const { return const_cast<map<K, V>*>(this)->begin(); }
     const_iterator end() const { return const_cast<map<K, V>*>(this)->end(); }
 
+    void print_diagnosis() { print_diagnosis(_root, 0); }
+    int height() const { return height(_root); }
+
   private:
     class node
     {
@@ -92,6 +95,8 @@ class map
     pair<iterator, bool> insert_at_node(node* parent, const pair<K, V>& element);
     void clear(node* n);
     void rebalance(node& node);
+    void print_diagnosis(node* n, int depth);
+    int height(node* n) const;
 
   public:
     class map_iterator
@@ -225,19 +230,13 @@ pair<typename map<K, V>::iterator, bool> map<K, V>::insert_at_node(node* parent,
     ++_size;
     return pair<iterator, bool>(iterator(this, _root), true);
   }
-  node* new_node;
+  node* new_node = new node(element);
+  new_node->parent(parent);
   if(element.first < parent->element().first)
-  {
-    new_node = new node(element);
     parent->left(new_node);
-    new_node->parent(parent);
-  }
   else
-  {
-    new_node = new node(element);
     parent->right(new_node);
-    new_node->parent(parent);
-  }
+  ++_size;
   rebalance(*new_node);
   return pair<iterator, bool>(iterator(this, new_node), true);
 }
@@ -272,6 +271,7 @@ void map<K, V>::rebalance(node& child)
     {
       if(child.balance_factor() == 1) //right-left case
         rotate_right(child);
+      //right-right case
       rotate_left(parent);
       return;
     }
@@ -293,15 +293,25 @@ void map<K, V>::rotate_left(node& n)
   if(right == nullptr)
     throw exception(XLOC, "map tree is corrupt. right child of left rotating node is null!");
 
-  right->parent(n.parent());
+  node* parent = n.parent();
+  right->parent(parent);
+  if(parent == nullptr)
+    _root = right;
+  else
+  {
+    if(&n == parent->left())
+      parent->left(right);
+    else
+      parent->right(right);
+  }
   n.right(right->left());
+  if(right->left() != nullptr)
+    right->left()->parent(&n);
   n.parent(right);
+  right->left(&n);
 
   n.balance_factor(n.balance_factor() + 1);
   right->balance_factor(right->balance_factor() + 1);
-
-  if(right->parent() == nullptr)
-    _root = right;
 }
 
 template <typename K, typename V>
@@ -311,15 +321,25 @@ void map<K, V>::rotate_right(node& n)
   if(left == nullptr)
     throw exception(XLOC, "map tree is corrupt. left child of right rotating node is null!");
 
-  left->parent(n.parent());
+  node* parent = n.parent();
+  left->parent(parent);
+  if(parent == nullptr)
+    _root = left;
+  else
+  {
+    if(&n == parent->left())
+      parent->left(left);
+    else
+      parent->right(left);
+  }
   n.left(left->right());
+  if(left->right() != nullptr)
+    left->right()->parent(&n);
   n.parent(left);
+  left->right(&n);
 
   n.balance_factor(n.balance_factor() - 1);
   left->balance_factor(left->balance_factor() - 1);
-
-  if(left->parent() == nullptr)
-    _root = left;
 }
 
 template <typename K, typename V>
@@ -336,7 +356,7 @@ V& map<K, V>::operator[](const K& key)
 {
   pair<node*, bool> ret = find_node(key);
   if(ret.second)
-    ret.first->element().second;
+    return ret.first->element().second;
   return insert_at_node(ret.first, pair<K, V>(key, V())).first->second;
 }
 
@@ -366,6 +386,33 @@ typename map<K, V>::node* map<K, V>::node::next()
     cur = cur->parent();
   }
   return nullptr;
+}
+
+template <typename K, typename V>
+void map<K, V>::print_diagnosis(node* n, int depth)
+{
+  if(n == nullptr)
+    return;
+  if(n->left() == nullptr && n->right() == nullptr)
+  {
+    printf("\n Leaf node: %d - %d", n->element().first, depth);
+    return;
+  }
+  print_diagnosis(n->left(), depth + 1);
+  print_diagnosis(n->right(), depth + 1);
+
+  if(n->balance_factor() > 1 || n->balance_factor() < -1)
+    printf("\n INBALANCE NODE: %d - %d", n->element().first, depth);
+}
+
+template <typename K, typename V>
+int map<K, V>::height(node* n) const
+{
+  if(n == nullptr)
+    return 0;
+  int lh = height(n->left());
+  int rh = height(n->right());
+  return (lh > rh ? lh : rh) + 1;
 }
 
 };

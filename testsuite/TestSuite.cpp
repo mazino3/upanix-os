@@ -358,8 +358,19 @@ bool TestSuite::TestMap()
 {
   printf("\n Running TestMap...");
   upan::map<int, int> m;
+
+  unsigned start = PIT_GetClockCount();
+  for(int i = 0; i < 1000; ++i)
+    new upan::pair<int, int>(i, i);
+  printf("\n Duration: %d", PIT_GetClockCount() - start);
+
+  start = PIT_GetClockCount();
   for(int i = 0; i < 1000; ++i)
     m.insert(upan::pair<int, int>(i, i));
+  printf("\n Duration: %d", PIT_GetClockCount() - start);
+
+  printf("\n Height: %d", m.height());
+
   for(int i = 0; i < 1000; ++i)
     ASSERT_CONDITION(m[i] == i);
   for(int i = 0; i < 2000; ++i)
@@ -379,6 +390,7 @@ bool TestSuite::TestMap()
     ++i;
   }
   ASSERT_CONDITION(i == 2000);
+  printf("\n Height: %d", m.height());
   return true;
 }
 
