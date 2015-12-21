@@ -364,7 +364,7 @@ bool TestSuite::TestMap()
     m.insert(upan::map<int, int>::value_type(i, i));
   printf("\n Duration: %d", PIT_GetClockCount() - start);
 
-  printf("\n Height: %d", m.height());
+  ASSERT_CONDITION(m.height() == 10);
 
   for(int i = 0; i < 1000; ++i)
     ASSERT_CONDITION(m[i] == i);
@@ -385,7 +385,39 @@ bool TestSuite::TestMap()
     ++i;
   }
   ASSERT_CONDITION(i == 2000);
-  printf("\n Height: %d", m.height());
+  ASSERT_CONDITION(m.height() == 11);
+  
+  for(int i = 500; i < 1800; ++i)
+    ASSERT_CONDITION(m.erase(i) == true);
+
+  for(int i = 500; i < 1800; ++i)
+    ASSERT_CONDITION(m.find(i) == m.end());
+
+  ASSERT_CONDITION(m.height() == 10);
+  ASSERT_CONDITION(m.size() == 700);
+
+  for(int i = 2000; i < 3000; ++i)
+  {
+    ASSERT_CONDITION(m.find(i) == m.end());
+    m[i] = i;
+    ASSERT_CONDITION(m.find(i) != m.end());
+  }
+
+  ASSERT_CONDITION(m.height() == 11);
+
+  i = 0;
+  for(const auto& it : m)
+  {
+    ASSERT_CONDITION(it.first == i);
+    ASSERT_CONDITION(it.second == i);
+    ++i;
+    if(i == 500)
+      i += 1300;
+  }
+
+  ASSERT_CONDITION(i == 3000);
+  ASSERT_CONDITION(m.size() == 1700);
+
   return true;
 }
 
