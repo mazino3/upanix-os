@@ -31,6 +31,7 @@ class exception
   public:
     exception(const std::string& fileName, unsigned lineNo, const std::string& msg)
     {
+      printf("\n %s:%u - %s", fileName.c_str(), lineNo, msg.c_str());
     }
 };
 

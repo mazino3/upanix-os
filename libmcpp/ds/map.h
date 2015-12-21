@@ -39,6 +39,8 @@ class map
     iterator find(const K& key);
     const_iterator find(const K& key) const { return const_cast<map<K, V>*>(this)->find(key); }
     V& operator[](const K& key);
+    bool erase(iterator it);
+    bool erase(const K& key) { return erase(find(key)); }
     void clear() { clear(_root); }
     bool empty() const { return _size == 0; }
     int size() const { return _size; }
@@ -78,6 +80,8 @@ class map
         int balance_factor() const { return _balance_factor; }
         void balance_factor(int f) { _balance_factor = f; }
 
+        bool is_leaf() const { return _left == nullptr && _right == nullptr; }
+
         node* next();
 
       private:
@@ -89,12 +93,13 @@ class map
     };
 
     node* first_node();
-    void rotate_left(node& n);
-    void rotate_right(node& n);
+    void rotate_left(node* n);
+    void rotate_right(node* n);
     pair<node*, bool> find_node(const K& key);
     pair<iterator, bool> insert_at_node(node* parent, const pair<K, V>& element);
     void clear(node* n);
-    void rebalance(node& node);
+    void rebalance_on_insert(node*);
+    void rebalance_on_delete(bool is_right_child, node*);
     void print_diagnosis(node* n, int depth);
     int height(node* n) const;
 
@@ -152,6 +157,8 @@ class map
       private:
         map<K, V>* _parent; 
         node*      _node;
+
+      friend class map;
     };
 
   private:
@@ -237,108 +244,114 @@ pair<typename map<K, V>::iterator, bool> map<K, V>::insert_at_node(node* parent,
   else
     parent->right(new_node);
   ++_size;
-  rebalance(*new_node);
+  rebalance_on_insert(new_node);
   return pair<iterator, bool>(iterator(this, new_node), true);
 }
 
 template <typename K, typename V>
-void map<K, V>::rebalance(node& child)
+void map<K, V>::rebalance_on_insert(node* child)
 {
-  if(child.parent() == nullptr)
+  if(child == nullptr)
     return;
-  node& parent = *child.parent();
-  if(&child == parent.left())
+  node* parent = child->parent();
+  while(parent != nullptr)
   {
-    if(parent.balance_factor() == 1)
+    if(child == parent->left())
     {
-      if(child.balance_factor() == -1) //left-right case
-        rotate_left(child);
-      //left-left case
-      rotate_right(parent);
-      return;
-    }
-    else if(parent.balance_factor() == -1)
-    {
-      parent.balance_factor(0);
-      return;
+      if(parent->balance_factor() == 1)
+      {
+        if(child->balance_factor() == -1) //left-right case
+          rotate_left(child);
+        //left-left case
+        rotate_right(parent);
+        break;
+      }
+      if(parent->balance_factor() == -1)
+      {
+        parent->balance_factor(0);
+        break;
+      }
+      parent->balance_factor(1);
     }
     else
-      parent.balance_factor(1);
-  }
-  else
-  {
-    if(parent.balance_factor() == -1)
     {
-      if(child.balance_factor() == 1) //right-left case
-        rotate_right(child);
-      //right-right case
-      rotate_left(parent);
-      return;
+      if(parent->balance_factor() == -1)
+      {
+        if(child->balance_factor() == 1) //right-left case
+          rotate_right(child);
+        //right-right case
+        rotate_left(parent);
+        break;
+      }
+      if(parent->balance_factor() == 1)
+      {
+        parent->balance_factor(0);
+        break;
+      }
+      parent->balance_factor(-1);
     }
-    else if(parent.balance_factor() == 1)
-    {
-      parent.balance_factor(0);
-      return;
-    }
-    else
-      parent.balance_factor(-1);
+    child = parent;
+    parent = child->parent();
   }
-  rebalance(parent);
 }
 
 template <typename K, typename V>
-void map<K, V>::rotate_left(node& n)
+void map<K, V>::rotate_left(node* n)
 {
-  node* right = n.right();
+  if(n == nullptr)
+    return;
+  node* right = n->right();
   if(right == nullptr)
     throw exception(XLOC, "map tree is corrupt. right child of left rotating node is null!");
 
-  node* parent = n.parent();
+  node* parent = n->parent();
   right->parent(parent);
   if(parent == nullptr)
     _root = right;
   else
   {
-    if(&n == parent->left())
+    if(n == parent->left())
       parent->left(right);
     else
       parent->right(right);
   }
-  n.right(right->left());
+  n->right(right->left());
   if(right->left() != nullptr)
-    right->left()->parent(&n);
-  n.parent(right);
-  right->left(&n);
+    right->left()->parent(n);
+  n->parent(right);
+  right->left(n);
 
-  n.balance_factor(n.balance_factor() + 1);
+  n->balance_factor(n->balance_factor() + 1);
   right->balance_factor(right->balance_factor() + 1);
 }
 
 template <typename K, typename V>
-void map<K, V>::rotate_right(node& n)
+void map<K, V>::rotate_right(node* n)
 {
-  node* left = n.left();
+  if(n == nullptr)
+    return;
+  node* left = n->left();
   if(left == nullptr)
     throw exception(XLOC, "map tree is corrupt. left child of right rotating node is null!");
 
-  node* parent = n.parent();
+  node* parent = n->parent();
   left->parent(parent);
   if(parent == nullptr)
     _root = left;
   else
   {
-    if(&n == parent->left())
+    if(n == parent->left())
       parent->left(left);
     else
       parent->right(left);
   }
-  n.left(left->right());
+  n->left(left->right());
   if(left->right() != nullptr)
-    left->right()->parent(&n);
-  n.parent(left);
-  left->right(&n);
+    left->right()->parent(n);
+  n->parent(left);
+  left->right(n);
 
-  n.balance_factor(n.balance_factor() - 1);
+  n->balance_factor(n->balance_factor() - 1);
   left->balance_factor(left->balance_factor() - 1);
 }
 
@@ -358,6 +371,206 @@ V& map<K, V>::operator[](const K& key)
   if(ret.second)
     return ret.first->element().second;
   return insert_at_node(ret.first, pair<K, V>(key, V())).first->second;
+}
+
+template <typename K, typename V>
+bool map<K, V>::erase(iterator it)
+{
+  if(it == end())
+    return false;
+
+  node* n = it._node;
+  
+  if((n->left() && n->right())
+    || (n->left() && !n->left()->is_leaf())
+    || (n->right() && !n->right()->is_leaf()))
+  {
+    node* y;
+    //find in-order predecessor
+    if(n->left() != nullptr)
+    {
+      y = n->left();
+      while(y->right() != nullptr)
+        y = y->right();
+    }
+    else //find in-order successor
+    {
+      y = n->right();
+      while(y->left() != nullptr)
+        y = y->left();
+    }
+
+    node* n_parent = n->parent();
+    node* n_left = n->left();
+    node* n_right = n->right();
+
+    node* y_parent = y->parent();
+    node* y_left = y->left();
+    node* y_right = y->right();
+
+    y->parent(n_parent);
+    if(n_parent != nullptr)
+    {
+      if(n_parent->left() == n)
+        n_parent->left(y);
+      else
+        n_parent->right(y);
+    }
+
+    n->left(y_left);
+    if(y_left)
+      y_left->parent(n);
+    n->right(y_right);
+    if(y_right)
+      y_right->parent(n);
+
+    if(y_parent == n)
+    {
+      n->parent(y);
+      if(n_left == y)
+      {
+        y->left(n);
+        y->right(n_right);
+        if(n_right)
+          n_right->parent(y);
+      }
+      else
+      {
+        y->right(n);
+        y->left(n_left);
+        if(n_left)
+          n_left->parent(y);
+      }
+    }
+    else
+    {
+      y->left(n_left);
+      if(n_left)
+        n_left->parent(y);
+      y->right(n_right);
+      if(n_right)
+        n_right->parent(y);
+
+      n->parent(y_parent);
+      if(y_parent != nullptr)
+      {
+        if(y_parent->left() == y)
+          y_parent->left(n);
+        else
+          y_parent->right(n);
+      }
+    }
+
+    y->balance_factor(n->balance_factor());
+    if(n == _root)
+      _root = y;
+  }
+
+  node* parent = n->parent();
+
+  node* subtree = nullptr;
+  if(n->left())
+    subtree = n->left();
+  else if(n->right())
+    subtree = n->right();
+
+  if(subtree)
+    subtree->parent(parent);
+
+  if(parent == nullptr)
+  {
+    _root = subtree;
+  }
+  else
+  {
+    bool is_right_child = parent->right() == n;
+    if(is_right_child)
+      parent->right(subtree);
+    else
+      parent->left(subtree);
+    rebalance_on_delete(is_right_child, parent);
+  }
+  delete n;
+  --_size;
+  return true;
+}
+
+template <typename K, typename V>
+void map<K, V>::rebalance_on_delete(bool is_right_child, node* parent)
+{
+  while(parent != nullptr)
+  {
+    if(is_right_child)
+    {
+      if(parent->balance_factor() == 1) //going to be 2
+      {
+        node* sibling = parent->left();
+        if(!sibling)
+          throw exception(XLOC, "no left node for parent with balance factor 1 - map tree is corrupted!");
+        if(sibling->balance_factor() == -1)
+          rotate_left(sibling);
+        rotate_right(parent);
+        if(sibling->balance_factor() == 0)
+          break;
+      }
+      if(parent->balance_factor() == 0)
+      {
+        parent->balance_factor(1);
+        break;
+      }
+      parent->balance_factor(0);
+    } 
+    else
+    {
+      if(parent->balance_factor() == -1)
+      {
+        node* sibling = parent->right();
+        if(!sibling)
+          throw exception(XLOC, "no right node for parent with balance factor -1 - map tree is corrupted!");
+        if(sibling->balance_factor() == 1)
+          rotate_right(sibling);
+        rotate_left(parent);
+        if(sibling->balance_factor() == 0)
+          break;
+      }
+      if(parent->balance_factor() == 0)
+      {
+        parent->balance_factor(-1);
+        break;
+      }
+      parent->balance_factor(0);
+    }
+    if(parent->parent())
+      is_right_child = parent->parent()->right() == parent;
+    parent = parent->parent();
+  }
+}
+
+template <typename K, typename V>
+void map<K, V>::print_diagnosis(node* n, int depth)
+{
+  if(n == nullptr)
+    return;
+  if(n->left() == nullptr && n->right() == nullptr)
+  {
+    printf("\n Leaf node: %d - %d", n->element().first, depth);
+    return;
+  }
+  print_diagnosis(n->left(), depth + 1);
+  print_diagnosis(n->right(), depth + 1);
+
+  if(n->balance_factor() > 1 || n->balance_factor() < -1)
+    printf("\n INBALANCE NODE: %d - %d", n->element().first, depth);
+}
+
+template <typename K, typename V>
+int map<K, V>::height(node* n) const
+{
+  if(n == nullptr)
+    return 0;
+  int lh = height(n->left());
+  int rh = height(n->right());
+  return (lh > rh ? lh : rh) + 1;
 }
 
 //in-order successor of a given node
@@ -386,33 +599,6 @@ typename map<K, V>::node* map<K, V>::node::next()
     cur = cur->parent();
   }
   return nullptr;
-}
-
-template <typename K, typename V>
-void map<K, V>::print_diagnosis(node* n, int depth)
-{
-  if(n == nullptr)
-    return;
-  if(n->left() == nullptr && n->right() == nullptr)
-  {
-    printf("\n Leaf node: %d - %d", n->element().first, depth);
-    return;
-  }
-  print_diagnosis(n->left(), depth + 1);
-  print_diagnosis(n->right(), depth + 1);
-
-  if(n->balance_factor() > 1 || n->balance_factor() < -1)
-    printf("\n INBALANCE NODE: %d - %d", n->element().first, depth);
-}
-
-template <typename K, typename V>
-int map<K, V>::height(node* n) const
-{
-  if(n == nullptr)
-    return 0;
-  int lh = height(n->left());
-  int rh = height(n->right());
-  return (lh > rh ? lh : rh) + 1;
 }
 
 };
