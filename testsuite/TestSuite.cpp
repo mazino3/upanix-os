@@ -361,12 +361,7 @@ bool TestSuite::TestMap()
 
   unsigned start = PIT_GetClockCount();
   for(int i = 0; i < 1000; ++i)
-    new upan::pair<int, int>(i, i);
-  printf("\n Duration: %d", PIT_GetClockCount() - start);
-
-  start = PIT_GetClockCount();
-  for(int i = 0; i < 1000; ++i)
-    m.insert(upan::pair<int, int>(i, i));
+    m.insert(upan::map<int, int>::value_type(i, i));
   printf("\n Duration: %d", PIT_GetClockCount() - start);
 
   printf("\n Height: %d", m.height());
