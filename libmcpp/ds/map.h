@@ -35,13 +35,18 @@ class map
     map();
     ~map();
 
-    pair<iterator, bool> insert(const pair<K, V>& element);
+    pair<iterator, bool> insert(const value_type& element);
     iterator find(const K& key);
     const_iterator find(const K& key) const { return const_cast<map<K, V>*>(this)->find(key); }
     V& operator[](const K& key);
     bool erase(iterator it);
     bool erase(const K& key) { return erase(find(key)); }
-    void clear() { clear(_root); }
+    void clear() 
+    { 
+      clear(_root);
+      _root = nullptr;
+      _size = 0;
+    }
     bool empty() const { return _size == 0; }
     int size() const { return _size; }
 
@@ -57,7 +62,7 @@ class map
     class node
     {
       public:
-        node(const pair<K, V>& element) : 
+        node(const value_type& element) : 
           _element(element.first, element.second),
           _balance_factor(0),
           _parent(nullptr),
@@ -96,7 +101,7 @@ class map
     void rotate_left(node* n);
     void rotate_right(node* n);
     pair<node*, bool> find_node(const K& key);
-    pair<iterator, bool> insert_at_node(node* parent, const pair<K, V>& element);
+    pair<iterator, bool> insert_at_node(node* parent, const value_type& element);
     void clear(node* n);
     void rebalance_on_insert(node*);
     void rebalance_on_delete(bool is_right_child, node*);
@@ -220,7 +225,7 @@ pair<typename map<K, V>::node*, bool> map<K, V>::find_node(const K& key)
 }
 
 template <typename K, typename V>
-pair<typename map<K, V>::iterator, bool> map<K, V>::insert(const pair<K, V>& element)
+pair<typename map<K, V>::iterator, bool> map<K, V>::insert(const value_type& element)
 {
   pair<node*, bool> ret = find_node(element.first);
   if(ret.second)
@@ -229,7 +234,7 @@ pair<typename map<K, V>::iterator, bool> map<K, V>::insert(const pair<K, V>& ele
 }
 
 template <typename K, typename V>
-pair<typename map<K, V>::iterator, bool> map<K, V>::insert_at_node(node* parent, const pair<K, V>& element)
+pair<typename map<K, V>::iterator, bool> map<K, V>::insert_at_node(node* parent, const value_type& element)
 {
   if(parent == nullptr)
   {
@@ -370,7 +375,7 @@ V& map<K, V>::operator[](const K& key)
   pair<node*, bool> ret = find_node(key);
   if(ret.second)
     return ret.first->element().second;
-  return insert_at_node(ret.first, pair<K, V>(key, V())).first->second;
+  return insert_at_node(ret.first, value_type(key, V())).first->second;
 }
 
 template <typename K, typename V>
@@ -507,18 +512,24 @@ void map<K, V>::rebalance_on_delete(bool is_right_child, node* parent)
         node* sibling = parent->left();
         if(!sibling)
           throw exception(XLOC, "no left node for parent with balance factor 1 - map tree is corrupted!");
-        if(sibling->balance_factor() == -1)
+        int bf_sibling = sibling->balance_factor();
+        if(bf_sibling == -1)
           rotate_left(sibling);
         rotate_right(parent);
-        if(sibling->balance_factor() == 0)
+        if(bf_sibling == 0)
+        {
+          parent->balance_factor(1);
           break;
+        }
+        parent = parent->parent();
       }
-      if(parent->balance_factor() == 0)
+      else if(parent->balance_factor() == 0)
       {
         parent->balance_factor(1);
         break;
       }
-      parent->balance_factor(0);
+      else
+        parent->balance_factor(0);
     } 
     else
     {
@@ -527,18 +538,24 @@ void map<K, V>::rebalance_on_delete(bool is_right_child, node* parent)
         node* sibling = parent->right();
         if(!sibling)
           throw exception(XLOC, "no right node for parent with balance factor -1 - map tree is corrupted!");
-        if(sibling->balance_factor() == 1)
+        int bf_sibling = sibling->balance_factor();
+        if(bf_sibling == 1)
           rotate_right(sibling);
         rotate_left(parent);
-        if(sibling->balance_factor() == 0)
+        if(bf_sibling == 0)
+        {
+          parent->balance_factor(-1);
           break;
+        }
+        parent = parent->parent();
       }
-      if(parent->balance_factor() == 0)
+      else if(parent->balance_factor() == 0)
       {
         parent->balance_factor(-1);
         break;
       }
-      parent->balance_factor(0);
+      else
+        parent->balance_factor(0);
     }
     if(parent->parent())
       is_right_child = parent->parent()->right() == parent;

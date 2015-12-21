@@ -1,43 +1,43 @@
 #include <map>
+#include <typeinfo>
 #include "map.h"
 #include <sys/time.h>
 
-int main()
+struct timeval t1, t2;
+double _t1;
+double _t2;
+
+typedef upan::map<int, int> UPAN_MAP;
+typedef std::map<int, int> STD_MAP;
+
+template <typename T>
+const char* type()
 {
-  struct timeval t1, t2;
-  upan::map<int, int> um;
-  std::map<int, int> sm;
+  if(typeid(T) == typeid(UPAN_MAP))
+    return "UPAN::MAP";
+  return "STD::MAP";
+}
 
-  for(int i = 0; i < 1000 * 12; ++i)
-    um.insert(upan::pair<int, int>(i, i));
-
-  for(int i = 100 * 10; i < 1000 * 9; ++i)
-    um.erase(i);
-
-  return 0;
-  printf("\nInsertion...");
+template <typename T>
+void Insert(T& m)
+{
   gettimeofday(&t1, NULL);
   for(int i = 0; i < 1000 * 1000; ++i)
-    um.insert(upan::pair<int, int>(i, i));
-  gettimeofday(&t2, NULL);
-
-  double _t1 = t1.tv_sec + t1.tv_usec / 1000000.0;
-  double _t2 = t2.tv_sec + t2.tv_usec / 1000000.0;
-  printf("\n  UPAN::MAP INSERT TIME = %lf", _t2 - _t1);
-
-  gettimeofday(&t1, NULL);
-  for(int i = 0; i < 1000 * 1000; ++i)
-    sm.insert(std::pair<int, int>(i, i));
+    m.insert(typename T::value_type(i, i));
   gettimeofday(&t2, NULL);
 
   _t1 = t1.tv_sec + t1.tv_usec / 1000000.0;
   _t2 = t2.tv_sec + t2.tv_usec / 1000000.0;
-  printf("\n  STD::MAP INSERT TIME = %lf", _t2 - _t1);
+  
+  printf("\n  %s INSERT TIME = %lf", type<T>(), _t2 - _t1);
+}
 
-  printf("\nFind...");
+template <typename T>
+void Find(T& m)
+{
   gettimeofday(&t1, NULL);
   for(int i = 0; i < 1000 * 1000; ++i)
-    if(um.find(i) == um.end())
+    if(m.find(i) == m.end())
     {
       printf("\n Find for %d failed!", i);
       break;
@@ -46,25 +46,17 @@ int main()
 
   _t1 = t1.tv_sec + t1.tv_usec / 1000000.0;
   _t2 = t2.tv_sec + t2.tv_usec / 1000000.0;
-  printf("\n  UPAN::MAP FIND TIME = %lf", _t2 - _t1);
 
+  printf("\n  %s FIND TIME = %lf", type<T>(), _t2 - _t1);
+}
+
+
+template <typename T>
+void FindNonExisting(T& m)
+{
   gettimeofday(&t1, NULL);
   for(int i = 0; i < 1000 * 1000; ++i)
-    if(sm.find(i) == sm.end())
-    {
-      printf("\n Find for %d failed!", i);
-      break;
-    }
-  gettimeofday(&t2, NULL);
-
-  _t1 = t1.tv_sec + t1.tv_usec / 1000000.0;
-  _t2 = t2.tv_sec + t2.tv_usec / 1000000.0;
-  printf("\n  STD::MAP FIND TIME = %lf", _t2 - _t1);
-
-  printf("\nFind non-existing...");
-  gettimeofday(&t1, NULL);
-  for(int i = 0; i < 1000 * 1000; ++i)
-    if(um.find(i + 1000 * 1000) != um.end())
+    if(m.find(i + 1000 * 1000) != m.end())
     {
       printf("\n Found non-existing node %d!", i);
       break;
@@ -73,85 +65,53 @@ int main()
 
   _t1 = t1.tv_sec + t1.tv_usec / 1000000.0;
   _t2 = t2.tv_sec + t2.tv_usec / 1000000.0;
-  printf("\n  UPAN::MAP FIND NON-EXISTING TIME = %lf", _t2 - _t1);
 
-  gettimeofday(&t1, NULL);
-  for(int i = 0; i < 1000 * 1000 * 10; ++i)
-    if(sm.find(i + 1000 * 1000) != sm.end())
-    {
-      printf("\n Found non-existing node %d!", i);
-      break;
-    }
-  gettimeofday(&t2, NULL);
+  printf("\n  %s FIND NON-EXISTING TIME = %lf", type<T>(), _t2 - _t1);
+}
 
-  _t1 = t1.tv_sec + t1.tv_usec / 1000000.0;
-  _t2 = t2.tv_sec + t2.tv_usec / 1000000.0;
-  printf("\n  STD::MAP FIND NON-EXISTING TIME = %lf", _t2 - _t1);
-
-  printf("\nIndex find + insert...");
+template <typename T>
+void IndexFindInsert(T& m)
+{
   gettimeofday(&t1, NULL);
   for(int i = 0; i < 2000 * 1000; ++i)
-    um[i] = i;
+    m[i] = i;
   gettimeofday(&t2, NULL);
 
   _t1 = t1.tv_sec + t1.tv_usec / 1000000.0;
   _t2 = t2.tv_sec + t2.tv_usec / 1000000.0;
-  printf("\n  UPAN::MAP INDEX FIND+INSERT TIME = %lf", _t2 - _t1);
- 
-  gettimeofday(&t1, NULL);
-  for(int i = 0; i < 2000 * 1000; ++i)
-    sm[i] = i;
-  gettimeofday(&t2, NULL);
+  
+  printf("\n  %s INDEX FIND+INSERT TIME = %lf", type<T>(), _t2 - _t1);
+}
 
-  _t1 = t1.tv_sec + t1.tv_usec / 1000000.0;
-  _t2 = t2.tv_sec + t2.tv_usec / 1000000.0;
-  printf("\n  STD::MAP INDEX FIND+INSERT TIME = %lf", _t2 - _t1);
-
-  printf("\nMiddle delete...");
-  gettimeofday(&t1, NULL);
-  try
-  {
-    for(int i = 500 * 1000; i < 1500 * 1000; ++i)
-    {
-      printf("\n deleting %d", i);
-      if(!um.erase(i))
-      {
-        printf("\n Middle delete failed for %d!", i);
-        break;
-      }
-    }
-  }
-  catch(upan::exception& ex)
-  {
-    printf("\n exception");
-  }
-  gettimeofday(&t2, NULL);
-
-  _t1 = t1.tv_sec + t1.tv_usec / 1000000.0;
-  _t2 = t2.tv_sec + t2.tv_usec / 1000000.0;
-  printf("\n  UPAN::MAP MIDDLE DELETE TIME = %lf", _t2 - _t1);
-
+template <typename T>
+void MiddleDelete(T& m)
+{
   gettimeofday(&t1, NULL);
   for(int i = 500 * 1000; i < 1500 * 1000; ++i)
-    if(!sm.erase(i))
+  {
+    if(!m.erase(i))
     {
       printf("\n Middle delete failed for %d!", i);
       break;
     }
+  }
   gettimeofday(&t2, NULL);
 
   _t1 = t1.tv_sec + t1.tv_usec / 1000000.0;
   _t2 = t2.tv_sec + t2.tv_usec / 1000000.0;
-  printf("\n  STD::MAP MIDDLE DELETE TIME = %lf", _t2 - _t1);
+  printf("\n  %s MIDDLE DELETE TIME = %lf", type<T>(), _t2 - _t1);
+}
 
-  printf("\nFind after middle delete...");
+template <typename T>
+void FindAfterMiddleDelete(T& m)
+{
   gettimeofday(&t1, NULL);
   for(int i = 0; i < 2000 * 1000; ++i)
   {
-    auto it = um.find(i);
+    auto it = m.find(i);
     if(i >= 500 * 1000 && i < 1500 * 1000)
     {
-      if(it != um.end())
+      if(it != m.end())
       {
         printf("\n Found deleted node %d!", i);
         break;
@@ -159,7 +119,7 @@ int main()
     }
     else
     {
-      if(it == um.end())
+      if(it == m.end())
       {
         printf("\n Didn't find undeleted node: %d!", i);
         break;
@@ -170,39 +130,15 @@ int main()
 
   _t1 = t1.tv_sec + t1.tv_usec / 1000000.0;
   _t2 = t2.tv_sec + t2.tv_usec / 1000000.0;
-  printf("\n  UPAN::MAP FIND AFTER MIDDLE TIME = %lf", _t2 - _t1);
+  printf("\n  %s FIND AFTER MIDDLE TIME = %lf", type<T>(), _t2 - _t1);
+}
 
-  gettimeofday(&t1, NULL);
-  for(int i = 0; i < 2000 * 1000; ++i)
-  {
-    auto it = sm.find(i);
-    if(i >= 500 * 1000 && i < 1500 * 1000)
-    {
-      if(it != sm.end())
-      {
-        printf("\n Found deleted node %d!", i);
-        break;
-      }
-    }
-    else
-    {
-      if(it == sm.end())
-      {
-        printf("\n Didn't find undeleted node: %d!", i);
-        break;
-      }
-    }
-  }
-  gettimeofday(&t2, NULL);
-
-  _t1 = t1.tv_sec + t1.tv_usec / 1000000.0;
-  _t2 = t2.tv_sec + t2.tv_usec / 1000000.0;
-  printf("\n  STD::MAP FIND AFTER MIDDLE DELETE TIME = %lf", _t2 - _t1);
-
-  printf("\nIterate full...");
+template <typename T>
+void IterateFull(T& m)
+{
   gettimeofday(&t1, NULL);
   int i = 0;
-  for(auto it = um.begin(); it != um.end(); ++it)
+  for(auto it = m.begin(); it != m.end(); ++it)
   {
     if(i == 500 * 1000)
       i = 1500 * 1000;
@@ -218,137 +154,105 @@ int main()
 
   _t1 = t1.tv_sec + t1.tv_usec / 1000000.0;
   _t2 = t2.tv_sec + t2.tv_usec / 1000000.0;
-  printf("\n  UPAN::MAP FULL ITERATE = %lf", _t2 - _t1);
 
+  printf("\n  %s FULL ITERATE = %lf", type<T>(), _t2 - _t1);
+}
+
+template <typename T>
+void Clear(T& m)
+{
   gettimeofday(&t1, NULL);
-  i = 0;
-  for(auto it = sm.begin(); it != sm.end(); ++it)
-  {
-    if(i == 500 * 1000)
-      i = 1500 * 1000;
-    if(it->first != i++)
-    {
-      printf("\n Iterating to non-existing node: %d (%d)!", it->first, i);
-      break;
-    }
-  }
-  if(i != 2000 * 1000)
-    printf("\n Iterating full failed!");
-  gettimeofday(&t2, NULL);
-
-  _t1 = t1.tv_sec + t1.tv_usec / 1000000.0;
-  _t2 = t2.tv_sec + t2.tv_usec / 1000000.0;
-  printf("\n  STD::MAP FULL ITERATE = %lf", _t2 - _t1);
-
-  printf("\nclear...");
-  gettimeofday(&t1, NULL);
-  um.clear();
-  if(um.size() != 0)
+  m.clear();
+  if(m.size() != 0)
     printf("\n clear failed!");
-  if(um.begin() != um.end())
+  if(m.begin() != m.end())
     printf("\n begin != end upon clear");
   gettimeofday(&t2, NULL);
 
   _t1 = t1.tv_sec + t1.tv_usec / 1000000.0;
   _t2 = t2.tv_sec + t2.tv_usec / 1000000.0;
-  printf("\n  UPAN::MAP CLEAR TIME = %lf", _t2 - _t1);
+  printf("\n  %s CLEAR TIME = %lf", type<T>(), _t2 - _t1);
+}
 
+template <typename T>
+void IterativeErase(T& m)
+{
   gettimeofday(&t1, NULL);
-  sm.clear();
+  auto it = m.begin();
+  while(it != m.end())
+    m.erase(it++);
+  if(m.size() != 0)
+    printf("\n umap is not empty after erasing all!");
+  if(m.begin() != m.end())
+    printf("\n begin != end after erasing all!");
   gettimeofday(&t2, NULL);
 
   _t1 = t1.tv_sec + t1.tv_usec / 1000000.0;
   _t2 = t2.tv_sec + t2.tv_usec / 1000000.0;
-  printf("\n  STD::MAP FULL ITERATE = %lf", _t2 - _t1);
+  printf("\n  %s ERASE ALL TIME = %lf", type<T>(), _t2 - _t1);
+}
 
-  printf("\nInsertion again...");
-  gettimeofday(&t1, NULL);
-  for(int i = 0; i < 1000 * 1000; ++i)
-    um.insert(upan::pair<int, int>(i, i));
-  gettimeofday(&t2, NULL);
+int main()
+{
+  UPAN_MAP um;
+  STD_MAP sm;
 
-  _t1 = t1.tv_sec + t1.tv_usec / 1000000.0;
-  _t2 = t2.tv_sec + t2.tv_usec / 1000000.0;
-  printf("\n  UPAN::MAP INSERT TIME = %lf", _t2 - _t1);
-
-  gettimeofday(&t1, NULL);
-  for(int i = 0; i < 1000 * 1000; ++i)
-    sm.insert(std::pair<int, int>(i, i));
-  gettimeofday(&t2, NULL);
-
-  _t1 = t1.tv_sec + t1.tv_usec / 1000000.0;
-  _t2 = t2.tv_sec + t2.tv_usec / 1000000.0;
-  printf("\n  STD::MAP INSERT TIME = %lf", _t2 - _t1);
+  printf("\nInsertion...");
+  Insert(um);
+  Insert(sm);
 
   printf("\nFind...");
-  gettimeofday(&t1, NULL);
-  for(int i = 0; i < 1000 * 1000; ++i)
-    if(um.find(i) == um.end())
-    {
-      printf("\n Find for %d failed!", i);
-      break;
-    }
-  gettimeofday(&t2, NULL);
-  
+  Find(um);
+  Find(sm);
+
+  printf("\nFind non-existing...");
+  FindNonExisting(um);
+  FindNonExisting(sm);
+
+  printf("\nIndex find + insert...");
+  IndexFindInsert(um);
+  IndexFindInsert(sm);
+
+  printf("\nMiddle delete...");
+  MiddleDelete(um);
+  MiddleDelete(sm);
+
+  printf("\nFind after middle delete...");
+  FindAfterMiddleDelete(um);
+  FindAfterMiddleDelete(sm);
+
+  printf("\nIterate full...");
+  IterateFull(um);
+  IterateFull(sm);
+
+  printf("\nclear...");
+  Clear(um);
+  Clear(sm);
+
+  printf("\nInsertion again...");
+  Insert(um);
+  Insert(sm);
+
   printf("\nFind again...");
-  gettimeofday(&t1, NULL);
-  for(int i = 0; i < 1000 * 1000; ++i)
-    if(um.find(i) == um.end())
-    {
-      printf("\n Find for %d failed!", i);
-      break;
-    }
-  gettimeofday(&t2, NULL);
-
-  _t1 = t1.tv_sec + t1.tv_usec / 1000000.0;
-  _t2 = t2.tv_sec + t2.tv_usec / 1000000.0;
-  printf("\n  UPAN::MAP FIND TIME = %lf", _t2 - _t1);
-
-  gettimeofday(&t1, NULL);
-  for(int i = 0; i < 1000 * 1000; ++i)
-    if(sm.find(i) == sm.end())
-    {
-      printf("\n Find for %d failed!", i);
-      break;
-    }
-  gettimeofday(&t2, NULL);
-
-  _t1 = t1.tv_sec + t1.tv_usec / 1000000.0;
-  _t2 = t2.tv_sec + t2.tv_usec / 1000000.0;
-  printf("\n  STD::MAP FIND TIME = %lf", _t2 - _t1);
+  Find(um);
+  Find(sm);
 
   printf("\nIterative erase...");
-  gettimeofday(&t1, NULL);
-  auto uit = um.begin();
-  while(uit != um.end())
-    if(!um.erase(uit++))
-    {
-      printf("\n Delete failed!");
-      break;
-    }
-  if(um.size() != 0)
-    printf("\n umap is not empty after erasing all!");
-  if(um.begin() != um.end())
-    printf("\n begin != end after erasing all!");
-  gettimeofday(&t2, NULL);
+  IterativeErase(um);
+  IterativeErase(sm);
 
-  _t1 = t1.tv_sec + t1.tv_usec / 1000000.0;
-  _t2 = t2.tv_sec + t2.tv_usec / 1000000.0;
-  printf("\n  UPAN::MAP ERASE ALL TIME = %lf", _t2 - _t1);
+  printf("\nInsertion again...");
+  Insert(um);
+  Insert(sm);
 
-  gettimeofday(&t1, NULL);
-  auto sit = sm.begin();
-  while(sit != sm.end())
-    sm.erase(sit++);
-  if(sm.size() != 0)
-    printf("\n smap is not empty after erasing all!");
-  if(sm.begin() != sm.end())
-    printf("\n begin != end after erasing all!");
-  gettimeofday(&t2, NULL);
+  printf("\nFind again...");
+  Find(um);
+  Find(sm);
 
-  _t1 = t1.tv_sec + t1.tv_usec / 1000000.0;
-  _t2 = t2.tv_sec + t2.tv_usec / 1000000.0;
-  printf("\n  STD::MAP ERASE ALL TIME = %lf", _t2 - _t1);
+  printf("\nclear...");
+  Clear(um);
+  Clear(sm);
 
+  printf("\n");
   return 0;
 }
