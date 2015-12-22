@@ -209,13 +209,10 @@ class TestInOrderVisitor : public BTree::InOrderVisitor
 		bool Abort() const { return m_bAbort ; }
 } ;
 
-extern int iNewCount ;
-
 bool TestSuite::TestBTree1()
 {
 	printf("\n Running TestBTree Case1...") ;
 
-	iNewCount = 0 ;
 	{
 		BTree tree ;
 		BTree::DestroyKeyValue d ;
@@ -241,7 +238,6 @@ bool TestSuite::TestBTree1()
 		TestInOrderVisitor t(102, k, v) ;
 		tree.InOrderTraverse(t) ;
 	}
-	ASSERT(iNewCount, ==, 0) ;
 
 	return true ;
 }
@@ -250,7 +246,6 @@ bool TestSuite::TestBTree2()
 {
 	printf("\n Running TestBTree Case2...") ;
 
-	iNewCount = 0 ;
 	{
 		BTree tree ;
 		BTree::DestroyKeyValue d ;
@@ -287,7 +282,6 @@ bool TestSuite::TestBTree2()
 		TestInOrderVisitor t(N, k, v) ;
 		tree.InOrderTraverse(t) ;
 	}
-	ASSERT(iNewCount, ==, 0) ;
 
 	return true ;
 }
@@ -301,7 +295,6 @@ static void remove_arr(int* arr, int size, int index)
 bool TestSuite::TestBTree3()
 {
 	printf("\n Running TestBTree Case3...") ;
-	iNewCount = 0 ;
 	{
 		BTree tree ;
 		BTree::DestroyKeyValue d ;
@@ -349,7 +342,6 @@ bool TestSuite::TestBTree3()
 		TestInOrderVisitor tiv2(size, k, v) ;
 		tree.InOrderTraverse(tiv2) ;
 	}
-	ASSERT(iNewCount, ==, 0) ;
 
 	return true ;
 }
@@ -359,10 +351,8 @@ bool TestSuite::TestMap()
   printf("\n Running TestMap...");
   upan::map<int, int> m;
 
-  unsigned start = PIT_GetClockCount();
   for(int i = 0; i < 1000; ++i)
     m.insert(upan::map<int, int>::value_type(i, i));
-  printf("\n Duration: %d", PIT_GetClockCount() - start);
 
   ASSERT_CONDITION(m.height() == 10);
 
