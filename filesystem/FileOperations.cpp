@@ -392,7 +392,7 @@ byte FileOperations_GetCWD(char* szPathBuf, int iBufSize)
 	char szFullFilePath[256] ;
 	RETURN_IF_NOT(bStatus, Directory_FindFullDirPath(pDiskDrive, &pPWD->DirEntry, szFullFilePath), Directory_SUCCESS) ;
 
-	if(String_Length(szFullFilePath) > iBufSize)
+	if(strlen(szFullFilePath) > iBufSize)
 		return FileOperations_FAILURE ;
 
 	strcpy(szPathBuf, szFullFilePath);

@@ -245,7 +245,7 @@ byte Directory_GetDirEntryForCreateDelete(const ProcessAddressSpace* processAddr
 	GET_DRIVE_FOR_FS_OPS(iDriveID, Directory_FAILURE) ;
 	FileSystemMountInfo* pFSMountInfo = &pDiskDrive->FSMountInfo ;
 
-	if(String_Length(szDirPath) == 0 ||	String_Compare(FS_ROOT_DIR, szDirPath) == 0)
+	if(strlen(szDirPath) == 0 ||	String_Compare(FS_ROOT_DIR, szDirPath) == 0)
 		return Directory_ERR_EXISTS ;
 
 	if(szDirPath[0] == '/' || processAddressSpace->iDriveID != iDriveID)
@@ -313,7 +313,7 @@ byte Directory_GetDirectoryContent(const char* szFileName, ProcessAddressSpace* 
 	FileSystem_DIR_Entry* dirFile ;
 	FileSystem_DIR_Entry* pAddress ;
 
-	if(String_Length(szFileName) == 0)
+	if(strlen(szFileName) == 0)
 	{
 		dirFile = CWD.pDirEntry ;
 	}
@@ -897,7 +897,7 @@ byte Directory_GetDirEntryInfo(DiskDrive* pDiskDrive, FileSystem_CWD* pCWD, cons
 	FileSystem_CWD CWD ;
 	FileSystemMountInfo* pFSMountInfo = &(pDiskDrive->FSMountInfo) ;
 
-	if(String_Length(szFileName) == 0)
+	if(strlen(szFileName) == 0)
 		return Directory_ERR_INVALID_NAME ;
 
 	if(szFileName[0] == '/')
@@ -1034,12 +1034,12 @@ byte Directory_PresentWorkingDirectory(ProcessAddressSpace* processAddressSpace,
 
 	if(processAddressSpace->bIsKernelProcess == true)
 	{
-		*uiReturnDirPathAddress = (char*)DMM_AllocateForKernel(String_Length(szPWD) + 1) ;
+		*uiReturnDirPathAddress = (char*)DMM_AllocateForKernel(strlen(szPWD) + 1) ;
 		pAddress = *uiReturnDirPathAddress ;
 	}
 	else
 	{
-		*uiReturnDirPathAddress = (char*)DMM_Allocate(processAddressSpace, String_Length(szPWD) + 1) ;
+		*uiReturnDirPathAddress = (char*)DMM_Allocate(processAddressSpace, strlen(szPWD) + 1) ;
 		pAddress = (char*)(((unsigned)*uiReturnDirPathAddress + PROCESS_BASE) - GLOBAL_DATA_SEGMENT_BASE) ;
 	}
 

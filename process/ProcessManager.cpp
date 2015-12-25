@@ -716,7 +716,7 @@ byte ProcessManager::CreateKernelImage(const unsigned uiTaskAddress, int iParent
 	if(szKernelProcName == NULL)
 		szKernelProcName = DEF_KERNEL_PROC_NAME ;
 
-	newPAS.pname = (char*)DMM_AllocateForKernel(String_Length(szKernelProcName) + 1);
+	newPAS.pname = (char*)DMM_AllocateForKernel(strlen(szKernelProcName) + 1);
 	strcpy(newPAS.pname, szKernelProcName) ;
 
 	ProcessStateInfo* pStateInfo = (ProcessStateInfo*)DMM_AllocateForKernel(sizeof(ProcessStateInfo)) ;
@@ -823,7 +823,7 @@ byte ProcessManager::Create(const char* szProcessName, int iParentProcessID, byt
 
 	DisplayManager::SetupPageTableForDisplayBuffer(iProcessGroupID, uiPDEAddress) ;
 
-	newPAS.pname = (char*)DMM_AllocateForKernel(String_Length(szProcessName) + 1) ;
+	newPAS.pname = (char*)DMM_AllocateForKernel(strlen(szProcessName) + 1) ;
 	strcpy(newPAS.pname, szProcessName) ;
 
 	// Init Process State Info
@@ -873,11 +873,11 @@ PS* ProcessManager::GetProcListASync()
 		char* pname ;
 		if(pAddrSpc.bIsKernelProcess == true)
 		{
-			pname = pPS[i].pname = (char*)DMM_AllocateForKernel(String_Length(p.pname) + 1) ;
+			pname = pPS[i].pname = (char*)DMM_AllocateForKernel(strlen(p.pname) + 1) ;
 		}
 		else
 		{
-			pPS[i].pname = (char*)DMM_Allocate(&pAddrSpc, String_Length(p.pname) + 1) ;
+			pPS[i].pname = (char*)DMM_Allocate(&pAddrSpc, strlen(p.pname) + 1) ;
 			pname = (char*)((unsigned)pPS[i].pname + PROCESS_BASE - GLOBAL_DATA_SEGMENT_BASE) ;
 		}
 		

@@ -165,7 +165,7 @@ byte GenericUtil_GetFullFilePathFromEnv(const char* szPathEnvVar, const char* sz
 	}
 
 	// If no path env, then its from root "/"
-	if(String_Length(szEnvValue) == 0)
+	if(strlen(szEnvValue) == 0)
 	{
 		strcpy(szFullFilePath, "/") ;
 		return true ;

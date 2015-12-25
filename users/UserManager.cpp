@@ -147,7 +147,7 @@ static byte UserManager_ValidateName(const char* szName)
 	if(UserManager_GetUserIDByName(szName) != -1)
 		return UserManager_ERR_EXISTS ;
 
-	int len = String_Length(szName) ;
+	int len = strlen(szName) ;
 
 	if(len > MAX_USER_LENGTH)
 		return UserManager_ERR_TOO_LONG ;
@@ -252,7 +252,7 @@ byte UserManager_Create(const char* szUserName, const char* szPassword, const ch
 
 	RETURN_IF_NOT(bStatus, UserManager_ValidateName(szPassword), UserManager_SUCCESS) ;
 
-	if(String_Length(szHomeDirPath) > MAX_HOME_DIR_LEN)
+	if(strlen(szHomeDirPath) > MAX_HOME_DIR_LEN)
 		return UserManager_ERR_TOO_LONG ;
 
 	if(FileOperations_Exists(szHomeDirPath, ATTR_TYPE_DIRECTORY) != FileOperations_SUCCESS)

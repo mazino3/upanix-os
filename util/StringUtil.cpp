@@ -41,13 +41,6 @@ short String_Compare(const char* s1, const char* s2)
 	return 0 ;
 }
 
-int String_Length(const char* str)
-{
-	int i ;
-	for(i = 0; str[i] != '\0'; i++) ;
-	return i ;
-}
-
 void String_Tokenize(const char* src, char chToken, int* iListSize, StringTokenizer& tokenizer)
 {
 	int index ;
@@ -79,7 +72,7 @@ void String_Tokenize(const char* src, char chToken, int* iListSize, StringTokeni
 
 void String_Reverse(char* str)
 {	
-	unsigned len = String_Length(str) ;
+	unsigned len = strlen(str) ;
 	unsigned i ;
 	char temp ;
 
@@ -117,7 +110,7 @@ byte String_ConvertStringToNumber(unsigned* uiNumber, char* strNumber)
 	*uiNumber = 0 ;
 	pow = 0 ;
 
-	for(i = String_Length(strNumber) - 1; i >= 0; i--)
+	for(i = strlen(strNumber) - 1; i >= 0; i--)
 	{
 		if(!isdigit(strNumber[i]))
 			return false ;
@@ -158,8 +151,8 @@ byte String_IsSubStr(const char* szMainString, const char* szSubString)
 {
 	unsigned i ;
 	byte bFound = false;
-	unsigned uiMainStringLen = String_Length(szMainString) ;
-	unsigned uiSubStringLen = String_Length(szSubString) ;
+	unsigned uiMainStringLen = strlen(szMainString) ;
+	unsigned uiSubStringLen = strlen(szSubString) ;
 
 	for(i = 0; i < uiMainStringLen; i++)
 	{
@@ -178,7 +171,7 @@ byte String_IsSubStr(const char* szMainString, const char* szSubString)
 
 int String_Chr(const char* szStr, char ch)
 {
-	int len = String_Length(szStr) ;
+	int len = strlen(szStr) ;
 	int i ;
 	
 	for(i = 0; i < len; i++)

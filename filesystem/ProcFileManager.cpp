@@ -207,7 +207,7 @@ byte ProcFileManager_AllocateFD(int* fd, const char* szFileName, const byte mode
 	PROCESS_FD_TABLE[*fd].uiFileSize = uiFileSize ;
 	PROCESS_FD_TABLE[*fd].iDriveID = iDriveID ;
 
-	PROCESS_FD_TABLE[*fd].szFileName = (char*)DMM_AllocateForKernel(String_Length(szFileName) + 1)  ;
+	PROCESS_FD_TABLE[*fd].szFileName = (char*)DMM_AllocateForKernel(strlen(szFileName) + 1)  ;
 	strcpy(PROCESS_FD_TABLE[*fd].szFileName, szFileName) ;
 
 	PROCESS_FD_TABLE[*fd].RefCount = 1 ;

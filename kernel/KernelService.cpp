@@ -90,7 +90,7 @@ KernelService::ProcessExec::ProcessExec(int iNoOfArgs, const char* szFile, const
 	m_szArgs = new char*[iNoOfArgs] ;
 	for(int i = 0; i < iNoOfArgs; i++)
 	{
-		m_szArgs[i] = new char[String_Length(szArgs[i]) + 1] ;
+		m_szArgs[i] = new char[strlen(szArgs[i]) + 1] ;
 		strcpy(m_szArgs[i], szArgs[i]) ;
 	}
 }

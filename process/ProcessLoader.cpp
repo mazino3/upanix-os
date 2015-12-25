@@ -382,7 +382,7 @@ void ProcessLoader_PushProgramInitStackData(unsigned uiPDEAddr, unsigned uiNoOfP
 	unsigned uiArgumentListSize = 0 ;
 	int i ;
 	for(i = 0; i < iNumberOfParameters; i++)
-		uiArgumentListSize += (String_Length(szArgumentList[i]) + 1) ;
+		uiArgumentListSize += (strlen(szArgumentList[i]) + 1) ;
 
 	*uiProcessEntryStackSize = uiTermRelocAddressSize + uiInitRelocAddressSize + uiEntryAdddressSize + argc + argv + uiArgumentAddressListSize + uiArgumentListSize ;
 
@@ -403,6 +403,6 @@ void ProcessLoader_PushProgramInitStackData(unsigned uiPDEAddr, unsigned uiNoOfP
 
 		strcpy((char*)&((unsigned*)(uiPageAddress))[iStackIndex + iNumberOfParameters] + uiArgumentListSize,	szArgumentList[i]) ;
 
-		uiArgumentListSize += (String_Length(szArgumentList[i]) + 1) ;
+		uiArgumentListSize += (strlen(szArgumentList[i]) + 1) ;
 	}
 }
