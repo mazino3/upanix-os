@@ -98,54 +98,6 @@ byte String_ConvertStringToNumber(unsigned* uiNumber, char* strNumber)
 	return true ;
 }
 
-short String_NCompare(const char* s1, const char* s2, unsigned len)
-{
-	unsigned i ;
-
-	for(i = 0; i < len && s1[i] != '\0' && s2[i] != '\0'; i++)
-	{
-		if(s1[i] != s2[i])
-		{
-			if(s1[i] < s2[i])
-				return -1 ;
-			else
-				return 1 ;
-		}
-	}
-	
-	if(i == len)
-		return 0 ;
-
-	if(s1[i] == '\0' && s2[i] != '\0')
-		return -1 ;
-	else if(s1[i] != '\0' && s2[i] == '\0')
-		return 1 ;
-	
-	return 0 ;
-}
-
-byte String_IsSubStr(const char* szMainString, const char* szSubString)
-{
-	unsigned i ;
-	byte bFound = false;
-	unsigned uiMainStringLen = strlen(szMainString) ;
-	unsigned uiSubStringLen = strlen(szSubString) ;
-
-	for(i = 0; i < uiMainStringLen; i++)
-	{
-		if((uiMainStringLen - i) < uiSubStringLen)
-			break ;
-
-		if(String_NCompare(szMainString + i, szSubString, uiSubStringLen) == 0)
-		{
-			bFound = true ;
-			break ;
-		}
-	}
-
-	return bFound;
-}
-
 int String_Chr(const char* szStr, char ch)
 {
 	int len = strlen(szStr) ;

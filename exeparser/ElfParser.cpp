@@ -384,7 +384,7 @@ bool ELFParser::GetSectionHeaderByTypeAndName(unsigned uiType, const char* szLik
 {
 	for(int i = 0; i < m_pHeader->e_shnum; i++)
 	{
-		if(String_IsSubStr((m_pSecHeaderStrTable + m_pSectionHeader[i].sh_name), szLikeName) && m_pSectionHeader[i].sh_type == uiType)
+		if(strstr((m_pSecHeaderStrTable + m_pSectionHeader[i].sh_name), szLikeName) && m_pSectionHeader[i].sh_type == uiType)
 		{
 			*pSectionHeader = &m_pSectionHeader[i] ;
 			return true ;	
