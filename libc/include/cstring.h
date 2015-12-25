@@ -134,5 +134,6 @@ void *rawmemchr (const void * s, int c_in) ;
 
 extern char * strtok_r (char *s, const char *delim, char **save_ptr);
 //#define strtok_r(p, d, sp) __strtok_r(p, d, sp)
+extern void strreverse(char* str);
 
 #endif /* cstring.h  */

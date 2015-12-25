@@ -47,20 +47,6 @@ void String_Tokenize(const char* src, char chToken, int* iListSize, StringTokeni
 	*iListSize = iTokenIndex ;
 }
 
-void String_Reverse(char* str)
-{	
-	unsigned len = strlen(str) ;
-	unsigned i ;
-	char temp ;
-
-	for(i = 0; i < len / 2; i++)
-	{
-		temp = str[i] ;
-		str[i] = str[len - i - 1] ;
-		str[len - i - 1] = temp ;
-	}	
-}
-
 upan::string ToString(unsigned uiNumber)
 {
   char strNumber[128];
@@ -76,7 +62,7 @@ upan::string ToString(unsigned uiNumber)
 	while(uiNumber) ;
 
 	strNumber[i] = '\0';
-	String_Reverse(strNumber);
+	strreverse(strNumber);
   return strNumber;
 }
 

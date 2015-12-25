@@ -436,6 +436,20 @@ void* mempcpy(void * s1, const void * s2, size_t n)
 	return r1;
 }
 
+void strreverse(char* str)
+{	
+	unsigned len = strlen(str) ;
+	unsigned i ;
+	char temp ;
+
+	for(i = 0; i < len / 2; i++)
+	{
+		temp = str[i] ;
+		str[i] = str[len - i - 1] ;
+		str[len - i - 1] = temp ;
+	}	
+}
+
 int ffs(int i)
 {
 #if 1

@@ -219,7 +219,7 @@ void Display::Number(const char *message, DWORD dwNumber)
 
 	szNumber[i] = '\0' ;
 
-	String_Reverse((char*)szNumber) ;
+	strreverse((char*)szNumber) ;
 
 	Message(message, WHITE_ON_BLACK()) ;
 	Message(szNumber, WHITE_ON_BLACK()) ;
