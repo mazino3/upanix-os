@@ -1,7 +1,7 @@
 #include <map>
 #include <typeinfo>
-#include "map.h"
 #include <sys/time.h>
+#include "map.h"
 
 struct timeval t1, t2;
 double _t1;
@@ -248,6 +248,11 @@ int main()
   printf("\nFind again...");
   Find(um);
   Find(sm);
+  
+  if(um.verify_balance_factor())
+    printf("\n\n**** UPAN::MAP NODE BALANCE FACTORU IS INTACT ****\n\n");
+  else
+    printf("\n\n***** UPAN::MAP NODE BALANCE FACTOR IS CORRUPTED!! ****\n\n");
 
   printf("\nclear...");
   Clear(um);

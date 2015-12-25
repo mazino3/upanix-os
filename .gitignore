@@ -8,3 +8,5 @@ MOSStart_Main.grub
 .dll
 .procinit
 .realmode
+test_list
+test_map

@@ -56,7 +56,9 @@ void TestSuite::Run()
 	Assert(TestBTree1()) ;
 	Assert(TestBTree2()) ;
 	Assert(TestBTree3()) ;
+  Assert(TestMapFwdRwd());
   Assert(TestMap());
+  Assert(TestMapReverseEntry());
 
 	printf("\n") ;
 
@@ -346,6 +348,39 @@ bool TestSuite::TestBTree3()
 	return true ;
 }
 
+bool TestSuite::TestMapFwdRwd()
+{
+  printf("\n Running TestMapFwdRwd...");
+  upan::map<int, int> m;
+  m.insert(upan::map<int, int>::value_type(1, 1));
+  m.insert(upan::map<int, int>::value_type(2, 1));
+  m.insert(upan::map<int, int>::value_type(3, 1));
+
+  m.insert(upan::map<int, int>::value_type(6, 1));
+  m.insert(upan::map<int, int>::value_type(5, 1));
+  m.insert(upan::map<int, int>::value_type(4, 1));
+
+  int i = 1;
+  for(auto it = m.begin(); it != m.end(); ++it)
+  {
+    auto n = it._node;
+    ASSERT_CONDITION(n->element().first == i);
+    if(i == 2)
+    {
+      ASSERT_CONDITION(n->balance_factor() == 1);
+    }
+    else
+    {
+      ASSERT_CONDITION(n->balance_factor() == 0);
+    }
+    ++i;
+  }
+
+  ASSERT_CONDITION(m.verify_balance_factor() == true);
+
+  return true;
+}
+
 bool TestSuite::TestMap()
 {
   printf("\n Running TestMap...");
@@ -408,6 +443,74 @@ bool TestSuite::TestMap()
   ASSERT_CONDITION(i == 3000);
   ASSERT_CONDITION(m.size() == 1700);
 
+  ASSERT_CONDITION(m.verify_balance_factor() == true);
+
   return true;
 }
 
+bool TestSuite::TestMapReverseEntry()
+{
+  printf("\n Running TestMapReverseEntry...");
+  upan::map<int, int> m;
+
+  for(int i = 1000; i > 0; --i)
+    m.insert(upan::map<int, int>::value_type(i, i));
+
+  ASSERT_CONDITION(m.height() == 10);
+
+  for(int i = 1; i <= 1000; ++i)
+    ASSERT_CONDITION(m[i] == i);
+  for(int i = 2000; i > 0; --i)
+    m[i] = i;
+  for(int i = 1; i <= 2000; ++i)
+  {
+    auto it = m.find(i);
+    ASSERT_CONDITION(it != m.end());
+    ASSERT_CONDITION((*it).first == i);
+    ASSERT_CONDITION(it->second == i);
+  }
+  int i = 1;
+  for(const auto& it : m)
+  {
+    ASSERT_CONDITION(it.first == i);
+    ASSERT_CONDITION(it.second == i);
+    ++i;
+  }
+  ASSERT_CONDITION(i == 2001);
+  ASSERT(m.height(), ==, 11);
+  
+  for(int i = 500; i < 1800; ++i)
+    ASSERT_CONDITION(m.erase(i) == true);
+
+  for(int i = 500; i < 1800; ++i)
+    ASSERT_CONDITION(m.find(i) == m.end());
+
+  ASSERT_CONDITION(m.height() == 10);
+  ASSERT_CONDITION(m.size() == 700);
+
+  for(int i = 3000; i > 2000; --i)
+  {
+    ASSERT_CONDITION(m.find(i) == m.end());
+    m[i] = i;
+    ASSERT_CONDITION(m.find(i) != m.end());
+  }
+
+  ASSERT_CONDITION(m.height() == 11);
+
+  i = 1;
+  for(const auto& it : m)
+  {
+    ASSERT_CONDITION(it.first == i);
+    ASSERT_CONDITION(it.second == i);
+    ++i;
+    if(i == 500)
+      i += 1300;
+  }
+
+  ASSERT_CONDITION(i == 3001);
+  ASSERT_CONDITION(m.size() == 1700);
+
+  ASSERT_CONDITION(m.verify_balance_factor() == true);
+
+  return true;
+}

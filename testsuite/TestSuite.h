@@ -18,6 +18,8 @@
 #ifndef _TESTSUITE_H_
 #define _TESTSUITE_H_
 
+#include <map.h>
+
 class TestSuite
 {
 	public:
@@ -32,7 +34,9 @@ class TestSuite
 		bool TestBTree1() ;
 		bool TestBTree2() ;
 		bool TestBTree3() ;
+    bool TestMapFwdRwd();
     bool TestMap();
+    bool TestMapReverseEntry();
 } ;
 
 #endif

@@ -21,6 +21,8 @@
 #include <exception.h>
 #include <pair.h>
 
+class TestSuite;
+
 namespace upan {
 
 template <typename K, typename V>
@@ -56,6 +58,7 @@ class map
     const_iterator end() const { return const_cast<map<K, V>*>(this)->end(); }
 
     void print_diagnosis() { print_diagnosis(_root, 0); }
+    bool verify_balance_factor();
     int height() const { return height(_root); }
 
   private:
@@ -84,7 +87,6 @@ class map
 
         int balance_factor() const { return _balance_factor; }
         void balance_factor(int f) { _balance_factor = f; }
-
         bool is_leaf() const { return _left == nullptr && _right == nullptr; }
 
         node* next();
@@ -107,6 +109,7 @@ class map
     void rebalance_on_delete(bool is_right_child, node*);
     void print_diagnosis(node* n, int depth);
     int height(node* n) const;
+    void refresh_balance_factor(node* n) const;
 
   public:
     class map_iterator
@@ -164,6 +167,7 @@ class map
         node*      _node;
 
       friend class map;
+      friend class ::TestSuite;
     };
 
   private:
@@ -326,8 +330,8 @@ void map<K, V>::rotate_left(node* n)
   n->parent(right);
   right->left(n);
 
-  n->balance_factor(n->balance_factor() + 1);
-  right->balance_factor(right->balance_factor() + 1);
+  refresh_balance_factor(n);
+  refresh_balance_factor(right);
 }
 
 template <typename K, typename V>
@@ -356,8 +360,8 @@ void map<K, V>::rotate_right(node* n)
   n->parent(left);
   left->right(n);
 
-  n->balance_factor(n->balance_factor() - 1);
-  left->balance_factor(left->balance_factor() - 1);
+  refresh_balance_factor(n);
+  refresh_balance_factor(left);
 }
 
 template <typename K, typename V>
@@ -573,11 +577,24 @@ void map<K, V>::print_diagnosis(node* n, int depth)
     printf("\n Leaf node: %d - %d", n->element().first, depth);
     return;
   }
+  printf("\n %x : %x", n->left(), n->right());
   print_diagnosis(n->left(), depth + 1);
   print_diagnosis(n->right(), depth + 1);
 
   if(n->balance_factor() > 1 || n->balance_factor() < -1)
     printf("\n INBALANCE NODE: %d - %d", n->element().first, depth);
+}
+
+template <typename K, typename V>
+bool map<K, V>::verify_balance_factor()
+{
+  for(auto it = begin(); it != end(); ++it)
+  {
+    auto n = it._node;
+    if(n->balance_factor() != (height(n->left()) - height(n->right())))
+      return false;
+  }
+  return true;
 }
 
 template <typename K, typename V>
@@ -588,6 +605,12 @@ int map<K, V>::height(node* n) const
   int lh = height(n->left());
   int rh = height(n->right());
   return (lh > rh ? lh : rh) + 1;
+}
+
+template <typename K, typename V>
+void map<K, V>::refresh_balance_factor(node* n) const
+{
+  n->balance_factor(height(n->left()) - height(n->right()));
 }
 
 //in-order successor of a given node
