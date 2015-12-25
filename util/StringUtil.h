@@ -22,8 +22,6 @@
 # include <cstring.h>
 # include <string.h>
 
-void String_RawCopy(byte* dest, const byte* src, const unsigned uiLen) ;
-
 class StringTokenizer
 {
 	public:
@@ -36,7 +34,7 @@ class StringDefTokenizer : public StringTokenizer
 	public:
 		void operator()(int index, const char* src, int len)
 		{
-			String_RawCopy((byte*)(szToken[index]), (const byte*)src, len) ;
+      memcpy(szToken[index], src, len);
 			szToken[index][len] = '\0' ;
 		}
 

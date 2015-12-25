@@ -42,7 +42,7 @@ class StrPathTokenizer : public StringTokenizer
 		{
 			byte szTemp[128] ;
 
-			String_RawCopy(szTemp, (const byte*)src, len) ;
+      memcpy(szTemp, src, len);
 			szTemp[len] = '\0' ;
 			
 			if(szTemp[len - 1] != '/')
@@ -54,7 +54,7 @@ class StrPathTokenizer : public StringTokenizer
 			{
 				m_bFound = true ;
 
-				String_RawCopy((byte*)m_szFullFilePath, (const byte*)src, len) ;
+        memcpy(m_szFullFilePath, src, len);
 				m_szFullFilePath[len] = '\0' ;
 				
 				if(m_szFullFilePath[len - 1] != '/')

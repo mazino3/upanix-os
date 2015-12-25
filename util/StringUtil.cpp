@@ -54,13 +54,6 @@ short String_Compare(const char* s1, const char* s2)
 	return 0 ;
 }
 
-void String_RawCopy(byte* dest, const byte* src, const unsigned uiLen)
-{
-	unsigned i ;
-	for(i = 0; i < uiLen; i++)
-		dest[i] = src[i] ;	
-}
-
 int String_Length(const char* str)
 {
 	int i ;

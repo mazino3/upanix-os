@@ -107,7 +107,7 @@ static void FileOperations_ParseFilePathWithDrive(const char* szFileNameWithDriv
 
 	char szDriveName[33] ;
 
-	String_RawCopy((byte*)szDriveName, (byte*)szFileNameWithDrive, i) ;
+  memcpy(szDriveName, szFileNameWithDrive, i);
 	szDriveName[i] = '\0' ;
 
 	strcpy(szFileName, szFileNameWithDrive + i + 1) ;

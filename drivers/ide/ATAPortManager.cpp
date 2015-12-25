@@ -61,7 +61,7 @@ static void ATAPortManager_ReadModelID(char* szDest, char* szSrc)
 			break ;
 	}
 
-	String_RawCopy((byte*)szDest, (byte*)szSrc, i + 1) ;
+  memcpy(szDest, szSrc, i + 1);
 	szDest[i + 1] = '\0' ;
 }
 
