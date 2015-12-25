@@ -187,7 +187,7 @@ byte UserManager_Initialize()
 	UserManager_UseTabList = (UserTabEntry*)(MEM_USR_LIST_START + sizeof(UserTabHeader)) ;
 
 	strcpy(USER_LIST_FILE, OSIN_PATH) ;
-	String_CanCat(USER_LIST_FILE, __USER_LIST_FILE) ;
+	strcat(USER_LIST_FILE, __USER_LIST_FILE) ;
 
 	byte bStatus ;
 	if(FileOperations_Exists(USER_LIST_FILE, ATTR_TYPE_FILE) != FileOperations_SUCCESS)

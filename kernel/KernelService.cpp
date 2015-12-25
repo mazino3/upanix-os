@@ -171,7 +171,7 @@ int KernelService::RequestProcessExec(const char* szFile, int iNoOfArgs, const c
 		}
 
 		strcpy(szFullProcPath, szProcessPath) ;
-		String_CanCat(szFullProcPath, szFile) ;
+		strcat(szFullProcPath, szFile) ;
 	}
 	else
 	{

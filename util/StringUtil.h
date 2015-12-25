@@ -41,7 +41,6 @@ class StringDefTokenizer : public StringTokenizer
 		char szToken[10][33] ;
 } ;
 
-unsigned String_CanCat(char* dest, const char* src) ;
 short String_Compare(const char* s1, const char* s2) ;
 int String_Length(const char* str) ;
 void String_Tokenize(const char* src, char chToken, int* iListSize, StringTokenizer& strTkCopy) ;

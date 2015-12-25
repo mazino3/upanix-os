@@ -655,11 +655,11 @@ void DiskDrive::StartReleaseCacheTask()
 
 	int pid;
 	char szDCFName[64] = "dcf-";
-	String_CanCat(szDCFName, DriveName().c_str());
+	strcat(szDCFName, DriveName().c_str());
 	ProcessManager::Instance().CreateKernelImage((unsigned)&DiskCache_TaskFlushCache, ProcessManager::Instance().GetCurProcId(), false, (unsigned)this, 0, &pid, szDCFName);
 
 	char szDCRName[64] = "dcr-";
-	String_CanCat(szDCRName, DriveName().c_str());
+	strcat(szDCRName, DriveName().c_str());
 	ProcessManager::Instance().CreateKernelImage((unsigned)&DiskCache_TaskReleaseCache, ProcessManager::Instance().GetCurProcId(), false, (unsigned)this, 0, &pid, szDCRName);
 }
 

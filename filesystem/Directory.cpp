@@ -995,8 +995,8 @@ byte Directory_Change(const char* szFileName, int iDriveID, ProcessAddressSpace*
 		{	
 			strcpy(szPWD, FS_ROOT_DIR) ;
 
-			String_CanCat(szPWD, (const char*)dirFile->Name) ;
-			String_CanCat(szPWD, szTempPwd) ;
+			strcat(szPWD, (const char*)dirFile->Name) ;
+			strcat(szPWD, szTempPwd) ;
 
 			uiSecNo = dirFile->uiParentSecID ;
 			bSecPos = dirFile->bParentSectorPos ;
@@ -1014,8 +1014,8 @@ byte Directory_Change(const char* szFileName, int iDriveID, ProcessAddressSpace*
 
 	strcpy(szTempPwd, szPWD) ;
 	strcpy(szPWD, pDiskDrive->DriveName().c_str());
-	String_CanCat(szPWD, "@") ;
-	String_CanCat(szPWD, szTempPwd) ;
+	strcat(szPWD, "@") ;
+	strcat(szPWD, szTempPwd) ;
 
 	ProcessEnv_Set("PWD", szPWD) ;
 
@@ -1105,7 +1105,7 @@ byte Directory_FindFullDirPath(DiskDrive* pDiskDrive, const FileSystem_DIR_Entry
 		{
 			strcpy(temp, szFullDirPath) ;
 			strcpy(szFullDirPath, FS_ROOT_DIR) ;
-			String_CanCat(szFullDirPath, temp) ;
+			strcat(szFullDirPath, temp) ;
 			
 			return Directory_SUCCESS ;
 		}
@@ -1116,8 +1116,8 @@ byte Directory_FindFullDirPath(DiskDrive* pDiskDrive, const FileSystem_DIR_Entry
 			
 			if(!bFirst)
 			{
-				String_CanCat(szFullDirPath, FS_ROOT_DIR) ;
-				String_CanCat(szFullDirPath, temp) ;
+				strcat(szFullDirPath, FS_ROOT_DIR) ;
+				strcat(szFullDirPath, temp) ;
 			}
 			else
 				bFirst = false ;

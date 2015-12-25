@@ -63,7 +63,7 @@ static byte SessionManager_LoadShell(int* iShellProcessID, int iSessionUserID)
 
 	char shell[33] ;
 	strcpy(shell, BIN_PATH) ;
-	String_CanCat(shell, "msh") ;
+	strcat(shell, "msh") ;
 
 	*iShellProcessID = KC::MKernelService().RequestProcessExec(shell, 0, NULL) ;
 	if(*iShellProcessID < 0)

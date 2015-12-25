@@ -372,5 +372,5 @@ void ATAIntel_InitController(const PCIEntry* pPCIEntry, ATAController* pControll
 	}
 
 	strcpy(pController->szName, "Intel ") ;
-	String_CanCat(pController->szName, pIntelIDE->szName) ;
+	strcat(pController->szName, pIntelIDE->szName) ;
 }

@@ -288,11 +288,11 @@ static void SCSIHandler_ExtractString(byte* szSCSIResult, int iStart, int iEnd, 
 		if(szSCSIResult[i] >= 0x20 && i < szSCSIResult[4] + 5)
 		{
 			szCh[0] = szSCSIResult[i] ;
-			String_CanCat(szBuf, szCh) ;
+			strcat(szBuf, szCh) ;
 		}
 		else
 		{
-			String_CanCat(szBuf, " ") ;
+			strcat(szBuf, " ") ;
 		}
 	}
 }

@@ -18,19 +18,6 @@
 # include <StringUtil.h>
 # include <GenericUtil.h>
 
-unsigned String_CanCat(char* dest, const char* src)
-{
-	unsigned i, j ;
-	
-	for(i = 0; dest[i] != '\0'; i++) ;
-
-	for(j = 0; src[j] != '\0'; j++)
-		dest[i++] = src[j] ;
-	dest[i] = '\0' ;
-
-	return i ;
-}
-
 short String_Compare(const char* s1, const char* s2)
 {
 	unsigned i ;

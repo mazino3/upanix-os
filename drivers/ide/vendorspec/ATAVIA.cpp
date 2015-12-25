@@ -402,5 +402,5 @@ void ATAVIA_InitController(const PCIEntry* pPCIEntry, ATAController* pController
 	}
 
 	strcpy(pController->szName, "VIA ") ;
-	String_CanCat(pController->szName, pVIAIDE->szName) ;
+	strcat(pController->szName, pVIAIDE->szName) ;
 }

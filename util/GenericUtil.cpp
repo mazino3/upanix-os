@@ -46,9 +46,9 @@ class StrPathTokenizer : public StringTokenizer
 			szTemp[len] = '\0' ;
 			
 			if(szTemp[len - 1] != '/')
-				String_CanCat((char*)szTemp, "/") ;
+				strcat((char*)szTemp, "/") ;
 			
-			String_CanCat((char*)szTemp, m_szFileName) ;
+			strcat((char*)szTemp, m_szFileName) ;
 
 			if(FileOperations_Exists((const char*)szTemp, ATTR_TYPE_FILE) == FileOperations_SUCCESS)
 			{
@@ -58,7 +58,7 @@ class StrPathTokenizer : public StringTokenizer
 				m_szFullFilePath[len] = '\0' ;
 				
 				if(m_szFullFilePath[len - 1] != '/')
-					String_CanCat(m_szFullFilePath, "/") ;
+					strcat(m_szFullFilePath, "/") ;
 			}
 		}
 	}
@@ -161,7 +161,7 @@ byte GenericUtil_GetFullFilePathFromEnv(const char* szPathEnvVar, const char* sz
 	{
 		//Deafult Env Path
 		strcpy(szEnvValue, s) ;
-		String_CanCat(szEnvValue, szPathEnvDefVal) ;
+		strcat(szEnvValue, szPathEnvDefVal) ;
 	}
 
 	// If no path env, then its from root "/"
