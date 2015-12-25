@@ -386,7 +386,7 @@ byte DynamicLinkLoader_GetSymbolOffset(const char* szJustDLLName, const char* sz
 	for(; uiSymTabIndex != STN_UNDEF;)
 	{
 		uiSymStrIndex = pELFDynSymTable[uiSymTabIndex].st_name ;
-		if(String_Compare(&pDynStrTable[uiSymStrIndex], szSymName) == 0)
+		if(strcmp(&pDynStrTable[uiSymStrIndex], szSymName) == 0)
 		{
 			if(pELFDynSymTable[uiSymTabIndex].st_value != 0)
 			{

@@ -41,7 +41,6 @@ class StringDefTokenizer : public StringTokenizer
 		char szToken[10][33] ;
 } ;
 
-short String_Compare(const char* s1, const char* s2) ;
 void String_Tokenize(const char* src, char chToken, int* iListSize, StringTokenizer& strTkCopy) ;
 upan::string ToString(unsigned uiNumber);
 byte String_ConvertStringToNumber(unsigned* uiNumber, char* strNumber) ;

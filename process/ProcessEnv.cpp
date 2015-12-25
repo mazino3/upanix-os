@@ -86,7 +86,7 @@ char* ProcessEnv_Get(const char* szEnvVar)
 	int i ;
 	for(i = 0; i < NO_OF_ENVS; i++)
 	{
-		if(String_Compare(PROCESS_ENV_LIST[i].Var, szEnvVar) == 0)
+		if(strcmp(PROCESS_ENV_LIST[i].Var, szEnvVar) == 0)
 		{
 				return (char*)((unsigned)&(PROCESS_ENV_LIST[i].Val)) ;
 		}
@@ -100,7 +100,7 @@ byte ProcessEnv_Set(const char* szEnvVar, const char* szEnvValue)
 	int i ;
 	for(i = 0; i < NO_OF_ENVS; i++)
 	{
-		if(String_Compare(PROCESS_ENV_LIST[i].Var, szEnvVar) == 0)
+		if(strcmp(PROCESS_ENV_LIST[i].Var, szEnvVar) == 0)
 		{
 			strcpy(PROCESS_ENV_LIST[i].Val, szEnvValue) ;
 			return ProcessEnv_SUCCESS ;

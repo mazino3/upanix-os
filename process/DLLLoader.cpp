@@ -106,7 +106,7 @@ int DLLLoader_GetProcessSharedObjectListIndexByName(const char* szDLLName)
 
 	for(int i = 0; i < DLLLoader_iNoOfProcessSharedObjectList; i++)
 	{
-		if(String_Compare(pProcessSharedObjectList[i].szName, szDLLName) == 0)
+		if(strcmp(pProcessSharedObjectList[i].szName, szDLLName) == 0)
 			return i ;
 	}
 
@@ -119,7 +119,7 @@ ProcessSharedObjectList* DLLLoader_GetProcessSharedObjectListByName(const char* 
 
 	for(int i = 0; i < DLLLoader_iNoOfProcessSharedObjectList; i++)
 	{
-		if(String_Compare(pProcessSharedObjectList[i].szName, szDLLName) == 0)
+		if(strcmp(pProcessSharedObjectList[i].szName, szDLLName) == 0)
 			return &pProcessSharedObjectList[i] ;
 	}
 
@@ -143,7 +143,7 @@ int DLLLoader_GetRelativeDLLStartAddress(const char* szDLLName)
   int iRelDLLStartAddress = 0 ;
 	for(int i = 0; i < DLLLoader_iNoOfProcessSharedObjectList; i++)
 	{
-		if(String_Compare(pProcessSharedObjectList[i].szName, szDLLName) == 0)
+		if(strcmp(pProcessSharedObjectList[i].szName, szDLLName) == 0)
 			return iRelDLLStartAddress ;
 
 		iRelDLLStartAddress += (pProcessSharedObjectList[i].uiNoOfPages * PAGE_SIZE) ;

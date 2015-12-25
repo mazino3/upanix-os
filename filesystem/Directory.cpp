@@ -157,7 +157,7 @@ byte Directory_Create(ProcessAddressSpace* processAddressSpace, int iDriveID, by
 	}
 
 	//TODO: Required Only If "/" Dir Entry is Created
-	if(String_Compare((const char*)pCWD->pDirEntry->Name, FS_ROOT_DIR) == 0)
+	if(strcmp((const char*)pCWD->pDirEntry->Name, FS_ROOT_DIR) == 0)
 	{
 		MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)pCWD->pDirEntry, MemUtil_GetDS(), 
 							(unsigned)&(pDiskDrive->FSMountInfo.FSpwd.DirEntry),
@@ -225,7 +225,7 @@ byte Directory_Delete(ProcessAddressSpace* processAddressSpace, int iDriveID, by
 	}
 
 	//TODO: Required Only If "/" Dir Entry is Created
-	if(String_Compare((const char*)pCWD->pDirEntry->Name, FS_ROOT_DIR) == 0)
+	if(strcmp((const char*)pCWD->pDirEntry->Name, FS_ROOT_DIR) == 0)
 	{
 		MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)pCWD->pDirEntry, MemUtil_GetDS(), 
 							(unsigned)&(pDiskDrive->FSMountInfo.FSpwd.DirEntry),
@@ -245,7 +245,7 @@ byte Directory_GetDirEntryForCreateDelete(const ProcessAddressSpace* processAddr
 	GET_DRIVE_FOR_FS_OPS(iDriveID, Directory_FAILURE) ;
 	FileSystemMountInfo* pFSMountInfo = &pDiskDrive->FSMountInfo ;
 
-	if(strlen(szDirPath) == 0 ||	String_Compare(FS_ROOT_DIR, szDirPath) == 0)
+	if(strlen(szDirPath) == 0 ||	strcmp(FS_ROOT_DIR, szDirPath) == 0)
 		return Directory_ERR_EXISTS ;
 
 	if(szDirPath[0] == '/' || processAddressSpace->iDriveID != iDriveID)
@@ -283,8 +283,8 @@ byte Directory_GetDirEntryForCreateDelete(const ProcessAddressSpace* processAddr
 
 	strcpy(szDirName, tokenizer.szToken[i]) ;
 	
-	if(String_Compare(DIR_SPECIAL_CURRENT, szDirName) == 0 ||
-		String_Compare(DIR_SPECIAL_PARENT, szDirName) == 0)
+	if(strcmp(DIR_SPECIAL_CURRENT, szDirName) == 0 ||
+		strcmp(DIR_SPECIAL_PARENT, szDirName) == 0)
 		return Directory_ERR_SPECIAL_ENTRIES ;
 
 	return Directory_SUCCESS ;
@@ -426,7 +426,7 @@ byte Directory_FindDirectory(DiskDrive* pDiskDrive, const FileSystem_CWD* pCWD, 
 	byte bStatus ;
 	byte bSectorBuffer[512] ;
 
-	if(String_Compare(szDirName, DIR_SPECIAL_CURRENT) == 0)
+	if(strcmp(szDirName, DIR_SPECIAL_CURRENT) == 0)
 	{
 		*uiSectorNo = pCWD->uiSectorNo ;
 		*bSectorPos = pCWD->bSectorEntryPosition ;
@@ -439,9 +439,9 @@ byte Directory_FindDirectory(DiskDrive* pDiskDrive, const FileSystem_CWD* pCWD, 
 
 	FileSystem_DIR_Entry* pDirEntry = pCWD->pDirEntry ;
 
-	if(String_Compare(szDirName, DIR_SPECIAL_PARENT) == 0)
+	if(strcmp(szDirName, DIR_SPECIAL_PARENT) == 0)
 	{
-		if(String_Compare((const char*)pDirEntry->Name, FS_ROOT_DIR) == 0)
+		if(strcmp((const char*)pDirEntry->Name, FS_ROOT_DIR) == 0)
 		{
 			*uiSectorNo = pCWD->uiSectorNo ;
 			*bSectorPos = pCWD->bSectorEntryPosition ;
@@ -482,7 +482,7 @@ byte Directory_FindDirectory(DiskDrive* pDiskDrive, const FileSystem_CWD* pCWD, 
 		{
 			curDir = ((FileSystem_DIR_Entry*)bSectorBuffer) + bSectorPosIndex ;
 
-			if(String_Compare(szDirName, (const char*)curDir->Name) == 0 && !(curDir->usAttribute & ATTR_DELETED_DIR))
+			if(strcmp(szDirName, (const char*)curDir->Name) == 0 && !(curDir->usAttribute & ATTR_DELETED_DIR))
 			{
 				MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&bSectorBuffer, MemUtil_GetDS(), (unsigned)bDestSectorBuffer, 512) ;
 				*uiSectorNo = uiCurrentSectorID ;
@@ -902,7 +902,7 @@ byte Directory_GetDirEntryInfo(DiskDrive* pDiskDrive, FileSystem_CWD* pCWD, cons
 
 	if(szFileName[0] == '/')
 	{
-		if(String_Compare(FS_ROOT_DIR, szFileName) == 0)
+		if(strcmp(FS_ROOT_DIR, szFileName) == 0)
 		{
 			RETURN_IF_NOT(bStatus, pDiskDrive->xRead(bDirectoryBuffer, pFSMountInfo->FSpwd.uiSectorNo, 1), DeviceDrive_SUCCESS) ;
 			*uiSectorNo = pFSMountInfo->FSpwd.uiSectorNo ;
@@ -987,7 +987,7 @@ byte Directory_Change(const char* szFileName, int iDriveID, ProcessAddressSpace*
 	char szPWD[256] ;
 	char szTempPwd[256] = "" ;
 
-	if(String_Compare((const char*)dirFile->Name, FS_ROOT_DIR) == 0)
+	if(strcmp((const char*)dirFile->Name, FS_ROOT_DIR) == 0)
 		strcpy(szPWD, FS_ROOT_DIR) ;
 	else
 	{
@@ -1005,7 +1005,7 @@ byte Directory_Change(const char* szFileName, int iDriveID, ProcessAddressSpace*
 
 			dirFile = ((FileSystem_DIR_Entry*)bDirectoryBuffer) + bSecPos ;
 
-			if(String_Compare((const char*)dirFile->Name, FS_ROOT_DIR) == 0)
+			if(strcmp((const char*)dirFile->Name, FS_ROOT_DIR) == 0)
 				break ;
 
 			strcpy(szTempPwd, szPWD) ;
@@ -1101,7 +1101,7 @@ byte Directory_FindFullDirPath(DiskDrive* pDiskDrive, const FileSystem_DIR_Entry
 
 	while(true)
 	{
-		if(String_Compare((const char*)pParseDirEntry->Name, FS_ROOT_DIR) == 0)
+		if(strcmp((const char*)pParseDirEntry->Name, FS_ROOT_DIR) == 0)
 		{
 			strcpy(temp, szFullDirPath) ;
 			strcpy(szFullDirPath, FS_ROOT_DIR) ;

@@ -50,8 +50,8 @@ static byte SessionManager_GetUserEntry(const char* szUserName, int* iUserID, Us
 
 static byte SessionManager_ValidateUser(const char* szUserName, const char* szPassword, const UserTabEntry* pUserTabEntry)
 {
-	if(String_Compare(szUserName, pUserTabEntry->szUserName) == 0
-		&& String_Compare(szPassword, pUserTabEntry->szPassword) == 0)
+	if(strcmp(szUserName, pUserTabEntry->szUserName) == 0
+		&& strcmp(szPassword, pUserTabEntry->szPassword) == 0)
 		return true ;
 
 	return false ;

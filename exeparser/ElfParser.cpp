@@ -298,7 +298,7 @@ unsigned* ELFParser::GetAddressBySectionName(byte* bProcessImage, unsigned uiMin
 {
 	for(int i = 0; i < m_pHeader->e_shnum; i++)
 	{
-		if(String_Compare(ELFSectionHeader::GetSectionName(m_pSecHeaderStrTable, m_pSectionHeader[i].sh_name), szSectionName) == 0)
+		if(strcmp(ELFSectionHeader::GetSectionName(m_pSecHeaderStrTable, m_pSectionHeader[i].sh_name), szSectionName) == 0)
 		{
 			return (unsigned*)(bProcessImage + m_pSectionHeader[i].sh_addr - uiMinMemAddr) ;
 		}
@@ -311,7 +311,7 @@ bool ELFParser::GetNoOfGOTEntriesBySectionName(unsigned* uiNoOfGOTEntries, const
 {
 	for(int i = 0; i < m_pHeader->e_shnum; i++)
 	{
-		if(String_Compare(ELFSectionHeader::GetSectionName(m_pSecHeaderStrTable, m_pSectionHeader[i].sh_name), szSectionName) == 0)
+		if(strcmp(ELFSectionHeader::GetSectionName(m_pSecHeaderStrTable, m_pSectionHeader[i].sh_name), szSectionName) == 0)
 		{
 			*uiNoOfGOTEntries = (m_pSectionHeader[i].sh_size / m_pSectionHeader[i].sh_entsize) ;
 			return true ;

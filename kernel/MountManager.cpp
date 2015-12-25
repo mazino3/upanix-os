@@ -150,7 +150,7 @@ void MountManager_MountDrives()
 	char szHomeDriveName[33] ;
 	if(MountManager_GetHomeMountDrive(szHomeDriveName, 32))
 	{
-		if(String_Compare(MountManager_szRootDriveName, szHomeDriveName) != 0)
+		if(strcmp(MountManager_szRootDriveName, szHomeDriveName) != 0)
 		{
 			MountManager_MountDrive(szHomeDriveName) ;
 		}	

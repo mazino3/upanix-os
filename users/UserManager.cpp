@@ -170,7 +170,7 @@ static int UserManager_GetUserIDByName(const char* szUserName)
 	int i ;
 	for(i = 0; i < UserManager_pUsrTabHeader->iNoOfUsers; i++)
 	{
-		if(String_Compare(UserManager_UseTabList[i].szUserName, szUserName) == 0)
+		if(strcmp(UserManager_UseTabList[i].szUserName, szUserName) == 0)
 			return i ;
 	}
 
@@ -302,7 +302,7 @@ int UserManager_GetUserEntryByName(const char* szUserName, UserTabEntry** pUserT
 		if(j >= UserManager_pUsrTabHeader->iNoOfUsers)
 			break ;
 
-		if(String_Compare(UserManager_UseTabList[i].szUserName, szUserName) == 0)
+		if(strcmp(UserManager_UseTabList[i].szUserName, szUserName) == 0)
 		{
 			*pUserTabEntry = &UserManager_UseTabList[i] ;
 			return i ;

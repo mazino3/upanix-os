@@ -231,7 +231,7 @@ bool MOSMain_IsKernelDebugOn()
 {
 	const char* szVal = getenv("MOS_KDEBUG") ;
 	if(szVal != NULL)
-		if(String_Compare(szVal, "1") == 0)
+		if(strcmp(szVal, "1") == 0)
 			return true ;
 
 	return false ;

@@ -286,9 +286,9 @@ byte ProcessLoader_LoadELFExe(const char* szProcessName, ProcessAddressSpace* pP
 						int iStrIndex = pELFDynSymTable[ iSymIndex ].st_name ;
 						char* szSymName = (char*)&pDynStrTable[ iStrIndex ] ;
 						
-						if(String_Compare(szSymName, INIT_NAME) == 0)
+						if(strcmp(szSymName, INIT_NAME) == 0)
 							uiInitRelocAddress = pELFDynRelTable[i].r_offset ;
-						else if(String_Compare(szSymName, TERM_NAME) == 0)
+						else if(strcmp(szSymName, TERM_NAME) == 0)
 							uiTermRelocAddress = pELFDynRelTable[i].r_offset ;
 					}
 				}

@@ -105,7 +105,7 @@ FileSystem_SpikeFSBootBlockRead()
 	if(FSBootBlock->BPB_VolID != 0x01)
 	   KC::MDisplay().Message("S 22\n", KC::MDisplay().WHITE_ON_BLACK()) ;
 		
-	if(String_Compare(FSBootBlock->BPB_VolLab, "No Name   "))
+	if(strcmp(FSBootBlock->BPB_VolLab, "No Name   "))
 	   KC::MDisplay().Message("S 23\n", KC::MDisplay().WHITE_ON_BLACK()) ;
 }
 

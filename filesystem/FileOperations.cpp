@@ -112,7 +112,7 @@ static void FileOperations_ParseFilePathWithDrive(const char* szFileNameWithDriv
 
 	strcpy(szFileName, szFileNameWithDrive + i + 1) ;
 
-	if(String_Compare(szDriveName, ROOT_DRIVE_SYN) == 0)
+	if(strcmp(szDriveName, ROOT_DRIVE_SYN) == 0)
 	{
 		*pDriveID = ROOT_DRIVE_ID ;
 	}
