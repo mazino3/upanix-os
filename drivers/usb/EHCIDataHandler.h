@@ -22,7 +22,6 @@
 
 void EHCIDataHandler_CleanAysncQueueHead(EHCIQueueHead*  pQH) ;
 void EHCIDataHandler_ReleaseAsyncQueueHead(EHCIQueueHead* pQH) ;
-void EHCIDataHandler_CleanTransaction(EHCITransaction* pTransaction) ;
 EHCIQueueHead* EHCIDataHandler_CreateAsyncQueueHead() ;
 EHCIQTransferDesc* EHCIDataHandler_CreateAsyncQTransferDesc() ;
 

@@ -96,14 +96,6 @@ typedef struct
 
 typedef struct
 {
-	EHCIQueueHead* pQH ;
-	EHCIQTransferDesc* pTDStart ;
-
-  upan::list<unsigned> dStorageList;
-} EHCITransaction ;
-
-typedef struct
-{
 	PCIEntry* pPCIEntry ;
 	bool bSetupSuccess ;
 	EHCICapRegisters* pCapRegs ;

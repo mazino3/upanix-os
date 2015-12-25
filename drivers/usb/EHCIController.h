@@ -19,7 +19,9 @@
 #define _EHCI_CONTROLLER_H_
 
 # include <Global.h>
+# include <list.h>
 # include <USBController.h>
+# include <EHCIStructures.h>
 
 #define EHCIController_SUCCESS		0
 #define EHCIController_ERR_CONFIG	1
@@ -30,6 +32,19 @@
 #define EHCI_MAX_BYTES_PER_TD 4096
 
 #define QH_TYPE_CONTROL 1
+
+class EHCITransaction
+{
+  public:
+    EHCITransaction(EHCIQueueHead* qh, EHCIQTransferDesc* tdStart);
+    bool PollWait();
+    void Clear();
+
+  private:
+    EHCIQueueHead* _qh;
+    EHCIQTransferDesc* _tdStart;
+    upan::list<unsigned> _dStorageList;
+};
 
 byte EHCIController_Initialize() ;
 void EHCIController_ProbeDevice() ;

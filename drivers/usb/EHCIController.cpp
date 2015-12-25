@@ -28,7 +28,6 @@
 
 # include <USBStructures.h>
 # include <USBDataHandler.h>
-# include <EHCIStructures.h>
 # include <EHCIDataHandler.h>
 # include <EHCIController.h>
 
@@ -84,32 +83,43 @@ static bool EHCIController_PollWait(unsigned* pValue, int iBitPos, unsigned valu
 	return false ;
 }
 
-static bool EHCIController_PollWaitTransaction(EHCITransaction* pTransaction)
+EHCITransaction::EHCITransaction(EHCIQueueHead* qh, EHCIQTransferDesc* tdStart)
+  : _qh(qh), _tdStart(tdStart)
 {
+	EHCIQTransferDesc* tdCur = _tdStart;
+
+	for(; (unsigned)tdCur != 1; tdCur = (EHCIQTransferDesc*)(KERNEL_VIRTUAL_ADDRESS(tdCur->uiNextpTDPointer)))
+	{
+    _dStorageList.push_back(KERNEL_VIRTUAL_ADDRESS(tdCur->uiBufferPointer[0]));
+    _dStorageList.push_back((unsigned)tdCur);
+	}
+
+	_qh->uiNextpTDPointer = KERNEL_REAL_ADDRESS(_tdStart);
+}
+
+bool EHCITransaction::PollWait()
+{
+	const unsigned uiSleepTime = 10 ; // 10 ms
 	int iMaxLimit = 10000 ; // 10 Sec
-	unsigned uiSleepTime = 10 ; // 10 ms
 
-	EHCIQueueHead* pQH = pTransaction->pQH ;
-	EHCIQTransferDesc* pTDStart = pTransaction->pTDStart ;
-
-	EHCIQTransferDesc* pTDCur ;
+	EHCIQTransferDesc* tdCur;
 
 	while(iMaxLimit > 10)
 	{
 		int poll = 10000;
 		while(poll > 0)
 		{
-			if(pQH->uiNextpTDPointer == 1)
+			if(_qh->uiNextpTDPointer == 1)
 			{
-				for(pTDCur = pTDStart; (unsigned)pTDCur != 1; )
+				for(tdCur = _tdStart; (unsigned)tdCur != 1; )
 				{
-					if((pTDCur->uipTDToken & 0xFE))
+					if((tdCur->uipTDToken & 0xFE))
 						break ;
 
-					pTDCur = (EHCIQTransferDesc*)(KERNEL_VIRTUAL_ADDRESS(pTDCur->uiNextpTDPointer)) ;
+				  tdCur = (EHCIQTransferDesc*)(KERNEL_VIRTUAL_ADDRESS(tdCur->uiNextpTDPointer)) ;
 				}
 
-				if((unsigned)pTDCur == 1)
+				if((unsigned)tdCur == 1)
 					return true ;
 			}
 			--poll ;
@@ -122,24 +132,16 @@ static bool EHCIController_PollWaitTransaction(EHCITransaction* pTransaction)
 	return false ;
 }
 
-static void EHCIController_ScheduleTransaction(EHCITransaction* pTransaction, EHCIQueueHead* pQH, EHCIQTransferDesc* pTDStart)
+void EHCITransaction::Clear()
 {
-	pTransaction->pQH = pQH ;
-	pTransaction->pTDStart = pTDStart ;
-
-  pTransaction->dStorageList.clear();
-
-	EHCIQTransferDesc* pTDCur = pTDStart ;
-	unsigned uiNextAddress ;
-
-	for(; (unsigned)pTDCur != 1; pTDCur = (EHCIQTransferDesc*)(uiNextAddress))
+	EHCIDataHandler_CleanAysncQueueHead(_qh);
+	
+  for(auto i : _dStorageList)
 	{
-    pTransaction->dStorageList.push_back(KERNEL_VIRTUAL_ADDRESS(pTDCur->uiBufferPointer[0]));
-    pTransaction->dStorageList.push_back((unsigned)pTDCur);
-		uiNextAddress = KERNEL_VIRTUAL_ADDRESS(pTDCur->uiNextpTDPointer) ;
+		if(i != NULL)
+			DMM_DeAllocateForKernel(i);
 	}
-
-	pQH->uiNextpTDPointer = KERNEL_REAL_ADDRESS(pTDStart) ;
+  _dStorageList.clear();
 }
 
 static void EHCIController_AddAsyncQueueHead(EHCIController* pController, EHCIQueueHead* pQH)
@@ -629,19 +631,18 @@ static byte EHCIController_SetAddress(EHCIDevice* pDevice, int devAddr)
 	pTD1->uiAltpTDPointer = 1 ;
 	pTD1->uipTDToken = (1 << 31) | (3 << 10) | (1 << 8) | (1 << 7) ;
 
-	EHCITransaction aTransaction ;
-	EHCIController_ScheduleTransaction(&aTransaction, pControlQH, pTDStart) ;
+	EHCITransaction aTransaction(pControlQH, pTDStart);
 	
-	if(!EHCIController_PollWaitTransaction(&aTransaction))
+	if(!aTransaction.PollWait())
 	{
 		printf("\n Transaction Failed: ") ;
 		EHCIController_DisplayTransactionState(pControlQH, pTDStart) ;
 		EHCIController_DisplayStats(pController) ;
-		EHCIDataHandler_CleanTransaction(&aTransaction) ;
+    aTransaction.Clear();
 		return EHCIController_FAILURE ;
 	}
 
-	EHCIDataHandler_CleanTransaction(&aTransaction) ;
+  aTransaction.Clear();
 
 	pControlQH->uiEndPointCap_Part1 |= (devAddr & 0x7F) ;
 
@@ -704,21 +705,20 @@ static byte EHCIController_GetDescriptor(EHCIDevice* pDevice, unsigned short usD
 	pTD2->uiAltpTDPointer = 1 ;
 	pTD2->uipTDToken = (3 << 10) | (1 << 7) ;
 
-	EHCITransaction aTransaction ;
-	EHCIController_ScheduleTransaction(&aTransaction, pControlQH, pTDStart) ;
+	EHCITransaction aTransaction(pControlQH, pTDStart);
 
-	if(!EHCIController_PollWaitTransaction(&aTransaction)) 
+	if(!aTransaction.PollWait())
 	{
 		printf("\n Transaction Failed: ") ;
 		EHCIController_DisplayTransactionState(pControlQH, pTDStart) ;
 		EHCIController_DisplayStats(pController) ;
-		EHCIDataHandler_CleanTransaction(&aTransaction) ;
+    aTransaction.Clear();
 		return EHCIController_FAILURE ;
 	}
 	
 	MemUtil_CopyMemory(MemUtil_GetDS(), uiDataBuffer, MemUtil_GetDS(), (unsigned)pDestDesc, iLen) ;
 
-	EHCIDataHandler_CleanTransaction(&aTransaction) ;
+  aTransaction.Clear();
 
 	return EHCIController_SUCCESS ;
 }
@@ -784,21 +784,20 @@ static byte EHCIController_GetConfigValue(EHCIDevice* pDevice, char* bConfigValu
 
 	unsigned uiDataBuffer = KERNEL_VIRTUAL_ADDRESS(pTD1->uiBufferPointer[ 0 ]) ;
 
-	EHCITransaction aTransaction ;
-	EHCIController_ScheduleTransaction(&aTransaction, pControlQH, pTDStart) ;
+	EHCITransaction aTransaction(pControlQH, pTDStart);
 
-	if(!EHCIController_PollWaitTransaction(&aTransaction))
+	if(!aTransaction.PollWait())
 	{
 		printf("\n Transaction Failed: ") ;
 		EHCIController_DisplayTransactionState(pControlQH, pTDStart) ;
 		EHCIController_DisplayStats(pController) ;
-		EHCIDataHandler_CleanTransaction(&aTransaction) ;
+    aTransaction.Clear();
 		return EHCIController_FAILURE ;
 	}
 	
 	*bConfigValue = *((char*)(uiDataBuffer)) ;
 		
-	EHCIDataHandler_CleanTransaction(&aTransaction) ;
+  aTransaction.Clear();
 
 	return EHCIController_SUCCESS ;
 }
@@ -833,19 +832,18 @@ static byte EHCIController_SetConfiguration(EHCIDevice* pDevice, char bConfigVal
 	pTD1->uiAltpTDPointer = 1 ;
 	pTD1->uipTDToken = (1 << 31) | (3 << 10) | (1 << 8) | (1 << 7) ;
 
-	EHCITransaction aTransaction ;
-	EHCIController_ScheduleTransaction(&aTransaction, pControlQH, pTDStart) ;
+	EHCITransaction aTransaction(pControlQH, pTDStart);
 
-	if(!EHCIController_PollWaitTransaction(&aTransaction)) 
+	if(!aTransaction.PollWait())
 	{
 		printf("\n Transaction Failed: ") ;
 		EHCIController_DisplayTransactionState(pControlQH, pTDStart) ;
 		EHCIController_DisplayStats(pController) ;
-		EHCIDataHandler_CleanTransaction(&aTransaction) ;
+    aTransaction.Clear();
 		return EHCIController_FAILURE ;
 	}
 	
-	EHCIDataHandler_CleanTransaction(&aTransaction) ;
+  aTransaction.Clear();
 
 	return EHCIController_SUCCESS ;
 }
@@ -1121,21 +1119,20 @@ static bool EHCIController_GetMaxLun(USBDevice* pUSBDevice, byte* bLUN)
 	pTD2->uiAltpTDPointer = 1 ;
 	pTD2->uipTDToken = (3 << 10) | (1 << 7) ;
 
-	EHCITransaction aTransaction ;
-	EHCIController_ScheduleTransaction(&aTransaction, pControlQH, pTDStart) ;
+	EHCITransaction aTransaction(pControlQH, pTDStart);
 
-	if(!EHCIController_PollWaitTransaction(&aTransaction)) 
+	if(!aTransaction.PollWait())
 	{
 		printf("\n Transaction Failed: ") ;
 		EHCIController_DisplayTransactionState(pControlQH, pTDStart) ;
 		EHCIController_DisplayStats(pController) ;
-		EHCIDataHandler_CleanTransaction(&aTransaction) ;
+    aTransaction.Clear();
 		return false ;
 	}
 	
 	*bLUN = *((char*)uiDataBuffer) ;
 
-	EHCIDataHandler_CleanTransaction(&aTransaction) ;
+  aTransaction.Clear();
 
 	return true ;
 }
@@ -1171,19 +1168,18 @@ static bool EHCIController_CommandReset(USBDevice* pUSBDevice)
 	pTD1->uiAltpTDPointer = 1 ;
 	pTD1->uipTDToken = (1 << 31) | (3 << 10) | (1 << 8) | (1 << 7) ;
 
-	EHCITransaction aTransaction ;
-	EHCIController_ScheduleTransaction(&aTransaction, pControlQH, pTDStart) ;
+	EHCITransaction aTransaction(pControlQH, pTDStart);
 	
-	if(!EHCIController_PollWaitTransaction(&aTransaction))
+	if(!aTransaction.PollWait())
 	{
 		printf("\n Transaction Failed: ") ;
 		EHCIController_DisplayTransactionState(pControlQH, pTDStart) ;
 		EHCIController_DisplayStats(pController) ;
-		EHCIDataHandler_CleanTransaction(&aTransaction) ;
+    aTransaction.Clear();
 		return false ;
 	}
 
-	EHCIDataHandler_CleanTransaction(&aTransaction) ;
+  aTransaction.Clear();
 
 	return true ;
 }
@@ -1221,19 +1217,18 @@ static bool EHCIController_ClearHaltEndPoint(USBulkDisk* pDisk, bool bIn)
 	pTD1->uiAltpTDPointer = 1 ;
 	pTD1->uipTDToken = (1 << 31) | (3 << 10) | (1 << 8) | (1 << 7) ;
 
-	EHCITransaction aTransaction ;
-	EHCIController_ScheduleTransaction(&aTransaction, pControlQH, pTDStart) ;
+	EHCITransaction aTransaction(pControlQH, pTDStart);
 	
-	if(!EHCIController_PollWaitTransaction(&aTransaction))
+	if(!aTransaction.PollWait())
 	{
 		printf("\n Transaction Failed: ") ;
 		EHCIController_DisplayTransactionState(pControlQH, pTDStart) ;
 		EHCIController_DisplayStats(pController) ;
-		EHCIDataHandler_CleanTransaction(&aTransaction) ;
+    aTransaction.Clear();
 		return false ;
 	}
 
-	EHCIDataHandler_CleanTransaction(&aTransaction) ;
+  aTransaction.Clear();
 
 	return true ;
 }
@@ -1317,10 +1312,9 @@ static bool EHCIController_BulkInTransfer(USBulkDisk* pDisk, void* pDataBuf, uns
 
 	EHCIController_ppBulkReadTDs[ iIndex - 1 ]->uiNextpTDPointer = 1 ;
 
-	EHCITransaction aTransaction ;
-	EHCIController_ScheduleTransaction(&aTransaction, pDevice->pBulkInEndPt, EHCIController_ppBulkReadTDs[ 0 ]) ;
+	EHCITransaction aTransaction(pDevice->pBulkInEndPt, EHCIController_ppBulkReadTDs[ 0 ]);
 
-	if(!EHCIController_PollWaitTransaction(&aTransaction))
+	if(!aTransaction.PollWait())
 	{
 		printf("\n Bulk Read Transaction Failed: ") ;
 		EHCIController_DisplayTransactionState(pDevice->pBulkInEndPt, EHCIController_ppBulkReadTDs[0]) ;
@@ -1416,10 +1410,9 @@ static bool EHCIController_BulkOutTransfer(USBulkDisk* pDisk, void* pDataBuf, un
 
 	EHCIController_ppBulkWriteTDs[ iIndex - 1 ]->uiNextpTDPointer = 1 ;
 
-	EHCITransaction aTransaction ;
-	EHCIController_ScheduleTransaction(&aTransaction, pDevice->pBulkOutEndPt, EHCIController_ppBulkWriteTDs[ 0 ]) ;
+	EHCITransaction aTransaction(pDevice->pBulkOutEndPt, EHCIController_ppBulkWriteTDs[ 0 ]);
 
-	if(!EHCIController_PollWaitTransaction(&aTransaction))
+	if(!aTransaction.PollWait())
 	{
 		printf("\n Bulk Write Transaction Failed: ") ;
 		EHCIController_DisplayTransactionState(pDevice->pBulkOutEndPt, EHCIController_ppBulkWriteTDs[0]) ;

@@ -58,16 +58,4 @@ void EHCIDataHandler_ReleaseAsyncQueueHead(EHCIQueueHead* pQH)
 	DMM_DeAllocateForKernel((unsigned)pQH) ;
 }
 
-void EHCIDataHandler_CleanTransaction(EHCITransaction* pTransaction)
-{
-	EHCIDataHandler_CleanAysncQueueHead(pTransaction->pQH) ;
-	
-  for(auto i : pTransaction->dStorageList)
-	{
-		if(i != NULL)
-			DMM_DeAllocateForKernel(i);
-	}
-  pTransaction->dStorageList.clear();
-}
-
 
