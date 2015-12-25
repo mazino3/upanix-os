@@ -238,7 +238,7 @@ void ATAAMD_InitController(const PCIEntry* pPCIEntry, ATAController* pController
 	if(pAMDIDE->usFlags & AMD_SATA)
 	{
 		KC::MDisplay().Message("\n\tnVIDIA Serial ATA Controller Detected", Display::WHITE_ON_BLACK()) ;
-		String_Copy(pController->szName, "nVIDIA Serial ATA Controller") ;
+		strcpy(pController->szName, "nVIDIA Serial ATA Controller") ;
 
 		DMM_DeAllocateForKernel((unsigned)pController->pPort[1]) ;
 		DMM_DeAllocateForKernel((unsigned)pController->pPort[3]) ;
@@ -347,6 +347,6 @@ void ATAAMD_InitController(const PCIEntry* pPCIEntry, ATAController* pController
 		pPort->pVendorSpecInfo = pAMDIDEInfo ;
 	}
 
-	String_Copy(pController->szName, "AMD/nVIDIA ATA Controller") ;
+	strcpy(pController->szName, "AMD/nVIDIA ATA Controller") ;
 }
 

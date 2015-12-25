@@ -281,7 +281,7 @@ byte Directory_GetDirEntryForCreateDelete(const ProcessAddressSpace* processAddr
 		CWD.bSectorEntryPosition = *bSectorPos ;
 	}
 
-	String_Copy(szDirName, tokenizer.szToken[i]) ;
+	strcpy(szDirName, tokenizer.szToken[i]) ;
 	
 	if(String_Compare(DIR_SPECIAL_CURRENT, szDirName) == 0 ||
 		String_Compare(DIR_SPECIAL_PARENT, szDirName) == 0)
@@ -401,7 +401,7 @@ byte Directory_GetDirectoryContent(const char* szFileName, ProcessAddressSpace* 
 
 void Directory_PopulateDirEntry(FileSystem_DIR_Entry* dirEntry, char* szDirName, unsigned short usDirAttribute, int iUserID, unsigned uiParentSecNo, byte bParentSecPos)
 {
-	String_Copy((char*)dirEntry->Name, szDirName) ;
+	strcpy((char*)dirEntry->Name, szDirName) ;
 	
 	dirEntry->usAttribute = usDirAttribute ;
 	
@@ -988,12 +988,12 @@ byte Directory_Change(const char* szFileName, int iDriveID, ProcessAddressSpace*
 	char szTempPwd[256] = "" ;
 
 	if(String_Compare((const char*)dirFile->Name, FS_ROOT_DIR) == 0)
-		String_Copy(szPWD, FS_ROOT_DIR) ;
+		strcpy(szPWD, FS_ROOT_DIR) ;
 	else
 	{
 		while(true)
 		{	
-			String_Copy(szPWD, FS_ROOT_DIR) ;
+			strcpy(szPWD, FS_ROOT_DIR) ;
 
 			String_CanCat(szPWD, (const char*)dirFile->Name) ;
 			String_CanCat(szPWD, szTempPwd) ;
@@ -1008,12 +1008,12 @@ byte Directory_Change(const char* szFileName, int iDriveID, ProcessAddressSpace*
 			if(String_Compare((const char*)dirFile->Name, FS_ROOT_DIR) == 0)
 				break ;
 
-			String_Copy(szTempPwd, szPWD) ;
+			strcpy(szTempPwd, szPWD) ;
 		}
 	}
 
-	String_Copy(szTempPwd, szPWD) ;
-	String_Copy(szPWD, pDiskDrive->DriveName().c_str());
+	strcpy(szTempPwd, szPWD) ;
+	strcpy(szPWD, pDiskDrive->DriveName().c_str());
 	String_CanCat(szPWD, "@") ;
 	String_CanCat(szPWD, szTempPwd) ;
 
@@ -1046,7 +1046,7 @@ byte Directory_PresentWorkingDirectory(ProcessAddressSpace* processAddressSpace,
 	if(*uiReturnDirPathAddress == NULL)
 		return Directory_FAILURE ;
 
-	String_Copy(pAddress, szPWD) ;
+	strcpy(pAddress, szPWD) ;
 	return Directory_SUCCESS ;
 }
 
@@ -1095,7 +1095,7 @@ byte Directory_FindFullDirPath(DiskDrive* pDiskDrive, const FileSystem_DIR_Entry
 
 	const FileSystem_DIR_Entry* pParseDirEntry = pDirEntry ;
 
-	String_Copy(szFullDirPath, "") ;
+	strcpy(szFullDirPath, "") ;
 
 	byte bFirst = true ;
 
@@ -1103,16 +1103,16 @@ byte Directory_FindFullDirPath(DiskDrive* pDiskDrive, const FileSystem_DIR_Entry
 	{
 		if(String_Compare((const char*)pParseDirEntry->Name, FS_ROOT_DIR) == 0)
 		{
-			String_Copy(temp, szFullDirPath) ;
-			String_Copy(szFullDirPath, FS_ROOT_DIR) ;
+			strcpy(temp, szFullDirPath) ;
+			strcpy(szFullDirPath, FS_ROOT_DIR) ;
 			String_CanCat(szFullDirPath, temp) ;
 			
 			return Directory_SUCCESS ;
 		}
 		else
 		{
-			String_Copy(temp, szFullDirPath) ;
-			String_Copy(szFullDirPath, (const char*)pParseDirEntry->Name) ;
+			strcpy(temp, szFullDirPath) ;
+			strcpy(szFullDirPath, (const char*)pParseDirEntry->Name) ;
 			
 			if(!bFirst)
 			{

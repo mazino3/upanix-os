@@ -18,17 +18,6 @@
 # include <StringUtil.h>
 # include <GenericUtil.h>
 
-unsigned String_Copy(char* dest, const char* src)
-{
-	unsigned i ;
-
-	for(i = 0; src[i] != '\0'; i++)
-		dest[i] = src[i] ;
-	dest[i] = '\0' ;
-
-	return i ;
-}
-
 unsigned String_CanCat(char* dest, const char* src)
 {
 	unsigned i, j ;

@@ -244,7 +244,7 @@ void ATAIntel_InitController(const PCIEntry* pPCIEntry, ATAController* pControll
 	// Check for SATA Controller
 	if(pPCIEntry->usDeviceID == INTEL_SATA_DEVICE_ID)
 	{
-		String_Copy(pController->szName, "Intel Serial ATA Controller") ;
+		strcpy(pController->szName, "Intel Serial ATA Controller") ;
 		
 		DMM_DeAllocateForKernel((unsigned)pController->pPort[1]) ;
 		DMM_DeAllocateForKernel((unsigned)pController->pPort[3]) ;
@@ -371,6 +371,6 @@ void ATAIntel_InitController(const PCIEntry* pPCIEntry, ATAController* pControll
 		pPort->pVendorSpecInfo = pIntelIDEInfo ;
 	}
 
-	String_Copy(pController->szName, "Intel ") ;
+	strcpy(pController->szName, "Intel ") ;
 	String_CanCat(pController->szName, pIntelIDE->szName) ;
 }

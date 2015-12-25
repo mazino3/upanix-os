@@ -856,8 +856,8 @@ void ConsoleCommands_LoadExe()
 	byte bStatus ;
 	int iChildProcessID ;
 	char a1[14], a2[40] ;
-	String_Copy(a1, "100") ;
-	String_Copy(a2, "200") ;
+	strcpy(a1, "100") ;
+	strcpy(a2, "200") ;
 	char* argv[2] ;
 	argv[0] = (char*)&a1 ;
 	argv[1] = (char*)&a2 ;

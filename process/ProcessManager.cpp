@@ -717,7 +717,7 @@ byte ProcessManager::CreateKernelImage(const unsigned uiTaskAddress, int iParent
 		szKernelProcName = DEF_KERNEL_PROC_NAME ;
 
 	newPAS.pname = (char*)DMM_AllocateForKernel(String_Length(szKernelProcName) + 1);
-	String_Copy(newPAS.pname, szKernelProcName) ;
+	strcpy(newPAS.pname, szKernelProcName) ;
 
 	ProcessStateInfo* pStateInfo = (ProcessStateInfo*)DMM_AllocateForKernel(sizeof(ProcessStateInfo)) ;
 	
@@ -824,7 +824,7 @@ byte ProcessManager::Create(const char* szProcessName, int iParentProcessID, byt
 	DisplayManager::SetupPageTableForDisplayBuffer(iProcessGroupID, uiPDEAddress) ;
 
 	newPAS.pname = (char*)DMM_AllocateForKernel(String_Length(szProcessName) + 1) ;
-	String_Copy(newPAS.pname, szProcessName) ;
+	strcpy(newPAS.pname, szProcessName) ;
 
 	// Init Process State Info
 	ProcessStateInfo* pStateInfo = (ProcessStateInfo*)DMM_AllocateForKernel(sizeof(ProcessStateInfo)) ;
@@ -881,7 +881,7 @@ PS* ProcessManager::GetProcListASync()
 			pname = (char*)((unsigned)pPS[i].pname + PROCESS_BASE - GLOBAL_DATA_SEGMENT_BASE) ;
 		}
 		
-		String_Copy(pname, p.pname) ;
+		strcpy(pname, p.pname) ;
 	}
   return pProcList;
 }

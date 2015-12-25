@@ -75,7 +75,7 @@ static byte DynamicLinkLoader_LoadDLL(const char* szJustDLLName, ProcessAddressS
 			return DynamicLinkLoader_ERR_LIB_EFOUND ;
 		}
 
-		String_Copy(szDLLFullName, szLibPath) ;
+		strcpy(szDLLFullName, szLibPath) ;
 		String_CanCat(szDLLFullName, szJustDLLName) ;
 		
 		byte bStatus = DLLLoader_LoadELFDLL(szDLLFullName, szJustDLLName, processAddressSpace) ;
@@ -314,7 +314,7 @@ byte DynamicLinkLoader_GetSymbolOffset(const char* szJustDLLName, const char* sz
 		if(!GenericUtil_GetFullFilePathFromEnv(LD_LIBRARY_PATH_ENV, LIB_PATH, szJustDLLName, szLibPath))
 			return DynamicLinkLoader_ERR_LIB_EFOUND ;
 
-		String_Copy(szDLLFullName, szLibPath) ;
+		strcpy(szDLLFullName, szLibPath) ;
 		String_CanCat(szDLLFullName, szJustDLLName) ;
 
 		pELFParser = new ELFParser(szDLLFullName) ;

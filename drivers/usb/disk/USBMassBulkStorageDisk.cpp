@@ -697,7 +697,7 @@ byte USBMassBulkStorageDisk_Initialize()
 	if( (USB_MBS_DriverId = USBController_RegisterDriver(pDriver)) < 0 )
 		return USBMassBulkStorageDisk_FAILURE ;
 
-	String_Copy(pDriver->szName, "USB Mass Storage Disk") ;
+	strcpy(pDriver->szName, "USB Mass Storage Disk") ;
 	pDriver->AddDevice = USBMassBulkStorageDisk_Add ;
 	pDriver->RemoveDevice = USBMassBulkStorageDisk_Remove ;
 

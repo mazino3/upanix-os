@@ -41,7 +41,7 @@ byte ProcessEnv_Initialize(__volatile__ unsigned uiPDEAddress, __volatile__ int 
 		pEnv[i] = '\0' ;
 
 	//TODO: To be set to Home Directory Env Var
-	String_Copy(&pEnv[0], FS_ROOT_DIR) ;
+	strcpy(&pEnv[0], FS_ROOT_DIR) ;
 
 	unsigned uiPDEIndex = ((PROCESS_ENV_PAGE>> 22) & 0x3FF) ;
 	unsigned uiPTEIndex = ((PROCESS_ENV_PAGE>> 12) & 0x3FF) ;
@@ -102,7 +102,7 @@ byte ProcessEnv_Set(const char* szEnvVar, const char* szEnvValue)
 	{
 		if(String_Compare(PROCESS_ENV_LIST[i].Var, szEnvVar) == 0)
 		{
-			String_Copy(PROCESS_ENV_LIST[i].Val, szEnvValue) ;
+			strcpy(PROCESS_ENV_LIST[i].Val, szEnvValue) ;
 			return ProcessEnv_SUCCESS ;
 		}
 	}
@@ -111,8 +111,8 @@ byte ProcessEnv_Set(const char* szEnvVar, const char* szEnvValue)
 	{
 		if(PROCESS_ENV_LIST[i].Val[0] == '\0')
 		{
-			String_Copy(PROCESS_ENV_LIST[i].Var, szEnvVar) ;
-			String_Copy(PROCESS_ENV_LIST[i].Val, szEnvValue) ;
+			strcpy(PROCESS_ENV_LIST[i].Var, szEnvVar) ;
+			strcpy(PROCESS_ENV_LIST[i].Val, szEnvValue) ;
 			return ProcessEnv_SUCCESS ;
 		}
 	}

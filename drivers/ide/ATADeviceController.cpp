@@ -139,7 +139,7 @@ static ATAController* ATADeviceController_AllocateController(unsigned uiChannels
 
 	pController->uiChannels = uiChannels ;
 	pController->uiPortsPerChannel = uiPortsPerChannel ;
-	String_Copy(pController->szName, "ATA Controller") ;
+	strcpy(pController->szName, "ATA Controller") ;
 	
 	return pController ;
 }
@@ -345,7 +345,7 @@ static byte ATADeviceController_CheckControllerMode(const PCIEntry* pPCIEntry,
 	KC::MDisplay().Address(" IRQ - ", bSecondaryIRQ) ;
 
 	*pController = ATADeviceController_AllocateController(2, 2) ;
-	String_Copy((*pController)->szName, "PCI ATA Controller") ;
+	strcpy((*pController)->szName, "PCI ATA Controller") ;
 
 	unsigned i ;
 	for(i = 0; i < (*pController)->uiChannels * (*pController)->uiPortsPerChannel; i++)

@@ -95,9 +95,9 @@ static void UserManager_InitializeDefaultUserTable()
 	for(i = 0; i < SYS_MAX_USERS; i++)
 		((int*)&UserManager_UseTabList[i])[0] = -1 ;
 
-	String_Copy(UserManager_UseTabList[0].szUserName, "root") ;
-	String_Copy(UserManager_UseTabList[0].szPassword, "root123") ;
-	String_Copy(UserManager_UseTabList[0].szHomeDirPath, FS_ROOT_DIR) ;
+	strcpy(UserManager_UseTabList[0].szUserName, "root") ;
+	strcpy(UserManager_UseTabList[0].szPassword, "root123") ;
+	strcpy(UserManager_UseTabList[0].szHomeDirPath, FS_ROOT_DIR) ;
 	UserManager_UseTabList[0].bType = SUPER_USER ;
 }
 
@@ -186,7 +186,7 @@ byte UserManager_Initialize()
 	UserManager_pUsrTabHeader = (UserTabHeader*)(MEM_USR_LIST_START) ;
 	UserManager_UseTabList = (UserTabEntry*)(MEM_USR_LIST_START + sizeof(UserTabHeader)) ;
 
-	String_Copy(USER_LIST_FILE, OSIN_PATH) ;
+	strcpy(USER_LIST_FILE, OSIN_PATH) ;
 	String_CanCat(USER_LIST_FILE, __USER_LIST_FILE) ;
 
 	byte bStatus ;
@@ -258,9 +258,9 @@ byte UserManager_Create(const char* szUserName, const char* szPassword, const ch
 	if(FileOperations_Exists(szHomeDirPath, ATTR_TYPE_DIRECTORY) != FileOperations_SUCCESS)
 		return UserManager_ERR_INVALID_HOME_DIR ;
 
-	String_Copy(pUserTabEntry->szUserName, szUserName) ;
-	String_Copy(pUserTabEntry->szPassword, szPassword) ;
-	String_Copy(pUserTabEntry->szHomeDirPath, szHomeDirPath) ;
+	strcpy(pUserTabEntry->szUserName, szUserName) ;
+	strcpy(pUserTabEntry->szPassword, szPassword) ;
+	strcpy(pUserTabEntry->szHomeDirPath, szHomeDirPath) ;
 	pUserTabEntry->bType = bType ;
 
 	UserManager_pUsrTabHeader->iNoOfUsers++ ;

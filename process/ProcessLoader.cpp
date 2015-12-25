@@ -401,7 +401,7 @@ void ProcessLoader_PushProgramInitStackData(unsigned uiPDEAddr, unsigned uiNoOfP
 	{
 		((unsigned*)(uiPageAddress))[iStackIndex + i] = ((unsigned*)(uiPageAddress))[iStackIndex - 1] + uiArgumentAddressListSize + uiArgumentListSize ;
 
-		String_Copy((char*)&((unsigned*)(uiPageAddress))[iStackIndex + iNumberOfParameters] + uiArgumentListSize,	szArgumentList[i]) ;
+		strcpy((char*)&((unsigned*)(uiPageAddress))[iStackIndex + iNumberOfParameters] + uiArgumentListSize,	szArgumentList[i]) ;
 
 		uiArgumentListSize += (String_Length(szArgumentList[i]) + 1) ;
 	}

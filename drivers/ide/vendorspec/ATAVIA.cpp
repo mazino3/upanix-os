@@ -191,7 +191,7 @@ void ATAVIA_InitController(const PCIEntry* pPCIEntry, ATAController* pController
 	// Check for VIA SATA
 	if(pPCIEntry->usVendorID == VIA_VENDOR_ID && pPCIEntry->usDeviceID == 0x3149)
 	{
-		String_Copy(pController->szName, "VIA Serial ATA Controller") ;
+		strcpy(pController->szName, "VIA Serial ATA Controller") ;
 
 		DMM_DeAllocateForKernel((unsigned)pController->pPort[1]) ;
 		DMM_DeAllocateForKernel((unsigned)pController->pPort[3]) ;
@@ -401,6 +401,6 @@ void ATAVIA_InitController(const PCIEntry* pPCIEntry, ATAController* pController
 		pPort->pVendorSpecInfo = pVIAIDEInfo ;
 	}
 
-	String_Copy(pController->szName, "VIA ") ;
+	strcpy(pController->szName, "VIA ") ;
 	String_CanCat(pController->szName, pVIAIDE->szName) ;
 }

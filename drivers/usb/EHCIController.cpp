@@ -1018,9 +1018,9 @@ static byte EHCIController_GetDeviceStringDetails(USBDevice* pUSBDevice)
 {
 	if(pUSBDevice->usLangID == 0)
 	{
-		String_Copy(pUSBDevice->szManufacturer, "Unknown") ;
-		String_Copy(pUSBDevice->szProduct, "Unknown") ;
-		String_Copy(pUSBDevice->szSerialNum, "Unknown") ;
+		strcpy(pUSBDevice->szManufacturer, "Unknown") ;
+		strcpy(pUSBDevice->szProduct, "Unknown") ;
+		strcpy(pUSBDevice->szSerialNum, "Unknown") ;
 		return EHCIController_SUCCESS ;
 	}
 
@@ -1046,7 +1046,7 @@ static byte EHCIController_GetDeviceStringDetails(USBDevice* pUSBDevice)
 		printf("\n String Index: %u, String Desc Size: %d", index, iLen) ;
 		if(iLen == 0)
 		{
-			String_Copy(arr_name[i], "Unknown") ;
+			strcpy(arr_name[i], "Unknown") ;
 			continue ;
 		}
 

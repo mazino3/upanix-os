@@ -51,7 +51,7 @@ static void FileSystem_CalculateFileSystemSize(FileSystem_BootBlock* pFSBootBloc
 
 static void FileSystem_PopulateRootDirEntry(FileSystem_DIR_Entry* rootDir, unsigned uiSectorNo)
 {
-	String_Copy((char*)rootDir->Name, FS_ROOT_DIR) ;
+	strcpy((char*)rootDir->Name, FS_ROOT_DIR) ;
 	
 	rootDir->usAttribute = ATTR_DIR_DEFAULT | ATTR_TYPE_DIRECTORY ;
 	
@@ -94,7 +94,7 @@ static void FileSystem_InitFSBootBlock(FileSystem_BootBlock* pFSBootBlock, DiskD
 
 	pFSBootBlock->BPB_BootSig = 0x29 ;
 	pFSBootBlock->BPB_VolID = 0x01 ;  //TODO: Required to be set to current Date/Time of system ---- Not Mandatory
-	String_Copy((char*)pFSBootBlock->BPB_VolLab, "No Name   ") ;  //10 + 1(\0) characters only -- ARR
+	strcpy((char*)pFSBootBlock->BPB_VolLab, "No Name   ") ;  //10 + 1(\0) characters only -- ARR
 
 	pFSBootBlock->uiUsedSectors = 1 ;
 

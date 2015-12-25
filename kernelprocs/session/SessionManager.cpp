@@ -62,7 +62,7 @@ static byte SessionManager_LoadShell(int* iShellProcessID, int iSessionUserID)
 	KC::MDisplay().Message("\n Loading Shell...", Display::WHITE_ON_BLACK()) ;
 
 	char shell[33] ;
-	String_Copy(shell, BIN_PATH) ;
+	strcpy(shell, BIN_PATH) ;
 	String_CanCat(shell, "msh") ;
 
 	*iShellProcessID = KC::MKernelService().RequestProcessExec(shell, 0, NULL) ;

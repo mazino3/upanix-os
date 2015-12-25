@@ -291,7 +291,7 @@ byte DLLLoader_LoadELFDLL(const char* szDLLName, const char* szJustDLLName, Proc
 
 	DLLLoader_CopyElfDLLImage(processAddressSpace, pProcessSharedObjectList[iProcessDLLEntryIndex].uiNoOfPages, bDLLImage, uiMemImageSize) ;
 
-	String_Copy(pProcessSharedObjectList[iProcessDLLEntryIndex].szName, szJustDLLName) ;
+	strcpy(pProcessSharedObjectList[iProcessDLLEntryIndex].szName, szJustDLLName) ;
 
 	DMM_DeAllocateForKernel((unsigned)bDLLImage) ;
 	DMM_DeAllocateForKernel((unsigned)bDLLSectionImage) ;

@@ -39,21 +39,21 @@ static void MountManager_GetBootMountDrive(char* szBootDriveName)
 	switch(bBootDevice)
 	{
 	case DEV_FLOPPY:
-		String_Copy(szBootDriveName, "floppya") ;
+		strcpy(szBootDriveName, "floppya") ;
 		break ;
 	
 	case DEV_ATA_IDE:
-		String_Copy(szBootDriveName, "hdda") ;
+		strcpy(szBootDriveName, "hdda") ;
 		szBootDriveName[3] += bBootPartitionID ;	
 		break ;	
 
 	case DEV_SCSI_USB_DISK:
-		String_Copy(szBootDriveName, "usda") ;
+		strcpy(szBootDriveName, "usda") ;
 		szBootDriveName[3] += bBootPartitionID ;
 		break ;
 
 	default:
-		String_Copy(szBootDriveName, "floppya") ;
+		strcpy(szBootDriveName, "floppya") ;
 		break ;
 	}
 }
@@ -184,6 +184,6 @@ int MountManager_GetRootDriveID()
 
 void MountManager_SetRootDrive(DiskDrive* pDiskDrive)
 {
-	String_Copy(MountManager_szRootDriveName, pDiskDrive->DriveName().c_str());
+	strcpy(MountManager_szRootDriveName, pDiskDrive->DriveName().c_str());
 	MountManager_iRootDriveID = pDiskDrive->Id();
 }

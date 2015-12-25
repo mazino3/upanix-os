@@ -281,7 +281,7 @@ static void SCSIHandler_ExtractString(byte* szSCSIResult, int iStart, int iEnd, 
 
 	szCh[1] = '\0' ;
 
-	String_Copy(szBuf, "") ;
+	strcpy(szBuf, "") ;
 	for(i = iStart; i < iEnd; i++)
 	{
 
@@ -324,7 +324,7 @@ static SCSIDevice* SCSIHandler_CreateDisk(SCSIHost* pHost, int iChannel, int iDe
 	pDevice->iDevice = iDevice ;
 	pDevice->iLun = iLun ;
 
-	String_Copy(pDevice->szName, pHost->GetName()) ;
+	strcpy(pDevice->szName, pHost->GetName()) ;
 
 	if(SCSIHandler_GenericOpen(pDevice) != SCSIHandler_SUCCESS)
 	{

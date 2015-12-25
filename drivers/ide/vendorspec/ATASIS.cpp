@@ -224,7 +224,7 @@ void ATASIS_InitController(const PCIEntry* pPCIEntry, ATAController* pController
 				KC::MDisplay().Message("\n\t", Display::WHITE_ON_BLACK()) ;
 				KC::MDisplay().Message(SISIDEList[uiDeviceIndex].szName, Display::WHITE_ON_BLACK()) ;
 				KC::MDisplay().Message(" ATA Controller Detected", Display::WHITE_ON_BLACK()) ;
-				String_Copy(pController->szName, SISIDEList[uiDeviceIndex].szName) ;
+				strcpy(pController->szName, SISIDEList[uiDeviceIndex].szName) ;
 				break ;
 			}
         }
@@ -520,5 +520,5 @@ void ATASIS_InitController(const PCIEntry* pPCIEntry, ATAController* pController
 		pPort->pVendorSpecInfo = pSISIDEInfo ;
 	}
 
-	String_Copy(pController->szName, "SIS ATA Controller") ;
+	strcpy(pController->szName, "SIS ATA Controller") ;
 }

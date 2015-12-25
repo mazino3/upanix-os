@@ -95,13 +95,13 @@ static void FileOperations_ParseFilePathWithDrive(const char* szFileNameWithDriv
 	if(i == -1)
 	{
 		*pDriveID = ProcessManager::Instance().GetCurrentPAS().iDriveID ;
-		String_Copy(szFileName, szFileNameWithDrive) ;
+		strcpy(szFileName, szFileNameWithDrive) ;
 		return ;
 	}
 
 	if(i > 32)
 	{
-		String_Copy(szFileName, szFileNameWithDrive) ;
+		strcpy(szFileName, szFileNameWithDrive) ;
 		return ;
 	}
 
@@ -110,7 +110,7 @@ static void FileOperations_ParseFilePathWithDrive(const char* szFileNameWithDriv
 	String_RawCopy((byte*)szDriveName, (byte*)szFileNameWithDrive, i) ;
 	szDriveName[i] = '\0' ;
 
-	String_Copy(szFileName, szFileNameWithDrive + i + 1) ;
+	strcpy(szFileName, szFileNameWithDrive + i + 1) ;
 
 	if(String_Compare(szDriveName, ROOT_DRIVE_SYN) == 0)
 	{
@@ -395,7 +395,7 @@ byte FileOperations_GetCWD(char* szPathBuf, int iBufSize)
 	if(String_Length(szFullFilePath) > iBufSize)
 		return FileOperations_FAILURE ;
 
-	String_Copy(szPathBuf, szFullFilePath);
+	strcpy(szPathBuf, szFullFilePath);
 	return FileOperations_SUCCESS ;
 }
 
@@ -444,7 +444,7 @@ byte FileOperations_GetStat(const char* szFileName, int iDriveID, FileSystem_Fil
 	}
 	else
 	{
-		String_Copy(szFile, szFileName) ;
+		strcpy(szFile, szFileName) ;
 	}
 
 	GET_DRIVE_FOR_FS_OPS(iDriveID, Directory_FAILURE) ;
@@ -593,7 +593,7 @@ byte FileOperations_FileAccess(const char* szFileName, int iDriveID, int mode)
 	}
 	else
 	{
-		String_Copy(szFile, szFileName) ;
+		strcpy(szFile, szFileName) ;
 	}
 
 	byte bStatus ;

@@ -37,7 +37,7 @@ unsigned int Console_currentCommandPos ;
 
 void Console_Initialize()
 {
-	String_Copy(Console_PROMPT, "\nMOS:") ;
+	strcpy(Console_PROMPT, "\nMOS:") ;
 	Console_currentCommandPos = 0 ;
 	ConsoleCommands_Init() ;
 	KC::MDisplay().LoadMessage("Console Initialization", Success);
@@ -77,9 +77,9 @@ void Console_StartMOSConsole()
 	Console_DisplayCommandLine() ;
 
 	//Default init code
-	Console_ProcessCommand("eusbprobe");
+/*	Console_ProcessCommand("eusbprobe");
 	Console_ProcessCommand("mount usda");
-	Console_ProcessCommand("chd usda");
+	Console_ProcessCommand("chd usda");*/
 
 	while(SUCCESS)
 	{

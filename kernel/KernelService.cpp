@@ -91,7 +91,7 @@ KernelService::ProcessExec::ProcessExec(int iNoOfArgs, const char* szFile, const
 	for(int i = 0; i < iNoOfArgs; i++)
 	{
 		m_szArgs[i] = new char[String_Length(szArgs[i]) + 1] ;
-		String_Copy(m_szArgs[i], szArgs[i]) ;
+		strcpy(m_szArgs[i], szArgs[i]) ;
 	}
 }
 
@@ -170,12 +170,12 @@ int KernelService::RequestProcessExec(const char* szFile, int iNoOfArgs, const c
 			return -2 ;
 		}
 
-		String_Copy(szFullProcPath, szProcessPath) ;
+		strcpy(szFullProcPath, szProcessPath) ;
 		String_CanCat(szFullProcPath, szFile) ;
 	}
 	else
 	{
-		String_Copy(szFullProcPath, szFile) ;
+		strcpy(szFullProcPath, szFile) ;
 	}
 	
 	KernelService::ProcessExec* pRequest = new KernelService::ProcessExec(iNoOfArgs, szFullProcPath, szArgs) ;
