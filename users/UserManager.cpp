@@ -158,7 +158,7 @@ static byte UserManager_ValidateName(const char* szName)
 	int i ;
 	for(i = 0; i < len; i++)
 	{
-		if(!(GenericUtil_IsDigit(szName[i]) || GenericUtil_IsAlpha(szName[i])))
+		if(!isalnum(szName[i]))
 			return UserManager_ERR_INVALID_NAME ;
 	}
 

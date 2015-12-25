@@ -150,7 +150,7 @@ byte String_ConvertStringToNumber(unsigned* uiNumber, char* strNumber)
 
 	for(i = String_Length(strNumber) - 1; i >= 0; i--)
 	{
-		if(!GenericUtil_IsDigit(strNumber[i]))
+		if(!isdigit(strNumber[i]))
 			return false ;
 
 		*uiNumber += (strNumber[i] - 0x30) * GenericUtil_Power(10, pow++) ;

@@ -395,8 +395,15 @@ bool map<K, V>::erase(iterator it)
     || (n->right() && !n->right()->is_leaf()))
   {
     node* y;
+    bool deleteFromLeft;
+    if(n->left() && !n->right())
+      deleteFromLeft = true;
+    else if(n->right() && !n->left())
+      deleteFromLeft = false;
+    else
+      deleteFromLeft = n->left() && n->right() && n->balance_factor() > 0;
     //find in-order predecessor
-    if(n->left() != nullptr)
+    if(deleteFromLeft)
     {
       y = n->left();
       while(y->right() != nullptr)

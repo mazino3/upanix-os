@@ -85,7 +85,6 @@ MOS_OBJS = \
 	./util/SystemUtil.o \
 	./util/GenericUtil.o \
 	./util/StringUtil.o \
-	./util/BinaryTree.o \
 	./util/SimAlgos.o \
 	./util/KernelUtil.o \
  \

@@ -46,7 +46,6 @@
 #include <UHCIController.h>
 #include <EHCIController.h>
 #include <BTree.h>
-#include <BinaryTree.h>
 #include <TestSuite.h>
 #include <video.h>
 #include <VM86.h>

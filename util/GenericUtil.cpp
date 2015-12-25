@@ -71,16 +71,6 @@ class StrPathTokenizer : public StringTokenizer
 	bool m_bFound ;
 } ;
 
-byte GenericUtil_IsDigit(char ch)
-{
-	return (ch >= '0' && ch <= '9') ;
-}
-
-byte GenericUtil_IsAlpha(char ch)
-{
-	return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') ;
-}
-
 void GenericUtil_ReadInput(char* szInputBuffer, const int iMaxReadLength, byte bEcho)
 {
 	int iCurrentReadPos = 0 ;

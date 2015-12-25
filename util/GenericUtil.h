@@ -20,8 +20,6 @@
 
 # include <Global.h>
 
-byte GenericUtil_IsDigit(char ch) ;
-byte GenericUtil_IsAlpha(char ch) ;
 void GenericUtil_ReadInput(char* szInputBuffer, const int iMaxReadLength, byte bEcho) ;
 unsigned GenericUtil_Power(unsigned uiNum, unsigned uiPow) ;
 byte GenericUtil_GetFullFilePathFromEnv(const char* szPathEnvVar, const char* szPathEnvDefVal, const char* szFileName, char* szFullFilePath) ;

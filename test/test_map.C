@@ -250,7 +250,7 @@ int main()
   Find(sm);
   
   if(um.verify_balance_factor())
-    printf("\n\n**** UPAN::MAP NODE BALANCE FACTORU IS INTACT ****\n\n");
+    printf("\n\n**** UPAN::MAP NODE BALANCE FACTOR IS INTACT ****\n");
   else
     printf("\n\n***** UPAN::MAP NODE BALANCE FACTOR IS CORRUPTED!! ****\n\n");
 
