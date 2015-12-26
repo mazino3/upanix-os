@@ -1007,12 +1007,12 @@ void ConsoleCommands_ProbeUHCIUSB()
 
 void ConsoleCommands_PerformECHIHandoff()
 {
-	EHCIController_RouteToCompanionController() ;
+	EHCIManager::Instance().RouteToCompanionController() ;
 }
 
 void ConsoleCommands_ProbeEHCIUSB()
 {
-	EHCIController_ProbeDevice() ;
+	EHCIManager::Instance().ProbeDevice() ;
 }
 
 void ConsoleCommands_ShowRawDiskList()

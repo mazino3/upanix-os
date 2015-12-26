@@ -31,20 +31,11 @@
 # include <EHCIDataHandler.h>
 # include <EHCIController.h>
 
-static EHCIController EHCIController_pList[ MAX_EHCI_ENTRIES ] ;
-static int EHCIController_iCount ;
-
-static int EHCIController_seqDevAddr ;
-static bool EHCIController_bFirstBulkRead ;
-static bool EHCIController_bFirstBulkWrite ;
-EHCIQTransferDesc* EHCIController_ppBulkReadTDs[ MAX_EHCI_TD_PER_BULK_RW ] ;
-EHCIQTransferDesc* EHCIController_ppBulkWriteTDs[ MAX_EHCI_TD_PER_BULK_RW ] ;
-
-static void	EHCIController_DisplayStats(EHCIController* pController)
+void EHCIController::DisplayStats()
 {
-	printf("\n Command: %x", pController->pOpRegs->uiUSBCommand) ;
-	printf("\n Status: %x", pController->pOpRegs->uiUSBStatus) ;
-	printf("\n Interrupt: %x", pController->pOpRegs->uiUSBInterrupt) ;
+	printf("\n Command: %x", _pOpRegs->uiUSBCommand) ;
+	printf("\n Status: %x", _pOpRegs->uiUSBStatus) ;
+	printf("\n Interrupt: %x", _pOpRegs->uiUSBInterrupt) ;
 }
 
 static void EHCIController_DisplayTransactionState(EHCIQueueHead* pQH, EHCIQTransferDesc* pTDStart)
@@ -62,7 +53,7 @@ static void EHCIController_DisplayTransactionState(EHCIQueueHead* pQH, EHCIQTran
 	}
 }
 
-static bool EHCIController_PollWait(unsigned* pValue, int iBitPos, unsigned value)
+bool EHCIController::PollWait(unsigned* pValue, int iBitPos, unsigned value)
 {
 	value &= 1;
 	if(iBitPos > 31 || iBitPos < 0)
@@ -144,136 +135,16 @@ void EHCITransaction::Clear()
   _dStorageList.clear();
 }
 
-static void EHCIController_AddAsyncQueueHead(EHCIController* pController, EHCIQueueHead* pQH)
+void EHCIController::AddAsyncQueueHead(EHCIQueueHead* pQH)
 {
-	pQH->uiHeadHorizontalLink = pController->pAsyncReclaimQueueHead->uiHeadHorizontalLink ;
-	pController->pAsyncReclaimQueueHead->uiHeadHorizontalLink = KERNEL_REAL_ADDRESS(pQH) | 0x2 ;
+	pQH->uiHeadHorizontalLink = _pAsyncReclaimQueueHead->uiHeadHorizontalLink ;
+	_pAsyncReclaimQueueHead->uiHeadHorizontalLink = KERNEL_REAL_ADDRESS(pQH) | 0x2 ;
 }
 
-static byte EHCIController_AddEntry(PCIEntry* pPCIEntry)
-{
-	EHCIController* pController = & (EHCIController_pList[ EHCIController_iCount ]) ;
-
-	pController->pPCIEntry = pPCIEntry ;
-	pController->bSetupSuccess = false ;
-
-	if(!pPCIEntry->BusEntity.NonBridge.bInterruptLine)
-	{
-		printf("EHCI device with no IRQ. Check BIOS/PCI settings!");
-		return EHCIController_FAILURE ;
-	}
-
-	unsigned uiIOAddr = pPCIEntry->BusEntity.NonBridge.uiBaseAddress0 ;
-	printf("\n PCI Base Addr: %x", uiIOAddr) ;
-
-	uiIOAddr = uiIOAddr & PCI_ADDRESS_MEMORY_32_MASK ;
-	unsigned uiIOSize = pPCIEntry->GetPCIMemSize(0) ;
-	printf("\n Raw MMIO Base Addr: %x, IO Size: %d", uiIOAddr, uiIOSize) ;
-
-	if(uiIOSize > PAGE_SIZE)
-	{
-		printf("\n EHCI IO Size greater then 1 Page (4096b) not supported currently !") ;
-		return EHCIController_FAILURE ;
-	}
-
-	if((uiIOAddr % PAGE_SIZE) + uiIOSize > PAGE_SIZE)
-	{
-		printf("\n EHCI MMIO area is spanning across PAGE boundary. This is not supported in MOS!!") ;
-		return EHCIController_FAILURE ;
-	}
-
-	// Currently an IO Size of not more than a PAGE_SIZE is supported
-	// And also the IO Addr is expected not to span a PAGE Boundary.
-	// Now, the mapping EHCI_MMIO_BASE_ADDR is choosen in such way that
-	// EHCI_MMIO_BASE_ADDR and EHCI_MMIO_BASE_ADDR + 32 * PAGE_SIZE fall
-	// within the same PTE Entry
-	// Further, mapping is necessary because the IOAddr can be any virtual address
-	// within 4 GB space potentially being an address outside the RAM size
-	// i.e, PDE/PTE limit
-	unsigned uiPDEAddress = MEM_PDBR ;
-	unsigned uiMapAddress = EHCI_MMIO_BASE_ADDR + EHCIController_iCount * PAGE_SIZE;
-	unsigned uiPDEIndex = ((uiMapAddress >> 22) & 0x3FF) ;
-	unsigned uiPTEIndex = ((uiMapAddress >> 12) & 0x3FF) ;
-
-	unsigned uiPTEAddress = (((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPDEIndex]) & 0xFFFFF000 ;
-	// This page is a Read Only area for user process. 0x5 => 101 => User Domain, Read Only, Present Bit
-	((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPTEIndex] = (uiIOAddr & 0xFFFFF000) | 0x5 ;
-	Mem_FlushTLB();
-	
-	if(MemManager::Instance().MarkPageAsAllocated(uiIOAddr / PAGE_SIZE) != Success)
-	{
-	}
-
-	uiMapAddress = uiMapAddress + (uiIOAddr % PAGE_SIZE) - GLOBAL_DATA_SEGMENT_BASE ;
-	pController->pCapRegs = (EHCICapRegisters*)uiMapAddress;
-	byte bCapLen = pController->pCapRegs->bCapLength ;
-	pController->pOpRegs = (EHCIOpRegisters*)(uiMapAddress + bCapLen) ;
-	pController->bSetupSuccess = true ;
-
-	unsigned uiHCSParams = pController->pCapRegs->uiHCSParams ;
-	unsigned uiHCCParams = pController->pCapRegs->uiHCCParams ;
-	unsigned uiConfigFlag = pController->pOpRegs->uiConfigFlag ;
-
-	printf("\n HCSPARAMS: %x\n HCCPARAMS: %x\n CAP Len: %x\n CF Bit: %d", uiHCSParams, uiHCCParams, bCapLen, uiConfigFlag) ;
-	printf("\n Bus: %d, Device: %d, Function: %d", pPCIEntry->uiBusNumber, pPCIEntry->uiDeviceNumber, pPCIEntry->uiFunction) ;
-	printf("\n Enabling Bus Master...") ;
-	/* Enable busmaster */
-	unsigned short usCommand ;
-	pPCIEntry->ReadPCIConfig(PCI_COMMAND, 2, &usCommand);
-	printf("\n Current value of PCI_COMMAND: %x", usCommand) ;
-	pPCIEntry->WritePCIConfig(PCI_COMMAND, 2, usCommand | PCI_COMMAND_IO | PCI_COMMAND_MASTER) ;
-	printf("\n After Bus Master Enable, value of PCI_COMMAND: %x", usCommand) ;
-
-	EHCIController_iCount++ ;
-	return EHCIController_SUCCESS ;
-}
-
-static byte EHCIController_PerformBiosToOSHandoff(EHCIController* pController)
-{
-	byte bEECPOffSet = (pController->pCapRegs->uiHCCParams >> 8) & 0xFF ;
-	PCIEntry* pPCIEntry = pController->pPCIEntry ;
-
-	if(bEECPOffSet)
-	{
-		printf("\n Trying to perform complete handoff of EHCI Controller from BIOS to OS...") ;
-		printf("\n EECP Offset: %x", bEECPOffSet) ;
-
-		unsigned uiLegSup ;
-		pPCIEntry->ReadPCIConfig(bEECPOffSet, 4, &uiLegSup) ;
-
-		printf("\n USB EHCI LEGSUP: %x", uiLegSup) ;
-		if((uiLegSup & (1 << 24)) == 0x1)
-		{
-			printf("\n EHCI Controller is already owned by OS. No need for Handoff") ;
-			return EHCIController_SUCCESS ;
-		}
-
-		uiLegSup = uiLegSup | ( 1 << 24 ) ;
-
-		pPCIEntry->WritePCIConfig(bEECPOffSet, 4, uiLegSup) ;
-		ProcessManager::Instance().Sleep(500) ;
-		pPCIEntry->ReadPCIConfig(bEECPOffSet, 4, &uiLegSup) ;
-
-		printf("\n New USB EHCI LEGSUP: %x", uiLegSup) ;
-		if((uiLegSup & (1 << 24)) == 0x0)
-		{
-			printf("\n BIOS to OS Handoff failed") ;
-			return EHCIController_FAILURE ;
-		}
-	}
-	else
-	{
-		printf("\n EHCI: System does not support Extended Capabilities. Cannot perform Bios Handoff") ;
-		return EHCIController_FAILURE ;
-	}
-
-	return EHCIController_SUCCESS ;
-}
-
-static byte EHCIController_SetConfigFlag(EHCIController* pController, bool bSet)
+byte EHCIController::SetConfigFlag(bool bSet)
 {
 	unsigned uiCompareValue = bSet ? 0 : 1 ;
-	unsigned uiConfigFlag = pController->pOpRegs->uiConfigFlag ;
+	unsigned uiConfigFlag = _pOpRegs->uiConfigFlag ;
 
 	if((uiConfigFlag & 0x1) == uiCompareValue)
 	{
@@ -287,10 +158,10 @@ static byte EHCIController_SetConfigFlag(EHCIController* pController, bool bSet)
 		else
 			uiConfigFlag &= ~(1) ;
 
-		pController->pOpRegs->uiConfigFlag = uiConfigFlag ;
+		_pOpRegs->uiConfigFlag = uiConfigFlag ;
 
 		ProcessManager::Instance().Sleep(100) ;
-		if((pController->pOpRegs->uiConfigFlag & 0x1) == uiCompareValue)
+		if((_pOpRegs->uiConfigFlag & 0x1) == uiCompareValue)
 		{
 			printf("\n Failed to Set Config Flag to: %d:", bSet ? 1 : 0) ;
 			return EHCIController_FAILURE ;
@@ -304,18 +175,17 @@ static byte EHCIController_SetConfigFlag(EHCIController* pController, bool bSet)
 	return EHCIController_SUCCESS ;
 }
 
-static void EHCIController_SetupInterrupts(EHCIController* pController)
+void EHCIController::SetupInterrupts()
 {
-	pController->pOpRegs->uiUSBInterrupt = pController->pOpRegs->uiUSBInterrupt	| INTR_ASYNC_ADVANCE 
+	_pOpRegs->uiUSBInterrupt = _pOpRegs->uiUSBInterrupt	| INTR_ASYNC_ADVANCE 
 																		| INTR_HOST_SYS_ERR 
 																		| INTR_PORT_CHG 
 																		| INTR_USB_ERR 
 																		| INTR_USB ;
-
-	pController->pOpRegs->uiUSBInterrupt = 0 ;
+	_pOpRegs->uiUSBInterrupt = 0 ;
 }
 
-static byte EHCIController_SetupPeriodicFrameList(EHCIController* pController)
+byte EHCIController::SetupPeriodicFrameList()
 {
 	unsigned uiFreePageNo = MemManager::Instance().AllocatePhysicalPage();
 
@@ -325,122 +195,122 @@ static byte EHCIController_SetupPeriodicFrameList(EHCIController* pController)
 	for(i = 0; i < 1024; i++)
 		pFrameList[ i ] = 0x1 ;
 
-	pController->pOpRegs->uiPeriodicListBase = (unsigned)pFrameList + GLOBAL_DATA_SEGMENT_BASE ;
+	_pOpRegs->uiPeriodicListBase = (unsigned)pFrameList + GLOBAL_DATA_SEGMENT_BASE ;
 
-	return EHCIController_SUCCESS ;
+	return EHCIController_SUCCESS;
 }
 
-static byte EHCIController_SetupAsyncList(EHCIController* pController)
+byte EHCIController::SetupAsyncList()
 {
-	unsigned uiQHAddress = DMM_AllocateAlignForKernel(sizeof(EHCIQueueHead), 32) ;
-	memset((void*)(uiQHAddress), 0, sizeof(EHCIQueueHead)) ;
-	pController->pOpRegs->uiAsyncListBase = KERNEL_REAL_ADDRESS(uiQHAddress) ;
+	unsigned uiQHAddress = DMM_AllocateAlignForKernel(sizeof(EHCIQueueHead), 32);
+	memset((void*)(uiQHAddress), 0, sizeof(EHCIQueueHead));
+	_pOpRegs->uiAsyncListBase = KERNEL_REAL_ADDRESS(uiQHAddress);
 
-	EHCIQueueHead* pQHH = (EHCIQueueHead*)uiQHAddress ;
+	EHCIQueueHead* pQHH = (EHCIQueueHead*)uiQHAddress;
 
-	pQHH->uiCurrrentpTDPointer = 0 ;
-	pQHH->uiNextpTDPointer = 1 ;
-	pQHH->uiAltpTDPointer_NAKCnt = 1 ;
+	pQHH->uiCurrrentpTDPointer = 0;
+	pQHH->uiNextpTDPointer = 1;
+	pQHH->uiAltpTDPointer_NAKCnt = 1;
 	
-	pQHH->uiEndPointCap_Part1 = (1 << 15) ;
-	pQHH->uipQHToken = (1 << 6) ;
+	pQHH->uiEndPointCap_Part1 = (1 << 15);
+	pQHH->uipQHToken = (1 << 6);
 
-	pQHH->uiHeadHorizontalLink = KERNEL_REAL_ADDRESS(uiQHAddress) | 0x2 ;
+	pQHH->uiHeadHorizontalLink = KERNEL_REAL_ADDRESS(uiQHAddress) | 0x2;
 
-	pController->pAsyncReclaimQueueHead = pQHH ;
+	_pAsyncReclaimQueueHead = pQHH;
 
-	return EHCIController_SUCCESS ;
+	return EHCIController_SUCCESS;
 }
 
-static void EHCIController_SetSchedEnable(EHCIController* pController, unsigned uiScheduleType, bool bEnable)
+void EHCIController::SetSchedEnable(unsigned uiScheduleType, bool bEnable)
 {
 	if(bEnable)
-		pController->pOpRegs->uiUSBCommand |= uiScheduleType ;
+		_pOpRegs->uiUSBCommand |= uiScheduleType ;
 	else
-		pController->pOpRegs->uiUSBCommand &= ~(uiScheduleType) ;
+		_pOpRegs->uiUSBCommand &= ~(uiScheduleType) ;
 }
 
-static void EHCIController_SetFrameListSize(EHCIController* pController)
+void EHCIController::SetFrameListSize()
 {
-	if((pController->pCapRegs->uiHCCParams & 0x20) != 0)
-		pController->pOpRegs->uiUSBCommand &= ~(0xC) ;
+	if((_pCapRegs->uiHCCParams & 0x20) != 0)
+		_pOpRegs->uiUSBCommand &= ~(0xC) ;
 }
 
-static void EHCIController_StartController(EHCIController* pController)
+void EHCIController::Start()
 {
-	pController->pOpRegs->uiUSBCommand |= 1 ;
+	_pOpRegs->uiUSBCommand |= 1 ;
 }
 
-__attribute__((unused)) static void EHCIController_StopController(EHCIController* pController)
+void EHCIController::Stop()
 {
-	pController->pOpRegs->uiUSBCommand &= 0xFFFFFFFE ;
+	_pOpRegs->uiUSBCommand &= 0xFFFFFFFE ;
 }
 
-static bool EHCIController_CheckHCActive(EHCIController* pController)
+bool EHCIController::CheckHCActive()
 {
-	return (pController->pOpRegs->uiUSBCommand & 1) ? true : false ;
+	return (_pOpRegs->uiUSBCommand & 1) ? true : false ;
 } 
 
-static bool EHCIController_WaitCheckAsyncScheduleStatus(EHCIController* pController, bool bValue)
+bool EHCIController::WaitCheckAsyncScheduleStatus(bool bValue)
 {
-	bool bStatus = EHCIController_PollWait(&(pController->pOpRegs->uiUSBCommand), 5, bValue) ;
+	bool bStatus = PollWait(&(_pOpRegs->uiUSBCommand), 5, bValue) ;
 
 	if(bStatus)
-		bStatus = EHCIController_PollWait(&(pController->pOpRegs->uiUSBStatus), 15, bValue) ;
+		bStatus = PollWait(&(_pOpRegs->uiUSBStatus), 15, bValue) ;
 
 	return bStatus ;
 }
 
-static bool EHCIController_StartAsyncSchedule(EHCIController* pController)
+bool EHCIController::StartAsyncSchedule()
 {
-	EHCIController_SetSchedEnable(pController, ASYNC_SCHEDULE_ENABLE, true) ;
+	SetSchedEnable(ASYNC_SCHEDULE_ENABLE, true) ;
 
-	if(!EHCIController_WaitCheckAsyncScheduleStatus(pController, true))
+	if(!WaitCheckAsyncScheduleStatus(true))
 	{
 		printf("\n Failed to Start Async Schedule") ;
-		EHCIController_DisplayStats(pController) ;
+		DisplayStats() ;
 		return false ;
 	}
 
-	if(!EHCIController_CheckHCActive(pController))
+	if(!CheckHCActive())
 	{
 		printf("\n Controller has stopped !!!") ;
-		EHCIController_DisplayStats(pController) ;
+		DisplayStats() ;
 		return false ;
 	}
 
 	return true ;
 }
 
-__attribute__((unused)) static bool EHCIController_StopAsyncSchedule(EHCIController* pController)
+bool EHCIController::StopAsyncSchedule()
 {
-	EHCIController_SetSchedEnable(pController, ASYNC_SCHEDULE_ENABLE, false) ;
+	SetSchedEnable(ASYNC_SCHEDULE_ENABLE, false) ;
 
-	if(!EHCIController_WaitCheckAsyncScheduleStatus(pController, false))
+	if(!WaitCheckAsyncScheduleStatus(false))
 	{
 		printf("\n Failed to Stop Async Schedule") ;
-		EHCIController_DisplayStats(pController) ;
+		DisplayStats() ;
 		return false ;
 	}
 
-	if(!EHCIController_CheckHCActive(pController))
+	if(!CheckHCActive())
 	{
 		printf("\n Controller has stopped !!!") ;
-		EHCIController_DisplayStats(pController) ;
+		DisplayStats() ;
 		return false ;
 	}
 
 	return true ;
 }
 
-static unsigned EHCIController_GetNoOfPortsActual(EHCIController* pController)
+unsigned EHCIController::GetNoOfPortsActual()
 {
-	return (pController->pCapRegs->uiHCSParams) & 0xF ;
+	return (_pCapRegs->uiHCSParams) & 0xF ;
 }
 
-static unsigned EHCIController_GetNoOfPorts(EHCIController* pController)
+unsigned EHCIController::GetNoOfPorts()
 {
-	unsigned uiNoOfPorts = EHCIController_GetNoOfPortsActual(pController) ;
+	unsigned uiNoOfPorts = GetNoOfPortsActual() ;
 
 	if(uiNoOfPorts > MAX_EHCI_ENTRIES)
 	{
@@ -450,15 +320,14 @@ static unsigned EHCIController_GetNoOfPorts(EHCIController* pController)
 	}
 
 	return uiNoOfPorts ;
-
 }
 
-static void EHCIController_SetupPorts(EHCIController* pController)
+void EHCIController::SetupPorts()
 {
 	printf("\n Setting up EHCI Controller Ports") ;
 
-	unsigned uiNoOfPorts = EHCIController_GetNoOfPorts(pController) ;
-	bool bPPC = (pController->pCapRegs->uiHCSParams & 0x10) == 0x10 ;
+	unsigned uiNoOfPorts = GetNoOfPorts() ;
+	bool bPPC = (_pCapRegs->uiHCSParams & 0x10) == 0x10 ;
 
 	printf("\n No. of ports = %d", uiNoOfPorts) ;
 	if(bPPC)
@@ -469,7 +338,7 @@ static void EHCIController_SetupPorts(EHCIController* pController)
 	unsigned i ;
 	for(i = 0; i < uiNoOfPorts; i++)
 	{
-		unsigned* pPort = &(pController->pOpRegs->uiPortReg[ i ]) ;
+		unsigned* pPort = &(_pOpRegs->uiPortReg[ i ]) ;
 
 		printf("\n Setting up Port: %d. Initial Value: %x", i, *pPort) ;
 
@@ -556,29 +425,29 @@ static byte EHCIController_SetupAllocBuffer(EHCIQTransferDesc* pTD, unsigned uiS
 	return EHCIController_SetupBuffer(pTD, uiAddress, uiSize) ;
 }
 
-static byte EHCIController_AsyncDoorBell(EHCIController* pController)
+byte EHCIController::AsyncDoorBell()
 {
-	if(!(pController->pOpRegs->uiUSBCommand & (1 << 5)) || !(pController->pOpRegs->uiUSBStatus & (1 << 15)))
+	if(!(_pOpRegs->uiUSBCommand & (1 << 5)) || !(_pOpRegs->uiUSBStatus & (1 << 15)))
 	{
 		printf("\n Asycn Schedule is disabled. DoorBell HandShake cannot be performed.") ;
 		return EHCIController_FAILURE ;
 	}
 
-	if(pController->pOpRegs->uiUSBCommand & (1 << 6))
+	if(_pOpRegs->uiUSBCommand & (1 << 6))
 	{
 		printf("\n Already a DoorBell is in progress!") ;
 		return EHCIController_FAILURE ;
 	}
 
-	pController->pOpRegs->uiUSBStatus |= ((1 << 5)) ;
-	pController->pOpRegs->uiUSBCommand |= (1 << 6) ;
+	_pOpRegs->uiUSBStatus |= ((1 << 5)) ;
+	_pOpRegs->uiUSBCommand |= (1 << 6) ;
 
-	bool bStatus = EHCIController_PollWait(&(pController->pOpRegs->uiUSBCommand), 6, 0) ;
+	bool bStatus = PollWait(&(_pOpRegs->uiUSBCommand), 6, 0) ;
 
 	if(bStatus)
-		bStatus = EHCIController_PollWait(&(pController->pOpRegs->uiUSBStatus), 5, 1) ;
+		bStatus = PollWait(&(_pOpRegs->uiUSBStatus), 5, 1) ;
 
-	pController->pOpRegs->uiUSBStatus |= ((1 << 5)) ;
+	_pOpRegs->uiUSBStatus |= ((1 << 5)) ;
 
 	if(!bStatus)
 		return EHCIController_FAILURE ;
@@ -586,7 +455,7 @@ static byte EHCIController_AsyncDoorBell(EHCIController* pController)
 	return EHCIController_SUCCESS ;
 }
 
-static EHCIQueueHead* EHCIController_CreateDeviceQueueHead(EHCIController* pController, int iMaxPacketSize, int iEndPtAddr, int iDevAddr)
+EHCIQueueHead* EHCIController::CreateDeviceQueueHead(int iMaxPacketSize, int iEndPtAddr, int iDevAddr)
 {
 	EHCIQueueHead* pQH = EHCIDataHandler_CreateAsyncQueueHead() ;
 
@@ -596,7 +465,7 @@ static EHCIQueueHead* EHCIController_CreateDeviceQueueHead(EHCIController* pCont
 	pQH->uiEndPointCap_Part1 = (5 << 28) | ((iMaxPacketSize & 0x7FF) << 16) | (1 << 14) | (2 << 12) | ((iEndPtAddr & 0xF) << 8) | (iDevAddr & 0x7F) ;
 	pQH->uiEndPointCap_Part2 = (1 << 30) ;
 
-	EHCIController_AddAsyncQueueHead(pController, pQH) ;
+	AddAsyncQueueHead(pQH) ;
 
 	return pQH ;
 }
@@ -637,7 +506,7 @@ static byte EHCIController_SetAddress(EHCIDevice* pDevice, int devAddr)
 	{
 		printf("\n Transaction Failed: ") ;
 		EHCIController_DisplayTransactionState(pControlQH, pTDStart) ;
-		EHCIController_DisplayStats(pController) ;
+		pController->DisplayStats() ;
     aTransaction.Clear();
 		return EHCIController_FAILURE ;
 	}
@@ -646,10 +515,10 @@ static byte EHCIController_SetAddress(EHCIDevice* pDevice, int devAddr)
 
 	pControlQH->uiEndPointCap_Part1 |= (devAddr & 0x7F) ;
 
-	if(EHCIController_AsyncDoorBell(pController) != EHCIController_SUCCESS)
+	if(pController->AsyncDoorBell() != EHCIController_SUCCESS)
 	{
 		printf("\n Async Door Bell failed while Setting Device Address") ;
-		EHCIController_DisplayStats(pController) ;
+		pController->DisplayStats() ;
 		return EHCIController_FAILURE ;
 	}
 	
@@ -711,7 +580,7 @@ static byte EHCIController_GetDescriptor(EHCIDevice* pDevice, unsigned short usD
 	{
 		printf("\n Transaction Failed: ") ;
 		EHCIController_DisplayTransactionState(pControlQH, pTDStart) ;
-		EHCIController_DisplayStats(pController) ;
+		pController->DisplayStats() ;
     aTransaction.Clear();
 		return EHCIController_FAILURE ;
 	}
@@ -790,7 +659,7 @@ static byte EHCIController_GetConfigValue(EHCIDevice* pDevice, char* bConfigValu
 	{
 		printf("\n Transaction Failed: ") ;
 		EHCIController_DisplayTransactionState(pControlQH, pTDStart) ;
-		EHCIController_DisplayStats(pController) ;
+		pController->DisplayStats() ;
     aTransaction.Clear();
 		return EHCIController_FAILURE ;
 	}
@@ -838,7 +707,7 @@ static byte EHCIController_SetConfiguration(EHCIDevice* pDevice, char bConfigVal
 	{
 		printf("\n Transaction Failed: ") ;
 		EHCIController_DisplayTransactionState(pControlQH, pTDStart) ;
-		EHCIController_DisplayStats(pController) ;
+		pController->DisplayStats() ;
     aTransaction.Clear();
 		return EHCIController_FAILURE ;
 	}
@@ -1125,7 +994,7 @@ static bool EHCIController_GetMaxLun(USBDevice* pUSBDevice, byte* bLUN)
 	{
 		printf("\n Transaction Failed: ") ;
 		EHCIController_DisplayTransactionState(pControlQH, pTDStart) ;
-		EHCIController_DisplayStats(pController) ;
+		pController->DisplayStats() ;
     aTransaction.Clear();
 		return false ;
 	}
@@ -1174,7 +1043,7 @@ static bool EHCIController_CommandReset(USBDevice* pUSBDevice)
 	{
 		printf("\n Transaction Failed: ") ;
 		EHCIController_DisplayTransactionState(pControlQH, pTDStart) ;
-		EHCIController_DisplayStats(pController) ;
+		pController->DisplayStats() ;
     aTransaction.Clear();
 		return false ;
 	}
@@ -1223,7 +1092,7 @@ static bool EHCIController_ClearHaltEndPoint(USBulkDisk* pDisk, bool bIn)
 	{
 		printf("\n Transaction Failed: ") ;
 		EHCIController_DisplayTransactionState(pControlQH, pTDStart) ;
-		EHCIController_DisplayStats(pController) ;
+		pController->DisplayStats() ;
     aTransaction.Clear();
 		return false ;
 	}
@@ -1236,240 +1105,109 @@ static bool EHCIController_ClearHaltEndPoint(USBulkDisk* pDisk, bool bIn)
 extern void _UpdateReadStat(unsigned, bool) ;
 static bool EHCIController_BulkInTransfer(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen)
 {
-	_UpdateReadStat(uiLen, true) ;
-	USBDevice* pUSBDevice = (USBDevice*)(pDisk->pUSBDevice) ;
-	EHCIDevice* pDevice = (EHCIDevice*)(pUSBDevice->pRawDevice) ;
-	EHCIController* pController = pDevice->pController ;
-
-	if(uiLen == 0)
-		return true ;
-
-	unsigned uiMaxLen = pDisk->usInMaxPacketSize * MAX_EHCI_TD_PER_BULK_RW ;
-	if(uiLen > uiMaxLen)
-	{
-		printf("\n Max Bulk Transfer per Frame is %d bytes", uiMaxLen) ;
-		return false ;
-	}
-
-	unsigned uiMaxPacketSize = pDisk->usInMaxPacketSize ;
-	int iNoOfTDs = uiLen / EHCI_MAX_BYTES_PER_TD ;
-	iNoOfTDs += ((uiLen % EHCI_MAX_BYTES_PER_TD) != 0) ;
-
-	if(iNoOfTDs > MAX_EHCI_TD_PER_BULK_RW)
-	{
-		printf("\n No. of TDs per Bulk Read/Wrtie exceeded limit %d !!", MAX_EHCI_TD_PER_BULK_RW) ;
-		return false ;
-	}
-
-	if(EHCIController_bFirstBulkRead)
-	{
-		EHCIController_bFirstBulkRead = false ;
-
-		int i ;
-		for(i = 0; i < MAX_EHCI_TD_PER_BULK_RW; i++)
-			EHCIController_ppBulkReadTDs[ i ] = EHCIDataHandler_CreateAsyncQTransferDesc() ; 
-
-		pDevice->pBulkInEndPt = EHCIController_CreateDeviceQueueHead(pController, uiMaxPacketSize, pDisk->uiEndPointIn, pUSBDevice->devAddr) ;
-	}
-	else
-	{
-		int i ;
-		for(i = 0; i < MAX_EHCI_TD_PER_BULK_RW; i++)
-			memset((void*)(EHCIController_ppBulkReadTDs[i]), 0, sizeof(EHCIQTransferDesc)) ;
-
-		EHCIDataHandler_CleanAysncQueueHead(pDevice->pBulkInEndPt) ;
-	}
-
-	int iIndex ;
-
-	unsigned uiYetToRead = uiLen ;
-	unsigned uiCurReadLen ;
-	for(iIndex = 0; iIndex < iNoOfTDs; iIndex++)
-	{
-		uiCurReadLen = (uiYetToRead > EHCI_MAX_BYTES_PER_TD) ? EHCI_MAX_BYTES_PER_TD : uiYetToRead ;
-		uiYetToRead -= uiCurReadLen ;
-
-		EHCIQTransferDesc* pTD = EHCIController_ppBulkReadTDs[ iIndex ] ;
-
-		pTD->uiAltpTDPointer = 1 ;
-		pTD->uipTDToken = (pDisk->bEndPointInToggle << 31) | (uiCurReadLen << 16) | (3 << 10) | (1 << 8) | (1 << 7) ;
-		unsigned toggle = uiCurReadLen / uiMaxPacketSize ;
-		if(uiCurReadLen % uiMaxPacketSize)
-			toggle++ ;
-		if(toggle % 2)
-			pDisk->bEndPointInToggle ^= 1 ;
-
-		unsigned uiBufAddr = (unsigned)(pDisk->pRawAlignedBuffer + (iIndex * EHCI_MAX_BYTES_PER_TD)) ;
-		if(EHCIController_SetupBuffer(pTD, uiBufAddr, uiCurReadLen)	!= EHCIController_SUCCESS)
-		{
-			printf("\n EHCI Transfer Buffer setup failed") ;
-			return false ;
-		}
-
-		if(iIndex > 0)
-			EHCIController_ppBulkReadTDs[ iIndex - 1 ]->uiNextpTDPointer = KERNEL_REAL_ADDRESS((unsigned)pTD) ;
-	}
-
-	EHCIController_ppBulkReadTDs[ iIndex - 1 ]->uiNextpTDPointer = 1 ;
-
-	EHCITransaction aTransaction(pDevice->pBulkInEndPt, EHCIController_ppBulkReadTDs[ 0 ]);
-
-	if(!aTransaction.PollWait())
-	{
-		printf("\n Bulk Read Transaction Failed: ") ;
-		EHCIController_DisplayTransactionState(pDevice->pBulkInEndPt, EHCIController_ppBulkReadTDs[0]) ;
-		EHCIController_DisplayStats(pController) ;
-		return false ;
-	}
-
-	EHCIDataHandler_CleanAysncQueueHead(pDevice->pBulkInEndPt) ;
-
-	memcpy(pDataBuf, pDisk->pRawAlignedBuffer, uiLen) ;
-
-	_UpdateReadStat(uiLen, false) ;
-	return true ;
+  return EHCIManager::Instance().BulkInTransfer(pDisk, pDataBuf, uiLen);
 }
 
 static bool EHCIController_BulkOutTransfer(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen)
 {
-	USBDevice* pUSBDevice = (USBDevice*)(pDisk->pUSBDevice) ;
-	EHCIDevice* pDevice = (EHCIDevice*)(pUSBDevice->pRawDevice) ;
-	EHCIController* pController = pDevice->pController ;
-
-	if(uiLen == 0)
-		return true ;
-
-	unsigned uiMaxLen = pDisk->usOutMaxPacketSize * MAX_EHCI_TD_PER_BULK_RW ;
-	if(uiLen > uiMaxLen)
-	{
-		printf("\n Max Bulk Transfer per Frame is %d bytes", uiMaxLen) ;
-		return false ;
-	}
-
-	unsigned uiMaxPacketSize = pDisk->usOutMaxPacketSize ;
-	int iNoOfTDs = uiLen / EHCI_MAX_BYTES_PER_TD ;
-	iNoOfTDs += ((uiLen % EHCI_MAX_BYTES_PER_TD) != 0) ;
-
-	if(iNoOfTDs > MAX_EHCI_TD_PER_BULK_RW)
-	{
-		printf("\n No. of TDs per Bulk Read/Wrtie exceeded limit %d !!", MAX_EHCI_TD_PER_BULK_RW) ;
-		return false ;
-	}
-
-	if(EHCIController_bFirstBulkWrite)
-	{
-		EHCIController_bFirstBulkWrite = false ;
-
-		int i ;
-		for(i = 0; i < MAX_EHCI_TD_PER_BULK_RW; i++)
-			EHCIController_ppBulkWriteTDs[ i ] = EHCIDataHandler_CreateAsyncQTransferDesc() ; 
-
-		pDevice->pBulkOutEndPt = EHCIController_CreateDeviceQueueHead(pController, uiMaxPacketSize, pDisk->uiEndPointOut, pUSBDevice->devAddr) ;
-	}
-	else
-	{
-		int i ;
-		for(i = 0; i < MAX_EHCI_TD_PER_BULK_RW; i++)
-			memset((void*)(EHCIController_ppBulkWriteTDs[i]), 0, sizeof(EHCIQTransferDesc)) ;
-
-		EHCIDataHandler_CleanAysncQueueHead(pDevice->pBulkOutEndPt) ;
-	}
-
-	int iIndex ;
-
-	memcpy(pDisk->pRawAlignedBuffer, pDataBuf, uiLen) ;
-
-	unsigned uiYetToWrite = uiLen ;
-	unsigned uiCurWriteLen ;
-
-	for(iIndex = 0; iIndex < iNoOfTDs; iIndex++)
-	{
-		uiCurWriteLen = (uiYetToWrite > EHCI_MAX_BYTES_PER_TD) ? EHCI_MAX_BYTES_PER_TD : uiYetToWrite ;
-		uiYetToWrite -= uiCurWriteLen ;
-
-		EHCIQTransferDesc* pTD = EHCIController_ppBulkWriteTDs[ iIndex ] ;
-
-		pTD->uiAltpTDPointer = 1 ;
-		pTD->uipTDToken = (pDisk->bEndPointOutToggle << 31) | (uiCurWriteLen << 16) | (3 << 10) | (1 << 7) ;
-		unsigned toggle = uiCurWriteLen / uiMaxPacketSize ;
-		if(uiCurWriteLen % uiMaxPacketSize)
-			toggle++ ;
-		if(toggle % 2)
-			pDisk->bEndPointOutToggle ^= 1 ;
-
-		unsigned uiBufAddr = (unsigned)(pDisk->pRawAlignedBuffer + (iIndex * EHCI_MAX_BYTES_PER_TD)) ;
-		if(EHCIController_SetupBuffer(pTD, uiBufAddr, uiCurWriteLen) != EHCIController_SUCCESS)
-		{
-			printf("\n EHCI Transfer Buffer setup failed") ;
-			return false ;
-		}
-
-		if(iIndex > 0)
-			EHCIController_ppBulkWriteTDs[ iIndex - 1 ]->uiNextpTDPointer = KERNEL_REAL_ADDRESS((unsigned)pTD) ;
-	}
-
-	EHCIController_ppBulkWriteTDs[ iIndex - 1 ]->uiNextpTDPointer = 1 ;
-
-	EHCITransaction aTransaction(pDevice->pBulkOutEndPt, EHCIController_ppBulkWriteTDs[ 0 ]);
-
-	if(!aTransaction.PollWait())
-	{
-		printf("\n Bulk Write Transaction Failed: ") ;
-		EHCIController_DisplayTransactionState(pDevice->pBulkOutEndPt, EHCIController_ppBulkWriteTDs[0]) ;
-		EHCIController_DisplayStats(pController) ;
-		return false ;
-	}
-
-	EHCIDataHandler_CleanAysncQueueHead(pDevice->pBulkOutEndPt) ;
-
-	return true ;
+  return EHCIManager::Instance().BulkOutTransfer(pDisk, pDataBuf, uiLen);
 }
 
-static byte EHCIController_DoProbe(int iIndex)
+EHCIController::EHCIController(PCIEntry* pPCIEntry, int iMemMapIndex) 
+  : _pPCIEntry(pPCIEntry), _pCapRegs(nullptr), _pOpRegs(nullptr), _pAsyncReclaimQueueHead(nullptr)
 {
-	printf("\n Working on EHCI Controller: %d", iIndex + 1) ;
-	EHCIController* pController = &(EHCIController_pList[ iIndex ]) ;
+	if(!pPCIEntry->BusEntity.NonBridge.bInterruptLine)
+    throw upan::exception(XLOC, "EHCI device with no IRQ. Check BIOS/PCI settings!");
 
-	if(pController->bSetupSuccess == false)
+	unsigned uiIOAddr = pPCIEntry->BusEntity.NonBridge.uiBaseAddress0;
+	printf("\n PCI Base Addr: %x", uiIOAddr);
+
+	uiIOAddr = uiIOAddr & PCI_ADDRESS_MEMORY_32_MASK;
+	unsigned uiIOSize = pPCIEntry->GetPCIMemSize(0);
+	printf("\n Raw MMIO Base Addr: %x, IO Size: %d", uiIOAddr, uiIOSize);
+
+	if(uiIOSize > PAGE_SIZE)
+    throw upan::exception(XLOC, "EHCI IO Size greater then 1 Page (4096b) not supported currently !");
+
+	if((uiIOAddr % PAGE_SIZE) + uiIOSize > PAGE_SIZE)
+    throw upan::exception(XLOC, "EHCI MMIO area is spanning across PAGE boundary. This is not supported in MOS!!");
+
+	// Currently an IO Size of not more than a PAGE_SIZE is supported
+	// And also the IO Addr is expected not to span a PAGE Boundary.
+	// Now, the mapping EHCI_MMIO_BASE_ADDR is choosen in such way that
+	// EHCI_MMIO_BASE_ADDR and EHCI_MMIO_BASE_ADDR + 32 * PAGE_SIZE fall
+	// within the same PTE Entry
+	// Further, mapping is necessary because the IOAddr can be any virtual address
+	// within 4 GB space potentially being an address outside the RAM size
+	// i.e, PDE/PTE limit
+	unsigned uiPDEAddress = MEM_PDBR ;
+	unsigned uiMapAddress = EHCI_MMIO_BASE_ADDR + iMemMapIndex * PAGE_SIZE;
+	unsigned uiPDEIndex = ((uiMapAddress >> 22) & 0x3FF) ;
+	unsigned uiPTEIndex = ((uiMapAddress >> 12) & 0x3FF) ;
+
+	unsigned uiPTEAddress = (((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPDEIndex]) & 0xFFFFF000 ;
+	// This page is a Read Only area for user process. 0x5 => 101 => User Domain, Read Only, Present Bit
+	((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPTEIndex] = (uiIOAddr & 0xFFFFF000) | 0x5 ;
+	Mem_FlushTLB();
+	
+	if(MemManager::Instance().MarkPageAsAllocated(uiIOAddr / PAGE_SIZE) != Success)
 	{
-		printf("EHCI device with no IRQ. Check BIOS/PCI settings!");
-		return EHCIController_FAILURE ;
 	}
 
-	if(EHCIController_PerformBiosToOSHandoff(pController) != EHCIController_SUCCESS)
-		return EHCIController_FAILURE ;
+	uiMapAddress = uiMapAddress + (uiIOAddr % PAGE_SIZE) - GLOBAL_DATA_SEGMENT_BASE ;
+	_pCapRegs = (EHCICapRegisters*)uiMapAddress;
+	byte bCapLen = _pCapRegs->bCapLength ;
+	_pOpRegs = (EHCIOpRegisters*)(uiMapAddress + bCapLen) ;
 
-	pController->pOpRegs->uiCtrlDSSegment = 0 ;
+	unsigned uiHCSParams = _pCapRegs->uiHCSParams ;
+	unsigned uiHCCParams = _pCapRegs->uiHCCParams ;
+	unsigned uiConfigFlag = _pOpRegs->uiConfigFlag ;
 
-	EHCIController_SetupInterrupts(pController) ;
+	printf("\n HCSPARAMS: %x\n HCCPARAMS: %x\n CAP Len: %x\n CF Bit: %d", uiHCSParams, uiHCCParams, bCapLen, uiConfigFlag) ;
+	printf("\n Bus: %d, Device: %d, Function: %d", pPCIEntry->uiBusNumber, pPCIEntry->uiDeviceNumber, pPCIEntry->uiFunction) ;
+	printf("\n Enabling Bus Master...") ;
+	/* Enable busmaster */
+	unsigned short usCommand ;
+	pPCIEntry->ReadPCIConfig(PCI_COMMAND, 2, &usCommand);
+	printf("\n Current value of PCI_COMMAND: %x", usCommand) ;
+	pPCIEntry->WritePCIConfig(PCI_COMMAND, 2, usCommand | PCI_COMMAND_IO | PCI_COMMAND_MASTER) ;
+	printf("\n After Bus Master Enable, value of PCI_COMMAND: %x", usCommand) ;
+}
 
-	RETURN_X_IF_NOT(EHCIController_SetupPeriodicFrameList(pController), EHCIController_SUCCESS, EHCIController_FAILURE) ;
-	RETURN_X_IF_NOT(EHCIController_SetupAsyncList(pController), EHCIController_SUCCESS, EHCIController_FAILURE) ;
+byte EHCIController::Probe()
+{
+  RETURN_X_IF_NOT(PerformBiosToOSHandoff(), EHCIController_SUCCESS, EHCIController_FAILURE);
 
-	EHCIController_SetSchedEnable(pController, PERIODIC_SCHEDULE_ENABLE, false) ;
-	EHCIController_SetSchedEnable(pController, ASYNC_SCHEDULE_ENABLE, false) ;
-	EHCIController_SetFrameListSize(pController) ;
+	_pOpRegs->uiCtrlDSSegment = 0 ;
 
-	EHCIController_StartController(pController) ;
+	SetupInterrupts();
+
+	RETURN_X_IF_NOT(SetupPeriodicFrameList(), EHCIController_SUCCESS, EHCIController_FAILURE) ;
+	RETURN_X_IF_NOT(SetupAsyncList(), EHCIController_SUCCESS, EHCIController_FAILURE) ;
+
+	SetSchedEnable(PERIODIC_SCHEDULE_ENABLE, false) ;
+	SetSchedEnable(ASYNC_SCHEDULE_ENABLE, false) ;
+	SetFrameListSize() ;
+
+	Start() ;
 
 	ProcessManager::Instance().Sleep(100) ;
 
-	if(EHCIController_SetConfigFlag(pController, true) != EHCIController_SUCCESS)
-		return EHCIController_FAILURE ;
+  RETURN_X_IF_NOT(SetConfigFlag(true), EHCIController_SUCCESS, EHCIController_FAILURE);
 
-	if(!EHCIController_CheckHCActive(pController))
+	if(!CheckHCActive())
 	{
 		printf("\n Failed to start EHCI Host Controller") ;
-		EHCIController_DisplayStats(pController) ;
+		DisplayStats() ;
 		return EHCIController_FAILURE ;
 	}
 
-	EHCIController_SetupPorts(pController) ;
+	SetupPorts() ;
 
-	RETURN_X_IF_NOT(EHCIController_StartAsyncSchedule(pController), true, EHCIController_FAILURE) ;
+	RETURN_X_IF_NOT(StartAsyncSchedule(), true, EHCIController_FAILURE) ;
 
 	byte bStatus ;
-	EHCIQueueHead* pControlQH = EHCIController_CreateDeviceQueueHead(pController, 64, 0, 0) ;
+	EHCIQueueHead* pControlQH = CreateDeviceQueueHead(64, 0, 0) ;
 
 	int devAddr = USBController_GetNextDevNum() ;
 	if(devAddr <= 0)
@@ -1480,7 +1218,7 @@ static byte EHCIController_DoProbe(int iIndex)
 
 	EHCIDevice* pEHCIDevice = (EHCIDevice*)DMM_AllocateForKernel(sizeof(EHCIDevice)) ;
 
-	pEHCIDevice->pController = pController ;
+	pEHCIDevice->pController = this ;
 	pEHCIDevice->pControlQH = pControlQH ;
 
 	RETURN_MSG_IF_NOT(bStatus, EHCIController_SetAddress(pEHCIDevice, devAddr), EHCIController_SUCCESS, "SetAddress Failed") ;
@@ -1543,20 +1281,54 @@ static byte EHCIController_DoProbe(int iIndex)
 	return EHCIController_SUCCESS ;
 }
 
-/**************************************************************************************************************************/
-
-byte EHCIController_Initialize()
+byte EHCIController::PerformBiosToOSHandoff()
 {
-	EHCIController_bFirstBulkRead = true ;
-	EHCIController_bFirstBulkWrite = true ;
+	byte bEECPOffSet = (_pCapRegs->uiHCCParams >> 8) & 0xFF ;
 
-	EHCIController_seqDevAddr = 0 ;
+	if(bEECPOffSet)
+	{
+		printf("\n Trying to perform complete handoff of EHCI Controller from BIOS to OS...") ;
+		printf("\n EECP Offset: %x", bEECPOffSet) ;
 
-	EHCIController_iCount = 0 ;
-	int i ;
-	for(i = 0; i < MAX_EHCI_ENTRIES; i++)
-		EHCIController_pList[ i ].bSetupSuccess = false ;
+		unsigned uiLegSup ;
+		_pPCIEntry->ReadPCIConfig(bEECPOffSet, 4, &uiLegSup) ;
 
+		printf("\n USB EHCI LEGSUP: %x", uiLegSup) ;
+		if((uiLegSup & (1 << 24)) == 0x1)
+		{
+			printf("\n EHCI Controller is already owned by OS. No need for Handoff") ;
+			return EHCIController_SUCCESS ;
+		}
+
+		uiLegSup = uiLegSup | ( 1 << 24 ) ;
+
+		_pPCIEntry->WritePCIConfig(bEECPOffSet, 4, uiLegSup) ;
+		ProcessManager::Instance().Sleep(500) ;
+		_pPCIEntry->ReadPCIConfig(bEECPOffSet, 4, &uiLegSup) ;
+
+		printf("\n New USB EHCI LEGSUP: %x", uiLegSup) ;
+		if((uiLegSup & (1 << 24)) == 0x0)
+		{
+			printf("\n BIOS to OS Handoff failed") ;
+			return EHCIController_FAILURE ;
+		}
+	}
+	else
+	{
+		printf("\n EHCI: System does not support Extended Capabilities. Cannot perform Bios Handoff") ;
+		return EHCIController_FAILURE ;
+	}
+
+	return EHCIController_SUCCESS ;
+}
+
+
+
+EHCIManager::EHCIManager() :
+  _seqDevAddr(0),
+  _bFirstBulkRead(true),
+  _bFirstBulkWrite(true)
+{
 	byte bControllerFound = false ;
 
 	for(auto pPCIEntry : PCIBusHandler::Instance().PCIEntries())
@@ -1569,8 +1341,9 @@ byte EHCIController_Initialize()
 			pPCIEntry->bSubClass == PCI_USB)
 		{
       printf("\n Interface = %u, Class = %u, SubClass = %u", pPCIEntry->bInterface, pPCIEntry->bClassCode, pPCIEntry->bSubClass);
+      int memMapIndex = _controllers.size();
+      _controllers.push_back(new EHCIController(pPCIEntry, memMapIndex));
 			bControllerFound = true ;
-			EHCIController_AddEntry(pPCIEntry) ;
 		}
 	}
 	
@@ -1578,38 +1351,214 @@ byte EHCIController_Initialize()
 		KC::MDisplay().LoadMessage("USB EHCI Controller Found", Success) ;
 	else
 		KC::MDisplay().LoadMessage("No USB EHCI Controller Found", Failure) ;
-
-	return EHCIController_SUCCESS ;
 }
 
-byte EHCIController_RouteToCompanionController()
+void EHCIManager::ProbeDevice()
 {
-	int i ;
-	for(i = 0; i < EHCIController_iCount; i++)
+  for(auto c : _controllers)
+    c->Probe();
+}
+
+byte EHCIManager::RouteToCompanionController()
+{
+  for(auto c : _controllers)
 	{
-		printf("\n Working on EHCI Controller: %d", i + 1) ;
-
-		EHCIController* pController = &(EHCIController_pList[ i ]) ;
-
-		if(pController->bSetupSuccess == false)
-		{
-			printf("EHCI device with no IRQ. Check BIOS/PCI settings!");
-			continue ;
-		}
-
-		if(EHCIController_PerformBiosToOSHandoff(pController) != EHCIController_SUCCESS)
+		if(c->PerformBiosToOSHandoff() != EHCIController_SUCCESS)
 			continue ;
 
-		if(EHCIController_SetConfigFlag(pController, false) != EHCIController_SUCCESS)
+		if(c->SetConfigFlag(false) != EHCIController_SUCCESS)
 			continue ;
 	}
 
 	return EHCIController_SUCCESS ;
 }
 
-void EHCIController_ProbeDevice()
+bool EHCIManager::BulkInTransfer(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen)
 {
-	for(int i = 0; i < EHCIController_iCount; i++)
-		EHCIController_DoProbe(i) ;
+	_UpdateReadStat(uiLen, true) ;
+	USBDevice* pUSBDevice = (USBDevice*)(pDisk->pUSBDevice) ;
+	EHCIDevice* pDevice = (EHCIDevice*)(pUSBDevice->pRawDevice) ;
+	EHCIController* pController = pDevice->pController ;
+
+	if(uiLen == 0)
+		return true ;
+
+	unsigned uiMaxLen = pDisk->usInMaxPacketSize * MAX_EHCI_TD_PER_BULK_RW ;
+	if(uiLen > uiMaxLen)
+	{
+		printf("\n Max Bulk Transfer per Frame is %d bytes", uiMaxLen) ;
+		return false ;
+	}
+
+	int iNoOfTDs = uiLen / EHCI_MAX_BYTES_PER_TD ;
+	iNoOfTDs += ((uiLen % EHCI_MAX_BYTES_PER_TD) != 0) ;
+
+	if(iNoOfTDs > MAX_EHCI_TD_PER_BULK_RW)
+	{
+		printf("\n No. of TDs per Bulk Read/Wrtie exceeded limit %d !!", MAX_EHCI_TD_PER_BULK_RW) ;
+		return false ;
+	}
+
+  const unsigned uiMaxPacketSize = pDisk->usInMaxPacketSize;
+
+	if(_bFirstBulkRead)
+	{
+		_bFirstBulkRead = false ;
+
+		for(int i = 0; i < MAX_EHCI_TD_PER_BULK_RW; i++)
+			_ppBulkReadTDs[ i ] = EHCIDataHandler_CreateAsyncQTransferDesc() ; 
+
+		pDevice->pBulkInEndPt = pController->CreateDeviceQueueHead(uiMaxPacketSize, pDisk->uiEndPointIn, pUSBDevice->devAddr) ;
+	}
+	else
+	{
+		int i ;
+		for(i = 0; i < MAX_EHCI_TD_PER_BULK_RW; i++)
+			memset((void*)(_ppBulkReadTDs[i]), 0, sizeof(EHCIQTransferDesc)) ;
+
+		EHCIDataHandler_CleanAysncQueueHead(pDevice->pBulkInEndPt) ;
+	}
+
+	int iIndex ;
+
+	unsigned uiYetToRead = uiLen ;
+	unsigned uiCurReadLen ;
+	for(iIndex = 0; iIndex < iNoOfTDs; iIndex++)
+	{
+		uiCurReadLen = (uiYetToRead > EHCI_MAX_BYTES_PER_TD) ? EHCI_MAX_BYTES_PER_TD : uiYetToRead ;
+		uiYetToRead -= uiCurReadLen ;
+
+		EHCIQTransferDesc* pTD = _ppBulkReadTDs[ iIndex ] ;
+
+		pTD->uiAltpTDPointer = 1 ;
+		pTD->uipTDToken = (pDisk->bEndPointInToggle << 31) | (uiCurReadLen << 16) | (3 << 10) | (1 << 8) | (1 << 7) ;
+		unsigned toggle = uiCurReadLen / uiMaxPacketSize ;
+		if(uiCurReadLen % uiMaxPacketSize)
+			toggle++ ;
+		if(toggle % 2)
+			pDisk->bEndPointInToggle ^= 1 ;
+
+		unsigned uiBufAddr = (unsigned)(pDisk->pRawAlignedBuffer + (iIndex * EHCI_MAX_BYTES_PER_TD)) ;
+		if(EHCIController_SetupBuffer(pTD, uiBufAddr, uiCurReadLen)	!= EHCIController_SUCCESS)
+		{
+			printf("\n EHCI Transfer Buffer setup failed") ;
+			return false ;
+		}
+
+		if(iIndex > 0)
+			_ppBulkReadTDs[ iIndex - 1 ]->uiNextpTDPointer = KERNEL_REAL_ADDRESS((unsigned)pTD) ;
+	}
+
+	_ppBulkReadTDs[ iIndex - 1 ]->uiNextpTDPointer = 1 ;
+
+	EHCITransaction aTransaction(pDevice->pBulkInEndPt, _ppBulkReadTDs[ 0 ]);
+
+	if(!aTransaction.PollWait())
+	{
+		printf("\n Bulk Read Transaction Failed: ") ;
+		EHCIController_DisplayTransactionState(pDevice->pBulkInEndPt, _ppBulkReadTDs[0]) ;
+		pController->DisplayStats() ;
+		return false ;
+	}
+
+	EHCIDataHandler_CleanAysncQueueHead(pDevice->pBulkInEndPt) ;
+
+	memcpy(pDataBuf, pDisk->pRawAlignedBuffer, uiLen) ;
+
+	_UpdateReadStat(uiLen, false) ;
+	return true ;
 }
 
+bool EHCIManager::BulkOutTransfer(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen)
+{
+	USBDevice* pUSBDevice = (USBDevice*)(pDisk->pUSBDevice) ;
+	EHCIDevice* pDevice = (EHCIDevice*)(pUSBDevice->pRawDevice) ;
+	EHCIController* pController = pDevice->pController ;
+
+	if(uiLen == 0)
+		return true ;
+
+	unsigned uiMaxLen = pDisk->usOutMaxPacketSize * MAX_EHCI_TD_PER_BULK_RW ;
+	if(uiLen > uiMaxLen)
+	{
+		printf("\n Max Bulk Transfer per Frame is %d bytes", uiMaxLen) ;
+		return false ;
+	}
+
+	int iNoOfTDs = uiLen / EHCI_MAX_BYTES_PER_TD ;
+	iNoOfTDs += ((uiLen % EHCI_MAX_BYTES_PER_TD) != 0) ;
+
+	if(iNoOfTDs > MAX_EHCI_TD_PER_BULK_RW)
+	{
+		printf("\n No. of TDs per Bulk Read/Wrtie exceeded limit %d !!", MAX_EHCI_TD_PER_BULK_RW) ;
+		return false ;
+	}
+
+  const unsigned uiMaxPacketSize = pDisk->usOutMaxPacketSize;
+
+	if(_bFirstBulkWrite)
+	{
+		_bFirstBulkWrite = false ;
+
+		for(int i = 0; i < MAX_EHCI_TD_PER_BULK_RW; i++)
+			_ppBulkWriteTDs[ i ] = EHCIDataHandler_CreateAsyncQTransferDesc() ; 
+
+		pDevice->pBulkOutEndPt = pController->CreateDeviceQueueHead(uiMaxPacketSize, pDisk->uiEndPointOut, pUSBDevice->devAddr) ;
+	}
+	else
+	{
+		int i ;
+		for(i = 0; i < MAX_EHCI_TD_PER_BULK_RW; i++)
+			memset((void*)(_ppBulkWriteTDs[i]), 0, sizeof(EHCIQTransferDesc)) ;
+
+		EHCIDataHandler_CleanAysncQueueHead(pDevice->pBulkOutEndPt) ;
+	}
+
+	int iIndex ;
+
+	memcpy(pDisk->pRawAlignedBuffer, pDataBuf, uiLen) ;
+
+	unsigned uiYetToWrite = uiLen ;
+	unsigned uiCurWriteLen ;
+
+	for(iIndex = 0; iIndex < iNoOfTDs; iIndex++)
+	{
+		uiCurWriteLen = (uiYetToWrite > EHCI_MAX_BYTES_PER_TD) ? EHCI_MAX_BYTES_PER_TD : uiYetToWrite ;
+		uiYetToWrite -= uiCurWriteLen ;
+
+		EHCIQTransferDesc* pTD = _ppBulkWriteTDs[ iIndex ] ;
+
+		pTD->uiAltpTDPointer = 1 ;
+		pTD->uipTDToken = (pDisk->bEndPointOutToggle << 31) | (uiCurWriteLen << 16) | (3 << 10) | (1 << 7) ;
+		unsigned toggle = uiCurWriteLen / uiMaxPacketSize ;
+		if(uiCurWriteLen % uiMaxPacketSize)
+			toggle++ ;
+		if(toggle % 2)
+			pDisk->bEndPointOutToggle ^= 1 ;
+
+		unsigned uiBufAddr = (unsigned)(pDisk->pRawAlignedBuffer + (iIndex * EHCI_MAX_BYTES_PER_TD)) ;
+		if(EHCIController_SetupBuffer(pTD, uiBufAddr, uiCurWriteLen) != EHCIController_SUCCESS)
+		{
+			printf("\n EHCI Transfer Buffer setup failed") ;
+			return false ;
+		}
+
+		if(iIndex > 0)
+			_ppBulkWriteTDs[ iIndex - 1 ]->uiNextpTDPointer = KERNEL_REAL_ADDRESS((unsigned)pTD) ;
+	}
+
+	_ppBulkWriteTDs[ iIndex - 1 ]->uiNextpTDPointer = 1 ;
+  
+	EHCITransaction aTransaction(pDevice->pBulkOutEndPt, _ppBulkWriteTDs[ 0 ]);
+
+	if(!aTransaction.PollWait())
+	{
+		printf("\n Bulk Write Transaction Failed: ") ;
+		EHCIController_DisplayTransactionState(pDevice->pBulkOutEndPt, _ppBulkWriteTDs[0]) ;
+		pController->DisplayStats() ;
+		return false ;
+	}
+  
+	EHCIDataHandler_CleanAysncQueueHead(pDevice->pBulkOutEndPt) ;
+  return true;
+}

@@ -94,22 +94,4 @@ typedef struct
 
 } PACKED EHCIQueueHead ;
 
-typedef struct
-{
-	PCIEntry* pPCIEntry ;
-	bool bSetupSuccess ;
-	EHCICapRegisters* pCapRegs ;
-	EHCIOpRegisters* pOpRegs ;
-
-	EHCIQueueHead* pAsyncReclaimQueueHead ;
-} EHCIController ;
-
-typedef struct
-{
-	EHCIController* pController ;
-	EHCIQueueHead* pControlQH ;
-	EHCIQueueHead* pBulkInEndPt ;
-	EHCIQueueHead* pBulkOutEndPt;
-} EHCIDevice ;
-
 #endif

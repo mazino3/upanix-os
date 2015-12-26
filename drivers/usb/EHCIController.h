@@ -46,8 +46,72 @@ class EHCITransaction
     upan::list<unsigned> _dStorageList;
 };
 
-byte EHCIController_Initialize() ;
-void EHCIController_ProbeDevice() ;
-byte EHCIController_RouteToCompanionController() ;
+class EHCIController
+{
+  public:
+    EHCIController(PCIEntry*, int iMemMapIndex);
+    byte Probe();
+    void DisplayStats();
+    byte AsyncDoorBell();
+
+  private:
+    byte PerformBiosToOSHandoff();
+    void SetupInterrupts();
+    byte SetupPeriodicFrameList();
+    byte SetupAsyncList();
+    void SetSchedEnable(unsigned uiScheduleType, bool bEnable);
+    void SetFrameListSize();
+    void Start();
+    void Stop();
+    byte SetConfigFlag(bool bSet);
+    bool CheckHCActive();
+    void SetupPorts();
+    unsigned GetNoOfPortsActual();
+    unsigned GetNoOfPorts();
+    bool StartAsyncSchedule();
+    bool StopAsyncSchedule();
+    bool WaitCheckAsyncScheduleStatus(bool bValue);
+    bool PollWait(unsigned* pValue, int iBitPos, unsigned value);
+    EHCIQueueHead* CreateDeviceQueueHead(int iMaxPacketSize, int iEndPtAddr, int iDevAddr);
+    void AddAsyncQueueHead(EHCIQueueHead* pQH);
+
+    PCIEntry* _pPCIEntry;
+    EHCICapRegisters* _pCapRegs;
+    EHCIOpRegisters* _pOpRegs;
+    EHCIQueueHead* _pAsyncReclaimQueueHead;
+
+    friend class EHCIManager;
+};
+
+typedef struct
+{
+	EHCIController* pController ;
+	EHCIQueueHead* pControlQH ;
+	EHCIQueueHead* pBulkInEndPt ;
+	EHCIQueueHead* pBulkOutEndPt;
+} EHCIDevice ;
+
+class EHCIManager
+{
+  private:
+    EHCIManager();
+  public:
+    static EHCIManager& Instance()
+    {
+      static EHCIManager instance;
+      return instance;
+    }
+    void ProbeDevice();
+    byte RouteToCompanionController();
+    bool BulkInTransfer(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen);
+    bool BulkOutTransfer(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen);
+  private:
+    int _seqDevAddr;
+    bool _bFirstBulkRead;
+    bool _bFirstBulkWrite;
+    EHCIQTransferDesc* _ppBulkReadTDs[ MAX_EHCI_TD_PER_BULK_RW ];
+    EHCIQTransferDesc* _ppBulkWriteTDs[ MAX_EHCI_TD_PER_BULK_RW ];
+    upan::list<EHCIController*> _controllers;    
+};
 
 #endif
