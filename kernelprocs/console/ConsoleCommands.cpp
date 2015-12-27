@@ -44,7 +44,7 @@
 #include <SystemUtil.h>
 #include <MountManager.h>
 #include <UHCIController.h>
-#include <EHCIController.h>
+#include <EHCIManager.h>
 #include <BTree.h>
 #include <TestSuite.h>
 #include <video.h>

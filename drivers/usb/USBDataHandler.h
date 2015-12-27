@@ -19,6 +19,7 @@
 #define _USB_DATA_HANDLER_H_
 
 #include <Global.h>
+#include <USBStructures.h>
 
 #define DEF_DESC_LEN 8
 

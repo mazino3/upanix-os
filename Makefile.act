@@ -120,6 +120,9 @@ MOS_OBJS = \
 	./drivers/bus/SCSIHandler.o \
 	./drivers/usb/USBDataHandler.o \
 	./drivers/usb/USBController.o \
+	./drivers/usb/EHCIDevice.o \
+	./drivers/usb/EHCITransaction.o \
+	./drivers/usb/EHCIManager.o \
 	./drivers/usb/EHCIController.o \
 	./drivers/usb/EHCIDataHandler.o \
 	./drivers/usb/UHCIDataHandler.o \

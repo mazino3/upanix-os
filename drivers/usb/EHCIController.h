@@ -24,7 +24,6 @@
 # include <EHCIStructures.h>
 
 #define EHCIController_SUCCESS		0
-#define EHCIController_ERR_CONFIG	1
 #define EHCIController_FAILURE		2
 
 #define MAX_EHCI_ENTRIES 32
@@ -32,19 +31,6 @@
 #define EHCI_MAX_BYTES_PER_TD 4096
 
 #define QH_TYPE_CONTROL 1
-
-class EHCITransaction
-{
-  public:
-    EHCITransaction(EHCIQueueHead* qh, EHCIQTransferDesc* tdStart);
-    bool PollWait();
-    void Clear();
-
-  private:
-    EHCIQueueHead* _qh;
-    EHCIQTransferDesc* _tdStart;
-    upan::list<unsigned> _dStorageList;
-};
 
 class EHCIController
 {
@@ -81,56 +67,6 @@ class EHCIController
     EHCIQueueHead* _pAsyncReclaimQueueHead;
 
     friend class EHCIManager;
-};
-
-class EHCIDevice final : public USBDevice
-{
-  public:
-    EHCIDevice(EHCIController*);
-
-    bool GetMaxLun(byte* bLUN);
-    bool CommandReset();
-    bool ClearHaltEndPoint(USBulkDisk* pDisk, bool bIn);
-    bool BulkRead(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen);
-    bool BulkWrite(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen);
-
-  private:
-    bool SetAddress();
-    bool GetDeviceDescriptor(USBStandardDeviceDesc* pDevDesc);
-    bool GetDescriptor(unsigned short usDescValue, unsigned short usIndex, int iLen, void* pDestDesc);
-    bool GetConfigValue(char& bConfigValue);
-    bool GetDeviceStringDetails();
-    bool SetConfiguration(char bConfigValue);
-    bool CheckConfiguration(char& bConfigValue, char bNumConfigs);
-    bool GetConfigDescriptor(char bNumConfigs, USBStandardConfigDesc** pConfigDesc);
-    bool GetStringDescriptorZero(USBStringDescZero** ppStrDescZero);
-
-    EHCIController* pController;
-    EHCIQueueHead* pControlQH ;
-    EHCIQueueHead* pBulkInEndPt ;
-    EHCIQueueHead* pBulkOutEndPt;
-
-    bool _bFirstBulkRead;
-    bool _bFirstBulkWrite;
-    EHCIQTransferDesc* _ppBulkReadTDs[ MAX_EHCI_TD_PER_BULK_RW ];
-    EHCIQTransferDesc* _ppBulkWriteTDs[ MAX_EHCI_TD_PER_BULK_RW ];
-};
-
-class EHCIManager
-{
-  private:
-    EHCIManager();
-  public:
-    static EHCIManager& Instance()
-    {
-      static EHCIManager instance;
-      return instance;
-    }
-    void ProbeDevice();
-    byte RouteToCompanionController();
-  private:
-    int _seqDevAddr;
-    upan::list<EHCIController*> _controllers;    
 };
 
 #endif

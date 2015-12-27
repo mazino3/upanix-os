@@ -41,7 +41,7 @@
 # include <MountManager.h>
 # include <DisplayManager.h>
 # include <UHCIController.h>
-# include <EHCIController.h>
+# include <EHCIManager.h>
 # include <exception.h>
 
 /**** Global Variable declaration/definition *****/
