@@ -53,6 +53,7 @@ class EHCIController
     byte Probe();
     void DisplayStats();
     byte AsyncDoorBell();
+    EHCIQueueHead* CreateDeviceQueueHead(int iMaxPacketSize, int iEndPtAddr, int iDevAddr);
 
   private:
     byte PerformBiosToOSHandoff();
@@ -72,7 +73,6 @@ class EHCIController
     bool StopAsyncSchedule();
     bool WaitCheckAsyncScheduleStatus(bool bValue);
     bool PollWait(unsigned* pValue, int iBitPos, unsigned value);
-    EHCIQueueHead* CreateDeviceQueueHead(int iMaxPacketSize, int iEndPtAddr, int iDevAddr);
     void AddAsyncQueueHead(EHCIQueueHead* pQH);
 
     PCIEntry* _pPCIEntry;
@@ -83,13 +83,38 @@ class EHCIController
     friend class EHCIManager;
 };
 
-typedef struct
+class EHCIDevice final : public USBDevice
 {
-	EHCIController* pController ;
-	EHCIQueueHead* pControlQH ;
-	EHCIQueueHead* pBulkInEndPt ;
-	EHCIQueueHead* pBulkOutEndPt;
-} EHCIDevice ;
+  public:
+    EHCIDevice(EHCIController*);
+
+    bool GetMaxLun(byte* bLUN);
+    bool CommandReset();
+    bool ClearHaltEndPoint(USBulkDisk* pDisk, bool bIn);
+    bool BulkRead(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen);
+    bool BulkWrite(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen);
+
+  private:
+    bool SetAddress();
+    bool GetDeviceDescriptor(USBStandardDeviceDesc* pDevDesc);
+    bool GetDescriptor(unsigned short usDescValue, unsigned short usIndex, int iLen, void* pDestDesc);
+    bool GetConfigValue(char& bConfigValue);
+    bool GetDeviceStringDetails();
+    bool SetConfiguration(char bConfigValue);
+    bool CheckConfiguration(char& bConfigValue, char bNumConfigs);
+    bool GetConfigDescriptor(char bNumConfigs, USBStandardConfigDesc** pConfigDesc);
+    bool GetStringDescriptorZero(USBStringDescZero** ppStrDescZero);
+
+    EHCIController* pController;
+    EHCIQueueHead* pControlQH ;
+    EHCIQueueHead* pBulkInEndPt ;
+    EHCIQueueHead* pBulkOutEndPt;
+
+    bool _bFirstBulkRead;
+    bool _bFirstBulkWrite;
+    EHCIQTransferDesc* _ppBulkReadTDs[ MAX_EHCI_TD_PER_BULK_RW ];
+    EHCIQTransferDesc* _ppBulkWriteTDs[ MAX_EHCI_TD_PER_BULK_RW ];
+};
 
 class EHCIManager
 {
@@ -103,14 +128,8 @@ class EHCIManager
     }
     void ProbeDevice();
     byte RouteToCompanionController();
-    bool BulkInTransfer(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen);
-    bool BulkOutTransfer(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen);
   private:
     int _seqDevAddr;
-    bool _bFirstBulkRead;
-    bool _bFirstBulkWrite;
-    EHCIQTransferDesc* _ppBulkReadTDs[ MAX_EHCI_TD_PER_BULK_RW ];
-    EHCIQTransferDesc* _ppBulkWriteTDs[ MAX_EHCI_TD_PER_BULK_RW ];
     upan::list<EHCIController*> _controllers;    
 };
 

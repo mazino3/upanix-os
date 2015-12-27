@@ -38,8 +38,45 @@
 #define MAX_UHCI_PCI_ENTRIES 32
 #define MAX_UHCI_TD_PER_BULK_RW 8
 
-byte UHCIController_Initialize() ;
-byte UHCIController_ProbeDevice() ;
-bool UHCIController_PoleWait(unsigned* pPoleAddr, unsigned uiValue) ; 
+class UHCIDevice final : public USBDevice
+{
+  public:
+    UHCIDevice();
+
+    bool GetMaxLun(byte* bLUN);
+    bool CommandReset();
+    bool ClearHaltEndPoint(USBulkDisk* pDisk, bool bIn);
+    bool BulkRead(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen);
+    bool BulkWrite(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen);
+
+  private:
+    bool GetDeviceStringDetails();
+
+    unsigned uiIOBase ;
+    unsigned uiIOSize ;
+    int iIRQ ;
+    int iNumPorts ;
+
+    UHCITransferDesc* _ppBulkReadTDs[ MAX_UHCI_TD_PER_BULK_RW ] ;
+    UHCITransferDesc* _ppBulkWriteTDs[ MAX_UHCI_TD_PER_BULK_RW ] ;
+    bool _bFirstBulkRead ;
+    bool _bFirstBulkWrite ;
+};
+
+class UHCIManager
+{
+  private:
+    UHCIManager();
+  public:
+    static UHCIManager& Instance()
+    {
+      static UHCIManager instance;
+      return instance;
+    }
+    byte ProbeDevice() ;
+    bool PollWait(unsigned* pPoleAddr, unsigned uiValue) ; 
+  private:
+    upan::list<PCIEntry*> _uhciEntries;
+};
 
 #endif

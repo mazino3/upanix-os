@@ -35,30 +35,22 @@
 
 #include <stdio.h>
 
-static PCIEntry* UHCIController_pPCIEntryList[ MAX_UHCI_PCI_ENTRIES ] ;
-static int UHCIController_iPCIEntryCount ;
 static const IRQ* UHCI_USB_IRQ ;
 
-UHCITransferDesc* UHCIController_ppBulkReadTDs[ MAX_UHCI_TD_PER_BULK_RW ] ;
-UHCITransferDesc* UHCIController_ppBulkWriteTDs[ MAX_UHCI_TD_PER_BULK_RW ] ;
-static bool UHCIController_bFirstBulkRead ;
-static bool UHCIController_bFirstBulkWrite ;
-
-static byte UHCIController_GetDescriptor(unsigned uiIOAddr, char devAddr, unsigned short usDescValue, unsigned short usIndex, int iLen, void* pDestDesc) ;
-static byte UHCIController_SetAddress(unsigned uiIOAddr, char devAddr) ;
-static byte UHCIController_GetConfiguration(unsigned uiIOAddr, char devAddr, char* bConfigValue) ;
-static byte UHCIController_SetConfiguration(unsigned uiIOAddr, char devAddr, char bConfigValue) ;
-static byte UHCIController_CheckConfiguration(unsigned uiIOAddr, char devAddr, char* bConfigValue, char bNumConfigs) ;
-static byte UHCIController_GetDeviceDescriptor(unsigned uiIOAddr, char devAddr, USBStandardDeviceDesc* pDevDesc) ;
-static byte UHCIController_GetConfigDescriptor(unsigned uiIOAddr, char devAddr, char bNumConfigs,
+static byte UHCIController_GetDescriptor(unsigned uiIOBase, char devAddr, unsigned short usDescValue, unsigned short usIndex, int iLen, void* pDestDesc) ;
+static byte UHCIController_SetAddress(unsigned uiIOBase, char devAddr) ;
+static byte UHCIController_GetConfiguration(unsigned uiIOBase, char devAddr, char* bConfigValue) ;
+static byte UHCIController_SetConfiguration(unsigned uiIOBase, char devAddr, char bConfigValue) ;
+static byte UHCIController_CheckConfiguration(unsigned uiIOBase, char devAddr, char* bConfigValue, char bNumConfigs) ;
+static byte UHCIController_GetDeviceDescriptor(unsigned uiIOBase, char devAddr, USBStandardDeviceDesc* pDevDesc) ;
+static byte UHCIController_GetConfigDescriptor(unsigned uiIOBase, char devAddr, char bNumConfigs,
 												USBStandardConfigDesc** pConfigDesc) ;
 
-static byte UHCIController_Alloc(PCIEntry* pPCIEntry, unsigned uiIOAddr, unsigned uiIOSize) ;
+static byte UHCIController_Alloc(PCIEntry* pPCIEntry, unsigned uiIOBase, unsigned uiIOSize) ;
 static void UHCIController_IRQHandler() ;
-static byte UHCIController_GetDeviceStringDetails(USBDevice* pUSBDevice) ;
-static byte UHCIController_GetStringDescriptorZero(unsigned uiIOAddr, char devAddr, USBStringDescZero** ppStrDescZero) ;
+static byte UHCIController_GetStringDescriptorZero(unsigned uiIOBase, char devAddr, USBStringDescZero** ppStrDescZero) ;
 
-static byte UHCIController_GetDescriptor(unsigned uiIOAddr, char devAddr, unsigned short usDescValue, unsigned short usIndex, int iLen, void* pDestDesc)
+static byte UHCIController_GetDescriptor(unsigned uiIOBase, char devAddr, unsigned short usDescValue, unsigned short usIndex, int iLen, void* pDestDesc)
 {
 	byte bStatus ;
 	unsigned uiFrameNumber ;
@@ -132,7 +124,7 @@ static byte UHCIController_GetDescriptor(unsigned uiIOAddr, char devAddr, unsign
 				(unsigned)pTD2, pTD2->uiControlnStatus, pTD2->uiToken,
 				(unsigned)pTD3, pTD3->uiControlnStatus, pTD3->uiToken) ;
 
-		printf("\nCurrent Frame Number = %d", PortCom_ReceiveWord(uiIOAddr + FRNUM_REG)) ;
+		printf("\nCurrent Frame Number = %d", PortCom_ReceiveWord(uiIOBase + FRNUM_REG)) ;
 		printf("\nFrame Number = %d", uiFrameNumber) ;
 
 		UHCIDataHandler_SetFrameListEntry(uiFrameNumber, ((unsigned)pQH + GLOBAL_DATA_SEGMENT_BASE) | 0x2, true, true) ;
@@ -147,9 +139,9 @@ static byte UHCIController_GetDescriptor(unsigned uiIOAddr, char devAddr, unsign
 				(unsigned)pTD3, pTD3->uiControlnStatus, pTD3->uiToken) ;
 		printf("\nFrame Reg = %x", UHCIDataHandler_GetFrameListEntry(uiFrameNumber)) ;
 
-		printf("\n Status = %x", PortCom_ReceiveWord(uiIOAddr + USBSTS_REG)) ;
-		printf("\n Port Status = %x", PortCom_ReceiveWord(uiIOAddr + PORTSC_REG)) ;
-		printf("\nFrame Number = %d", PortCom_ReceiveWord(uiIOAddr + FRNUM_REG)) ;
+		printf("\n Status = %x", PortCom_ReceiveWord(uiIOBase + USBSTS_REG)) ;
+		printf("\n Port Status = %x", PortCom_ReceiveWord(uiIOBase + PORTSC_REG)) ;
+		printf("\nFrame Number = %d", PortCom_ReceiveWord(uiIOBase + FRNUM_REG)) ;
 
 		void* pDesc = (void*)UHCIDataHandler_GetTDAttribute(pTD2, UHCI_ATTR_BUF_PTR) ;
 		
@@ -162,7 +154,7 @@ static byte UHCIController_GetDescriptor(unsigned uiIOAddr, char devAddr, unsign
 	{
 		UHCIDataHandler_SetFrameListEntry(uiFrameNumber, ((unsigned)pQH + GLOBAL_DATA_SEGMENT_BASE) | 0x2, true, true) ;
 
-		if(UHCIController_PoleWait(&(pQH->uiElementLinkPointer), 1) == false)
+		if(UHCIManager::Instance().PollWait(&(pQH->uiElementLinkPointer), 1) == false)
 		{
 			printf("\nFrame Number = %d", uiFrameNumber) ;
 			printf("\n QH Element Pointer = %x", pQH->uiElementLinkPointer) ;
@@ -171,9 +163,9 @@ static byte UHCIController_GetDescriptor(unsigned uiIOAddr, char devAddr, unsign
 					(unsigned)pTD1, pTD1->uiControlnStatus, pTD1->uiToken,
 					(unsigned)pTD2, pTD2->uiControlnStatus, pTD2->uiToken,
 					(unsigned)pTD3, pTD3->uiControlnStatus, pTD3->uiToken) ;
-			printf("\n Status = %x", PortCom_ReceiveWord(uiIOAddr + USBSTS_REG)) ;
-			printf("\n Port Status = %x", PortCom_ReceiveWord(uiIOAddr + PORTSC_REG)) ;
-			printf("\nFrame Number = %d", PortCom_ReceiveWord(uiIOAddr + FRNUM_REG)) ;
+			printf("\n Status = %x", PortCom_ReceiveWord(uiIOBase + USBSTS_REG)) ;
+			printf("\n Port Status = %x", PortCom_ReceiveWord(uiIOBase + PORTSC_REG)) ;
+			printf("\nFrame Number = %d", PortCom_ReceiveWord(uiIOBase + FRNUM_REG)) ;
 		}
 
 		void* pDesc = (void*)UHCIDataHandler_GetTDAttribute(pTD2, UHCI_ATTR_BUF_PTR) ;
@@ -186,7 +178,7 @@ static byte UHCIController_GetDescriptor(unsigned uiIOAddr, char devAddr, unsign
 	return UHCIController_SUCCESS ;
 }
 
-static byte UHCIController_GetConfiguration(unsigned uiIOAddr, char devAddr, char* bConfigValue)
+static byte UHCIController_GetConfiguration(unsigned uiIOBase, char devAddr, char* bConfigValue)
 {
 	byte bStatus ;
 	unsigned uiFrameNumber ;
@@ -255,7 +247,7 @@ static byte UHCIController_GetConfiguration(unsigned uiIOAddr, char devAddr, cha
 				(unsigned)pTD2, pTD2->uiControlnStatus, pTD2->uiToken,
 				(unsigned)pTD3, pTD3->uiControlnStatus, pTD3->uiToken) ;
 
-		printf("\nCurrent Frame Number = %d", PortCom_ReceiveWord(uiIOAddr + FRNUM_REG)) ;
+		printf("\nCurrent Frame Number = %d", PortCom_ReceiveWord(uiIOBase + FRNUM_REG)) ;
 		printf("\nFrame Number = %d", uiFrameNumber) ;
 
 		UHCIDataHandler_SetFrameListEntry(uiFrameNumber, ((unsigned)pQH + GLOBAL_DATA_SEGMENT_BASE) | 0x2, true, true) ;
@@ -270,9 +262,9 @@ static byte UHCIController_GetConfiguration(unsigned uiIOAddr, char devAddr, cha
 				(unsigned)pTD3, pTD3->uiControlnStatus, pTD3->uiToken) ;
 		printf("\nFrame Reg = %x", UHCIDataHandler_GetFrameListEntry(uiFrameNumber)) ;
 
-		printf("\n Status = %x", PortCom_ReceiveWord(uiIOAddr + USBSTS_REG)) ;
-		printf("\n Port Status = %x", PortCom_ReceiveWord(uiIOAddr + PORTSC_REG)) ;
-		printf("\nFrame Number = %d", PortCom_ReceiveWord(uiIOAddr + FRNUM_REG)) ;
+		printf("\n Status = %x", PortCom_ReceiveWord(uiIOBase + USBSTS_REG)) ;
+		printf("\n Port Status = %x", PortCom_ReceiveWord(uiIOBase + PORTSC_REG)) ;
+		printf("\nFrame Number = %d", PortCom_ReceiveWord(uiIOBase + FRNUM_REG)) ;
 
 		*bConfigValue = *((char*)UHCIDataHandler_GetTDAttribute(pTD2, UHCI_ATTR_BUF_PTR)) ;
 
@@ -283,7 +275,7 @@ static byte UHCIController_GetConfiguration(unsigned uiIOAddr, char devAddr, cha
 	{
 		UHCIDataHandler_SetFrameListEntry(uiFrameNumber, ((unsigned)pQH + GLOBAL_DATA_SEGMENT_BASE) | 0x2, true, true) ;
 
-		if(UHCIController_PoleWait(&(pQH->uiElementLinkPointer), 1) == false)
+		if(UHCIManager::Instance().PollWait(&(pQH->uiElementLinkPointer), 1) == false)
 		{
 			printf("\nFrame Number = %d", uiFrameNumber) ;
 			printf("\n QH Element Pointer = %x", pQH->uiElementLinkPointer) ;
@@ -293,9 +285,9 @@ static byte UHCIController_GetConfiguration(unsigned uiIOAddr, char devAddr, cha
 					(unsigned)pTD2, pTD2->uiControlnStatus, pTD2->uiToken,
 					(unsigned)pTD3, pTD3->uiControlnStatus, pTD3->uiToken) ;
 
-			printf("\n Status = %x", PortCom_ReceiveWord(uiIOAddr + USBSTS_REG)) ;
-			printf("\n Port Status = %x", PortCom_ReceiveWord(uiIOAddr + PORTSC_REG)) ;
-			printf("\nFrame Number = %d", PortCom_ReceiveWord(uiIOAddr + FRNUM_REG)) ;
+			printf("\n Status = %x", PortCom_ReceiveWord(uiIOBase + USBSTS_REG)) ;
+			printf("\n Port Status = %x", PortCom_ReceiveWord(uiIOBase + PORTSC_REG)) ;
+			printf("\nFrame Number = %d", PortCom_ReceiveWord(uiIOBase + FRNUM_REG)) ;
 		}
 
 		*bConfigValue = *((char*)UHCIDataHandler_GetTDAttribute(pTD2, UHCI_ATTR_BUF_PTR)) ;
@@ -306,7 +298,7 @@ static byte UHCIController_GetConfiguration(unsigned uiIOAddr, char devAddr, cha
 	return UHCIController_SUCCESS ;
 }
 
-static byte UHCIController_SetConfiguration(unsigned uiIOAddr, char devAddr, char bConfigValue)
+static byte UHCIController_SetConfiguration(unsigned uiIOBase, char devAddr, char bConfigValue)
 {
 	byte bStatus ;
 	unsigned uiFrameNumber ;
@@ -357,7 +349,7 @@ static byte UHCIController_SetConfiguration(unsigned uiIOAddr, char devAddr, cha
 				(unsigned)pTD1, pTD1->uiControlnStatus, pTD1->uiToken,
 				(unsigned)pTD2, pTD2->uiControlnStatus, pTD2->uiToken) ;
 
-		printf("\nCurrent Frame Number = %d", PortCom_ReceiveWord(uiIOAddr + FRNUM_REG)) ;
+		printf("\nCurrent Frame Number = %d", PortCom_ReceiveWord(uiIOBase + FRNUM_REG)) ;
 		printf("\nFrame Number = %d", uiFrameNumber) ;
 
 		UHCIDataHandler_SetFrameListEntry(uiFrameNumber, ((unsigned)pQH + GLOBAL_DATA_SEGMENT_BASE) | 0x2, true, true) ;
@@ -371,9 +363,9 @@ static byte UHCIController_SetConfiguration(unsigned uiIOAddr, char devAddr, cha
 				(unsigned)pTD2, pTD2->uiControlnStatus, pTD2->uiToken) ;
 		printf("\nFrame Reg = %x", UHCIDataHandler_GetFrameListEntry(uiFrameNumber)) ;
 
-		printf("\n Status = %x", PortCom_ReceiveWord(uiIOAddr + USBSTS_REG)) ;
-		printf("\n Port Status = %x", PortCom_ReceiveWord(uiIOAddr + PORTSC_REG)) ;
-		printf("\nFrame Number = %d", PortCom_ReceiveWord(uiIOAddr + FRNUM_REG)) ;
+		printf("\n Status = %x", PortCom_ReceiveWord(uiIOBase + USBSTS_REG)) ;
+		printf("\n Port Status = %x", PortCom_ReceiveWord(uiIOBase + PORTSC_REG)) ;
+		printf("\nFrame Number = %d", PortCom_ReceiveWord(uiIOBase + FRNUM_REG)) ;
 
 		printf("\n\n Scheduling Frame Clean %d: %d", uiFrameNumber, UHCIDataHandler_CleanFrame(uiFrameNumber)) ;
 		ProcessManager::Instance().Sleep(2000) ;
@@ -382,7 +374,7 @@ static byte UHCIController_SetConfiguration(unsigned uiIOAddr, char devAddr, cha
 	{
 		UHCIDataHandler_SetFrameListEntry(uiFrameNumber, ((unsigned)pQH + GLOBAL_DATA_SEGMENT_BASE) | 0x2, true, true) ;
 
-		if(UHCIController_PoleWait(&(pQH->uiElementLinkPointer), 1) == false)
+		if(UHCIManager::Instance().PollWait(&(pQH->uiElementLinkPointer), 1) == false)
 		{
 			printf("\nFrame Number = %d", uiFrameNumber) ;
 			printf("\n QH Element Pointer = %x", pQH->uiElementLinkPointer) ;
@@ -391,9 +383,9 @@ static byte UHCIController_SetConfiguration(unsigned uiIOAddr, char devAddr, cha
 					(unsigned)pTD1, pTD1->uiControlnStatus, pTD1->uiToken,
 					(unsigned)pTD2, pTD2->uiControlnStatus, pTD2->uiToken) ;
 
-			printf("\n Status = %x", PortCom_ReceiveWord(uiIOAddr + USBSTS_REG)) ;
-			printf("\n Port Status = %x", PortCom_ReceiveWord(uiIOAddr + PORTSC_REG)) ;
-			printf("\nFrame Number = %d", PortCom_ReceiveWord(uiIOAddr + FRNUM_REG)) ;
+			printf("\n Status = %x", PortCom_ReceiveWord(uiIOBase + USBSTS_REG)) ;
+			printf("\n Port Status = %x", PortCom_ReceiveWord(uiIOBase + PORTSC_REG)) ;
+			printf("\nFrame Number = %d", PortCom_ReceiveWord(uiIOBase + FRNUM_REG)) ;
 		}
 
 		UHCIDataHandler_CleanFrame(uiFrameNumber) ;
@@ -402,7 +394,7 @@ static byte UHCIController_SetConfiguration(unsigned uiIOAddr, char devAddr, cha
 	return UHCIController_SUCCESS ;
 }
 
-static byte UHCIController_CheckConfiguration(unsigned uiIOAddr, char devAddr, char* bConfigValue, char bNumConfigs)
+static byte UHCIController_CheckConfiguration(unsigned uiIOBase, char devAddr, char* bConfigValue, char bNumConfigs)
 {
 	if(bNumConfigs <= 0)
 	{
@@ -414,14 +406,14 @@ static byte UHCIController_CheckConfiguration(unsigned uiIOAddr, char devAddr, c
 	{
 		byte bStatus ;
 		printf("\n Current Configuration %d -> Invalid. Setting to Configuration 1", *bConfigValue) ;
-		RETURN_IF_NOT(bStatus, UHCIController_SetConfiguration(uiIOAddr, devAddr, 1), UHCIController_SUCCESS) ;
+		RETURN_IF_NOT(bStatus, UHCIController_SetConfiguration(uiIOBase, devAddr, 1), UHCIController_SUCCESS) ;
 		*bConfigValue = 1 ;
 	}
 
 	return UHCIController_SUCCESS ;
 }
 
-static byte UHCIController_SetAddress(unsigned uiIOAddr, char devAddr)
+static byte UHCIController_SetAddress(unsigned uiIOBase, char devAddr)
 {
 	byte bStatus ;
 	unsigned uiFrameNumber ;
@@ -470,7 +462,7 @@ static byte UHCIController_SetAddress(unsigned uiIOAddr, char devAddr)
 				(unsigned)pTD1, pTD1->uiControlnStatus, pTD1->uiToken,
 				(unsigned)pTD2, pTD2->uiControlnStatus, pTD2->uiToken) ;
 
-		printf("\nCurrent Frame Number = %d", PortCom_ReceiveWord(uiIOAddr + FRNUM_REG)) ;
+		printf("\nCurrent Frame Number = %d", PortCom_ReceiveWord(uiIOBase + FRNUM_REG)) ;
 		printf("\nFrame Number = %d", uiFrameNumber) ;
 
 		UHCIDataHandler_SetFrameListEntry(uiFrameNumber, ((unsigned)pQH + GLOBAL_DATA_SEGMENT_BASE) | 0x2, true, true) ;
@@ -484,9 +476,9 @@ static byte UHCIController_SetAddress(unsigned uiIOAddr, char devAddr)
 				(unsigned)pTD2, pTD2->uiControlnStatus, pTD2->uiToken) ;
 		printf("\nFrame Reg = %x", UHCIDataHandler_GetFrameListEntry(uiFrameNumber)) ;
 
-		printf("\n Status = %x", PortCom_ReceiveWord(uiIOAddr + USBSTS_REG)) ;
-		printf("\n Port Status = %x", PortCom_ReceiveWord(uiIOAddr + PORTSC_REG)) ;
-		printf("\nFrame Number = %d", PortCom_ReceiveWord(uiIOAddr + FRNUM_REG)) ;
+		printf("\n Status = %x", PortCom_ReceiveWord(uiIOBase + USBSTS_REG)) ;
+		printf("\n Port Status = %x", PortCom_ReceiveWord(uiIOBase + PORTSC_REG)) ;
+		printf("\nFrame Number = %d", PortCom_ReceiveWord(uiIOBase + FRNUM_REG)) ;
 
 		printf("\n\n Scheduling Frame Clean %d: %d", uiFrameNumber, UHCIDataHandler_CleanFrame(uiFrameNumber)) ;
 		ProcessManager::Instance().Sleep(2000) ;
@@ -495,7 +487,7 @@ static byte UHCIController_SetAddress(unsigned uiIOAddr, char devAddr)
 	{
 		UHCIDataHandler_SetFrameListEntry(uiFrameNumber, ((unsigned)pQH + GLOBAL_DATA_SEGMENT_BASE) | 0x2, true, true) ;
 
-		if(UHCIController_PoleWait(&(pQH->uiElementLinkPointer), 1) == false)
+		if(UHCIManager::Instance().PollWait(&(pQH->uiElementLinkPointer), 1) == false)
 		{
 			printf("\nFrame Number = %d", uiFrameNumber) ;
 			printf("\n QH Element Pointer = %x", pQH->uiElementLinkPointer) ;
@@ -504,9 +496,9 @@ static byte UHCIController_SetAddress(unsigned uiIOAddr, char devAddr)
 					(unsigned)pTD1, pTD1->uiControlnStatus, pTD1->uiToken,
 					(unsigned)pTD2, pTD2->uiControlnStatus, pTD2->uiToken) ;
 
-			printf("\n Status = %x", PortCom_ReceiveWord(uiIOAddr + USBSTS_REG)) ;
-			printf("\n Port Status = %x", PortCom_ReceiveWord(uiIOAddr + PORTSC_REG)) ;
-			printf("\nFrame Number = %d", PortCom_ReceiveWord(uiIOAddr + FRNUM_REG)) ;
+			printf("\n Status = %x", PortCom_ReceiveWord(uiIOBase + USBSTS_REG)) ;
+			printf("\n Port Status = %x", PortCom_ReceiveWord(uiIOBase + PORTSC_REG)) ;
+			printf("\nFrame Number = %d", PortCom_ReceiveWord(uiIOBase + FRNUM_REG)) ;
 		}
 
 		UHCIDataHandler_CleanFrame(uiFrameNumber) ;
@@ -515,25 +507,25 @@ static byte UHCIController_SetAddress(unsigned uiIOAddr, char devAddr)
 	return UHCIController_SUCCESS ;
 }
 
-static byte UHCIController_GetDeviceDescriptor(unsigned uiIOAddr, char devAddr, USBStandardDeviceDesc* pDevDesc)
+static byte UHCIController_GetDeviceDescriptor(unsigned uiIOBase, char devAddr, USBStandardDeviceDesc* pDevDesc)
 {
 	byte bStatus ;
 
 	USBDataHandler_InitDevDesc(pDevDesc) ;
 
-	RETURN_IF_NOT(bStatus, UHCIController_GetDescriptor(uiIOAddr, devAddr, 0x100, 0, -1, pDevDesc), UHCIDataHandler_SUCCESS) ;
+	RETURN_IF_NOT(bStatus, UHCIController_GetDescriptor(uiIOBase, devAddr, 0x100, 0, -1, pDevDesc), UHCIDataHandler_SUCCESS) ;
 
 	byte iLen = pDevDesc->bLength ;
 
 	if(iLen >= sizeof(USBStandardDeviceDesc))
 		iLen = sizeof(USBStandardDeviceDesc) ;
 
-	RETURN_IF_NOT(bStatus, UHCIController_GetDescriptor(uiIOAddr, devAddr, 0x100, 0, iLen, pDevDesc), UHCIDataHandler_SUCCESS) ;
+	RETURN_IF_NOT(bStatus, UHCIController_GetDescriptor(uiIOBase, devAddr, 0x100, 0, iLen, pDevDesc), UHCIDataHandler_SUCCESS) ;
 
 	return UHCIController_SUCCESS ;
 }
 
-static byte UHCIController_GetConfigDescriptor(unsigned uiIOAddr, char devAddr, char bNumConfigs, USBStandardConfigDesc** pConfigDesc)
+static byte UHCIController_GetConfigDescriptor(unsigned uiIOBase, char devAddr, char bNumConfigs, USBStandardConfigDesc** pConfigDesc)
 {
 	byte bStatus = UHCIController_SUCCESS ;
 	int index ;
@@ -547,7 +539,7 @@ static byte UHCIController_GetConfigDescriptor(unsigned uiIOAddr, char devAddr, 
 	{
 		unsigned short usDescValue = (0x2 << 8) | (index & 0xFF) ;
 
-		bStatus = UHCIController_GetDescriptor(uiIOAddr, devAddr, usDescValue, 0, -1, &(pCD[index])) ;
+		bStatus = UHCIController_GetDescriptor(uiIOBase, devAddr, usDescValue, 0, -1, &(pCD[index])) ;
 
 		if(bStatus != UHCIController_SUCCESS)
 			break ;
@@ -556,7 +548,7 @@ static byte UHCIController_GetConfigDescriptor(unsigned uiIOAddr, char devAddr, 
 
 		void* pBuffer = (void*)DMM_AllocateForKernel(iLen) ;
 
-		bStatus = UHCIController_GetDescriptor(uiIOAddr, devAddr, usDescValue, 0, iLen, pBuffer) ;
+		bStatus = UHCIController_GetDescriptor(uiIOBase, devAddr, usDescValue, 0, iLen, pBuffer) ;
 
 		if(bStatus != UHCIController_SUCCESS)
 		{
@@ -647,73 +639,12 @@ static byte UHCIController_GetConfigDescriptor(unsigned uiIOAddr, char devAddr, 
 	return UHCIController_SUCCESS ;
 }
 
-static byte UHCIController_GetDeviceStringDetails(USBDevice* pUSBDevice)
-{
-	if(pUSBDevice->usLangID == 0)
-	{
-		strcpy(pUSBDevice->szManufacturer, "Unknown") ;
-		strcpy(pUSBDevice->szProduct, "Unknown") ;
-		strcpy(pUSBDevice->szSerialNum, "Unknown") ;
-		return UHCIController_SUCCESS ;
-	}
-
-	UHCIDevice* pDevice = (UHCIDevice*)pUSBDevice->pRawDevice ;
-	unsigned short usDescValue = (0x3 << 8) ;
-	unsigned uiIOAddr = pDevice->uiIOBase ;
-	char devAddr = pUSBDevice->devAddr ;
-	char szPart[ 8 ];
-
-	const int index_size = 3 ; // Make sure to change this with index[] below
-	char arr_index[] = { pUSBDevice->deviceDesc.indexManufacturer, pUSBDevice->deviceDesc.indexProduct, pUSBDevice->deviceDesc.indexSerialNum } ;
-	char* arr_name[] = { pUSBDevice->szManufacturer, pUSBDevice->szProduct, pUSBDevice->szSerialNum } ;
-
-	int i ;
-	for(i = 0; i < index_size; i++)
-	{
-		int index = arr_index[ i ] ;
-		byte bStatus = UHCIController_GetDescriptor(uiIOAddr, devAddr, usDescValue | index, pUSBDevice->usLangID, -1, szPart) ;
-
-		if(bStatus != UHCIController_SUCCESS)
-			return bStatus ;
-
-		int iLen = ((USBStringDescZero*)&szPart)->bLength ;
-		printf("\n String Index: %u, String Desc Size: %d", index, iLen) ;
-		if(iLen == 0)
-		{
-			strcpy(arr_name[i], "Unknown") ;
-			continue ;
-		}
-
-		byte* pStringDesc = (byte*)DMM_AllocateForKernel(iLen) ;
-		bStatus = UHCIController_GetDescriptor(uiIOAddr, devAddr, usDescValue | index, pUSBDevice->usLangID, iLen, pStringDesc) ;
-
-		if(bStatus != UHCIController_SUCCESS)
-		{
-			DMM_DeAllocateForKernel((unsigned)pStringDesc) ;
-			return bStatus ;
-		}
-
-		int j, k ;
-		for(j = 0, k = 0; k < USB_MAX_STR_LEN && j < (iLen - 2); k++, j += 2)
-		{
-			//TODO: Ignoring Unicode 2nd byte for the time.
-			arr_name[i][k] = pStringDesc[j + 2] ;
-		}
-
-		arr_name[i][k] = '\0' ;
-	}
-
-	USBDataHandler_DisplayDeviceStringDetails(pUSBDevice) ;
-
-	return UHCIController_SUCCESS ;
-}
-
-static byte UHCIController_GetStringDescriptorZero(unsigned uiIOAddr, char devAddr, USBStringDescZero** ppStrDescZero)
+static byte UHCIController_GetStringDescriptorZero(unsigned uiIOBase, char devAddr, USBStringDescZero** ppStrDescZero)
 {
 	unsigned short usDescValue = (0x3 << 8) ;
 	char szPart[ 8 ];
 
-	byte bStatus = UHCIController_GetDescriptor(uiIOAddr, devAddr, usDescValue, 0, -1, szPart) ;
+	byte bStatus = UHCIController_GetDescriptor(uiIOBase, devAddr, usDescValue, 0, -1, szPart) ;
 
 	if(bStatus != UHCIController_SUCCESS)
 		return bStatus ;
@@ -723,7 +654,7 @@ static byte UHCIController_GetStringDescriptorZero(unsigned uiIOAddr, char devAd
 
 	byte* pStringDescZero = (byte*)DMM_AllocateForKernel(iLen) ;
 
-	bStatus = UHCIController_GetDescriptor(uiIOAddr, devAddr, usDescValue, 0, iLen, pStringDescZero) ;
+	bStatus = UHCIController_GetDescriptor(uiIOBase, devAddr, usDescValue, 0, iLen, pStringDescZero) ;
 
 	if(bStatus != UHCIController_SUCCESS)
 	{
@@ -741,12 +672,8 @@ static byte UHCIController_GetStringDescriptorZero(unsigned uiIOAddr, char devAd
 	return UHCIController_SUCCESS ;
 }
 
-static bool UHCIController_GetMaxLun(USBDevice* pUSBDevice, byte* bLUN)
+bool UHCIDevice::GetMaxLun(byte* bLUN)
 {
-	UHCIDevice* pDevice = (UHCIDevice*)(pUSBDevice->pRawDevice) ;
-	unsigned uiIOAddr = pDevice->uiIOBase ;
-	unsigned devAddr = pUSBDevice->devAddr ;
-
 	byte bStatus ;
 	unsigned uiFrameNumber ;
 	RETURN_IF_NOT(bStatus, UHCIDataHandler_GetNextFreeFrame(&uiFrameNumber), UHCIDataHandler_SUCCESS) ;
@@ -769,7 +696,7 @@ static bool UHCIController_GetMaxLun(USBDevice* pUSBDevice, byte* bLUN)
 	pDevRequest->bRequestType = USB_TYPE_CLASS | USB_RECIP_INTERFACE | USB_DIR_IN ;
 	pDevRequest->bRequest = 0xFE ;
 	pDevRequest->usWValue = 0 ;
-	pDevRequest->usWIndex = pUSBDevice->bInterfaceNumber ;
+	pDevRequest->usWIndex = bInterfaceNumber ;
 	pDevRequest->usWLength = 1 ;
 
 	UHCIDataHandler_SetTDAttribute(pTD1, UHCI_ATTR_BUF_PTR, (unsigned)pDevRequest) ;
@@ -811,7 +738,7 @@ static bool UHCIController_GetMaxLun(USBDevice* pUSBDevice, byte* bLUN)
 		printf("\n TD2 Status = %x/%x/%x", (unsigned)pTD2, pTD2->uiControlnStatus, pTD2->uiToken) ;
 		printf("\n TD3 Status = %x/%x/%x", (unsigned)pTD3, pTD3->uiControlnStatus, pTD3->uiToken) ;
 
-		printf("\nCurrent Frame Number = %d", PortCom_ReceiveWord(uiIOAddr + FRNUM_REG)) ;
+		printf("\nCurrent Frame Number = %d", PortCom_ReceiveWord(uiIOBase + FRNUM_REG)) ;
 		printf("\nFrame Number = %d", uiFrameNumber) ;
 
 		UHCIDataHandler_SetFrameListEntry(uiFrameNumber, ((unsigned)pQH + GLOBAL_DATA_SEGMENT_BASE) | 0x2, true, true) ;
@@ -825,9 +752,9 @@ static bool UHCIController_GetMaxLun(USBDevice* pUSBDevice, byte* bLUN)
 				(unsigned)pTD2, pTD2->uiControlnStatus, pTD2->uiToken) ;
 		printf("\nFrame Reg = %x", UHCIDataHandler_GetFrameListEntry(uiFrameNumber)) ;
 
-		printf("\n Status = %x", PortCom_ReceiveWord(uiIOAddr + USBSTS_REG)) ;
-		printf("\n Port Status = %x", PortCom_ReceiveWord(uiIOAddr + PORTSC_REG + 2)) ;
-		printf("\nFrame Number = %d", PortCom_ReceiveWord(uiIOAddr + FRNUM_REG)) ;
+		printf("\n Status = %x", PortCom_ReceiveWord(uiIOBase + USBSTS_REG)) ;
+		printf("\n Port Status = %x", PortCom_ReceiveWord(uiIOBase + PORTSC_REG + 2)) ;
+		printf("\nFrame Number = %d", PortCom_ReceiveWord(uiIOBase + FRNUM_REG)) ;
 
 		*bLUN = pBufPtr[0] ;
 		printf("\n\n Scheduling Frame Clean %d: %d", uiFrameNumber, UHCIDataHandler_CleanFrame(uiFrameNumber)) ;
@@ -837,7 +764,7 @@ static bool UHCIController_GetMaxLun(USBDevice* pUSBDevice, byte* bLUN)
 	{
 		UHCIDataHandler_SetFrameListEntry(uiFrameNumber, ((unsigned)pQH + GLOBAL_DATA_SEGMENT_BASE) | 0x2, true, true) ;
 
-		if(UHCIController_PoleWait(&(pQH->uiElementLinkPointer), 1) == false)
+		if(UHCIManager::Instance().PollWait(&(pQH->uiElementLinkPointer), 1) == false)
 		{
 			printf("\nFrame Number = %d", uiFrameNumber) ;
 			printf("\n QH Element Pointer = %x", pQH->uiElementLinkPointer) ;
@@ -845,9 +772,9 @@ static bool UHCIController_GetMaxLun(USBDevice* pUSBDevice, byte* bLUN)
 			printf("\n TD1 Status = %x/%x/%x", (unsigned)pTD1, pTD1->uiControlnStatus, pTD1->uiToken) ;
 			printf("\n TD2 Status = %x/%x/%x", (unsigned)pTD2, pTD2->uiControlnStatus, pTD2->uiToken) ;
 			printf("\n TD3 Status = %x/%x/%x", (unsigned)pTD3, pTD3->uiControlnStatus, pTD3->uiToken) ;
-			printf("\n Status = %x", PortCom_ReceiveWord(uiIOAddr + USBSTS_REG)) ;
-			printf("\n Port Status = %x", PortCom_ReceiveWord(uiIOAddr + PORTSC_REG + 2)) ;
-			printf("\nFrame Number = %d", PortCom_ReceiveWord(uiIOAddr + FRNUM_REG)) ;
+			printf("\n Status = %x", PortCom_ReceiveWord(uiIOBase + USBSTS_REG)) ;
+			printf("\n Port Status = %x", PortCom_ReceiveWord(uiIOBase + PORTSC_REG + 2)) ;
+			printf("\nFrame Number = %d", PortCom_ReceiveWord(uiIOBase + FRNUM_REG)) ;
 		}
 		else
 			*bLUN = pBufPtr[0] ;
@@ -858,11 +785,8 @@ static bool UHCIController_GetMaxLun(USBDevice* pUSBDevice, byte* bLUN)
 	return true ;
 }
 
-static bool UHCIController_CommandReset(USBDevice* pUSBDevice)
+bool UHCIDevice::CommandReset()
 {
-	unsigned uiIOAddr = ((UHCIDevice*)(pUSBDevice->pRawDevice))->uiIOBase ;
-	unsigned devAddr = pUSBDevice->devAddr ;
-
 	byte bStatus ;
 	unsigned uiFrameNumber ;
 	RETURN_IF_NOT(bStatus, UHCIDataHandler_GetNextFreeFrame(&uiFrameNumber), UHCIDataHandler_SUCCESS) ;
@@ -885,7 +809,7 @@ static bool UHCIController_CommandReset(USBDevice* pUSBDevice)
 	pDevRequest->bRequestType = USB_TYPE_CLASS | USB_RECIP_INTERFACE ;
 	pDevRequest->bRequest = 0xFF ;
 	pDevRequest->usWValue = 0 ;
-	pDevRequest->usWIndex = pUSBDevice->bInterfaceNumber ;
+	pDevRequest->usWIndex = bInterfaceNumber ;
 	pDevRequest->usWLength = 0 ;
 
 	UHCIDataHandler_SetTDAttribute(pTD1, UHCI_ATTR_BUF_PTR, (unsigned)pDevRequest) ;
@@ -914,7 +838,7 @@ static bool UHCIController_CommandReset(USBDevice* pUSBDevice)
 				(unsigned)pTD1, pTD1->uiControlnStatus, pTD1->uiToken,
 				(unsigned)pTD2, pTD2->uiControlnStatus, pTD2->uiToken) ;
 
-		printf("\nCurrent Frame Number = %d", PortCom_ReceiveWord(uiIOAddr + FRNUM_REG)) ;
+		printf("\nCurrent Frame Number = %d", PortCom_ReceiveWord(uiIOBase + FRNUM_REG)) ;
 		printf("\nFrame Number = %d", uiFrameNumber) ;
 
 		UHCIDataHandler_SetFrameListEntry(uiFrameNumber, ((unsigned)pQH + GLOBAL_DATA_SEGMENT_BASE) | 0x2, true, true) ;
@@ -928,9 +852,9 @@ static bool UHCIController_CommandReset(USBDevice* pUSBDevice)
 				(unsigned)pTD2, pTD2->uiControlnStatus, pTD2->uiToken) ;
 		printf("\nFrame Reg = %x", UHCIDataHandler_GetFrameListEntry(uiFrameNumber)) ;
 
-		printf("\n Status = %x", PortCom_ReceiveWord(uiIOAddr + USBSTS_REG)) ;
-		printf("\n Port Status = %x", PortCom_ReceiveWord(uiIOAddr + PORTSC_REG + 2)) ;
-		printf("\nFrame Number = %d", PortCom_ReceiveWord(uiIOAddr + FRNUM_REG)) ;
+		printf("\n Status = %x", PortCom_ReceiveWord(uiIOBase + USBSTS_REG)) ;
+		printf("\n Port Status = %x", PortCom_ReceiveWord(uiIOBase + PORTSC_REG + 2)) ;
+		printf("\nFrame Number = %d", PortCom_ReceiveWord(uiIOBase + FRNUM_REG)) ;
 
 		printf("\n\n Scheduling Frame Clean %d: %d", uiFrameNumber, UHCIDataHandler_CleanFrame(uiFrameNumber)) ;
 		ProcessManager::Instance().Sleep(2000) ;
@@ -939,7 +863,7 @@ static bool UHCIController_CommandReset(USBDevice* pUSBDevice)
 	{
 		UHCIDataHandler_SetFrameListEntry(uiFrameNumber, ((unsigned)pQH + GLOBAL_DATA_SEGMENT_BASE) | 0x2, true, true) ;
 
-		if(UHCIController_PoleWait(&(pQH->uiElementLinkPointer), 1) == false)
+		if(UHCIManager::Instance().PollWait(&(pQH->uiElementLinkPointer), 1) == false)
 		{
 			printf("\nFrame Number = %d", uiFrameNumber) ;
 			printf("\n QH Element Pointer = %x", pQH->uiElementLinkPointer) ;
@@ -947,9 +871,9 @@ static bool UHCIController_CommandReset(USBDevice* pUSBDevice)
 			printf("\n TD1 Status = %x/%x/%x\n TD2 Status = %x/%x/%x\n",
 					(unsigned)pTD1, pTD1->uiControlnStatus, pTD1->uiToken,
 					(unsigned)pTD2, pTD2->uiControlnStatus, pTD2->uiToken) ;
-			printf("\n Status = %x", PortCom_ReceiveWord(uiIOAddr + USBSTS_REG)) ;
-			printf("\n Port Status = %x", PortCom_ReceiveWord(uiIOAddr + PORTSC_REG + 2)) ;
-			printf("\nFrame Number = %d", PortCom_ReceiveWord(uiIOAddr + FRNUM_REG)) ;
+			printf("\n Status = %x", PortCom_ReceiveWord(uiIOBase + USBSTS_REG)) ;
+			printf("\n Port Status = %x", PortCom_ReceiveWord(uiIOBase + PORTSC_REG + 2)) ;
+			printf("\nFrame Number = %d", PortCom_ReceiveWord(uiIOBase + FRNUM_REG)) ;
 		}
 
 		UHCIDataHandler_CleanFrame(uiFrameNumber) ;
@@ -958,12 +882,9 @@ static bool UHCIController_CommandReset(USBDevice* pUSBDevice)
 	return true ;
 }
 
-static bool UHCIController_ClearHaltEndPoint(USBulkDisk* pDisk, bool bIn)
+bool UHCIDevice::ClearHaltEndPoint(USBulkDisk* pDisk, bool bIn)
 {
 	unsigned uiEndPoint = (bIn) ? pDisk->uiEndPointIn : pDisk->uiEndPointOut ;
-	USBDevice* pUSBDevice = (USBDevice*)(pDisk->pUSBDevice) ;
-	unsigned uiIOAddr = ((UHCIDevice*)(pUSBDevice->pRawDevice))->uiIOBase ;
-	unsigned devAddr = pUSBDevice->devAddr ;
 
 	byte bStatus ;
 	unsigned uiFrameNumber ;
@@ -1016,7 +937,7 @@ static bool UHCIController_ClearHaltEndPoint(USBulkDisk* pDisk, bool bIn)
 				(unsigned)pTD1, pTD1->uiControlnStatus, pTD1->uiToken,
 				(unsigned)pTD2, pTD2->uiControlnStatus, pTD2->uiToken) ;
 
-		printf("\nCurrent Frame Number = %d", PortCom_ReceiveWord(uiIOAddr + FRNUM_REG)) ;
+		printf("\nCurrent Frame Number = %d", PortCom_ReceiveWord(uiIOBase + FRNUM_REG)) ;
 		printf("\nFrame Number = %d", uiFrameNumber) ;
 
 		UHCIDataHandler_SetFrameListEntry(uiFrameNumber, ((unsigned)pQH + GLOBAL_DATA_SEGMENT_BASE) | 0x2, true, true) ;
@@ -1030,9 +951,9 @@ static bool UHCIController_ClearHaltEndPoint(USBulkDisk* pDisk, bool bIn)
 				(unsigned)pTD2, pTD2->uiControlnStatus, pTD2->uiToken) ;
 		printf("\nFrame Reg = %x", UHCIDataHandler_GetFrameListEntry(uiFrameNumber)) ;
 
-		printf("\n Status = %x", PortCom_ReceiveWord(uiIOAddr + USBSTS_REG)) ;
-		printf("\n Port Status = %x", PortCom_ReceiveWord(uiIOAddr + PORTSC_REG)) ;
-		printf("\nFrame Number = %d", PortCom_ReceiveWord(uiIOAddr + FRNUM_REG)) ;
+		printf("\n Status = %x", PortCom_ReceiveWord(uiIOBase + USBSTS_REG)) ;
+		printf("\n Port Status = %x", PortCom_ReceiveWord(uiIOBase + PORTSC_REG)) ;
+		printf("\nFrame Number = %d", PortCom_ReceiveWord(uiIOBase + FRNUM_REG)) ;
 
 		printf("\n\n Scheduling Frame Clean %d: %d", uiFrameNumber, UHCIDataHandler_CleanFrame(uiFrameNumber)) ;
 		ProcessManager::Instance().Sleep(2000) ;
@@ -1041,7 +962,7 @@ static bool UHCIController_ClearHaltEndPoint(USBulkDisk* pDisk, bool bIn)
 	{
 		UHCIDataHandler_SetFrameListEntry(uiFrameNumber, ((unsigned)pQH + GLOBAL_DATA_SEGMENT_BASE) | 0x2, true, true) ;
 
-		if(UHCIController_PoleWait(&(pQH->uiElementLinkPointer), 1) == false)
+		if(UHCIManager::Instance().PollWait(&(pQH->uiElementLinkPointer), 1) == false)
 		{
 			printf("\nFrame Number = %d", uiFrameNumber) ;
 			printf("\n QH Element Pointer = %x", pQH->uiElementLinkPointer) ;
@@ -1049,9 +970,9 @@ static bool UHCIController_ClearHaltEndPoint(USBulkDisk* pDisk, bool bIn)
 			printf("\n TD1 Status = %x/%x/%x\n TD2 Status = %x/%x/%x\n",
 					(unsigned)pTD1, pTD1->uiControlnStatus, pTD1->uiToken,
 					(unsigned)pTD2, pTD2->uiControlnStatus, pTD2->uiToken) ;
-			printf("\n Status = %x", PortCom_ReceiveWord(uiIOAddr + USBSTS_REG)) ;
-			printf("\n Port Status = %x", PortCom_ReceiveWord(uiIOAddr + PORTSC_REG)) ;
-			printf("\nFrame Number = %d", PortCom_ReceiveWord(uiIOAddr + FRNUM_REG)) ;
+			printf("\n Status = %x", PortCom_ReceiveWord(uiIOBase + USBSTS_REG)) ;
+			printf("\n Port Status = %x", PortCom_ReceiveWord(uiIOBase + PORTSC_REG)) ;
+			printf("\nFrame Number = %d", PortCom_ReceiveWord(uiIOBase + FRNUM_REG)) ;
 		}
 
 		if(bIn) pDisk->bEndPointInToggle = 0 ;
@@ -1063,12 +984,8 @@ static bool UHCIController_ClearHaltEndPoint(USBulkDisk* pDisk, bool bIn)
 	return true ;
 }
 
-static bool UHCIController_BulkInTransfer(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen)
+bool UHCIDevice::BulkRead(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen)
 {
-	USBDevice* pDevice = (USBDevice*)(pDisk->pUSBDevice) ;
-	unsigned uiIOAddr = ((UHCIDevice*)(pDevice->pRawDevice))->uiIOBase ;
-	unsigned devAddr = pDevice->devAddr ;
-
 	if(uiLen == 0)
 		return true ;
 
@@ -1089,19 +1006,19 @@ static bool UHCIController_BulkInTransfer(USBulkDisk* pDisk, void* pDataBuf, uns
 		return false ;
 	}
 
-	if(UHCIController_bFirstBulkRead)
+	if(_bFirstBulkRead)
 	{
-		UHCIController_bFirstBulkRead = false ;
+		_bFirstBulkRead = false ;
 
 		int i ;
 		for(i = 0; i < MAX_UHCI_TD_PER_BULK_RW; i++)
-			UHCIController_ppBulkReadTDs[ i ] = UHCIDataHandler_CreateTransferDesc() ; 
+			_ppBulkReadTDs[ i ] = UHCIDataHandler_CreateTransferDesc() ; 
 	}
 	else
 	{
 		int i ;
 		for(i = 0; i < MAX_UHCI_TD_PER_BULK_RW; i++)
-			UHCIDataHandler_ClearTransferDesc(UHCIController_ppBulkReadTDs[ i ]) ;
+			UHCIDataHandler_ClearTransferDesc(_ppBulkReadTDs[ i ]) ;
 	}
 
 	int iIndex ;
@@ -1120,7 +1037,7 @@ static bool UHCIController_BulkInTransfer(USBulkDisk* pDisk, void* pDataBuf, uns
 		uiCurReadLen = (uiYetToRead > uiMaxPacketSize) ? uiMaxPacketSize : uiYetToRead ;
 		uiYetToRead -= uiCurReadLen ;
 
-		UHCITransferDesc* pTD = UHCIController_ppBulkReadTDs[ iIndex ] ;
+		UHCITransferDesc* pTD = _ppBulkReadTDs[ iIndex ] ;
 
 		//UHCIDataHandler_SetTDAttribute(pTD, UHCI_ATTR_TD_CONTROL_SPD, 1) ;
 		UHCIDataHandler_SetTDAttribute(pTD, UHCI_ATTR_TD_CONTROL_ERR_LEVEL, TD_CONTROL_ERR3) ;
@@ -1136,96 +1053,89 @@ static bool UHCIController_BulkInTransfer(USBulkDisk* pDisk, void* pDataBuf, uns
 		UHCIDataHandler_SetTDAttribute(pTD, UHCI_ATTR_BUF_PTR, (unsigned)(pDisk->pRawAlignedBuffer + (iIndex * uiMaxPacketSize))) ;
 
 		if(iIndex > 0)
-			UHCIDataHandler_SetTDAttribute(UHCIController_ppBulkReadTDs[ iIndex - 1 ], UHCI_ATTR_TD_VERTICAL_LINK, (unsigned)pTD) ;
+			UHCIDataHandler_SetTDAttribute(_ppBulkReadTDs[ iIndex - 1 ], UHCI_ATTR_TD_VERTICAL_LINK, (unsigned)pTD) ;
 	}
 
-	UHCIDataHandler_SetTDAttribute(UHCIController_ppBulkReadTDs[ iIndex - 1 ], UHCI_ATTR_TD_TERMINATE, 1) ;
-	UHCIDataHandler_SetTDAttribute(UHCIController_ppBulkReadTDs[ iIndex - 1 ], UHCI_ATTR_TD_CONTROL_IOC, 1) ;
-	UHCIDataHandler_SetQHAttribute(pQH, UHCI_ATTR_QH_TO_TD_ELEM_LINK, (unsigned)(UHCIController_ppBulkReadTDs[ 0 ])) ;
+	UHCIDataHandler_SetTDAttribute(_ppBulkReadTDs[ iIndex - 1 ], UHCI_ATTR_TD_TERMINATE, 1) ;
+	UHCIDataHandler_SetTDAttribute(_ppBulkReadTDs[ iIndex - 1 ], UHCI_ATTR_TD_CONTROL_IOC, 1) ;
+	UHCIDataHandler_SetQHAttribute(pQH, UHCI_ATTR_QH_TO_TD_ELEM_LINK, (unsigned)(_ppBulkReadTDs[ 0 ])) ;
 
 	UHCIDataHandler_SetFrameListEntry(uiFrameNumber, ((unsigned)pQH + GLOBAL_DATA_SEGMENT_BASE) | 0x2, false, false) ;
 
-	if(UHCIController_PoleWait(&(pQH->uiElementLinkPointer), 1) == false)
+	if(UHCIManager::Instance().PollWait(&(pQH->uiElementLinkPointer), 1) == false)
 	{
 		printf("\nFrame Number = %d", uiFrameNumber) ;
 		printf("\n QH Element Pointer = %x", pQH->uiElementLinkPointer) ;
 		printf("\n QH Head Pointer = %x", pQH->uiHeadLinkPointer) ;
 
 		for(iIndex = 0; iIndex < iNoOfTDs; iIndex++)
-			printf("\n TD%d Status = %x/%x/%x", iIndex+1, (unsigned)(UHCIController_ppBulkReadTDs[ iIndex ]), 
-					UHCIController_ppBulkReadTDs[ iIndex ]->uiControlnStatus, UHCIController_ppBulkReadTDs[ iIndex ]->uiToken) ;
+      printf("\n TD%d Status = %x/%x/%x", iIndex+1, (unsigned)(_ppBulkReadTDs[ iIndex ]), _ppBulkReadTDs[ iIndex ]->uiControlnStatus, _ppBulkReadTDs[ iIndex ]->uiToken);
 
-		printf("\n Status = %x", PortCom_ReceiveWord(uiIOAddr + USBSTS_REG)) ;
-		printf("\n Port Status = %x", PortCom_ReceiveWord(uiIOAddr + PORTSC_REG)) ;
-		printf("\nFrame Number = %d", PortCom_ReceiveWord(uiIOAddr + FRNUM_REG)) ;
-	}
+     printf("\n Status = %x", PortCom_ReceiveWord(uiIOBase + USBSTS_REG)) ;
+     printf("\n Port Status = %x", PortCom_ReceiveWord(uiIOBase + PORTSC_REG)) ;
+     printf("\nFrame Number = %d", PortCom_ReceiveWord(uiIOBase + FRNUM_REG)) ;
+   }
 
-	memcpy(pDataBuf, pDisk->pRawAlignedBuffer, uiLen) ;
-	UHCIDataHandler_CleanFrame(uiFrameNumber) ;
+   memcpy(pDataBuf, pDisk->pRawAlignedBuffer, uiLen) ;
+   UHCIDataHandler_CleanFrame(uiFrameNumber) ;
 
-	return true ;
+   return true ;
 }
 
-static bool UHCIController_BulkOutTransfer(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen)
+bool UHCIDevice::BulkWrite(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen)
 {
-	USBDevice* pDevice = (USBDevice*)(pDisk->pUSBDevice) ;
-	unsigned uiIOAddr = ((UHCIDevice*)(pDevice->pRawDevice))->uiIOBase ;
-	unsigned devAddr = pDevice->devAddr ;
+  if(uiLen == 0)
+    return true ;
 
-	if(uiLen == 0)
-		return true ;
+  unsigned uiMaxLen = pDisk->usOutMaxPacketSize * MAX_UHCI_TD_PER_BULK_RW ;
+  if(uiLen > uiMaxLen)
+  {
+     printf("\n Max Bulk Transfer per Frame is %d bytes", uiMaxLen) ;
+     return false ;
+  }
 
-	unsigned uiMaxLen = pDisk->usOutMaxPacketSize * MAX_UHCI_TD_PER_BULK_RW ;
-	if(uiLen > uiMaxLen)
-	{
-		printf("\n Max Bulk Transfer per Frame is %d bytes", uiMaxLen) ;
-		return false ;
-	}
+  unsigned uiMaxPacketSize = pDisk->usOutMaxPacketSize ;
+  int iNoOfTDs = uiLen / uiMaxPacketSize ;
+  iNoOfTDs += ((uiLen % uiMaxPacketSize) != 0) ;
 
-	unsigned uiMaxPacketSize = pDisk->usOutMaxPacketSize ;
-	int iNoOfTDs = uiLen / uiMaxPacketSize ;
-	iNoOfTDs += ((uiLen % uiMaxPacketSize) != 0) ;
+  if(iNoOfTDs > MAX_UHCI_TD_PER_BULK_RW)
+  {
+     printf("\n No. of TDs per Bulk Read/Wrtie exceeded limit %d !!", MAX_UHCI_TD_PER_BULK_RW) ;
+     return false ;
+  }
 
-	if(iNoOfTDs > MAX_UHCI_TD_PER_BULK_RW)
-	{
-		printf("\n No. of TDs per Bulk Read/Wrtie exceeded limit %d !!", MAX_UHCI_TD_PER_BULK_RW) ;
-		return false ;
-	}
+  if(_bFirstBulkWrite)
+  {
+    _bFirstBulkWrite = false ;
+    for(int i = 0; i < MAX_UHCI_TD_PER_BULK_RW; i++)
+      _ppBulkWriteTDs[ i ] = UHCIDataHandler_CreateTransferDesc() ; 
+  }
+  else
+  {
+    for(int i = 0; i < MAX_UHCI_TD_PER_BULK_RW; i++)
+      UHCIDataHandler_ClearTransferDesc(_ppBulkWriteTDs[ i ]) ;
+  }
 
-	if(UHCIController_bFirstBulkWrite)
-	{
-		UHCIController_bFirstBulkWrite = false ;
+  int iIndex ;
 
-		int i ;
-		for(i = 0; i < MAX_UHCI_TD_PER_BULK_RW; i++)
-			UHCIController_ppBulkWriteTDs[ i ] = UHCIDataHandler_CreateTransferDesc() ; 
-	}
-	else
-	{
-		int i ;
-		for(i = 0; i < MAX_UHCI_TD_PER_BULK_RW; i++)
-			UHCIDataHandler_ClearTransferDesc(UHCIController_ppBulkWriteTDs[ i ]) ;
-	}
+  byte bStatus ;
+  unsigned uiFrameNumber ;
+  RETURN_IF_NOT(bStatus, UHCIDataHandler_GetNextFreeFrame(&uiFrameNumber), UHCIDataHandler_SUCCESS) ;
+  UHCIQueueHead* pQH = UHCIDataHandler_CreateQueueHead() ;
 
-	int iIndex ;
+  UHCIDataHandler_SetQHAttribute(pQH, UHCI_ATTR_QH_HEAD_LINK_TERMINATE, 1) ;
 
-	byte bStatus ;
-	unsigned uiFrameNumber ;
-	RETURN_IF_NOT(bStatus, UHCIDataHandler_GetNextFreeFrame(&uiFrameNumber), UHCIDataHandler_SUCCESS) ;
-	UHCIQueueHead* pQH = UHCIDataHandler_CreateQueueHead() ;
-	UHCIDataHandler_SetQHAttribute(pQH, UHCI_ATTR_QH_HEAD_LINK_TERMINATE, 1) ;
+  memcpy(pDisk->pRawAlignedBuffer, pDataBuf, uiLen) ;
 
-	memcpy(pDisk->pRawAlignedBuffer, pDataBuf, uiLen) ;
+  unsigned uiYetToWrite = uiLen ;
+  unsigned uiCurWriteLen ;
 
-	unsigned uiYetToWrite = uiLen ;
-	unsigned uiCurWriteLen ;
-
-	for(iIndex = 0; iIndex < iNoOfTDs; iIndex++)
+  for(iIndex = 0; iIndex < iNoOfTDs; iIndex++)
 	{
 		uiCurWriteLen = (uiYetToWrite > uiMaxPacketSize) ? uiMaxPacketSize : uiYetToWrite ;
 		uiYetToWrite -= uiCurWriteLen ;
 
-		UHCITransferDesc* pTD = UHCIController_ppBulkWriteTDs[ iIndex ] ;
+		UHCITransferDesc* pTD = _ppBulkWriteTDs[ iIndex ] ;
 
 		//UHCIDataHandler_SetTDAttribute(pTD, UHCI_ATTR_TD_CONTROL_SPD, 1) ;
 		UHCIDataHandler_SetTDAttribute(pTD, UHCI_ATTR_TD_CONTROL_ERR_LEVEL, TD_CONTROL_ERR3) ;
@@ -1241,28 +1151,28 @@ static bool UHCIController_BulkOutTransfer(USBulkDisk* pDisk, void* pDataBuf, un
 		UHCIDataHandler_SetTDAttribute(pTD, UHCI_ATTR_BUF_PTR, (unsigned)(pDisk->pRawAlignedBuffer + (iIndex * uiMaxPacketSize))) ;
 
 		if(iIndex > 0)
-			UHCIDataHandler_SetTDAttribute(UHCIController_ppBulkWriteTDs[ iIndex - 1 ], UHCI_ATTR_TD_VERTICAL_LINK, (unsigned)pTD) ;
+			UHCIDataHandler_SetTDAttribute(_ppBulkWriteTDs[ iIndex - 1 ], UHCI_ATTR_TD_VERTICAL_LINK, (unsigned)pTD) ;
 	}
 
-	UHCIDataHandler_SetTDAttribute(UHCIController_ppBulkWriteTDs[ iIndex - 1 ], UHCI_ATTR_TD_TERMINATE, 1) ;
-	UHCIDataHandler_SetTDAttribute(UHCIController_ppBulkWriteTDs[ iIndex - 1 ], UHCI_ATTR_TD_CONTROL_IOC, 1) ;
-	UHCIDataHandler_SetQHAttribute(pQH, UHCI_ATTR_QH_TO_TD_ELEM_LINK, (unsigned)(UHCIController_ppBulkWriteTDs[ 0 ])) ;
+	UHCIDataHandler_SetTDAttribute(_ppBulkWriteTDs[ iIndex - 1 ], UHCI_ATTR_TD_TERMINATE, 1) ;
+	UHCIDataHandler_SetTDAttribute(_ppBulkWriteTDs[ iIndex - 1 ], UHCI_ATTR_TD_CONTROL_IOC, 1) ;
+	UHCIDataHandler_SetQHAttribute(pQH, UHCI_ATTR_QH_TO_TD_ELEM_LINK, (unsigned)(_ppBulkWriteTDs[ 0 ])) ;
 	
 	UHCIDataHandler_SetFrameListEntry(uiFrameNumber, ((unsigned)pQH + GLOBAL_DATA_SEGMENT_BASE) | 0x2, false, false) ;
 
-	if(UHCIController_PoleWait(&(pQH->uiElementLinkPointer), 1) == false)
+	if(UHCIManager::Instance().PollWait(&(pQH->uiElementLinkPointer), 1) == false)
 	{
 		printf("\nFrame Number = %d", uiFrameNumber) ;
 		printf("\n QH Element Pointer = %x", pQH->uiElementLinkPointer) ;
 		printf("\n QH Head Pointer = %x", pQH->uiHeadLinkPointer) ;
 
 		for(iIndex = 0; iIndex < iNoOfTDs; iIndex++)
-			printf("\n TD%d Status = %x/%x/%x", iIndex+1, (unsigned)(UHCIController_ppBulkWriteTDs[ iIndex ]), 
-					UHCIController_ppBulkWriteTDs[ iIndex ]->uiControlnStatus, UHCIController_ppBulkWriteTDs[ iIndex ]->uiToken) ;
+			printf("\n TD%d Status = %x/%x/%x", iIndex+1, (unsigned)(_ppBulkWriteTDs[ iIndex ]), 
+					_ppBulkWriteTDs[ iIndex ]->uiControlnStatus, _ppBulkWriteTDs[ iIndex ]->uiToken) ;
 
-		printf("\n Status = %x", PortCom_ReceiveWord(uiIOAddr + USBSTS_REG)) ;
-		printf("\n Port Status = %x", PortCom_ReceiveWord(uiIOAddr + PORTSC_REG)) ;
-		printf("\nFrame Number = %d", PortCom_ReceiveWord(uiIOAddr + FRNUM_REG)) ;
+		printf("\n Status = %x", PortCom_ReceiveWord(uiIOBase + USBSTS_REG)) ;
+		printf("\n Port Status = %x", PortCom_ReceiveWord(uiIOBase + PORTSC_REG)) ;
+		printf("\nFrame Number = %d", PortCom_ReceiveWord(uiIOBase + FRNUM_REG)) ;
 	}
 
 	UHCIDataHandler_CleanFrame(uiFrameNumber) ;
@@ -1270,14 +1180,14 @@ static bool UHCIController_BulkOutTransfer(USBulkDisk* pDisk, void* pDataBuf, un
 	return true ;
 }
 
-static byte UHCIController_Alloc(PCIEntry* pPCIEntry, unsigned uiIOAddr, unsigned uiIOSize)
+static byte UHCIController_Alloc(PCIEntry* pPCIEntry, unsigned uiIOBase, unsigned uiIOSize)
 {
 	int iIRQ = pPCIEntry->BusEntity.NonBridge.bInterruptLine ;
 
-	KC::MDisplay().Address("\n IO Addr = ", uiIOAddr) ;
+	KC::MDisplay().Address("\n IO Addr = ", uiIOBase) ;
 	KC::MDisplay().Address("\n IO Size = ", uiIOSize) ;
 	
-	KC::MDisplay().Number("\n USB UHCI at I/O: ", uiIOAddr) ;
+	KC::MDisplay().Number("\n USB UHCI at I/O: ", uiIOBase) ;
 	KC::MDisplay().Number(", IRQ: ", iIRQ) ;
 
 	UHCI_USB_IRQ = PIC::Instance().RegisterIRQ(iIRQ, (unsigned)&UHCIController_IRQHandler) ;
@@ -1293,7 +1203,7 @@ static byte UHCIController_Alloc(PCIEntry* pPCIEntry, unsigned uiIOAddr, unsigne
 
 	for(iNumPorts = 0; iNumPorts < iPossibleNumPorts; iNumPorts++)
 	{
-		unsigned uiPortAddr = uiIOAddr + PORTSC_REG + iNumPorts * 2 ;
+		unsigned uiPortAddr = uiIOBase + PORTSC_REG + iNumPorts * 2 ;
 
 		unsigned short usPortStatus = PortCom_ReceiveWord(uiPortAddr) ;
 
@@ -1310,9 +1220,9 @@ static byte UHCIController_Alloc(PCIEntry* pPCIEntry, unsigned uiIOAddr, unsigne
 
 	//Reset Hub
 	/* Global reset for 50ms */
-	PortCom_SendWord(uiIOAddr + USBCMD_REG, USBCMD_GRESET) ;
+	PortCom_SendWord(uiIOBase + USBCMD_REG, USBCMD_GRESET) ;
 	ProcessManager::Instance().Sleep(100) ;
-	PortCom_SendWord(uiIOAddr + USBCMD_REG, 0) ;
+	PortCom_SendWord(uiIOBase + USBCMD_REG, 0) ;
 	ProcessManager::Instance().Sleep(100) ;
 
 	//Start Hub
@@ -1321,10 +1231,10 @@ static byte UHCIController_Alloc(PCIEntry* pPCIEntry, unsigned uiIOAddr, unsigne
 	 * implies.
 	 */
 	unsigned uiLimit = 1000;
-	PortCom_SendWord(uiIOAddr + USBCMD_REG, USBCMD_HCRESET) ;
+	PortCom_SendWord(uiIOBase + USBCMD_REG, USBCMD_HCRESET) ;
 	ProcessManager::Instance().Sleep(50) ;
 	
-	while(PortCom_ReceiveWord(uiIOAddr + USBCMD_REG) & USBCMD_HCRESET)
+	while(PortCom_ReceiveWord(uiIOBase + USBCMD_REG) & USBCMD_HCRESET)
 	{
 		// Spec says we should wait for 10ms before HCRESET is set to 0
 		if(uiLimit == 1)
@@ -1338,35 +1248,35 @@ static byte UHCIController_Alloc(PCIEntry* pPCIEntry, unsigned uiIOAddr, unsigne
 	}
 
 	/* Start at frame 0 */
-	PortCom_SendWord(uiIOAddr + FRNUM_REG, 0) ;
+	PortCom_SendWord(uiIOBase + FRNUM_REG, 0) ;
 
 	unsigned uiFrameListAddr = UHCIDataHandler_CreateFrameList() ;
-	PortCom_SendDoubleWord(uiIOAddr + FLBASEADD_REG, uiFrameListAddr + GLOBAL_DATA_SEGMENT_BASE) ;
+	PortCom_SendDoubleWord(uiIOBase + FLBASEADD_REG, uiFrameListAddr + GLOBAL_DATA_SEGMENT_BASE) ;
 
 	/* Turn on all interrupts */
-	PortCom_SendWord(uiIOAddr + USBINTR_REG, USBINTR_SHORT_PACKET | USBINTR_IOC | USBINTR_RESUME | USBINTR_TIMEOUT_CRC) ;
+	PortCom_SendWord(uiIOBase + USBINTR_REG, USBINTR_SHORT_PACKET | USBINTR_IOC | USBINTR_RESUME | USBINTR_TIMEOUT_CRC) ;
 
 	/* Run and mark it configured with a 64-byte max packet */
-	PortCom_SendWord(uiIOAddr + USBCMD_REG, (USBCMD_RS | USBCMD_CF | USBCMD_MAXP)) ;
+	PortCom_SendWord(uiIOBase + USBCMD_REG, (USBCMD_RS | USBCMD_CF | USBCMD_MAXP)) ;
 
 	ProcessManager::Instance().Sleep(200) ;
 
 	// Check Status
 	// For the time just checking for zero
 	unsigned short usWord = 0;
-	if((usWord = PortCom_ReceiveWord(uiIOAddr + USBSTS_REG)) != 0x0)
+	if((usWord = PortCom_ReceiveWord(uiIOBase + USBSTS_REG)) != 0x0)
 	{
 		KC::MDisplay().Address("\n Error. UHCI Host Controller Status = ", usWord) ;
-		usWord = PortCom_ReceiveWord(uiIOAddr + USBCMD_REG) ;
+		usWord = PortCom_ReceiveWord(uiIOBase + USBCMD_REG) ;
 		printf("\n CMD: %x", usWord) ;
 
-		usWord = PortCom_ReceiveWord(uiIOAddr + FRNUM_REG) ;
+		usWord = PortCom_ReceiveWord(uiIOBase + FRNUM_REG) ;
 		printf("\n FRNUM: %x", usWord) ;
 
-		unsigned uiWord = PortCom_ReceiveDoubleWord(uiIOAddr + FLBASEADD_REG) ;
+		unsigned uiWord = PortCom_ReceiveDoubleWord(uiIOBase + FLBASEADD_REG) ;
 		printf("\n FR BASE: %x", uiWord) ;
 
-		usWord = PortCom_ReceiveWord(uiIOAddr + USBINTR_REG) ;
+		usWord = PortCom_ReceiveWord(uiIOBase + USBINTR_REG) ;
 		printf("\n INT: %x", usWord) ;
 
 		return UHCIController_FAILURE ;
@@ -1375,7 +1285,7 @@ static byte UHCIController_Alloc(PCIEntry* pPCIEntry, unsigned uiIOAddr, unsigne
 	// Consistency Check
 	// Assert for Default value of SOF register
 	usWord = 0;
-	if((usWord = PortCom_ReceiveByte(uiIOAddr + SOF_REG)) != 0x40)
+	if((usWord = PortCom_ReceiveByte(uiIOBase + SOF_REG)) != 0x40)
 	{
 		KC::MDisplay().Address("\n Default of SOF register is not 0x40. --> ", usWord) ;
 		return UHCIController_FAILURE ;
@@ -1385,14 +1295,14 @@ static byte UHCIController_Alloc(PCIEntry* pPCIEntry, unsigned uiIOAddr, unsigne
 	/* Enable PIRQ - Legacy Mouse and Keyboard Support for 8042 */
 	pPCIEntry->WritePCIConfig(USB_LEGSUP, 2, USB_LEGSUP_DEFAULT) ;
 
-	printf("\n USB UHCI at I/O: %x, IRQ: %d, Detected Ports: %d ", uiIOAddr, iIRQ, iNumPorts) ;
+	printf("\n USB UHCI at I/O: %x, IRQ: %d, Detected Ports: %d ", uiIOBase, iIRQ, iNumPorts) ;
 
 	ProcessManager::Instance().Sleep(100) ;
 
 	bool bActivePortFound = false ;
 	for(int i = 0; i < iNumPorts; i++)
 	{
-		unsigned uiPortAddr = uiIOAddr + PORTSC_REG + i * 2 ;
+		unsigned uiPortAddr = uiIOBase + PORTSC_REG + i * 2 ;
 		unsigned short status = PortCom_ReceiveWord(uiPortAddr) ;
 
 		printf("\n Current Port %d Status %x", i + 1, status) ;
@@ -1440,71 +1350,7 @@ static byte UHCIController_Alloc(PCIEntry* pPCIEntry, unsigned uiIOAddr, unsigne
 
 	UHCIDataHandler_StartFrameCleaner() ;
 
-	char devAddr = USBController_GetNextDevNum() ;
-	
-	if(devAddr < -1)
-	{
-		KC::MDisplay().Message("\n Maximum USB Device Limit reached. New Device Allocation Failed!", ' ') ;
-		return UHCIController_FAILURE ;
-	}
-	
-	UHCIController_SetAddress(uiIOAddr, devAddr) ;
-
-	USBStandardDeviceDesc devDesc ;
-	UHCIController_GetDeviceDescriptor(uiIOAddr, devAddr, &devDesc) ;
-	USBDataHandler_DisplayDevDesc(&devDesc) ;
-
-	char bConfigValue = 0;
-	UHCIController_GetConfiguration(uiIOAddr, devAddr, &bConfigValue) ;
-
-	byte bStatus ;
-
-	RETURN_IF_NOT(bStatus, UHCIController_CheckConfiguration(uiIOAddr, devAddr, &bConfigValue, devDesc.bNumConfigs), UHCIController_SUCCESS) ;
-
-	USBStandardConfigDesc* pConfigDesc = NULL ;
-	RETURN_IF_NOT(bStatus, UHCIController_GetConfigDescriptor(uiIOAddr, devAddr, devDesc.bNumConfigs, &pConfigDesc), UHCIController_SUCCESS) ;
-
-	USBStringDescZero* pStrDescZero = NULL ;
-	RETURN_IF_NOT(bStatus, UHCIController_GetStringDescriptorZero(uiIOAddr, devAddr, &pStrDescZero), UHCIController_SUCCESS) ;
-
-	USBDevice* pUSBDevice = (USBDevice*)DMM_AllocateForKernel(sizeof(USBDevice)) ;
-	UHCIDevice* pDevice = (UHCIDevice*)DMM_AllocateForKernel(sizeof(UHCIDevice)) ;
-
-	pDevice->uiIOBase = uiIOAddr ;
-	pDevice->uiIOSize = uiIOSize ;
-	pDevice->iIRQ = iIRQ ;
-	pDevice->iNumPorts = iNumPorts ;
-
-	pUSBDevice->eControllerType = UHCI_CONTROLLER ;
-	pUSBDevice->pRawDevice = pDevice ;
-	pUSBDevice->devAddr = devAddr ;
-	USBDataHandler_CopyDevDesc(&(pUSBDevice->deviceDesc), &devDesc, sizeof(USBStandardDeviceDesc)) ;
-	pUSBDevice->pArrConfigDesc = pConfigDesc ;
-	pUSBDevice->pStrDescZero = pStrDescZero ;
-
-	USBDataHandler_SetLangId(pUSBDevice) ;
-
-	pUSBDevice->iConfigIndex = 0 ;
-
-	for(int i = 0; i < devDesc.bNumConfigs; i++)
-	{
-		if(pConfigDesc[ i ].bConfigurationValue == bConfigValue)
-		{
-			pUSBDevice->iConfigIndex = i ;
-			break ;
-		}
-	}
-	
-	UHCIController_GetDeviceStringDetails(pUSBDevice) ;
-
-	pUSBDevice->GetMaxLun = UHCIController_GetMaxLun ;
-	pUSBDevice->CommandReset = UHCIController_CommandReset ;
-	pUSBDevice->ClearHaltEndPoint = UHCIController_ClearHaltEndPoint ;
-
-	pUSBDevice->BulkRead = UHCIController_BulkInTransfer ;
-	pUSBDevice->BulkWrite = UHCIController_BulkOutTransfer ;
-
-	USBDriver* pDriver = USBController_FindDriver(pUSBDevice) ;
+	USBDriver* pDriver = USBController_FindDriver(new UHCIDevice());
 
 	if(pDriver)
 		printf("\n'%s' driver found for the USB Device\n", pDriver->szName) ;
@@ -1534,17 +1380,9 @@ static void UHCIController_IRQHandler()
 
 /****************************************************************************/
 
-byte UHCIController_Initialize()
+UHCIManager::UHCIManager()
 {
-	UHCIController_iPCIEntryCount = 0 ;
-	int i ;
-	for(i = 0; i < MAX_UHCI_PCI_ENTRIES; i++)
-		UHCIController_pPCIEntryList[ i ] = NULL ;
-
-	UHCIController_bFirstBulkRead = true ;
-	UHCIController_bFirstBulkWrite = true ;
-
-	byte bControllerFound = false ;
+	bool bControllerFound = false ;
 
 	for(auto pPCIEntry : PCIBusHandler::Instance().PCIEntries())
 	{
@@ -1556,9 +1394,8 @@ byte UHCIController_Initialize()
 			pPCIEntry->bSubClass == PCI_USB)
 		{
       printf("\n Interface = %u, Class = %u, SubClass = %u", pPCIEntry->bInterface, pPCIEntry->bClassCode, pPCIEntry->bSubClass);
+      _uhciEntries.push_back(pPCIEntry);
 			bControllerFound = true ;
-			UHCIController_pPCIEntryList[ UHCIController_iPCIEntryCount ] = pPCIEntry ;
-			UHCIController_iPCIEntryCount++ ;
 		}
 	}
 	
@@ -1566,23 +1403,18 @@ byte UHCIController_Initialize()
 		KC::MDisplay().LoadMessage("USB UHCI Controller Found", Success) ;
 	else
 		KC::MDisplay().LoadMessage("No USB UHCI Controller Found", Failure) ;
-
-	return UHCIController_SUCCESS ;
 }
 
-byte UHCIController_ProbeDevice()
+byte UHCIManager::ProbeDevice()
 {
-	if(UHCIController_pPCIEntryList[0] == NULL)
+	if(_uhciEntries.empty())
 	{
-		KC::MDisplay().Message("\n No USB UHCI Controller Found on PCI Bus", ' ') ;
-		return UHCIController_ERR_NOCNTL_FOUND ;
+    printf("\n No USB UHCI Controller Found on PCI Bus");
+		return UHCIController_ERR_NOCNTL_FOUND;
 	}
 	
-	int j ;
-	for(j = 0; j < UHCIController_iPCIEntryCount; j++)
+	for(auto pPCIEntry : _uhciEntries)
 	{
-		PCIEntry* pPCIEntry = UHCIController_pPCIEntryList[j] ;
-
 		if(!pPCIEntry->BusEntity.NonBridge.bInterruptLine)
 		{
 			KC::MDisplay().Message("UHCI device with no IRQ. Check BIOS/PCI settings!", ' ');
@@ -1601,9 +1433,9 @@ byte UHCIController_ProbeDevice()
 		unsigned* pBaseAddress = &(pPCIEntry->BusEntity.NonBridge.uiBaseAddress0) ;
 		for(i = 0; i < 6; i++)
 		{
-			unsigned uiIOAddr = pBaseAddress[i] ;
+			unsigned uiIOBase = pBaseAddress[i] ;
 
-			if(!(uiIOAddr & PCI_IO_ADDRESS_SPACE))
+			if(!(uiIOBase & PCI_IO_ADDRESS_SPACE))
 				continue ;
 
 			unsigned uiIOSize = pPCIEntry->GetPCIMemSize(i) ;
@@ -1621,7 +1453,7 @@ byte UHCIController_ProbeDevice()
 			printf("\n PCI COMMAND: %x", usCommand) ;
   			//ProcessManager::Instance().Sleep(5000) ;
 
-			if(UHCIController_Alloc(pPCIEntry, uiIOAddr & PCI_ADDRESS_IO_MASK, uiIOSize) == UHCIController_SUCCESS)
+			if(UHCIController_Alloc(pPCIEntry, uiIOBase & PCI_ADDRESS_IO_MASK, uiIOSize) == UHCIController_SUCCESS)
 				return UHCIController_SUCCESS ;
 		}
 	}
@@ -1629,7 +1461,7 @@ byte UHCIController_ProbeDevice()
 	return UHCIController_FAILURE ;
 }
 
-bool UHCIController_PoleWait(unsigned* pPoleAddr, unsigned uiValue)
+bool UHCIManager::PollWait(unsigned* pPoleAddr, unsigned uiValue)
 {
 	// 50 ms * 200 = 10 seconds
 	int iTotalAttempts = 200 ;
@@ -1650,3 +1482,102 @@ bool UHCIController_PoleWait(unsigned* pPoleAddr, unsigned uiValue)
 	return true ;
 }
 
+UHCIDevice::UHCIDevice() : _bFirstBulkRead(true), _bFirstBulkWrite(true)
+{
+	devAddr = USBController_GetNextDevNum() ;
+	if(devAddr < -1)
+    throw upan::exception(XLOC, "Maximum USB Device Limit reached. New Device Allocation Failed!");
+	
+	UHCIController_SetAddress(uiIOBase, devAddr) ;
+
+	USBStandardDeviceDesc devDesc ;
+	UHCIController_GetDeviceDescriptor(uiIOBase, devAddr, &devDesc) ;
+	USBDataHandler_DisplayDevDesc(&devDesc) ;
+
+	char bConfigValue = 0;
+	UHCIController_GetConfiguration(uiIOBase, devAddr, &bConfigValue) ;
+
+  if(UHCIController_CheckConfiguration(uiIOBase, devAddr, &bConfigValue, devDesc.bNumConfigs) != UHCIController_SUCCESS)
+    throw upan::exception(XLOC, "failed to CheckConfiguration");
+
+  if(UHCIController_GetConfigDescriptor(uiIOBase, devAddr, devDesc.bNumConfigs, &pArrConfigDesc) != UHCIController_SUCCESS)
+    throw upan::exception(XLOC, "failed to ConfigDescriptor");
+
+  if(UHCIController_GetStringDescriptorZero(uiIOBase, devAddr, &pStrDescZero) != UHCIController_SUCCESS)
+    throw upan::exception(XLOC, "failed to StringDescriptorZero");
+
+	eControllerType = UHCI_CONTROLLER ;
+	USBDataHandler_CopyDevDesc(&deviceDesc, &devDesc, sizeof(USBStandardDeviceDesc)) ;
+
+	USBDataHandler_SetLangId(this) ;
+
+	iConfigIndex = 0 ;
+
+	for(int i = 0; i < devDesc.bNumConfigs; i++)
+	{
+		if(pArrConfigDesc[ i ].bConfigurationValue == bConfigValue)
+		{
+			iConfigIndex = i ;
+			break ;
+		}
+	}
+	
+	GetDeviceStringDetails();
+}
+
+bool UHCIDevice::GetDeviceStringDetails()
+{
+	if(usLangID == 0)
+	{
+		strcpy(szManufacturer, "Unknown") ;
+		strcpy(szProduct, "Unknown") ;
+		strcpy(szSerialNum, "Unknown") ;
+    return false;
+	}
+
+	unsigned short usDescValue = (0x3 << 8) ;
+	char szPart[ 8 ];
+
+	const int index_size = 3 ; // Make sure to change this with index[] below
+	char arr_index[] = { deviceDesc.indexManufacturer, deviceDesc.indexProduct, deviceDesc.indexSerialNum } ;
+	char* arr_name[] = { szManufacturer, szProduct, szSerialNum } ;
+
+	for(int i = 0; i < index_size; i++)
+	{
+		int index = arr_index[ i ] ;
+		byte bStatus = UHCIController_GetDescriptor(uiIOBase, devAddr, usDescValue | index, usLangID, -1, szPart) ;
+
+		if(bStatus != UHCIController_SUCCESS)
+			return bStatus ;
+
+		int iLen = ((USBStringDescZero*)&szPart)->bLength ;
+		printf("\n String Index: %u, String Desc Size: %d", index, iLen) ;
+		if(iLen == 0)
+		{
+			strcpy(arr_name[i], "Unknown") ;
+			continue ;
+		}
+
+		byte* pStringDesc = (byte*)DMM_AllocateForKernel(iLen) ;
+		bStatus = UHCIController_GetDescriptor(uiIOBase, devAddr, usDescValue | index, usLangID, iLen, pStringDesc) ;
+
+		if(bStatus != UHCIController_SUCCESS)
+		{
+			DMM_DeAllocateForKernel((unsigned)pStringDesc) ;
+			return bStatus ;
+		}
+
+    int j, k;
+		for(j = 0, k = 0; k < USB_MAX_STR_LEN && j < (iLen - 2); k++, j += 2)
+		{
+			//TODO: Ignoring Unicode 2nd byte for the time.
+			arr_name[i][k] = pStringDesc[j + 2] ;
+		}
+
+		arr_name[i][k] = '\0' ;
+	}
+
+	USBDataHandler_DisplayDeviceStringDetails(this) ;
+
+	return true;
+}

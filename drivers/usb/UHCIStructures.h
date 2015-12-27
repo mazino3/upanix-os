@@ -35,14 +35,6 @@ typedef struct
 	unsigned uiElementLinkPointer ;
 } PACKED UHCIQueueHead ;
 
-typedef struct
-{
-	unsigned uiIOBase ;
-	unsigned uiIOSize ;
-	int iIRQ ;
-	int iNumPorts ;
-} UHCIDevice ;
-
 // UHCI IO Registers
 // Command Register
 #define USBCMD_REG		0

@@ -75,3 +75,7 @@ USBDriver* USBController_FindDriver(USBDevice* pUSBDevice)
 	return NULL ;
 }
 
+USBDevice::USBDevice() 
+  : pArrConfigDesc(nullptr), pStrDescZero(nullptr)
+{
+}

@@ -135,7 +135,7 @@ static byte USBMassBulkStorageDisk_DoReset(USBulkDisk* pDisk)
 
 	KC::MDisplay().Message("\n Doing Command Reset", Display::WHITE_ON_BLACK()) ;
 
-	if(!pUSBDevice->CommandReset(pUSBDevice))
+	if(!pUSBDevice->CommandReset())
 	{
 		printf("\n Failed to Reset device. Bulk Mass Storage Reset Failed !\n") ;
 		return USBMassBulkStorageDisk_FAILURE ;
@@ -501,7 +501,6 @@ static bool USBMassBulkStorageDisk_Add(USBDevice* pUSBDevice)
 		for(i = 0; i < pConfig->bNumInterfaces; i++)
 		{
 			pInterface = &(pConfig->pInterfaces[ i ]) ;
-			
 			if(pInterface->bInterfaceClass == USB_CLASS_MASS_STORAGE)
 			{
 				if(pInterface->bInterfaceProtocol == USB_PR_BULK)
@@ -596,7 +595,7 @@ static bool USBMassBulkStorageDisk_Add(USBDevice* pUSBDevice)
 		case USB_PR_BULK:
 			printf("\n Reading MAX LUN for the Bulk Storage Disk\n") ;
 			pDisk->bMaxLun = 0 ;
-			if(!pUSBDevice->GetMaxLun(pUSBDevice, &(pDisk->bMaxLun)))
+			if(!pUSBDevice->GetMaxLun(&(pDisk->bMaxLun)))
 			{
 				printf("\n Failed to Read MAX LUN from the device") ;
 				DMM_DeAllocateForKernel((unsigned)pDisk->pRawAlignedBuffer) ;

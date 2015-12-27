@@ -102,15 +102,21 @@ typedef struct
 	USBStandardInterface* pInterfaces ;
 } PACKED USBStandardConfigDesc ;
 
-typedef struct USBDevice USBDevice ;
+class USBDevice;
 typedef struct USBulkDisk USBulkDisk ;
-typedef bool (*FuncPtr_GetMaxLun)(USBDevice* pDevice, byte* bLUN) ;
-typedef bool (*FuncPtr_CommandReset)(USBDevice* pDevice) ;
-typedef bool (*FuncPtr_ClearHaltEP)(USBulkDisk* pDisk, bool bIn) ;
-typedef bool (*FuncPtr_BulkReadWrite)(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen) ;
 
-struct USBDevice
+class USBDevice
 {
+  public:
+    USBDevice();
+    virtual ~USBDevice() {}
+
+    virtual bool GetMaxLun(byte* bLUN) = 0;
+    virtual bool CommandReset() = 0;
+    virtual bool ClearHaltEndPoint(USBulkDisk* pDisk, bool bIn) = 0;
+    virtual bool BulkRead(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen) = 0;
+    virtual bool BulkWrite(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen) = 0;
+
 	char devAddr ;
 	int iConfigIndex ;
 	int iInterfaceIndex ;
@@ -128,17 +134,9 @@ struct USBDevice
 	USBStringDescZero* pStrDescZero ;
 		
 	USB_CONTROLLER_TYPE eControllerType ;
-	void* pRawDevice ;
-
-	FuncPtr_GetMaxLun GetMaxLun ;
-	FuncPtr_CommandReset CommandReset ;
-	FuncPtr_ClearHaltEP ClearHaltEndPoint ;
-
-	FuncPtr_BulkReadWrite BulkRead ;
-	FuncPtr_BulkReadWrite BulkWrite ;
 
 	void* pPrivate ;
-} ;
+};
 
 struct USBulkDisk
 {

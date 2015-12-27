@@ -993,7 +993,7 @@ void ConsoleCommands_ProbeUHCIUSB()
 {
 	RTCDateTime rtcStartTime, rtcStopTime ;
 	RTC::GetDateTime(rtcStartTime) ;
-	UHCIController_ProbeDevice() ;
+  UHCIManager::Instance().ProbeDevice();
 	RTC::GetDateTime(rtcStopTime) ;
 
 	printf("\n %d/%d/%d - %d:%d:%d", rtcStartTime.bDayOfMonth, rtcStartTime.bMonth, 
