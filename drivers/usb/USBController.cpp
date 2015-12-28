@@ -15,64 +15,41 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
-# include <USBStructures.h>
-# include <USBController.h>
-# include <DMM.h>
+#include <USBStructures.h>
+#include <USBController.h>
+#include <DMM.h>
 
-static int USBController_seqDevAddr ;
-
-static int USBController_seqDriverId ;
-static USBDriver* USBController_pDriverList[ MAX_USB_DEVICES ] ;
-
-byte USBController_Initialize()
+USBController::USBController() : _seqDevAddr(1)
 {
-	USBController_seqDevAddr = 1 ;
-	USBController_seqDriverId = 0 ;
-	return USBController_SUCCESS ;
 }
 
-int USBController_RegisterDriver(USBDriver* pDriver)
+int USBController::RegisterDriver(USBDriver* pDriver)
 {
-	int iDriverId = USBController_seqDriverId++ ;
-
-	if(iDriverId > MAX_USB_DEVICES)
-		return -1 ;
-
-	USBController_pDriverList[ iDriverId ] = pDriver ;
-	USBController_pDriverList[ iDriverId ]->bDeviceAdded = false ;
-
-	return iDriverId ;
+  _drivers.push_back(pDriver);
+  pDriver->bDeviceAdded = false;
+  return _drivers.size() - 1;
 }
 
-char USBController_GetNextDevNum()
+int USBController::GetNextDevNum()
 {
-	int iDevAddr = USBController_seqDevAddr++ ;
-	if(iDevAddr > MAX_USB_DEVICES)
-		return -1 ;
-	return (char)iDevAddr ;
+  return _seqDevAddr++;
 }
 
-USBDriver* USBController_FindDriver(USBDevice* pUSBDevice)
+USBDriver* USBController::FindDriver(USBDevice* pUSBDevice)
 {
-	int i ;
-	for(i = 0; i < USBController_seqDevAddr; i++)
+	for(auto pDriver : _drivers)
 	{
-		USBDriver* pDriver = USBController_pDriverList[ i ] ;
-
-		if(pDriver != NULL)
-		{
-			if(!pDriver->bDeviceAdded)
-			{
-				if(pDriver->AddDevice(pUSBDevice))
-				{
-					pDriver->bDeviceAdded = true ;
-					return pDriver ;
-				}
-			}
-		}
+    if(!pDriver->bDeviceAdded)
+    {
+      if(pDriver->AddDevice(pUSBDevice))
+      {
+        pDriver->bDeviceAdded = true ;
+        return pDriver;
+      }
+    }
 	}
 
-	return NULL ;
+	return nullptr;
 }
 
 USBDevice::USBDevice() 

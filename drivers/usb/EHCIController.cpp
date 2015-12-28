@@ -429,7 +429,7 @@ byte EHCIController::Probe()
 
 	RETURN_X_IF_NOT(StartAsyncSchedule(), true, EHCIController_FAILURE) ;
 
-	USBDriver* pDriver = USBController_FindDriver(new EHCIDevice(*this));
+	USBDriver* pDriver = USBController::Instance().FindDriver(new EHCIDevice(*this));
 
 	if(pDriver)
 		printf("\n'%s' driver found for the USB Device\n", pDriver->szName) ;

@@ -19,16 +19,30 @@
 #define _USB_CONTROLLER_H_
 
 #include <Global.h>
+#include <list.h>
 #include <USBStructures.h>
 
 #define USBController_SUCCESS 0
 #define USBController_FAILURE 1
 
-#define MAX_USB_DEVICES 120
+class USBController
+{
+  private:
+    USBController();
 
-char USBController_GetNextDevNum() ;
-byte USBController_Initialize() ;
-int USBController_RegisterDriver(USBDriver* pDriver) ;
-USBDriver* USBController_FindDriver(USBDevice* pUSBDevice) ;
+  public:
+    static USBController& Instance()
+    {
+      static USBController instance;
+      return instance;
+    }
+    int GetNextDevNum();
+    int RegisterDriver(USBDriver* pDriver);
+    USBDriver* FindDriver(USBDevice* pUSBDevice);
+
+  private:
+    upan::list<USBDriver*> _drivers;
+    int _seqDevAddr;
+};
 
 #endif

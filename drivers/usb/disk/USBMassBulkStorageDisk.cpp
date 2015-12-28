@@ -28,7 +28,6 @@
 #include <USBController.h>
 #include <EHCIStructures.h>
 
-static int USB_MBS_DriverId ;
 static int USDDeviceId ;
 
 static void USBMassBulkStorageDisk_AddDeviceDrive(RawDiskDrive* pDisk)
@@ -693,8 +692,7 @@ byte USBMassBulkStorageDisk_Initialize()
 	USDDeviceId = 0 ;
 	USBDriver* pDriver = (USBDriver*)DMM_AllocateForKernel(sizeof(USBDriver)) ;
 
-	if( (USB_MBS_DriverId = USBController_RegisterDriver(pDriver)) < 0 )
-		return USBMassBulkStorageDisk_FAILURE ;
+	USBController::Instance().RegisterDriver(pDriver);
 
 	strcpy(pDriver->szName, "USB Mass Storage Disk") ;
 	pDriver->AddDevice = USBMassBulkStorageDisk_Add ;

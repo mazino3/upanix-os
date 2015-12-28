@@ -655,7 +655,7 @@ bool EHCIDevice::BulkWrite(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen)
 
 bool EHCIDevice::SetAddress()
 {
-	devAddr = USBController_GetNextDevNum();
+	devAddr = USBController::Instance().GetNextDevNum();
 	if(devAddr <= 0)
     throw upan::exception(XLOC, "Invalid Next Dev Addr: %d", devAddr);
 

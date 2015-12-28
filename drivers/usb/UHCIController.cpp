@@ -1350,7 +1350,7 @@ static byte UHCIController_Alloc(PCIEntry* pPCIEntry, unsigned uiIOBase, unsigne
 
 	UHCIDataHandler_StartFrameCleaner() ;
 
-	USBDriver* pDriver = USBController_FindDriver(new UHCIDevice());
+	USBDriver* pDriver = USBController::Instance().FindDriver(new UHCIDevice());
 
 	if(pDriver)
 		printf("\n'%s' driver found for the USB Device\n", pDriver->szName) ;
@@ -1484,7 +1484,7 @@ bool UHCIManager::PollWait(unsigned* pPoleAddr, unsigned uiValue)
 
 UHCIDevice::UHCIDevice() : _bFirstBulkRead(true), _bFirstBulkWrite(true)
 {
-	devAddr = USBController_GetNextDevNum() ;
+	devAddr = USBController::Instance().GetNextDevNum() ;
 	if(devAddr < -1)
     throw upan::exception(XLOC, "Maximum USB Device Limit reached. New Device Allocation Failed!");
 	

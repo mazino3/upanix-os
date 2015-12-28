@@ -175,7 +175,7 @@ void Initialize()
     //while(1) ;
     
     //USB
-    USBController_Initialize() ;
+    USBController::Instance();
     EHCIManager::Instance();
     UHCIManager::Instance();
     USBMassBulkStorageDisk_Initialize() ;
