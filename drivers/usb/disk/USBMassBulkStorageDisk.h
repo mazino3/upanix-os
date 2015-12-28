@@ -87,6 +87,13 @@ typedef struct
 	byte bStatus ;
 } PACKED USBulkCSW ;
 
+class USBDiskDriver final : public USBDriver
+{
+  public:
+    USBDiskDriver(const upan::string& name) : USBDriver(name) {}
+    bool DoAddDevice(USBDevice*);
+    void DoRemoveDevice(USBDevice*);
+};
 
 byte USBMassBulkStorageDisk_Initialize() ;
 

@@ -23,11 +23,9 @@ USBController::USBController() : _seqDevAddr(1)
 {
 }
 
-int USBController::RegisterDriver(USBDriver* pDriver)
+void USBController::RegisterDriver(USBDriver* pDriver)
 {
   _drivers.push_back(pDriver);
-  pDriver->bDeviceAdded = false;
-  return _drivers.size() - 1;
 }
 
 int USBController::GetNextDevNum()
@@ -39,20 +37,13 @@ USBDriver* USBController::FindDriver(USBDevice* pUSBDevice)
 {
 	for(auto pDriver : _drivers)
 	{
-    if(!pDriver->bDeviceAdded)
-    {
-      if(pDriver->AddDevice(pUSBDevice))
-      {
-        pDriver->bDeviceAdded = true ;
-        return pDriver;
-      }
-    }
+    if(pDriver->AddDevice(pUSBDevice))
+      return pDriver;
 	}
 
 	return nullptr;
 }
 
-USBDevice::USBDevice() 
-  : pArrConfigDesc(nullptr), pStrDescZero(nullptr)
+USBDevice::USBDevice() : pArrConfigDesc(nullptr), pStrDescZero(nullptr)
 {
 }

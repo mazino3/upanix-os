@@ -161,29 +161,35 @@ struct USBulkDisk
 	SCSIHost* pHost ;
 	SCSIDevice** pSCSIDeviceList ;
 	byte* pRawAlignedBuffer ;
+};
 
-//	sint32 nIpWaitq;
-//	sint32 nIrqUrbSem;
-//	struct sUsbPacket *psIrqUrb;
-//	uint8 anIrqBuf[ 2 ];
-//	uint8 anIrqData[ 2 ];
-//	sint32 nCurrentUrbSem;
-//	struct sUsbPacket *psCurrentUrb;
-//	sint32 nQueueExclusion;
-//	atomic nIpWanted;
-//	sint32 nHostNumber;
-//	sint32 nId;
-
-//	SCSICommand* pCommand ;
-} ;
-
-typedef struct
+class USBDriver
 {
-	char szName[ 256 ] ;
-	bool bDeviceAdded ;
+  public:
+    USBDriver(const upan::string& name) : _name(name), _deviceAdded(false) {}
 
-	bool (*AddDevice)(USBDevice* pDevice) ;
-	void (*RemoveDevice)(USBDevice* pDevice) ;
-} USBDriver ;
+    const upan::string& Name() const { return _name; }
+
+    bool AddDevice(USBDevice* d)
+    {
+      if(_deviceAdded)
+        return false;
+      _deviceAdded = DoAddDevice(d);
+      return _deviceAdded;
+    }
+
+    void RemoveDevice(USBDevice* d)
+    {
+      DoRemoveDevice(d);
+      _deviceAdded = false;
+    }
+
+  protected:
+    virtual bool DoAddDevice(USBDevice*) = 0;
+    virtual void DoRemoveDevice(USBDevice*) = 0;
+
+    const upan::string _name;
+    bool _deviceAdded;
+};
 
 #endif

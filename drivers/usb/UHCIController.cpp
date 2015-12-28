@@ -1353,7 +1353,7 @@ static byte UHCIController_Alloc(PCIEntry* pPCIEntry, unsigned uiIOBase, unsigne
 	USBDriver* pDriver = USBController::Instance().FindDriver(new UHCIDevice());
 
 	if(pDriver)
-		printf("\n'%s' driver found for the USB Device\n", pDriver->szName) ;
+		printf("\n'%s' driver found for the USB Device\n", pDriver->Name().c_str()) ;
 	else
 		printf("\nNo Driver found for this USB device\n") ;
 	

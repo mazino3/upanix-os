@@ -435,47 +435,15 @@ bool USBMassBulkStorageDisk_SCSICommand(SCSICommand* pCommand)
 //	return 0;
 //}
 
-static void USBMassBulkStorageDisk_Remove(USBDevice* pUSBDevice)
+
+byte USBMassBulkStorageDisk_Initialize()
 {
-	USBulkDisk* pDisk = (USBulkDisk*)pUSBDevice->pPrivate ;
-	SCSIHost* pHost = pDisk->pHost ;
-	SCSIDevice** pSCSIDeviceList = pDisk->pSCSIDeviceList ;
-
-	class USBDriveRemoveClause : public DriveRemoveClause
-	{
-		public:
-			USBDriveRemoveClause(SCSIDevice** p, int iMaxLun) : m_pSCSIDeviceList(p), m_iMaxLun(iMaxLun) { }
-
-			bool operator()(const DiskDrive* pDiskDrive) const
-			{
-				int iLun ;
-				for(iLun = 0; iLun <= m_iMaxLun; iLun++)
-				{
-					if(m_pSCSIDeviceList[ iLun ] == NULL)
-						break ;
-
-					if(pDiskDrive->Device() == m_pSCSIDeviceList[ iLun ])
-						return true ;
-				}
-
-				return false ;
-			}
-
-		private:
-			SCSIDevice** m_pSCSIDeviceList ;
-			const int m_iMaxLun ;
-	} ;
-
-	if(pSCSIDeviceList != NULL)
-		DiskDriveManager::Instance().RemoveEntryByCondition(USBDriveRemoveClause(pSCSIDeviceList, pDisk->bMaxLun)) ;
-
-	DMM_DeAllocateForKernel((unsigned)pHost) ;
-	DMM_DeAllocateForKernel((unsigned)pDisk->pRawAlignedBuffer) ;
-	DMM_DeAllocateForKernel((unsigned)pDisk) ;
+	USDDeviceId = 0;
+	USBController::Instance().RegisterDriver(new USBDiskDriver("USB Mass Storage Disk"));
+	return USBMassBulkStorageDisk_SUCCESS ;
 }
 
-
-static bool USBMassBulkStorageDisk_Add(USBDevice* pUSBDevice)
+bool USBDiskDriver::DoAddDevice(USBDevice* pUSBDevice)
 {
 	USBulkDisk* pDisk = NULL ;
 	bool bFound = false ;
@@ -687,17 +655,41 @@ static bool USBMassBulkStorageDisk_Add(USBDevice* pUSBDevice)
 	return true ;
 }
 
-byte USBMassBulkStorageDisk_Initialize()
+void USBDiskDriver::DoRemoveDevice(USBDevice* pUSBDevice)
 {
-	USDDeviceId = 0 ;
-	USBDriver* pDriver = (USBDriver*)DMM_AllocateForKernel(sizeof(USBDriver)) ;
+	USBulkDisk* pDisk = (USBulkDisk*)pUSBDevice->pPrivate ;
+	SCSIHost* pHost = pDisk->pHost ;
+	SCSIDevice** pSCSIDeviceList = pDisk->pSCSIDeviceList ;
 
-	USBController::Instance().RegisterDriver(pDriver);
+	class USBDriveRemoveClause : public DriveRemoveClause
+	{
+		public:
+			USBDriveRemoveClause(SCSIDevice** p, int iMaxLun) : m_pSCSIDeviceList(p), m_iMaxLun(iMaxLun) { }
 
-	strcpy(pDriver->szName, "USB Mass Storage Disk") ;
-	pDriver->AddDevice = USBMassBulkStorageDisk_Add ;
-	pDriver->RemoveDevice = USBMassBulkStorageDisk_Remove ;
+			bool operator()(const DiskDrive* pDiskDrive) const
+			{
+				int iLun ;
+				for(iLun = 0; iLun <= m_iMaxLun; iLun++)
+				{
+					if(m_pSCSIDeviceList[ iLun ] == NULL)
+						break ;
 
-	return USBMassBulkStorageDisk_SUCCESS ;
+					if(pDiskDrive->Device() == m_pSCSIDeviceList[ iLun ])
+						return true ;
+				}
+
+				return false ;
+			}
+
+		private:
+			SCSIDevice** m_pSCSIDeviceList ;
+			const int m_iMaxLun ;
+	} ;
+
+	if(pSCSIDeviceList != NULL)
+		DiskDriveManager::Instance().RemoveEntryByCondition(USBDriveRemoveClause(pSCSIDeviceList, pDisk->bMaxLun)) ;
+
+	DMM_DeAllocateForKernel((unsigned)pHost) ;
+	DMM_DeAllocateForKernel((unsigned)pDisk->pRawAlignedBuffer) ;
+	DMM_DeAllocateForKernel((unsigned)pDisk) ;
 }
-

@@ -37,7 +37,7 @@ class USBController
       return instance;
     }
     int GetNextDevNum();
-    int RegisterDriver(USBDriver* pDriver);
+    void RegisterDriver(USBDriver* pDriver);
     USBDriver* FindDriver(USBDevice* pUSBDevice);
 
   private:

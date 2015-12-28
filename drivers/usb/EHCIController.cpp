@@ -432,7 +432,7 @@ byte EHCIController::Probe()
 	USBDriver* pDriver = USBController::Instance().FindDriver(new EHCIDevice(*this));
 
 	if(pDriver)
-		printf("\n'%s' driver found for the USB Device\n", pDriver->szName) ;
+		printf("\n'%s' driver found for the USB Device\n", pDriver->Name().c_str());
 	else
 		printf("\nNo Driver found for this USB device\n") ;
 
