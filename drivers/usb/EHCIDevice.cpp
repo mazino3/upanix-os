@@ -44,28 +44,31 @@ EHCIDevice::EHCIDevice(EHCIController& controller)
   if(!CheckConfiguration(bConfigValue, devDesc.bNumConfigs))
     throw upan::exception(XLOC, "CheckConfig Failed");
 
-  if(!GetConfigDescriptor(devDesc.bNumConfigs, &pArrConfigDesc))
+  if(!GetConfigDescriptor(devDesc.bNumConfigs, &_pArrConfigDesc))
     throw upan::exception(XLOC, "GeConfigDesc Failed");
 
-  if(!GetStringDescriptorZero(&pStrDescZero))
+  if(!GetStringDescriptorZero(&_pStrDescZero))
     throw upan::exception(XLOC, "GetStringDescZero Failed");
 
-	USBDataHandler_CopyDevDesc(&deviceDesc, &devDesc, sizeof(USBStandardDeviceDesc)) ;
+	USBDataHandler_CopyDevDesc(&_deviceDesc, &devDesc, sizeof(USBStandardDeviceDesc)) ;
 
-	USBDataHandler_SetLangId(this);
+	SetLangId();
 
-	iConfigIndex = 0 ;
+	_iConfigIndex = 0 ;
 
 	for(int i = 0; i < devDesc.bNumConfigs; i++)
 	{
-		if(pArrConfigDesc[ i ].bConfigurationValue == bConfigValue)
+		if(_pArrConfigDesc[ i ].bConfigurationValue == bConfigValue)
 		{
-			iConfigIndex = i;
+			_iConfigIndex = i;
 			break ;
 		}
 	}
 	
-	GetDeviceStringDetails();
+  GetDeviceStringDesc(_manufacturer, _deviceDesc.indexManufacturer);
+  GetDeviceStringDesc(_product, _deviceDesc.indexProduct);
+  GetDeviceStringDesc(_serialNum, _deviceDesc.indexSerialNum);
+	USBDataHandler_DisplayDeviceStringDetails(this) ;
 }
 
 bool EHCIDevice::SetConfiguration(char bConfigValue)
@@ -267,58 +270,40 @@ bool EHCIDevice::GetStringDescriptorZero(USBStringDescZero** ppStrDescZero)
 	return true;
 }
 
-bool EHCIDevice::GetDeviceStringDetails()
+void EHCIDevice::GetDeviceStringDesc(upan::string& desc, int descIndex)
 {
-	if(usLangID == 0)
-	{
-		strcpy(szManufacturer, "Unknown") ;
-		strcpy(szProduct, "Unknown") ;
-		strcpy(szSerialNum, "Unknown") ;
-    return true;
-	}
+  desc = "Unknown";
+	if(_usLangID == 0)
+    return;
 
-	unsigned short usDescValue = (0x3 << 8) ;
+	unsigned short usDescValue = (0x3 << 8);
 	char szPart[ 8 ];
 
-	const int index_size = 3 ; // Make sure to change this with index[] below
-	char arr_index[] = { deviceDesc.indexManufacturer, deviceDesc.indexProduct, deviceDesc.indexSerialNum } ;
-	char* arr_name[] = { szManufacturer, szProduct, szSerialNum } ;
+  if(!GetDescriptor(usDescValue | descIndex, _usLangID, -1, szPart))
+    return;
 
-	int i ;
-	for(i = 0; i < index_size; i++)
-	{
-		int index = arr_index[ i ] ;
-    if(!GetDescriptor(usDescValue | index, usLangID, -1, szPart))
-      return false;
+  int iLen = ((USBStringDescZero*)&szPart)->bLength ;
+  printf("\n String Index: %u, String Desc Size: %d", descIndex, iLen) ;
+  if(iLen == 0)
+    return;
 
-		int iLen = ((USBStringDescZero*)&szPart)->bLength ;
-		printf("\n String Index: %u, String Desc Size: %d", index, iLen) ;
-		if(iLen == 0)
-		{
-			strcpy(arr_name[i], "Unknown") ;
-			continue ;
-		}
+  char* strDesc = new char[iLen];
+  if(!GetDescriptor(usDescValue | descIndex, _usLangID, iLen, strDesc))
+  {
+    delete[] strDesc;
+    return;
+  }
 
-		byte* pStringDesc = (byte*)DMM_AllocateForKernel(iLen) ;
-    if(!GetDescriptor(usDescValue | index, usLangID, iLen, pStringDesc))
-		{
-			DMM_DeAllocateForKernel((unsigned)pStringDesc) ;
-			return false;
-		}
+  int j, k;
+  for(j = 0, k = 0; j < (iLen - 2); k++, j += 2)
+  {
+    //TODO: Ignoring Unicode 2nd byte for the time.
+    strDesc[k] = strDesc[j + 2];
+  }
+  strDesc[k] = '\0';
 
-		int j, k ;
-		for(j = 0, k = 0; k < USB_MAX_STR_LEN && j < (iLen - 2); k++, j += 2)
-		{
-			//TODO: Ignoring Unicode 2nd byte for the time.
-			arr_name[i][k] = pStringDesc[j + 2] ;
-		}
-
-		arr_name[i][k] = '\0' ;
-	}
-
-	USBDataHandler_DisplayDeviceStringDetails(this) ;
-
-	return true;
+  desc = strDesc;
+  delete[] strDesc;
 }
 
 bool EHCIDevice::GetMaxLun(byte* bLUN)
@@ -339,7 +324,7 @@ bool EHCIDevice::GetMaxLun(byte* bLUN)
 	pDevRequest->bRequestType = USB_TYPE_CLASS | USB_RECIP_INTERFACE | USB_DIR_IN ;
 	pDevRequest->bRequest = 0xFE ;
 	pDevRequest->usWValue = 0 ;
-	pDevRequest->usWIndex = bInterfaceNumber ;
+	pDevRequest->usWIndex = _bInterfaceNumber ;
 	pDevRequest->usWLength = 1 ;
 
 	EHCIQTransferDesc* pTD1 = EHCIDataHandler_CreateAsyncQTransferDesc() ;
@@ -400,7 +385,7 @@ bool EHCIDevice::CommandReset()
 	pDevRequest->bRequestType = USB_TYPE_CLASS | USB_RECIP_INTERFACE ;
 	pDevRequest->bRequest = 0xFF ;
 	pDevRequest->usWValue = 0 ;
-	pDevRequest->usWIndex = bInterfaceNumber ;
+	pDevRequest->usWIndex = _bInterfaceNumber ;
 	pDevRequest->usWLength = 0 ;
 	
 	EHCIQTransferDesc* pTD1 = EHCIDataHandler_CreateAsyncQTransferDesc() ;
@@ -502,7 +487,7 @@ bool EHCIDevice::BulkRead(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen)
 		for(int i = 0; i < MAX_EHCI_TD_PER_BULK_RW; i++)
 			_ppBulkReadTDs[ i ] = EHCIDataHandler_CreateAsyncQTransferDesc() ; 
 
-		_pBulkInEndPt = _controller.CreateDeviceQueueHead(uiMaxPacketSize, pDisk->uiEndPointIn, devAddr) ;
+		_pBulkInEndPt = _controller.CreateDeviceQueueHead(uiMaxPacketSize, pDisk->uiEndPointIn, _devAddr) ;
 	}
 	else
 	{
@@ -593,7 +578,7 @@ bool EHCIDevice::BulkWrite(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen)
 		for(int i = 0; i < MAX_EHCI_TD_PER_BULK_RW; i++)
 			_ppBulkWriteTDs[ i ] = EHCIDataHandler_CreateAsyncQTransferDesc() ; 
 
-		_pBulkOutEndPt = _controller.CreateDeviceQueueHead(uiMaxPacketSize, pDisk->uiEndPointOut, devAddr) ;
+		_pBulkOutEndPt = _controller.CreateDeviceQueueHead(uiMaxPacketSize, pDisk->uiEndPointOut, _devAddr) ;
 	}
 	else
 	{
@@ -655,9 +640,9 @@ bool EHCIDevice::BulkWrite(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen)
 
 bool EHCIDevice::SetAddress()
 {
-	devAddr = USBController::Instance().GetNextDevNum();
-	if(devAddr <= 0)
-    throw upan::exception(XLOC, "Invalid Next Dev Addr: %d", devAddr);
+	_devAddr = USBController::Instance().GetNextDevNum();
+	if(_devAddr <= 0)
+    throw upan::exception(XLOC, "Invalid Next Dev Addr: %d", _devAddr);
 
 	// Setup TDs
 	EHCIQTransferDesc* pTDStart = EHCIDataHandler_CreateAsyncQTransferDesc() ;
@@ -674,7 +659,7 @@ bool EHCIDevice::SetAddress()
 	USBDevRequest* pDevRequest = (USBDevRequest*)(KERNEL_VIRTUAL_ADDRESS(pTDStart->uiBufferPointer[ 0 ])) ;
 	pDevRequest->bRequestType = 0x00 ;
 	pDevRequest->bRequest = 5 ;
-	pDevRequest->usWValue = (devAddr & 0xFF) ;
+	pDevRequest->usWValue = (_devAddr & 0xFF) ;
 	pDevRequest->usWIndex = 0 ;
 	pDevRequest->usWLength = 0 ;
 	
@@ -697,7 +682,7 @@ bool EHCIDevice::SetAddress()
 
   aTransaction.Clear();
 
-	_pControlQH->uiEndPointCap_Part1 |= (devAddr & 0x7F) ;
+	_pControlQH->uiEndPointCap_Part1 |= (_devAddr & 0x7F) ;
 
 	if(_controller.AsyncDoorBell() != EHCIController_SUCCESS)
 	{

@@ -50,7 +50,7 @@ class UHCIDevice final : public USBDevice
     bool BulkWrite(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen);
 
   private:
-    bool GetDeviceStringDetails();
+    void GetDeviceStringDesc(upan::string& desc, int descIndex);
 
     unsigned uiIOBase ;
     unsigned uiIOSize ;

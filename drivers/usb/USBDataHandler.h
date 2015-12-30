@@ -35,7 +35,6 @@ void USBDataHandler_InitEndPtDesc(USBStandardEndPt* pDesc) ;
 void USBDataHandler_DisplayEndPtDesc(const USBStandardEndPt* pDesc) ;
 void USBDataHandler_CopyStrDescZero(USBStringDescZero* pDest, const void* pSrcv) ;
 void USBDataHandler_DisplayStrDescZero(USBStringDescZero* pStringDescZero) ;
-void USBDataHandler_SetLangId(USBDevice* pUSBDevice) ;
 void USBDataHandler_DisplayDeviceStringDetails(const USBDevice* pUSBDevice) ;
 void USBDataHandler_DeAllocConfigDesc(USBStandardConfigDesc* pCD, char bNumConfigs) ;
 

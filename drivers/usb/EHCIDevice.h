@@ -32,11 +32,11 @@ class EHCIDevice final : public USBDevice
     bool BulkWrite(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen);
 
   private:
+    void GetDeviceStringDesc(upan::string& desc, int descIndex);
     bool SetAddress();
     bool GetDeviceDescriptor(USBStandardDeviceDesc* pDevDesc);
     bool GetDescriptor(unsigned short usDescValue, unsigned short usIndex, int iLen, void* pDestDesc);
     bool GetConfigValue(char& bConfigValue);
-    bool GetDeviceStringDetails();
     bool SetConfiguration(char bConfigValue);
     bool CheckConfiguration(char& bConfigValue, char bNumConfigs);
     bool GetConfigDescriptor(char bNumConfigs, USBStandardConfigDesc** pConfigDesc);

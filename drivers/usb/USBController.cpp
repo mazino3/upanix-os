@@ -18,6 +18,7 @@
 #include <USBStructures.h>
 #include <USBController.h>
 #include <DMM.h>
+#include <set.h>
 
 USBController::USBController() : _seqDevAddr(1)
 {
@@ -44,6 +45,22 @@ USBDriver* USBController::FindDriver(USBDevice* pUSBDevice)
 	return nullptr;
 }
 
-USBDevice::USBDevice() : pArrConfigDesc(nullptr), pStrDescZero(nullptr)
+USBDevice::USBDevice() : _usLangID(0), _pArrConfigDesc(nullptr), _pStrDescZero(nullptr)
 {
+}
+
+void USBDevice::SetLangId()
+{
+  static upan::set<unsigned short> SUPPORTED_LAND_IDS;
+  if(SUPPORTED_LAND_IDS.empty())
+    SUPPORTED_LAND_IDS.insert(0x409);
+
+	for(int i = 0; i < (_pStrDescZero->bLength - 2) / 2; ++i)
+	{
+		if(SUPPORTED_LAND_IDS.exists(_pStrDescZero->usLangID[i]))
+    {
+      _usLangID = _pStrDescZero->usLangID[i];
+      break;
+		}
+	}
 }

@@ -20,8 +20,6 @@
 #include <USBDataHandler.h>
 #include <stdio.h>
 
-static unsigned short USBDataHandler_lSupportedLandIds[] = { 0x409, 0 } ;
-
 /***********************************************************************************************/
 
 void USBDataHandler_DisplayDevDesc(const USBStandardDeviceDesc* pDevDesc)
@@ -260,32 +258,10 @@ void USBDataHandler_DisplayEndPtDesc(const USBStandardEndPt* pDesc)
 	printf("\n bInterval = %d", pDesc->bInterval) ;
 }
 
-void USBDataHandler_SetLangId(USBDevice* pUSBDevice)
-{
-	int iLangIDIndex, i;
-
-	pUSBDevice->usLangID = 0 ;
-
-	for(iLangIDIndex = 0; iLangIDIndex < (pUSBDevice->pStrDescZero->bLength - 2) / 2; iLangIDIndex++)
-	{
-		for(i = 0; ;i++)
-		{
-			if(USBDataHandler_lSupportedLandIds[i] == 0)
-				break ;
-
-			if(USBDataHandler_lSupportedLandIds[i] == pUSBDevice->pStrDescZero->usLangID[ iLangIDIndex ])
-			{
-				pUSBDevice->usLangID = pUSBDevice->pStrDescZero->usLangID[ iLangIDIndex ] ;
-				break ;
-			}
-		}
-	}
-}
-
 void USBDataHandler_DisplayDeviceStringDetails(const USBDevice* pUSBDevice)
 {
 	printf("\n USB Device Details...\n Manufacturer: %s\n Product: %s\n Serial Number: %s\n",
-			pUSBDevice->szManufacturer, pUSBDevice->szProduct, pUSBDevice->szSerialNum) ;
+			pUSBDevice->_manufacturer.c_str(), pUSBDevice->_product.c_str(), pUSBDevice->_serialNum.c_str()) ;
 }
 
 void USBDataHandler_DeAllocConfigDesc(USBStandardConfigDesc* pCD, char bNumConfigs)

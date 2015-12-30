@@ -687,7 +687,7 @@ bool UHCIDevice::GetMaxLun(byte* bLUN)
 	//UHCIDataHandler_SetTDAttribute(pTD1, UHCI_ATTR_TD_CONTROL_IOC, 1) ;
 	UHCIDataHandler_SetTDAttribute(pTD1, UHCI_ATTR_TD_CONTROL_ERR_LEVEL, TD_CONTROL_ERR3) ;
 	UHCIDataHandler_SetTDAttribute(pTD1, UHCI_ATTR_TD_STATUS_ACTIVE, 1) ;
-	UHCIDataHandler_SetTDAttribute(pTD1, UHCI_ATTR_TD_DEVICE_ADDR, devAddr) ;
+	UHCIDataHandler_SetTDAttribute(pTD1, UHCI_ATTR_TD_DEVICE_ADDR, _devAddr) ;
 
 	UHCIDataHandler_SetTDAttribute(pTD1, UHCI_ATTR_TD_MAXLEN, 7) ;
 	UHCIDataHandler_SetTDAttribute(pTD1, UHCI_ATTR_TD_PID, TOKEN_PID_SETUP) ;
@@ -696,7 +696,7 @@ bool UHCIDevice::GetMaxLun(byte* bLUN)
 	pDevRequest->bRequestType = USB_TYPE_CLASS | USB_RECIP_INTERFACE | USB_DIR_IN ;
 	pDevRequest->bRequest = 0xFE ;
 	pDevRequest->usWValue = 0 ;
-	pDevRequest->usWIndex = bInterfaceNumber ;
+	pDevRequest->usWIndex = _bInterfaceNumber ;
 	pDevRequest->usWLength = 1 ;
 
 	UHCIDataHandler_SetTDAttribute(pTD1, UHCI_ATTR_BUF_PTR, (unsigned)pDevRequest) ;
@@ -713,7 +713,7 @@ bool UHCIDevice::GetMaxLun(byte* bLUN)
 	UHCIDataHandler_SetTDAttribute(pTD2, UHCI_ATTR_TD_CONTROL_ERR_LEVEL, TD_CONTROL_ERR3) ;
 	UHCIDataHandler_SetTDAttribute(pTD2, UHCI_ATTR_TD_STATUS_ACTIVE, 1) ;
 	UHCIDataHandler_SetTDAttribute(pTD2, UHCI_ATTR_TD_DATA_TOGGLE, 1) ;
-	UHCIDataHandler_SetTDAttribute(pTD2, UHCI_ATTR_TD_DEVICE_ADDR, devAddr) ;
+	UHCIDataHandler_SetTDAttribute(pTD2, UHCI_ATTR_TD_DEVICE_ADDR, _devAddr) ;
 	
 	UHCIDataHandler_SetTDAttribute(pTD2, UHCI_ATTR_TD_MAXLEN, 0) ;
 	UHCIDataHandler_SetTDAttribute(pTD2, UHCI_ATTR_TD_PID, TOKEN_PID_IN) ;
@@ -725,7 +725,7 @@ bool UHCIDevice::GetMaxLun(byte* bLUN)
 	UHCIDataHandler_SetTDAttribute(pTD3, UHCI_ATTR_TD_CONTROL_IOC, 1) ;
 	UHCIDataHandler_SetTDAttribute(pTD3, UHCI_ATTR_TD_CONTROL_ERR_LEVEL, TD_CONTROL_ERR3) ;
 	UHCIDataHandler_SetTDAttribute(pTD3, UHCI_ATTR_TD_STATUS_ACTIVE, 1) ;
-	UHCIDataHandler_SetTDAttribute(pTD3, UHCI_ATTR_TD_DEVICE_ADDR, devAddr) ;
+	UHCIDataHandler_SetTDAttribute(pTD3, UHCI_ATTR_TD_DEVICE_ADDR, _devAddr) ;
 	
 	UHCIDataHandler_SetTDAttribute(pTD3, UHCI_ATTR_TD_MAXLEN, TD_MAXLEN_BLK) ;
 	UHCIDataHandler_SetTDAttribute(pTD3, UHCI_ATTR_TD_PID, TOKEN_PID_OUT) ;
@@ -800,7 +800,7 @@ bool UHCIDevice::CommandReset()
 	//UHCIDataHandler_SetTDAttribute(pTD1, UHCI_ATTR_TD_CONTROL_IOC, 1) ;
 	UHCIDataHandler_SetTDAttribute(pTD1, UHCI_ATTR_TD_CONTROL_ERR_LEVEL, TD_CONTROL_ERR3) ;
 	UHCIDataHandler_SetTDAttribute(pTD1, UHCI_ATTR_TD_STATUS_ACTIVE, 1) ;
-	UHCIDataHandler_SetTDAttribute(pTD1, UHCI_ATTR_TD_DEVICE_ADDR, devAddr) ;
+	UHCIDataHandler_SetTDAttribute(pTD1, UHCI_ATTR_TD_DEVICE_ADDR, _devAddr) ;
 
 	UHCIDataHandler_SetTDAttribute(pTD1, UHCI_ATTR_TD_MAXLEN, 7) ;
 	UHCIDataHandler_SetTDAttribute(pTD1, UHCI_ATTR_TD_PID, TOKEN_PID_SETUP) ;
@@ -809,7 +809,7 @@ bool UHCIDevice::CommandReset()
 	pDevRequest->bRequestType = USB_TYPE_CLASS | USB_RECIP_INTERFACE ;
 	pDevRequest->bRequest = 0xFF ;
 	pDevRequest->usWValue = 0 ;
-	pDevRequest->usWIndex = bInterfaceNumber ;
+	pDevRequest->usWIndex = _bInterfaceNumber ;
 	pDevRequest->usWLength = 0 ;
 
 	UHCIDataHandler_SetTDAttribute(pTD1, UHCI_ATTR_BUF_PTR, (unsigned)pDevRequest) ;
@@ -826,7 +826,7 @@ bool UHCIDevice::CommandReset()
 	UHCIDataHandler_SetTDAttribute(pTD2, UHCI_ATTR_TD_CONTROL_ERR_LEVEL, TD_CONTROL_ERR3) ;
 	UHCIDataHandler_SetTDAttribute(pTD2, UHCI_ATTR_TD_STATUS_ACTIVE, 1) ;
 	UHCIDataHandler_SetTDAttribute(pTD2, UHCI_ATTR_TD_DATA_TOGGLE, 1) ;
-	UHCIDataHandler_SetTDAttribute(pTD2, UHCI_ATTR_TD_DEVICE_ADDR, devAddr) ;
+	UHCIDataHandler_SetTDAttribute(pTD2, UHCI_ATTR_TD_DEVICE_ADDR, _devAddr) ;
 	
 	UHCIDataHandler_SetTDAttribute(pTD2, UHCI_ATTR_TD_MAXLEN, TD_MAXLEN_BLK) ;
 	UHCIDataHandler_SetTDAttribute(pTD2, UHCI_ATTR_TD_PID, TOKEN_PID_OUT) ;
@@ -899,7 +899,7 @@ bool UHCIDevice::ClearHaltEndPoint(USBulkDisk* pDisk, bool bIn)
 	//UHCIDataHandler_SetTDAttribute(pTD1, UHCI_ATTR_TD_CONTROL_IOC, 1) ;
 	UHCIDataHandler_SetTDAttribute(pTD1, UHCI_ATTR_TD_CONTROL_ERR_LEVEL, TD_CONTROL_ERR3) ;
 	UHCIDataHandler_SetTDAttribute(pTD1, UHCI_ATTR_TD_STATUS_ACTIVE, 1) ;
-	UHCIDataHandler_SetTDAttribute(pTD1, UHCI_ATTR_TD_DEVICE_ADDR, devAddr) ;
+	UHCIDataHandler_SetTDAttribute(pTD1, UHCI_ATTR_TD_DEVICE_ADDR, _devAddr) ;
 
 	UHCIDataHandler_SetTDAttribute(pTD1, UHCI_ATTR_TD_MAXLEN, 7) ;
 	UHCIDataHandler_SetTDAttribute(pTD1, UHCI_ATTR_TD_PID, TOKEN_PID_SETUP) ;
@@ -925,7 +925,7 @@ bool UHCIDevice::ClearHaltEndPoint(USBulkDisk* pDisk, bool bIn)
 	UHCIDataHandler_SetTDAttribute(pTD2, UHCI_ATTR_TD_CONTROL_ERR_LEVEL, TD_CONTROL_ERR3) ;
 	UHCIDataHandler_SetTDAttribute(pTD2, UHCI_ATTR_TD_STATUS_ACTIVE, 1) ;
 	UHCIDataHandler_SetTDAttribute(pTD2, UHCI_ATTR_TD_DATA_TOGGLE, 1) ;
-	UHCIDataHandler_SetTDAttribute(pTD2, UHCI_ATTR_TD_DEVICE_ADDR, devAddr) ;
+	UHCIDataHandler_SetTDAttribute(pTD2, UHCI_ATTR_TD_DEVICE_ADDR, _devAddr) ;
 	
 	UHCIDataHandler_SetTDAttribute(pTD2, UHCI_ATTR_TD_MAXLEN, TD_MAXLEN_BLK) ;
 	UHCIDataHandler_SetTDAttribute(pTD2, UHCI_ATTR_TD_PID, (bIn) ? TOKEN_PID_IN : TOKEN_PID_OUT) ;
@@ -1042,7 +1042,7 @@ bool UHCIDevice::BulkRead(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen)
 		//UHCIDataHandler_SetTDAttribute(pTD, UHCI_ATTR_TD_CONTROL_SPD, 1) ;
 		UHCIDataHandler_SetTDAttribute(pTD, UHCI_ATTR_TD_CONTROL_ERR_LEVEL, TD_CONTROL_ERR3) ;
 		UHCIDataHandler_SetTDAttribute(pTD, UHCI_ATTR_TD_STATUS_ACTIVE, 1) ;
-		UHCIDataHandler_SetTDAttribute(pTD, UHCI_ATTR_TD_DEVICE_ADDR, devAddr) ;
+		UHCIDataHandler_SetTDAttribute(pTD, UHCI_ATTR_TD_DEVICE_ADDR, _devAddr) ;
 		UHCIDataHandler_SetTDAttribute(pTD, UHCI_ATTR_TD_ENDPT_ADDR, pDisk->uiEndPointIn) ;
 		UHCIDataHandler_SetTDAttribute(pTD, UHCI_ATTR_TD_DATA_TOGGLE, pDisk->bEndPointInToggle) ;
 		pDisk->bEndPointInToggle ^= 1 ;
@@ -1140,7 +1140,7 @@ bool UHCIDevice::BulkWrite(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen)
 		//UHCIDataHandler_SetTDAttribute(pTD, UHCI_ATTR_TD_CONTROL_SPD, 1) ;
 		UHCIDataHandler_SetTDAttribute(pTD, UHCI_ATTR_TD_CONTROL_ERR_LEVEL, TD_CONTROL_ERR3) ;
 		UHCIDataHandler_SetTDAttribute(pTD, UHCI_ATTR_TD_STATUS_ACTIVE, 1) ;
-		UHCIDataHandler_SetTDAttribute(pTD, UHCI_ATTR_TD_DEVICE_ADDR, devAddr) ;
+		UHCIDataHandler_SetTDAttribute(pTD, UHCI_ATTR_TD_DEVICE_ADDR, _devAddr) ;
 		UHCIDataHandler_SetTDAttribute(pTD, UHCI_ATTR_TD_ENDPT_ADDR, pDisk->uiEndPointOut) ;
 		UHCIDataHandler_SetTDAttribute(pTD, UHCI_ATTR_TD_DATA_TOGGLE, pDisk->bEndPointOutToggle) ;
 		pDisk->bEndPointOutToggle ^= 1 ;
@@ -1484,100 +1484,82 @@ bool UHCIManager::PollWait(unsigned* pPoleAddr, unsigned uiValue)
 
 UHCIDevice::UHCIDevice() : _bFirstBulkRead(true), _bFirstBulkWrite(true)
 {
-	devAddr = USBController::Instance().GetNextDevNum() ;
-	if(devAddr < -1)
+	_devAddr = USBController::Instance().GetNextDevNum() ;
+	if(_devAddr < -1)
     throw upan::exception(XLOC, "Maximum USB Device Limit reached. New Device Allocation Failed!");
 	
-	UHCIController_SetAddress(uiIOBase, devAddr) ;
+	UHCIController_SetAddress(uiIOBase, _devAddr) ;
 
 	USBStandardDeviceDesc devDesc ;
-	UHCIController_GetDeviceDescriptor(uiIOBase, devAddr, &devDesc) ;
+	UHCIController_GetDeviceDescriptor(uiIOBase, _devAddr, &devDesc) ;
 	USBDataHandler_DisplayDevDesc(&devDesc) ;
 
 	char bConfigValue = 0;
-	UHCIController_GetConfiguration(uiIOBase, devAddr, &bConfigValue) ;
+	UHCIController_GetConfiguration(uiIOBase, _devAddr, &bConfigValue) ;
 
-  if(UHCIController_CheckConfiguration(uiIOBase, devAddr, &bConfigValue, devDesc.bNumConfigs) != UHCIController_SUCCESS)
+  if(UHCIController_CheckConfiguration(uiIOBase, _devAddr, &bConfigValue, devDesc.bNumConfigs) != UHCIController_SUCCESS)
     throw upan::exception(XLOC, "failed to CheckConfiguration");
 
-  if(UHCIController_GetConfigDescriptor(uiIOBase, devAddr, devDesc.bNumConfigs, &pArrConfigDesc) != UHCIController_SUCCESS)
+  if(UHCIController_GetConfigDescriptor(uiIOBase, _devAddr, devDesc.bNumConfigs, &_pArrConfigDesc) != UHCIController_SUCCESS)
     throw upan::exception(XLOC, "failed to ConfigDescriptor");
 
-  if(UHCIController_GetStringDescriptorZero(uiIOBase, devAddr, &pStrDescZero) != UHCIController_SUCCESS)
+  if(UHCIController_GetStringDescriptorZero(uiIOBase, _devAddr, &_pStrDescZero) != UHCIController_SUCCESS)
     throw upan::exception(XLOC, "failed to StringDescriptorZero");
 
-	eControllerType = UHCI_CONTROLLER ;
-	USBDataHandler_CopyDevDesc(&deviceDesc, &devDesc, sizeof(USBStandardDeviceDesc)) ;
+	_eControllerType = UHCI_CONTROLLER ;
+	USBDataHandler_CopyDevDesc(&_deviceDesc, &devDesc, sizeof(USBStandardDeviceDesc)) ;
 
-	USBDataHandler_SetLangId(this) ;
+	SetLangId();
 
-	iConfigIndex = 0 ;
+	_iConfigIndex = 0 ;
 
 	for(int i = 0; i < devDesc.bNumConfigs; i++)
 	{
-		if(pArrConfigDesc[ i ].bConfigurationValue == bConfigValue)
+		if(_pArrConfigDesc[ i ].bConfigurationValue == bConfigValue)
 		{
-			iConfigIndex = i ;
+			_iConfigIndex = i ;
 			break ;
 		}
 	}
 	
-	GetDeviceStringDetails();
+  GetDeviceStringDesc(_manufacturer, _deviceDesc.indexManufacturer);
+  GetDeviceStringDesc(_product, _deviceDesc.indexProduct);
+  GetDeviceStringDesc(_serialNum, _deviceDesc.indexSerialNum);
+	USBDataHandler_DisplayDeviceStringDetails(this) ;
 }
 
-bool UHCIDevice::GetDeviceStringDetails()
+void UHCIDevice::GetDeviceStringDesc(upan::string& desc, int descIndex)
 {
-	if(usLangID == 0)
-	{
-		strcpy(szManufacturer, "Unknown") ;
-		strcpy(szProduct, "Unknown") ;
-		strcpy(szSerialNum, "Unknown") ;
-    return false;
-	}
+  desc = "Unknown";
+  if(_usLangID == 0)
+    return;
 
-	unsigned short usDescValue = (0x3 << 8) ;
+	unsigned short usDescValue = (0x3 << 8);
 	char szPart[ 8 ];
 
-	const int index_size = 3 ; // Make sure to change this with index[] below
-	char arr_index[] = { deviceDesc.indexManufacturer, deviceDesc.indexProduct, deviceDesc.indexSerialNum } ;
-	char* arr_name[] = { szManufacturer, szProduct, szSerialNum } ;
+  if(UHCIController_GetDescriptor(uiIOBase, _devAddr, usDescValue | descIndex, _usLangID, -1, szPart) != UHCIController_SUCCESS)
+    return;
 
-	for(int i = 0; i < index_size; i++)
-	{
-		int index = arr_index[ i ] ;
-		byte bStatus = UHCIController_GetDescriptor(uiIOBase, devAddr, usDescValue | index, usLangID, -1, szPart) ;
+  int iLen = ((USBStringDescZero*)&szPart)->bLength;
+  printf("\n String Index: %u, String Desc Size: %d", descIndex, iLen);
+  if(iLen == 0)
+    return;
 
-		if(bStatus != UHCIController_SUCCESS)
-			return bStatus ;
+  char* strDesc = new char[iLen];
+  if(UHCIController_GetDescriptor(uiIOBase, _devAddr, usDescValue | descIndex, _usLangID, iLen, strDesc) != UHCIController_SUCCESS)
+  {
+    delete[] strDesc;
+    return;
+  }
 
-		int iLen = ((USBStringDescZero*)&szPart)->bLength ;
-		printf("\n String Index: %u, String Desc Size: %d", index, iLen) ;
-		if(iLen == 0)
-		{
-			strcpy(arr_name[i], "Unknown") ;
-			continue ;
-		}
+  int j, k;
+  for(j = 0, k = 0; j < (iLen - 2); k++, j += 2)
+  {
+    //TODO: Ignoring Unicode 2nd byte for the time.
+    strDesc[k] = strDesc[j + 2];
+  }
+  strDesc[k] = '\0';
 
-		byte* pStringDesc = (byte*)DMM_AllocateForKernel(iLen) ;
-		bStatus = UHCIController_GetDescriptor(uiIOBase, devAddr, usDescValue | index, usLangID, iLen, pStringDesc) ;
-
-		if(bStatus != UHCIController_SUCCESS)
-		{
-			DMM_DeAllocateForKernel((unsigned)pStringDesc) ;
-			return bStatus ;
-		}
-
-    int j, k;
-		for(j = 0, k = 0; k < USB_MAX_STR_LEN && j < (iLen - 2); k++, j += 2)
-		{
-			//TODO: Ignoring Unicode 2nd byte for the time.
-			arr_name[i][k] = pStringDesc[j + 2] ;
-		}
-
-		arr_name[i][k] = '\0' ;
-	}
-
-	USBDataHandler_DisplayDeviceStringDetails(this) ;
-
-	return true;
+  desc = strDesc;
+  delete[] strDesc;
 }

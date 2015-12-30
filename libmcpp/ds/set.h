@@ -15,8 +15,8 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
-#ifndef _UPAN_MAP_H_
-#define _UPAN_MAP_H_
+#ifndef _UPAN_SET_H_
+#define _UPAN_SET_H_
 
 #include <exception.h>
 #include <pair.h>
@@ -24,41 +24,26 @@
 
 namespace upan {
 
-template <typename K, typename V>
-class _map_type
+template <typename K>
+class _set_type
 {
   public:
-    typedef pair<const K, V> value_type;
+    typedef const K value_type;
     typedef const K key_type;
     class _key_accessor
     {
       public:
-        const K& operator()(const pair<const K, V>& e) const
+        const K& operator()(const K& key) const
         {
-          return e.first;
+          return key;
         }
     };
 };
 
-template <typename K, typename V>
-class map : public _tree<_map_type<K, V>>
+template <typename K>
+class set : public _tree<_set_type<K>>
 {
-  public:
-    typedef _tree<_map_type<K, V>> _parent_;
-    typedef typename _parent_::node node;
-    typedef typename _parent_::value_type value_type;
-
-    V& operator[](const K& key);
 };
-
-template <typename K, typename V>
-V& map<K, V>::operator[](const K& key)
-{
-  pair<node*, bool> ret = this->find_node(key);
-  if(ret.second)
-    return ret.first->element().second;
-  return this->insert_at_node(ret.first, value_type(key, V())).first->second;
-}
 
 };
 

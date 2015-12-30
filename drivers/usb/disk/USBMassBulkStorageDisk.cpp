@@ -452,9 +452,9 @@ bool USBDiskDriver::DoAddDevice(USBDevice* pUSBDevice)
 	USBStandardInterface* pInterface = NULL ;
 	USBStandardEndPt *pEndPointIn = NULL, *pEndPointOut = NULL, *pEndPointInt = NULL ;
 	
-	USBStandardConfigDesc* pConfig = &(pUSBDevice->pArrConfigDesc[ pUSBDevice->iConfigIndex ]) ;
+	USBStandardConfigDesc* pConfig = &(pUSBDevice->_pArrConfigDesc[ pUSBDevice->_iConfigIndex ]) ;
 
-	if(pUSBDevice->deviceDesc.sVendorID == 0x05DC)
+	if(pUSBDevice->_deviceDesc.sVendorID == 0x05DC)
 	{
 		KC::MDisplay().Message("Lexar Jumpshot USB CF Reader detected\n", Display::WHITE_ON_BLACK()) ;
 		KC::MDisplay().Message("Not supported yet !", ' ') ;
@@ -473,8 +473,8 @@ bool USBDiskDriver::DoAddDevice(USBDevice* pUSBDevice)
 				if(pInterface->bInterfaceProtocol == USB_PR_BULK)
 				{
 					bFound = true ;
-					pUSBDevice->iInterfaceIndex = i ;
-					pUSBDevice->bInterfaceNumber = pInterface->bInterfaceNumber ;
+					pUSBDevice->_iInterfaceIndex = i ;
+					pUSBDevice->_bInterfaceNumber = pInterface->bInterfaceNumber ;
 					bDeviceSubClass = pInterface->bInterfaceSubClass ;
 					bDeviceProtocol = pInterface->bInterfaceProtocol ;
 					break;
@@ -550,7 +550,7 @@ bool USBDiskDriver::DoAddDevice(USBDevice* pUSBDevice)
 	pDisk->pEndPointInt = pEndPointInt ;
 
 	pDisk->pUSBDevice = pUSBDevice ;
-	pUSBDevice->pPrivate = pDisk ;
+	pUSBDevice->_pPrivate = pDisk ;
 
 	pDisk->bEndPointInToggle = pDisk->bEndPointOutToggle = 0 ;
 
@@ -657,7 +657,7 @@ bool USBDiskDriver::DoAddDevice(USBDevice* pUSBDevice)
 
 void USBDiskDriver::DoRemoveDevice(USBDevice* pUSBDevice)
 {
-	USBulkDisk* pDisk = (USBulkDisk*)pUSBDevice->pPrivate ;
+	USBulkDisk* pDisk = (USBulkDisk*)pUSBDevice->_pPrivate ;
 	SCSIHost* pHost = pDisk->pHost ;
 	SCSIDevice** pSCSIDeviceList = pDisk->pSCSIDeviceList ;
 

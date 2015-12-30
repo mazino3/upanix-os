@@ -117,25 +117,29 @@ class USBDevice
     virtual bool BulkRead(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen) = 0;
     virtual bool BulkWrite(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen) = 0;
 
-	char devAddr ;
-	int iConfigIndex ;
-	int iInterfaceIndex ;
-	char bInterfaceNumber ;
+  protected:
+    void SetLangId();
 
-	unsigned short usLangID ;
-	char szManufacturer[ USB_MAX_STR_LEN + 1 ] ;
-	char szProduct[ USB_MAX_STR_LEN + 1 ] ;
-	char szSerialNum[ USB_MAX_STR_LEN + 1 ] ;
+  public:
+    char _devAddr;
+    int _iConfigIndex;
+    int _iInterfaceIndex;
+    char _bInterfaceNumber;
 
-	// Single element
-	USBStandardDeviceDesc deviceDesc ;
-	// Array
-	USBStandardConfigDesc* pArrConfigDesc ;
-	USBStringDescZero* pStrDescZero ;
-		
-	USB_CONTROLLER_TYPE eControllerType ;
+    unsigned short _usLangID;
+    upan::string _manufacturer;
+    upan::string _product;
+    upan::string _serialNum;
 
-	void* pPrivate ;
+    // Single element
+    USBStandardDeviceDesc _deviceDesc;
+    // Array
+    USBStandardConfigDesc* _pArrConfigDesc;
+    USBStringDescZero* _pStrDescZero;
+      
+    USB_CONTROLLER_TYPE _eControllerType;
+
+    void* _pPrivate;
 };
 
 struct USBulkDisk
