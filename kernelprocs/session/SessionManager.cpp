@@ -35,29 +35,12 @@
 
 static int SessionManager_List[MAX_NO_OF_SESSIONS] ;
 
-static byte SessionManager_ValidateUser(const char* szUserName, const char* szPassword, const UserTabEntry* pUserTabEntry) ;
-static byte SessionManager_GetUserEntry(const char* szUserName, int* iUserID, UserTabEntry** pUserTabEntry) ;
-static byte SessionManager_LoadShell(int* iShellProcessID, int iSessionUserID) ;
-static byte SessionManager_GetUserEntry(const char* szUserName, int* iUserID, UserTabEntry** pUserTabEntry)
+static bool SessionManager_ValidateUser(const upan::string& name, const upan::string& password, const User& user)
 {
-	*iUserID = UserManager_GetUserEntryByName(szUserName, pUserTabEntry) ;
-
-	if((*iUserID) < 0)
-		return false ;
-
-	return true ;
+  return name == user.Name() && password == user.Password();
 }
 
-static byte SessionManager_ValidateUser(const char* szUserName, const char* szPassword, const UserTabEntry* pUserTabEntry)
-{
-	if(strcmp(szUserName, pUserTabEntry->szUserName) == 0
-		&& strcmp(szPassword, pUserTabEntry->szPassword) == 0)
-		return true ;
-
-	return false ;
-}
-
-static byte SessionManager_LoadShell(int* iShellProcessID, int iSessionUserID)
+static byte SessionManager_LoadShell(int* iShellProcessID)
 {
 	KC::MDisplay().Message("\n Loading Shell...", Display::WHITE_ON_BLACK()) ;
 
@@ -89,8 +72,6 @@ void SessionManager_StartSession()
 {
 	char szUserName[MAX_USER_LENGTH + 1] ;
 	char szPassword[MAX_USER_LENGTH + 1] ;
-	UserTabEntry* pSessionUserTabEntry ;
-	int iSessionUserID ;
 
 	while(true)
 	{
@@ -98,7 +79,7 @@ void SessionManager_StartSession()
 
 		KC::MDisplay().Message("\n  *********************  Welcome to MOS V.2.0  *********************", Display::WHITE_ON_BLACK()) ;
 
-		UserManager_Initialize() ;
+		UserManager::Instance();
 
 __OnlyLogin:
 		KC::MDisplay().Message("\n\n Login: ", Display::WHITE_ON_BLACK()) ;
@@ -107,22 +88,23 @@ __OnlyLogin:
 		KC::MDisplay().Message("\n Password: ", Display::WHITE_ON_BLACK()) ;
 		GenericUtil_ReadInput(szPassword, MAX_USER_LENGTH, false) ;
 
-		if(!SessionManager_GetUserEntry(szUserName, &iSessionUserID, &pSessionUserTabEntry))
+    const User* sessionUser = UserManager::Instance().GetUserEntryByName(szUserName);
+    if(sessionUser == nullptr)
 		{
-			KC::MDisplay().Message("\n\n Invalid User", Display::WHITE_ON_BLACK()) ;
+      printf("\n\n Invalid User!");
 			goto __OnlyLogin ;
 		}
 
-		if(!SessionManager_ValidateUser(szUserName, szPassword, pSessionUserTabEntry))
+		if(!SessionManager_ValidateUser(szUserName, szPassword, *sessionUser))
 		{
-			KC::MDisplay().Message("\n\n Login Incorrect", Display::WHITE_ON_BLACK()) ;
+      printf("\n\n Login Incorrect");
 			goto __OnlyLogin ;
 		}
 		
-		KC::MDisplay().Message("\n\n Login Successfull", Display::WHITE_ON_BLACK()) ;
+    printf("\n\n Login Successfull");
 	
 		int iShellProcessID ;
-		if(!SessionManager_LoadShell(&iShellProcessID, iSessionUserID))
+		if(!SessionManager_LoadShell(&iShellProcessID))
 			goto __OnlyLogin ;
 
 		ProcessManager::Instance().WaitOnChild(iShellProcessID) ;

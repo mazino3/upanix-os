@@ -112,8 +112,8 @@ extern unsigned RAM_SIZE ;
 #define MEM_FDT_END			0x839000 // 8 MB + 228 KB
 
 /* User Table */
-#define MEM_USR_LIST_START	0x839000 // 8 MB + 228 KB
-#define MEM_USR_LIST_END	0x83C000 // 8 MB + 240 KB
+//#define MEM_USR_LIST_START	0x839000 // 8 MB + 228 KB
+//#define MEM_USR_LIST_END	0x83C000 // 8 MB + 240 KB
 
 /* PGAS */
 #define MEM_PGAS_START		0x83C000 // 8 MB + 240 KB

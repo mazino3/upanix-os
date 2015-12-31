@@ -27,290 +27,172 @@
 # include <GenericUtil.h>
 # include <MemUtil.h>
 
-#define __USER_LIST_FILE	".user.lst"
-#define USER_TAB_SIZE	(MEM_USR_LIST_END - MEM_USR_LIST_START)
-
-static UserTabHeader* UserManager_pUsrTabHeader ;
-static UserTabEntry* UserManager_UseTabList ;
-static int SYS_MAX_USERS ;
-static char USER_LIST_FILE[30] ;
-
-/***************** static functions ***********************************/
-static byte UserManager_LoadUserTableList() ;
-static byte UserManager_ValidateUserTableList() ;
-static void UserManager_InitializeDefaultUserTable() ;
-static byte UserManager_WriteUserTableList() ;
-static byte UserManager_CreateNewUserList() ;
-static byte UserManager_ValidateName(const char* szName) ;
-static int UserManager_GetUserIDByName(const char* szUserName) ;
-
-static byte UserManager_LoadUserTableList()
+UserManager::UserManager() : _userListFileName(upan::string(OSIN_PATH) + ".user.lst")
 {
-	int fd ;
-
-	RETURN_X_IF_NOT(FileOperations_Open(&fd, USER_LIST_FILE, O_RDONLY), FileOperations_SUCCESS, UserManager_FAILURE) ;
-
-	unsigned n ;
-	const unsigned len = USER_TAB_SIZE ;
-
-	byte bStatus = FileOperations_Read(fd, (char*)(MEM_USR_LIST_START), len, &n) ;
-
-	RETURN_X_IF_NOT(FileOperations_Close(fd), FileOperations_SUCCESS, UserManager_FAILURE) ;
-
-	if(bStatus != Directory_SUCCESS && bStatus != Directory_ERR_EOF)
-		return UserManager_FAILURE ;
-
-	RETURN_IF_NOT(bStatus, UserManager_ValidateUserTableList(), UserManager_SUCCESS) ;
-
-	return UserManager_SUCCESS ;
-}
-
-static byte UserManager_ValidateUserTableList()
-{
-	if(UserManager_pUsrTabHeader->iNoOfUsers < 0 || UserManager_pUsrTabHeader->iNoOfUsers >= SYS_MAX_USERS || UserManager_pUsrTabHeader->iNextUser < -1 || UserManager_pUsrTabHeader->iNextUser >= SYS_MAX_USERS) 
-		return UserManager_ERR_INVALID_USR_TAB_HEADER ;
-
-	int iUserCount = 0 ;
-		
-	for(int i = 0; i < SYS_MAX_USERS; i++)
+	if(FileOperations_Exists(_userListFileName.c_str(), ATTR_TYPE_FILE) != FileOperations_SUCCESS)
 	{
-		if(((int*)&UserManager_UseTabList[i])[0] == -1 || UserManager_UseTabList[i].bType == NO_USER)
-			continue ;
-
-		iUserCount++ ;
+    CreateNewUserList();
 	}
-
-	if(iUserCount != UserManager_pUsrTabHeader->iNoOfUsers)
-		return UserManager_ERR_INVALID_USR_FILE ;
-
-	return UserManager_SUCCESS ;
+  else
+  {
+    if(!LoadUserList())
+    {
+      printf("\n User List File Corrupted/Not Found. Using Default root User\n");
+      InitializeDefaultUserList();
+    }
+  }
 }
 
-static void UserManager_InitializeDefaultUserTable()
+void UserManager::CreateNewUserList()
 {
-	UserManager_pUsrTabHeader->iNoOfUsers = 1 ;
-	UserManager_pUsrTabHeader->iNextUser = -1 ;
+	unsigned short usPerm = S_OWNER((ATTR_READ | ATTR_WRITE)) | S_GROUP(ATTR_READ) | S_OTHERS(ATTR_READ);
 
-	int i ;
-	for(i = 0; i < SYS_MAX_USERS; i++)
-		((int*)&UserManager_UseTabList[i])[0] = -1 ;
+	if(FileOperations_Create(_userListFileName.c_str(), ATTR_TYPE_FILE, usPerm) != FileOperations_SUCCESS)
+    throw upan::exception(XLOC, "failed to create user list file %s", _userListFileName.c_str());
 
-	strcpy(UserManager_UseTabList[0].szUserName, "root") ;
-	strcpy(UserManager_UseTabList[0].szPassword, "root123") ;
-	strcpy(UserManager_UseTabList[0].szHomeDirPath, FS_ROOT_DIR) ;
-	UserManager_UseTabList[0].bType = SUPER_USER ;
+	InitializeDefaultUserList();
+	WriteUserList();
 }
 
-static byte UserManager_WriteUserTableList()
+void UserManager::InitializeDefaultUserList()
 {
-	int fd ;
-	int n ;
-	RETURN_X_IF_NOT(FileOperations_Open(&fd, USER_LIST_FILE, O_RDWR), FileOperations_SUCCESS, UserManager_FAILURE) ;
-
-	RETURN_X_IF_NOT(FileOperations_Write(fd, (const char*)(MEM_USR_LIST_START), USER_TAB_SIZE, &n), FileOperations_SUCCESS, UserManager_FAILURE) ;
-
-	RETURN_X_IF_NOT(FileOperations_Close(fd), FileOperations_SUCCESS, UserManager_FAILURE) ;
-
-	return UserManager_SUCCESS ;	
+  _users.insert(UserMap::value_type("root", new User("root", "root123", FS_ROOT_DIR, SUPER_USER)));
 }
 
-static byte UserManager_CreateNewUserList()
+void UserManager::WriteUserList()
 {
-	unsigned short usPerm = S_OWNER((ATTR_READ | ATTR_WRITE)) | S_GROUP(ATTR_READ) | S_OTHERS(ATTR_READ) ;
+	int fd;
+  if(FileOperations_Open(&fd, _userListFileName.c_str(), O_RDWR | O_TRUNC) != FileOperations_SUCCESS)
+    throw upan::exception(XLOC, "failed to open %s file for writing", _userListFileName.c_str());
 
-	RETURN_X_IF_NOT(FileOperations_Create(USER_LIST_FILE, ATTR_TYPE_FILE, usPerm), FileOperations_SUCCESS, UserManager_FAILURE) ;
+  for(auto u : _users)
+  {
+    const User& user = *u.second;
 
-	UserManager_InitializeDefaultUserTable() ;
-	
-	byte bStatus ;
-	RETURN_IF_NOT(bStatus, UserManager_WriteUserTableList(), UserManager_SUCCESS) ;
+    int buf_size = user.Name().length() + user.Password().length() + user.HomeDirPath().length() + 1 /*type*/ + 4 /* 4 new lines */;
+    char* buffer = new char[buf_size + 1];
+    sprintf(buffer, "%s\n%s\n%s\n%d\n", user.Name().c_str(), user.Password().c_str(), user.HomeDirPath().c_str(), user.Type());
 
-	return UserManager_SUCCESS ;
+    int n;
+    if(FileOperations_Write(fd, (const char*)buffer, buf_size, &n) != FileOperations_SUCCESS)
+    {
+      delete[] buffer;
+      FileOperations_Close(fd);
+      throw upan::exception(XLOC, "error writing user file list");
+    }
+    delete[] buffer;
+  }
+
+	if(FileOperations_Close(fd) != FileOperations_SUCCESS)
+    throw upan::exception(XLOC, "erroring closing fd for user file list");
 }
 
-static UserTabEntry* UserManager_GetFreeEntry()
-{	
-	if(!(UserManager_pUsrTabHeader->iNoOfUsers > 0) || UserManager_pUsrTabHeader->iNoOfUsers >= SYS_MAX_USERS)
-		return NULL ;
-
-	if(UserManager_pUsrTabHeader->iNextUser == -1)
-		return &UserManager_UseTabList[ UserManager_pUsrTabHeader->iNoOfUsers ] ;
-
-	int i = UserManager_pUsrTabHeader->iNextUser ;
-	UserManager_pUsrTabHeader->iNextUser = ((int*)(&UserManager_UseTabList[i]))[0] ;
-
-	return &UserManager_UseTabList[i] ;
-}
-
-static byte UserManager_ValidateName(const char* szName)
+bool UserManager::LoadUserList()
 {
-	if(UserManager_GetUserIDByName(szName) != -1)
-		return UserManager_ERR_EXISTS ;
+	int fd;
+	RETURN_X_IF_NOT(FileOperations_Open(&fd, _userListFileName.c_str(), O_RDONLY), FileOperations_SUCCESS, false);
 
-	int len = strlen(szName) ;
+  upan::string name;
+  while(FileOperations_ReadLine(fd, name))
+  {
+    upan::string password, homeDirPath, szType;
+    if(!FileOperations_ReadLine(fd, password)
+      || !FileOperations_ReadLine(fd, homeDirPath)
+      || !FileOperations_ReadLine(fd, szType))
+      throw upan::exception(XLOC, "user list file is corrupted");
+    
+    USER_TYPES type = NO_USER;
+    if(szType == "1")
+      type = SUPER_USER;
+    else if(szType == "2")
+      type = NORMAL_USER;
+    else if(szType != "0")
+      throw upan::exception(XLOC, "invalid user type (%s) while reading user list file", szType.c_str());
+    _users.insert(UserMap::value_type(name, new User(name, password, homeDirPath, type)));
+  }
 
-	if(len > MAX_USER_LENGTH)
-		return UserManager_ERR_TOO_LONG ;
+	RETURN_X_IF_NOT(FileOperations_Close(fd), FileOperations_SUCCESS, false);
 
-	if(len < MIN_USER_LENGTH)
-		return UserManager_ERR_TOO_SHORT ;
+  return true;
+}
 
-	int i ;
-	for(i = 0; i < len; i++)
+bool UserManager::Create(const upan::string& name, const upan::string& password, const upan::string& homeDirPath, USER_TYPES type)
+{
+  if(!ValidateName(name))
+    return false;
+
+  if(!ValidateName(password))
+    return false;
+
+  if(homeDirPath.length() > MAX_HOME_DIR_LEN)
+  {
+    printf("\n home dir path of length %d is longer than %d", homeDirPath.length(), MAX_HOME_DIR_LEN);
+    return false;
+  }
+
+  if(FileOperations_Exists(homeDirPath.c_str(), ATTR_TYPE_DIRECTORY) != FileOperations_SUCCESS)
+  {
+    printf("\n invalid home dir path %s", homeDirPath.c_str());
+    return false;
+  }
+
+  _users.insert(UserMap::value_type(name, new User(name, password, homeDirPath, type)));
+
+	WriteUserList();
+
+  return true;
+}
+
+bool UserManager::Delete(const upan::string& name)
+{
+  auto it = _users.find(name);
+  if(it == _users.end())
+  {
+    printf("\n no such user %s to delete", name.c_str());
+    return false;
+  }
+  delete it->second;
+  _users.erase(it);
+	WriteUserList();
+  return true;
+}
+
+const User* UserManager::GetUserEntryByName(const upan::string& name) const
+{
+  auto i = _users.find(name);
+  if(i == _users.end())
+    return nullptr;
+  return i->second;
+}
+
+bool UserManager::ValidateName(const upan::string& name)
+{
+  if(GetUserEntryByName(name) != nullptr)
+  {
+    printf("\n User %s already exists", name.c_str());
+    return false;
+  }
+
+	if(name.length() > MAX_USER_LENGTH)
+  {
+    printf("\n User name length (%d) is too long (MAX: %d)", name.length(), MAX_USER_LENGTH);
+		return false;
+  }
+
+	if(name.length() < MIN_USER_LENGTH)
+  {
+    printf("\n User name length (%d) is too short (MIN: %d)", name.length(), MIN_USER_LENGTH);
+		return false;
+  }
+
+	for(unsigned i = 0; i < name.length(); ++i)
 	{
-		if(!isalnum(szName[i]))
-			return UserManager_ERR_INVALID_NAME ;
+		if(!isalnum(name[i]))
+    {
+      printf("\n only alpha numeric characters allowed in user name (invalid char -> %c)", name[i]);
+			return false;
+    }
 	}
 
-	return UserManager_SUCCESS ;
+	return true;
 }
-
-static int UserManager_GetUserIDByName(const char* szUserName)
-{
-	int i ;
-	for(i = 0; i < UserManager_pUsrTabHeader->iNoOfUsers; i++)
-	{
-		if(strcmp(UserManager_UseTabList[i].szUserName, szUserName) == 0)
-			return i ;
-	}
-
-	return -1 ;
-}
-
-/**********************************************************************/
-
-byte UserManager_Initialize()
-{
-	SYS_MAX_USERS = (USER_TAB_SIZE - sizeof(UserTabHeader))	/ (sizeof(UserTabEntry)) ;
-
-	UserManager_pUsrTabHeader = (UserTabHeader*)(MEM_USR_LIST_START) ;
-	UserManager_UseTabList = (UserTabEntry*)(MEM_USR_LIST_START + sizeof(UserTabHeader)) ;
-
-	strcpy(USER_LIST_FILE, OSIN_PATH) ;
-	strcat(USER_LIST_FILE, __USER_LIST_FILE) ;
-
-	byte bStatus ;
-	if(FileOperations_Exists(USER_LIST_FILE, ATTR_TYPE_FILE) != FileOperations_SUCCESS)
-	{
-		RETURN_IF_NOT(bStatus, UserManager_CreateNewUserList(), UserManager_SUCCESS) ;
-		return UserManager_SUCCESS ;
-	}
-
-	if(UserManager_LoadUserTableList() != UserManager_SUCCESS)
-	{	
-		KC::MDisplay().Message("\n User List File Corrupted/Not Found. Using Default root User\n", Display::WHITE_ON_BLACK()) ;
-		UserManager_InitializeDefaultUserTable() ;
-	}
-	
-	return UserManager_SUCCESS ;	
-}
-
-byte UserManager_GetUserList(UserTabEntry** pUserTabList, int* iNoOfUsers)
-{
-	ProcessAddressSpace* pPAS = &ProcessManager::Instance().GetCurrentPAS();
-	UserTabEntry* pAddress = NULL ;
-
-	*iNoOfUsers = UserManager_pUsrTabHeader->iNoOfUsers ;
-	if(pPAS->bIsKernelProcess == true)
-	{
-		*pUserTabList = (UserTabEntry*)DMM_AllocateForKernel(sizeof(UserTabEntry) * (*iNoOfUsers)) ;
-		pAddress = *pUserTabList ;
-	}
-	else
-	{
-		*pUserTabList = (UserTabEntry*)DMM_Allocate(pPAS, sizeof(UserTabEntry) * (*iNoOfUsers)) ;
-		pAddress = (UserTabEntry*)(((unsigned)*pUserTabList + PROCESS_BASE) - GLOBAL_DATA_SEGMENT_BASE) ;
-	}
-
-	if(pAddress == NULL)
-		return UserManager_FAILURE ;
-
-	for(int i = 0, j = 0; j < *iNoOfUsers; i++)
-	{
-		if(((int*)&UserManager_UseTabList[i])[0] == -1 || UserManager_UseTabList[i].bType == NO_USER)
-			continue ;
-
-		MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&UserManager_UseTabList[i], MemUtil_GetDS(), (unsigned)&pAddress[j++], sizeof(UserTabEntry)) ;
-	}
-
-	return UserManager_SUCCESS ;
-}
-
-byte UserManager_Create(const char* szUserName, const char* szPassword, const char* szHomeDirPath, byte bType)
-{
-	UserTabEntry* pUserTabEntry = UserManager_GetFreeEntry() ;
-
-	if(pUserTabEntry == NULL)
-		return UserManager_ERR_MAX_USR ;
-
-	if(!(bType == NO_USER || bType == SUPER_USER || bType == NORMAL_USER))
-		return UserManager_ERR_INVALID_USER_TYPE ;
-
-	byte bStatus ;
-	
-	RETURN_IF_NOT(bStatus, UserManager_ValidateName(szUserName), UserManager_SUCCESS) ;
-
-	RETURN_IF_NOT(bStatus, UserManager_ValidateName(szPassword), UserManager_SUCCESS) ;
-
-	if(strlen(szHomeDirPath) > MAX_HOME_DIR_LEN)
-		return UserManager_ERR_TOO_LONG ;
-
-	if(FileOperations_Exists(szHomeDirPath, ATTR_TYPE_DIRECTORY) != FileOperations_SUCCESS)
-		return UserManager_ERR_INVALID_HOME_DIR ;
-
-	strcpy(pUserTabEntry->szUserName, szUserName) ;
-	strcpy(pUserTabEntry->szPassword, szPassword) ;
-	strcpy(pUserTabEntry->szHomeDirPath, szHomeDirPath) ;
-	pUserTabEntry->bType = bType ;
-
-	UserManager_pUsrTabHeader->iNoOfUsers++ ;
-
-	RETURN_IF_NOT(bStatus, UserManager_WriteUserTableList(), UserManager_SUCCESS) ;
-
-	return UserManager_SUCCESS ;
-}
-
-byte UserManager_Delete(const char* szUserName)
-{
-	int iIndex = UserManager_GetUserIDByName(szUserName) ;
-
-	if(iIndex < 0)
-		return UserManager_ERR_USER ;
-
-	UserTabEntry* pUserTabEntry = &UserManager_UseTabList[iIndex] ;
-
-	pUserTabEntry->bType = NO_USER ;
-	((int*)pUserTabEntry)[0] = UserManager_pUsrTabHeader->iNextUser ;
-
-	UserManager_pUsrTabHeader->iNextUser = iIndex ;
-	UserManager_pUsrTabHeader->iNoOfUsers-- ;
-
-	byte bStatus ;
-	RETURN_IF_NOT(bStatus, UserManager_WriteUserTableList(), UserManager_SUCCESS) ;
-
-	return UserManager_SUCCESS ;
-}
-
-int UserManager_GetUserEntryByName(const char* szUserName, UserTabEntry** pUserTabEntry)
-{
-	int i, j ;
-	for(i = 0, j = 0; ; i++)
-	{
-		if(((int*)&UserManager_UseTabList[i])[0] == -1 || UserManager_UseTabList[i].bType == NO_USER)
-			continue ;
-
-		if(j >= UserManager_pUsrTabHeader->iNoOfUsers)
-			break ;
-
-		if(strcmp(UserManager_UseTabList[i].szUserName, szUserName) == 0)
-		{
-			*pUserTabEntry = &UserManager_UseTabList[i] ;
-			return i ;
-		}
-		j++ ;
-	}
-
-	*pUserTabEntry = NULL ;
-	return -1 ;
-}
-

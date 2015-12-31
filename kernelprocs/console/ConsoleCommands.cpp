@@ -476,32 +476,14 @@ void ConsoleCommands_CopyFile()
 
 void ConsoleCommands_InitUser()
 {
-	byte bStatus ;
-	if((bStatus = UserManager_Initialize()) != UserManager_SUCCESS)
-	{
-		KC::MDisplay().Address("\n User Manager Init Failed: ", bStatus) ;
-	}
+  UserManager::Instance();
 }
 
 void ConsoleCommands_ListUser()
 {
-	UserTabEntry* pUserTabList = NULL ;
-	int n = 0 ;
-
-	if(UserManager_GetUserList(&pUserTabList, &n) != UserManager_SUCCESS)
-	{
-		KC::MDisplay().Message("\n Failed to get User List", ' ') ;
-		return ;
-	}
-
-	int i ;
-	for(i = 0; i < n; i++)
-	{
-		KC::MDisplay().Message("\n", Display::WHITE_ON_BLACK()) ;
-		KC::MDisplay().Message(pUserTabList[i].szUserName, Display::WHITE_ON_BLACK()) ;
-	}
-
-	DMM_DeAllocateForKernel((unsigned)pUserTabList) ;
+  const auto& users = UserManager::Instance().GetUserList();
+	for(auto i : users)
+    printf("\n %s", i.first.c_str());
 }
 
 void ConsoleCommands_AddUser()
@@ -510,41 +492,28 @@ void ConsoleCommands_AddUser()
 	char szPassword[MAX_USER_LENGTH + 1] ;
 	char szHomeDirPath[MAX_HOME_DIR_LEN + 1] ;
 
-	KC::MDisplay().Message("\n User Name: ", Display::WHITE_ON_BLACK()) ;
+  printf("\n User Name: ");
 	GenericUtil_ReadInput(szUserName, MAX_USER_LENGTH, true) ;
 
-	KC::MDisplay().Message("\n Password: ", Display::WHITE_ON_BLACK()) ;
+  printf("\n Password: ");
 	GenericUtil_ReadInput(szPassword, MAX_USER_LENGTH, false) ;
 
-	KC::MDisplay().Message("\n Home Dir Path: ", Display::WHITE_ON_BLACK()) ;
+  printf("\n Home dir path: ");
 	GenericUtil_ReadInput(szHomeDirPath, MAX_HOME_DIR_LEN, true) ;
 
-	byte bStatus ;
-	if((bStatus = UserManager_Create(szUserName, szPassword, szHomeDirPath, NORMAL_USER))
-		!= UserManager_SUCCESS)
-	{	
-		KC::MDisplay().Address("\n User Creation Failed: ", bStatus) ;
-		return ;	
-	}
-
-	KC::MDisplay().Message("\n User Created", Display::WHITE_ON_BLACK()) ;
+	if(UserManager::Instance().Create(szUserName, szPassword, szHomeDirPath, NORMAL_USER))
+    printf("\n User created!");
 }
 
 void ConsoleCommands_DeleteUser()
 {
 	char szUserName[MAX_USER_LENGTH + 1] ;
 
-	KC::MDisplay().Message("\n User Name: ", Display::WHITE_ON_BLACK()) ;
+  printf("\n User Name: ");
 	GenericUtil_ReadInput(szUserName, MAX_USER_LENGTH, true) ;
 
-	byte bStatus ;
-	if((bStatus = UserManager_Delete(szUserName)) != UserManager_SUCCESS)
-	{	
-		KC::MDisplay().Address("\n User Deletion Failed: ", bStatus) ;
-		return ;	
-	}
-
-	KC::MDisplay().Message("\n User Deleted", Display::WHITE_ON_BLACK()) ;
+  if(UserManager::Instance().Delete(szUserName))
+    printf("\n User deleted!");
 }
 
 void ConsoleCommands_OpenSession()
