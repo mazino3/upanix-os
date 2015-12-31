@@ -30,5 +30,11 @@ class pair
 		S second;
 };
 
+template <typename F, typename S>
+__inline__ pair<F, S> make_pair(F f, S s)
+{
+  return pair<F, S>(f, s);
+}
+
 };
 #endif

@@ -15,8 +15,8 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
-#ifndef _EXERR_H_
-#define _EXERR_H_
+#ifndef _UPAN_EXERR_H_
+#define _UPAN_EXERR_H_
 
 #ifdef __LOCAL_TEST__
 
