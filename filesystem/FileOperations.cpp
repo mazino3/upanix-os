@@ -28,6 +28,7 @@
 # include <StringUtil.h>
 # include <Display.h>
 # include <stdio.h>
+# include <list.h>
 
 /************************************************************************************************************/
 static byte FileOperations_ValidateAndGetFileAttr(unsigned short usFileType, unsigned short usMode, 
@@ -170,6 +171,48 @@ byte FileOperations_Close(int fd)
 {
 	RETURN_X_IF_NOT(ProcFileManager_FreeFD(fd), ProcFileManager_SUCCESS, FileOperations_FAILURE) ;
 	return FileOperations_SUCCESS ;
+}
+
+bool FileOperations_ReadLine(int fd, upan::string& line)
+{
+  line = "";
+  const int CHUNK_SIZE = 64;
+  char buffer[CHUNK_SIZE + 1];
+  upan::list<upan::string> buffers;
+  unsigned readLen;
+  int line_size = 0;
+  while(true)
+  {
+    byte ret = FileOperations_Read(fd, buffer, CHUNK_SIZE, &readLen);
+    
+    if(ret == Directory_ERR_EOF)
+      break;
+    else if(ret != FileOperations_SUCCESS)
+      throw upan::exception(XLOC, "error reading file fd %d", fd);
+
+    //find new line
+    unsigned i = 0;
+    for(i = 0; i < readLen; ++i)
+      if(buffer[i] == '\n')
+        break;
+    buffer[i] = '\0';
+
+    line_size += i;
+    buffers.push_back(buffer);
+
+    int offset = i - readLen + 1;
+    if(offset < 0)
+    {
+      FileOperations_Seek(fd, offset, SEEK_CUR);
+      break;
+    }
+  }
+
+  if(buffers.empty())
+    return false;
+  for(auto chunk : buffers)
+    line += chunk;
+  return true;
 }
 
 byte FileOperations_Read(int fd, char* buffer, int len, unsigned* pReadLen)

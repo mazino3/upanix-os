@@ -77,6 +77,7 @@ typedef enum
 
 byte FileOperations_Open(int* fd, const char* szFileName, const byte mode) ;
 byte FileOperations_Close(int fd) ;
+bool FileOperations_ReadLine(int fd, upan::string& line);
 byte FileOperations_Read(int fd, char* buffer, int len, unsigned* pReadLen) ;
 byte FileOperations_Write(int fd, const char* buffer, int len, int* pWriteLen) ;
 byte FileOperations_Create(const char* szFilePath, unsigned short usFileType, unsigned short usMode) ;

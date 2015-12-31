@@ -15,8 +15,8 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
-#ifndef _STRING_H_
-#define _STRING_H_
+#ifndef _UPAN_STRING_H_
+#define _UPAN_STRING_H_
 
 #include <Global.h>
 #include <cstring.h>
@@ -47,6 +47,8 @@ class string
 			Value(r.c_str());
 		}
 
+    const char operator[](unsigned index) const;
+
 		string& operator=(const string& r)
 		{
       Value(r.c_str());
@@ -61,7 +63,7 @@ class string
 
 		string& operator+=(const string& r)
 		{
-      unsigned newLen = _len + r.Length();
+      unsigned newLen = _len + r.length();
 			if(Large(newLen))
 			{
 				char* newVal = AllocPtr(newLen);
@@ -75,6 +77,11 @@ class string
       _len = newLen;
 			return *this;
 		}
+
+    bool operator<(const string& r) const
+    {
+      return strcmp(c_str(), r.c_str()) < 0;
+    }
 
 		bool operator==(const string& r) const
 		{
@@ -93,7 +100,7 @@ class string
 			return _sVal;
 		}
 
-		unsigned Length() const { return _len; }
+		unsigned length() const { return _len; }
 
 	private:
 		static const unsigned FIXED_BUFFER = 64;
