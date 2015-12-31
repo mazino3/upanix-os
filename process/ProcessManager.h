@@ -23,7 +23,7 @@
 #include <FileSystem.h>
 #include <ElfSectionHeader.h>
 #include <PIC.h>
-#include <ResourceManager.h>
+#include <Atomic.h>
 #include <list.h>
 
 #define ProcessManager_SUCCESS						0
@@ -162,7 +162,7 @@ typedef struct
 
 	int iWaitChildProcId ;
 
-	unsigned uiWaitResourceId ;
+	RESOURCE_KEYS uiWaitResourceId;
 
 	bool bKernelServiceComplete ;
 		
@@ -242,8 +242,8 @@ class ProcessManager
     void InsertIntoProcessList(int iProcessID);
     void DeleteFromProcessList(int iProcessID);
     bool WakeupProcessOnInterrupt(__volatile__ int iProcessID);
-    bool IsResourceBusy(__volatile__ unsigned uiType);
-    void SetResourceBusy(unsigned uiType, bool bVal);
+    bool IsResourceBusy(__volatile__ RESOURCE_KEYS uiType);
+    void SetResourceBusy(RESOURCE_KEYS uiType, bool bVal);
     void Sleep(unsigned uiSleepTime);
     void WaitOnInterrupt(const IRQ&);
     int GetCurProcId();
@@ -256,7 +256,7 @@ class ProcessManager
     void SetDMMFlag(int iProcessID, bool flag);
     bool IsDMMOn(int iProcessID);
     void WaitOnChild(int iChildProcessID);
-    void WaitOnResource(unsigned uiResourceType);
+    void WaitOnResource(RESOURCE_KEYS uiResourceType);
     void WaitOnKernelService();
     bool IsKernelProcess(int iProcessID);
     void BuildCallGate(unsigned short usGateSelector, unsigned uiOffset, unsigned short usSelector, byte bParameterCount);

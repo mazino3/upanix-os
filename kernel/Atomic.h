@@ -64,4 +64,44 @@ class MutexGuard
     Mutex& _m;
 };
 
+enum RESOURCE_KEYS
+{
+	RESOURCE_NIL = 999,
+	RESOURCE_FDD = 0,
+	RESOURCE_HDD,
+	RESOURCE_UHCI_FRM_BUF,
+	RESOURCE_USD,
+	RESOURCE_GENERIC_DISK,
+	MAX_RESOURCE,
+};
+
+class ResourceMutex
+{
+  public:
+    ResourceMutex(RESOURCE_KEYS resourceKey) : _resourceKey(resourceKey)
+    {
+    }
+  
+    bool Lock(bool blocking = true);
+    void UnLock();
+
+  private:
+    RESOURCE_KEYS _resourceKey;
+};
+
+class ResourceMutexGuard
+{
+  public:
+    ResourceMutexGuard(RESOURCE_KEYS k) : _m(k)
+    {
+      _m.Lock();
+    }
+    ~ResourceMutexGuard()
+    {
+      _m.UnLock();
+    }
+  private:
+    ResourceMutex _m;
+};
+
 #endif

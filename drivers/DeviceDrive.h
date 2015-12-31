@@ -272,6 +272,9 @@ class DiskDriveManager
     byte RemoveRawDiskEntry(const upan::string& name);
     RawDiskDrive* GetRawDiskByName(const upan::string& name);
 
+    RESOURCE_KEYS GetResourceType(DEVICE_TYPE deviceType);
+    RESOURCE_KEYS GetResourceType(RAW_DISK_TYPES diskType);
+
     const upan::list<DiskDrive*>& DiskDriveList() const { return _driveList; }
     const upan::list<RawDiskDrive*>& RawDiskDriveList() const { return _rawDiskList; }
   private:

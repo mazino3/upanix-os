@@ -107,3 +107,25 @@ bool Mutex::UnLock()
 	return true ;
 }
 
+bool ResourceMutex::Lock(bool blocking)
+{
+	ProcessManager::DisableTaskSwitch();
+
+	if(!ProcessManager::Instance().IsResourceBusy(_resourceKey))
+		ProcessManager::Instance().SetResourceBusy(_resourceKey, true);
+	else
+	{
+    if(!blocking)
+      return false;  
+    ProcessManager::Instance().WaitOnResource(_resourceKey);
+	}
+
+	ProcessManager::EnableTaskSwitch();
+	return true;
+}
+
+void ResourceMutex::UnLock()
+{
+  ProcessSwitchLock pLock;
+	ProcessManager::Instance().SetResourceBusy(_resourceKey, false);
+}

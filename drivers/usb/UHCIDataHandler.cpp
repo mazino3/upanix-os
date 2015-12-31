@@ -85,22 +85,15 @@ static void UHCIDataHandler_SetTDLinkToTransferDesc(UHCITransferDesc* pTD, unsig
 
 static byte UHCIDataHandler_GetNextFrameToClean(unsigned* uiFrameNumber)
 {
-	byte bStatus = UHCIDataHandler_SUCCESS ;
-
-	ResourceManager_Acquire(RESOURCE_UHCI_FRM_BUF, RESOURCE_ACQUIRE_BLOCK) ;
+  ResourceMutexGuard rg(RESOURCE_UHCI_FRM_BUF);
 
   if(UHCIDataHandler_FrameQueue.empty())
-  {
-		bStatus = UHCIDataHandler_FRMQ_EMPTY;
-  }
-  else
-  {
-    *uiFrameNumber = UHCIDataHandler_FrameQueue.front();
-    UHCIDataHandler_FrameQueue.pop_front();
-  }
-	ResourceManager_Release(RESOURCE_UHCI_FRM_BUF) ;
+    return UHCIDataHandler_FRMQ_EMPTY;
 
-	return bStatus ;
+  *uiFrameNumber = UHCIDataHandler_FrameQueue.front();
+  UHCIDataHandler_FrameQueue.pop_front();
+
+	return UHCIDataHandler_SUCCESS;
 }
 
 static void UHCIDataHandler_BuildFrameEntryForDeAlloc(unsigned uiFrameNumber, unsigned uiDescAddress, bool bCleanBuffer, bool bCleanDescs)
@@ -495,14 +488,12 @@ byte UHCIDataHandler_CleanFrame(unsigned uiFrameNumber)
 	byte bStatus = UHCIDataHandler_SUCCESS ;
 
 	UHCIDataHandler_GetFrameListMutex().Lock() ;
-	// ResourceManager_Acquire(RESOURCE_UHCI_FRM_BUF, RESOURCE_ACQUIRE_BLOCK) ;
 
   if(UHCIDataHandler_FrameQueue.full())
 		bStatus = UHCIDataHandler_FRMQ_FULL;
   else
     UHCIDataHandler_FrameQueue.push_back(uiFrameNumber);
 	
-	// ResourceManager_Release(RESOURCE_UHCI_FRM_BUF) ;
 	UHCIDataHandler_GetFrameListMutex().UnLock() ;
 
 	return bStatus ;
@@ -521,7 +512,7 @@ void UHCIDataHandler_SetFrameListEntry(unsigned uiFrameNumber, unsigned uiValue,
 
 byte UHCIDataHandler_GetNextFreeFrame(unsigned* uiFreeFrameID)
 {
-	ResourceManager_Acquire(RESOURCE_UHCI_FRM_BUF, RESOURCE_ACQUIRE_BLOCK) ;
+  ResourceMutexGuard rg(RESOURCE_UHCI_FRM_BUF);
 
 	int i ;
 	for(i = 0; i < 1024; i++)
@@ -530,13 +521,9 @@ byte UHCIDataHandler_GetNextFreeFrame(unsigned* uiFreeFrameID)
 		{
 			UHCIDataHandler_pFrameList[i] = 0 ;
 			*uiFreeFrameID = i ;
-			ResourceManager_Release(RESOURCE_UHCI_FRM_BUF) ;
 			return UHCIDataHandler_SUCCESS ;
 		}	
 	}
 	
-	ResourceManager_Release(RESOURCE_UHCI_FRM_BUF) ;
-
 	return UHCIDataHandler_NO_FREE_FRM ;
 }
-

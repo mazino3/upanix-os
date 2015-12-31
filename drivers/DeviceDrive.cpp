@@ -26,7 +26,6 @@
 # include <MemUtil.h>
 # include <ProcessEnv.h>
 # include <FSCommand.h>
-# include <ResourceManager.h>
 # include <ProcessManager.h>
 # include <SCSIHandler.h>
 # include <stdio.h>
@@ -968,6 +967,29 @@ byte DiskDriveManager::GetCurrentDriveStat(DriveStat* pDriveStat)
   pDriveStat->ulUsedSize = 0;
 
 	return DeviceDrive_SUCCESS ;
+}
+
+RESOURCE_KEYS DiskDriveManager::GetResourceType(DEVICE_TYPE deviceType)
+{
+	switch(deviceType)
+	{
+		case DEV_FLOPPY: return RESOURCE_FDD;
+		case DEV_ATA_IDE: return RESOURCE_HDD;
+		case DEV_SCSI_USB_DISK: return RESOURCE_USD;
+	}
+  return RESOURCE_GENERIC_DISK;
+}
+
+RESOURCE_KEYS DiskDriveManager::GetResourceType(RAW_DISK_TYPES diskType)
+{
+	switch(diskType)
+	{
+		case ATA_HARD_DISK: return RESOURCE_HDD;
+		case USB_SCSI_DISK: return RESOURCE_USD;
+	}
+
+	//TODO: FLOPPY falls under this category which should be changed to particular disk type
+	return RESOURCE_GENERIC_DISK;
 }
 
 byte RawDiskDrive::Read(unsigned uiStartSector, unsigned uiNoOfSectors, byte* pDataBuffer)

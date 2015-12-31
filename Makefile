@@ -27,7 +27,6 @@ DRIVERS = ${UPANIX_HOME}/drivers
 UTIL = ${UPANIX_HOME}/util
 MEMORY = ${UPANIX_HOME}/memory
 FILE_SYSTEM = ${UPANIX_HOME}/filesystem
-RESOURCE = ${UPANIX_HOME}/resource
 USERS = ${UPANIX_HOME}/users
 EXEPARSER = ${UPANIX_HOME}/exeparser
 SYSCALL = ${UPANIX_HOME}/syscall
@@ -57,7 +56,6 @@ flat:
 	cd ${UTIL} && make
 	cd $(MEMORY) && make
 	cd ${FILE_SYSTEM} && make
-	cd ${RESOURCE} && make
 	cd ${USERS} && make
 	cd ${EXEPARSER} && make
 	cd ${SYSCALL} && make
@@ -82,7 +80,6 @@ aout:
 	cd ${UTIL} && make
 	cd $(MEMORY) && make
 	cd ${FILE_SYSTEM} && make
-	cd ${RESOURCE} && make
 	cd ${USERS} && make
 	cd ${EXEPARSER} && make
 	cd ${SYSCALL} && make
@@ -123,7 +120,6 @@ clean:
 	cd ${UTIL} && make clean
 	cd ${MEMORY} && make clean
 	cd ${FILE_SYSTEM} && make clean
-	cd ${RESOURCE} && make clean
 	cd ${USERS} && make clean
 	cd ${EXEPARSER} && make clean
 	cd ${SYSCALL} && make clean
@@ -146,7 +142,6 @@ distclean:
 	cd ${UTIL} && make distclean
 	cd ${MEMORY} && make distclean
 	cd ${FILE_SYSTEM} && make distclean
-	cd ${RESOURCE} && make distclean
 	cd ${USERS} && make distclean
 	cd ${EXEPARSER} && make distclean
 	cd ${SYSCALL} && make distclean

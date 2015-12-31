@@ -72,8 +72,6 @@ MOS_OBJS = \
 	./process/DynamicLinkLoader.o \
 	./process/ProcessEnv.o \
  \
-	./resource/ResourceManager.o \
- \
 	./filesystem/BufferedReader.o \
 	./filesystem/ProcFileManager.o \
 	./filesystem/FSManager.o \

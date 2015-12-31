@@ -613,7 +613,7 @@ void ProcessManager::WaitOnChild(int iChildProcessID)
 	ProcessManager_Yield() ;
 }
 
-void ProcessManager::WaitOnResource(unsigned uiResourceType)
+void ProcessManager::WaitOnResource(RESOURCE_KEYS resourceKey)
 {
 	if(GetCurProcId() < 0)
 		return ;
@@ -621,7 +621,7 @@ void ProcessManager::WaitOnResource(unsigned uiResourceType)
 	//ProcessManager_EnableTaskSwitch() ;
 	ProcessManager::DisableTaskSwitch() ;
 	
-	GetCurrentPAS().pProcessStateInfo->uiWaitResourceId = uiResourceType ;
+	GetCurrentPAS().pProcessStateInfo->uiWaitResourceId = resourceKey;
 	GetCurrentPAS().status = WAIT_RESOURCE ;
 
 	ProcessManager_Yield() ;
@@ -932,12 +932,12 @@ void ProcessManager_Exit()
 	ProcessManager_EXIT() ;
 }
 
-bool ProcessManager::IsResourceBusy(__volatile__ unsigned uiType)
+bool ProcessManager::IsResourceBusy(__volatile__ RESOURCE_KEYS uiType)
 {
 	return _resourceList[ uiType ] ;
 }
 
-void ProcessManager::SetResourceBusy(unsigned uiType, bool bVal)
+void ProcessManager::SetResourceBusy(RESOURCE_KEYS uiType, bool bVal)
 {
 	_resourceList[ uiType ] = bVal ;
 }
