@@ -43,8 +43,8 @@ FLOPPY_DEV = /dev/fd0
 
 BOOT_OUTPUT = ${BIN}/Boot.bin
 SETUP_OUTPUT = ${BIN}/Setup.bin
-MOS_OUTPUT_FLAT = ${BIN}/MOS.bin
-MOS_OUTPUT_AOUT = ${BIN}/MOS.aout
+UPANIX_OUTPUT_FLAT = ${BIN}/upanix.bin
+UPANIX_OUTPUT_AOUT = ${BIN}/upanix.elf
 
 flat:
 	cd ${BOOT} && make
@@ -70,8 +70,8 @@ flat:
 	
 	@make -f Makefile.act flat
 
-aout:
-	cd ${BOOT} && make boot_aout
+elf:
+	cd ${BOOT} && make boot_elf
 	cd ${KERNEL} && make
 	cd ${PROCESS} && make
 	cd ${DISPLAY} && make
@@ -92,17 +92,7 @@ aout:
 	cd ${LIBGCCEH} && make
 	#cd ${LIBM} && make
 
-	@make -f Makefile.act aout
-
-image:
-	creatboot ${BOOT_OUTPUT} ${FLOPPY_IMG}
-	writesec ${SETUP_OUTPUT} ${FLOPPY_IMG} 3
-	writesec ${MOS_OUTPUT_FLAT} ${FLOPPY_IMG} 5
-
-floppy-img:
-	creatboot ${BOOT_OUTPUT} ${FLOPPY_DEV}
-	writesec ${SETUP_OUTPUT} ${FLOPPY_DEV} 3
-	writesec ${MOS_OUTPUT_FLAT} ${FLOPPY_DEV} 5
+	@make -f Makefile.act elf
 
 grub-img:
 	./build_load.sh
@@ -154,5 +144,5 @@ distclean:
 	cd ${LIBGCCEH} && make distclean
 	#cd ${LIBM} && make distclean
 
-	rm -f ${MOS_OUTPUT_FLAT}
-	rm -f ${MOS_OUTPUT_AOUT}
+	rm -f ${UPANIX_OUTPUT_FLAT}
+	rm -f ${UPANIX_OUTPUT_AOUT}

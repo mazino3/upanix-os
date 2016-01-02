@@ -860,9 +860,9 @@ void ConsoleCommands_Clone()
 {
 	int pid ;
 
-	extern void Console_StartMOSConsole() ;
+	extern void Console_StartUpanixConsole() ;
 	
-	ProcessManager::Instance().CreateKernelImage((unsigned)&Console_StartMOSConsole, ProcessManager::GetCurrentProcessID(), true, NULL, NULL, &pid, "console_1") ;
+	ProcessManager::Instance().CreateKernelImage((unsigned)&Console_StartUpanixConsole, ProcessManager::GetCurrentProcessID(), true, NULL, NULL, &pid, "console_1") ;
 	
 	ProcessManager::Instance().WaitOnChild(pid) ;
 }

@@ -15,13 +15,13 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
-#ifndef _MOS_SHELL_H_
-#define _MOS_SHELL_H_
+#ifndef _UPANIX_SHELL_H_
+#define _UPANIX_SHELL_H_
 
 # include <Global.h>
 
 void	Console_Initialize() ;
-void	Console_StartMOSConsole() ;
+void	Console_StartUpanixConsole() ;
 void	Console_DisplayCommandLine() ;
 void	Console_BuildCommand() ;
 void	Console_ProcessCommand(const char*) ;

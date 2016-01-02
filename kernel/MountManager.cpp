@@ -70,7 +70,7 @@ static byte MountManager_GetHomeMountDrive(char* szHomeDriveName, unsigned uiSiz
 		return false ;
 	
 	szHomeDriveName[uiBytesRead - 1] = '\0' ; /* Junk Fix... Use ctype and trim functions
-	from MOSApps library... port it to kernel using kernel coding conventions */
+	from UPANIXApps library... port it to kernel using kernel coding conventions */
 
 	return true ;
 }

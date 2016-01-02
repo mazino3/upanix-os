@@ -93,7 +93,7 @@ typedef struct memory_map
   unsigned long type;
 } memory_map_t;
 
-/********************** These are MOS Specific declarations ***********************/
+/********************** These are UPANIX Specific declarations ***********************/
 
 class MultiBoot
 {

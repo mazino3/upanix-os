@@ -139,7 +139,7 @@ DirectorySpike()
 
 	byte bDataBuffer[520] ;
 	
-	strcpy(bDataBuffer, "Test File Write. MOS FS Imp Test") ;
+	strcpy(bDataBuffer, "Test File Write. Upanix FS Imp Test") ;
 
 	bDataBuffer[512] = 'M' ;
 	bDataBuffer[513] = 'O' ;

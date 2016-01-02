@@ -22,7 +22,7 @@
 #include <MemManager.h>
 #include <ProcessManager.h>
 #include <PIT.h>
-#include <MOSMain.h>
+#include <UpanixMain.h>
 #include <AsmUtil.h>
 
 // Do not use this. else make sure to restore DS and ES
@@ -172,7 +172,7 @@ namespace {
 		__asm__ __volatile__("CLTS") ;
 
 	//	__asm__ __volatile__("FINIT") ;
-		if(MOSMain_isCoProcPresent())
+		if(UpanixMain_isCoProcPresent())
 		{
 			__asm__ __volatile__("FINIT") ;
 		}

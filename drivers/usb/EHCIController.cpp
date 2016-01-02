@@ -49,7 +49,7 @@ EHCIController::EHCIController(PCIEntry* pPCIEntry, int iMemMapIndex)
     throw upan::exception(XLOC, "EHCI IO Size greater then 1 Page (4096b) not supported currently !");
 
 	if((uiIOAddr % PAGE_SIZE) + uiIOSize > PAGE_SIZE)
-    throw upan::exception(XLOC, "EHCI MMIO area is spanning across PAGE boundary. This is not supported in MOS!!");
+    throw upan::exception(XLOC, "EHCI MMIO area is spanning across PAGE boundary. This is not supported in Upanix!!");
 
 	// Currently an IO Size of not more than a PAGE_SIZE is supported
 	// And also the IO Addr is expected not to span a PAGE Boundary.

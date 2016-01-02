@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
 
-/* MOS File System Support */
+/* Upanix File System Support */
 
 #include <Global.h>
 #include <StringUtil.h>

@@ -37,7 +37,7 @@
 #include <ProcessGroupManager.h>
 #include <MountManager.h>
 #include <StringUtil.h>
-#include <MOSMain.h>
+#include <UpanixMain.h>
 #include <ProcessConstants.h>
 #include <KernelUtil.h>
 #include <exception.h>
@@ -370,7 +370,7 @@ void ProcessManager::Destroy(int iDeleteProcessID)
 			}
 			else
 			{
-				pc->iParentProcessID = MOSMain_KernelProcessID() ;
+				pc->iParentProcessID = UpanixMain_KernelProcessID() ;
 			}
 		}
 
@@ -537,7 +537,7 @@ void ProcessManager::StartScheduler()
 	{
 		__volatile__ ProcessAddressSpace* pPAS = &GetCurrentPAS();
 
-		if(pPAS->status == TERMINATED && pPAS->iParentProcessID == MOSMain_KernelProcessID())
+		if(pPAS->status == TERMINATED && pPAS->iParentProcessID == UpanixMain_KernelProcessID())
 		{
 			int pid = pPAS->iNextProcessID ;
 			Release(_iCurrentProcessID) ;

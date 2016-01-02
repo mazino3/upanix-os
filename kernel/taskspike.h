@@ -117,7 +117,7 @@ TaskSpike()
 //	Process_BuildTaskState((unsigned)&KC::MDisplay().Task1, 0x80a00 + 104, 2, 0x300100) ;
 //	Process_BuildTaskState((unsigned)&KC::MDisplay().Task2, 0x80a00 + 104 + 104, 2, 0x300300) ;
 	
-//	Process_BuildTaskState((unsigned)&Console_StartMOSConsole, 0x80a00 + 104 + 104, 2, 0x300300) ;
+//	Process_BuildTaskState((unsigned)&Console_StartUpanixConsole, 0x80a00 + 104 + 104, 2, 0x300300) ;
 	
 //	DoContextSwitch() ;
 //	DoContextSwitchTaskGate() ;

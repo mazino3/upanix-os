@@ -97,7 +97,7 @@ typedef struct
 } PACKED FileSystem_DIR_Entry ;
 */
 
-/* This is same as FileSystem_FileStat in MOS Source and must be maintained in consistent with that */
+/* This is same as FileSystem_FileStat in Upanix Source and must be maintained in consistent with that */
 struct stat
 {
 	int 	    st_dev;     /* ID of device containing file */

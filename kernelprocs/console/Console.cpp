@@ -37,7 +37,7 @@ unsigned int Console_currentCommandPos ;
 
 void Console_Initialize()
 {
-	strcpy(Console_PROMPT, "\nMOS:") ;
+	strcpy(Console_PROMPT, "\nupanix:") ;
 	Console_currentCommandPos = 0 ;
 	ConsoleCommands_Init() ;
 	KC::MDisplay().LoadMessage("Console Initialization", Success);
@@ -60,7 +60,7 @@ void Console_DisplayCommandLine()
 	DMM_DeAllocateForKernel((unsigned)szPWD) ;
 }
 
-void Console_StartMOSConsole()
+void Console_StartUpanixConsole()
 {
 	DisplayManager::RefreshScreen() ;
 	

@@ -22,6 +22,6 @@ then
 exit 100
 fi
 
-cp -f bin/MOS.aout floppy/MntFloppy/boot
+cp -f bin/upanix.elf floppy/MntFloppy/boot
 
 echo rahasya | sudo -S umount floppy/MntFloppy 

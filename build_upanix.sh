@@ -26,9 +26,9 @@ fi
 
 if [ -z "$cmd" ]
 then
-	make aout
+	make elf
 	exitcode=$?
-	cmd="aout"
+	cmd="elf"
 else
 	make $cmd
 	exitcode=$?
@@ -38,7 +38,7 @@ fi
 
 if [ $exitcode -eq 0 ]
 then
-	if [ "$cmd" = "aout" ]
+	if [ "$cmd" = "elf" ]
 	then
 		./build_load.sh
 	fi

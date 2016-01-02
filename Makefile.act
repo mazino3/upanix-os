@@ -19,22 +19,22 @@ CC = i686-elf-gcc
 BIN = ${UPANIX_HOME}/bin
 BOOT = ${UPANIX_HOME}/boot
 
-MOS_START_OBJ = ${BOOT}/MOSStart.self
-MOS_START_MAIN_OBJ = ${BOOT}/MOSStart_Main.grub
+UPANIX_START_OBJ = ${BOOT}/UpanixStart.self
+UPANIX_START_MAIN_OBJ = ${BOOT}/UpanixStart_Main.grub
 FPU_INIT_OBJ = ${BOOT}/fpu_init.obj
 
-MOS_OUTPUT_FLAT = ${BIN}/MOS.bin
-MOS_OUTPUT_AOUT = ${BIN}/MOS.aout
+UPANIX_OUTPUT_FLAT = ${BIN}/upanix.bin
+UPANIX_OUTPUT_ELF = ${BIN}/upanix.elf
 
-MOS_LIBC_A = ./libc/libc.a
-MOS_LIBMCPP_A = ./libmcpp/libmcpp.a
-MOS_LIBM_A = ./libm/libm.a
-MOS_LIBCXXRT_A = ./libcxxrt/libcxxrt.a
-MOS_LIBGCCEH_A = ./libgcceh/libgcceh.a
+UPANIX_LIBC_A = ./libc/libc.a
+UPANIX_LIBMCPP_A = ./libmcpp/libmcpp.a
+UPANIX_LIBM_A = ./libm/libm.a
+UPANIX_LIBCXXRT_A = ./libcxxrt/libcxxrt.a
+UPANIX_LIBGCCEH_A = ./libgcceh/libgcceh.a
 
-MOS_OBJS = \
+UPANIX_OBJS = \
 	./kernel/KBInputHandler.o \
-	./kernel/MOSMain.o \
+	./kernel/UpanixMain.o \
 	./kernel/RTC.o \
 	./kernel/PortCom.o \
 	./kernel/PIC.o \
@@ -132,10 +132,10 @@ MOS_OBJS = \
 \
 	./testsuite/TestSuite.o \
 \
-	${MOS_LIBCXXRT_A} \
-	${MOS_LIBMCPP_A} \
-	${MOS_LIBC_A} \
-	${MOS_LIBGCCEH_A}
+	${UPANIX_LIBCXXRT_A} \
+	${UPANIX_LIBMCPP_A} \
+	${UPANIX_LIBC_A} \
+	${UPANIX_LIBGCCEH_A}
 
 
 CRTBEGIN_OBJ := $(shell $(CXX) -print-file-name=crtbegin.o)
@@ -144,8 +144,8 @@ CRTINIT_OBJ := ./osutils/crti.o ${CRTBEGIN_OBJ}
 CRTFINI_OBJ := ${CRTEND_OBJ} ./osutils/crtn.o
 
 flat:
-	${CXX} -s -o ${MOS_OUTPUT_FLAT} --oformat=binary -Ttext=0 ${FPU_INIT_OBJ} ${MOS_START_OBJ} ${shell find . -name *.o}
+	${CXX} -s -o ${UPANIX_OUTPUT_FLAT} --oformat=binary -Ttext=0 ${FPU_INIT_OBJ} ${UPANIX_START_OBJ} ${shell find . -name *.o}
 
-aout:
-	${CXX} -o ${MOS_OUTPUT_AOUT} -Tkernel.ld -O0 -ffreestanding -nostdlib ${FPU_INIT_OBJ} ${MOS_START_MAIN_OBJ} ${CRTINIT_OBJ} ${MOS_OBJS} ${CRTFINI_OBJ} 
+elf:
+	${CXX} -o ${UPANIX_OUTPUT_ELF} -Tkernel.ld -O0 -ffreestanding -nostdlib ${FPU_INIT_OBJ} ${UPANIX_START_MAIN_OBJ} ${CRTINIT_OBJ} ${UPANIX_OBJS} ${CRTFINI_OBJ} 
 # use this if needed -lgcc

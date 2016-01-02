@@ -1,8 +1,8 @@
 timeout 10
 default 0
 
-title MOS_FLOPPY
-    kernel (fd0)/boot/MOS.aout
+title Upanix floppy
+    kernel (fd0)/boot/upanix.elf
 
 #title MOS_HDDA
 #    kernel (hd0,0)/boot/MOS.aout

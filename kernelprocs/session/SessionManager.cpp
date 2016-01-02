@@ -77,7 +77,7 @@ void SessionManager_StartSession()
 	{
 		KC::MDisplay().ClearScreen() ;
 
-		KC::MDisplay().Message("\n  *********************  Welcome to MOS V.2.0  *********************", Display::WHITE_ON_BLACK()) ;
+		KC::MDisplay().Message("\n  *********************  Welcome to Upanix V.3.0  *********************", Display::WHITE_ON_BLACK()) ;
 
 		UserManager::Instance();
 

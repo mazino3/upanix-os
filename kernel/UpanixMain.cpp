@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
 # include <stdio.h>
-# include <MOSMain.h>
+# include <UpanixMain.h>
 # include <MemUtil.h>
 
 # include <FileSystem.h>
@@ -50,7 +50,7 @@ byte SPECIAL_TASK ;
 int debug_point ;
 /***********************************************/
 
-static int MOSMain_KernelPID ;
+static int UpanixMain_KernelPID ;
 
 void DummyPrint()
 {
@@ -62,19 +62,19 @@ void DummyPrint()
   }
 }
 
-void MOSMain_KernelProcess()
+void UpanixMain_KernelProcess()
 {
 	int pid ;
 
 	//MountManager_MountDrives() ;
 	
-	MOSMain_KernelPID = ProcessManager::GetCurrentProcessID() ;
+	UpanixMain_KernelPID = ProcessManager::GetCurrentProcessID() ;
 
 	KC::MKernelService().Spawn() ;
 	KC::MKernelService().Spawn() ;
 
 //	ProcessManager::Instance().CreateKernelImage((unsigned)&DummyPrint, ProcessManager::GetCurrentProcessID(), true, NULL, NULL, &pid, "dummy") ;
-	ProcessManager::Instance().CreateKernelImage((unsigned)&Console_StartMOSConsole, ProcessManager::GetCurrentProcessID(), true, NULL, NULL, &pid, "console") ;
+	ProcessManager::Instance().CreateKernelImage((unsigned)&Console_StartUpanixConsole, ProcessManager::GetCurrentProcessID(), true, NULL, NULL, &pid, "console") ;
 //	ProcessManager_CreateKernelImage((unsigned)&FloatProcess, ProcessManager::GetCurrentProcessID(), false, NULL, NULL, &pid, "float") ;
 //	ProcessManager_CreateKernelImage((unsigned)&FloatProcess, ProcessManager::GetCurrentProcessID(), false, NULL, NULL, &pid, "float1") ;
 //	ProcessManager_CreateKernelImage((unsigned)&SessionManager_StartSession, NO_PROCESS_ID, true, NULL, NULL, &pid, "sesman") ;
@@ -133,7 +133,7 @@ void Initialize()
 	SPECIAL_TASK = false ;
 
 	DisplayManager::Initialize();
-	KC::MDisplay().Message("\n****    Welcome To MOS The Upanix   ****\n", Display::Attribute(' ')) ;
+	KC::MDisplay().Message("\n****    Welcome To Upanix   ****\n", Display::Attribute(' ')) ;
 	ProcFileManager_InitForKernel();
 	MultiBoot::Instance();
 	MemManager::Instance();
@@ -197,7 +197,7 @@ void Initialize()
   }
 }
 
-Mutex& MOSMain_GetDMMMutex()
+Mutex& UpanixMain_GetDMMMutex()
 {
 	static Mutex mDMMMutex ;
 	return mDMMMutex ;
@@ -210,7 +210,7 @@ byte* GetArea()
 }
 
 extern void VM86_Test() ;
-void MOSMain()
+void UpanixMain()
 {
 	byte* bios = (byte*)(0 - GLOBAL_DATA_SEGMENT_BASE) ;
 
@@ -220,16 +220,16 @@ void MOSMain()
 	Initialize() ;
 
 	int pid ;
-	ProcessManager::Instance().CreateKernelImage((unsigned)&MOSMain_KernelProcess, NO_PROCESS_ID, true, NULL, NULL, &pid, "kerparent") ;
+	ProcessManager::Instance().CreateKernelImage((unsigned)&UpanixMain_KernelProcess, NO_PROCESS_ID, true, NULL, NULL, &pid, "kerparent") ;
 //	ProcessManager_CreateKernelImage((unsigned)&Console_StartMOSConsole, NO_PROCESS_ID, true, NULL, NULL, &pid) ;
 
 	ProcessManager::Instance().StartScheduler();
 	while(1) ;
 }
 
-bool MOSMain_IsKernelDebugOn()
+bool UpanixMain_IsKernelDebugOn()
 {
-	const char* szVal = getenv("MOS_KDEBUG") ;
+	const char* szVal = getenv("UPANIX_KDEBUG") ;
 	if(szVal != NULL)
 		if(strcmp(szVal, "1") == 0)
 			return true ;
@@ -237,15 +237,15 @@ bool MOSMain_IsKernelDebugOn()
 	return false ;
 }
 
-bool MOSMain_isCoProcPresent()
+bool UpanixMain_isCoProcPresent()
 {
 	if(CO_PROC_FPU_TYPE == NO_CO_PROC)
 		return false ;
 	return true ;
 }
 
-int MOSMain_KernelProcessID()
+int UpanixMain_KernelProcessID()
 {
-	return MOSMain_KernelPID ;
+	return UpanixMain_KernelPID ;
 }
 

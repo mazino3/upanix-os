@@ -15,8 +15,8 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
-#ifndef _MOSMAIN_H_
-#define _MOSMAIN_H_
+#ifndef _UPANIXMAIN_H_
+#define _UPANIXMAIN_H_
 
 #include <Console.h>
 #include <Display.h>
@@ -37,10 +37,10 @@ typedef enum
 	CO_PROC_387	=  3
 } CO_PROC_TYPE ;
 
-extern "C" void MOSMain() ;
-bool MOSMain_isCoProcPresent() ;
-int MOSMain_KernelProcessID() ;
-Mutex& MOSMain_GetDMMMutex() ;
+extern "C" void UpanixMain() ;
+bool UpanixMain_isCoProcPresent() ;
+int UpanixMain_KernelProcessID() ;
+Mutex& UpanixMain_GetDMMMutex() ;
 void DummyProcess() ;
 
 #endif

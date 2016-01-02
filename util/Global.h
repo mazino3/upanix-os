@@ -84,6 +84,6 @@ extern int debug_point ;
 
 #define ARRAY_LEN(x) (sizeof(x) / sizeof((x)[0]))
 
-bool MOSMain_IsKernelDebugOn() ;
+bool UpanixMain_IsKernelDebugOn() ;
 
 #endif

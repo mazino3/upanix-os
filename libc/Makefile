@@ -16,7 +16,7 @@
 CXX = ${COMPILER}
 CXXFLAGS = ${CPP_FLAGS} ${INCLUDE}
 
-MOS_LIBC_OBJS := $(patsubst %.cpp,%.o,$(shell find . -name *.cpp))
+UPANIX_LIBC_OBJS := $(patsubst %.cpp,%.o,$(shell find . -name *.cpp))
 
 build: subdir libc.a
 
@@ -27,8 +27,8 @@ subdir:
 	cd stdio && make
 	cd stdlib && make
 
-libc.a: ${MOS_LIBC_OBJS}
-	ar -r libc.a ${MOS_LIBC_OBJS}
+libc.a: ${UPANIX_LIBC_OBJS}
+	ar -r libc.a ${UPANIX_LIBC_OBJS}
 
 clean:
 	cd ctype && make clean

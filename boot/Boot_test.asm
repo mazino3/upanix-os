@@ -45,7 +45,7 @@ brFSID          DB      'FAT12   '      ; 0036h - File System ID
 ;------------------------------------------------------------------------
 
 ; --- DS ---
-MSG DB 'WELCOME TO MOS',13,10
+MSG DB 'WELCOME TO UPANIX',13,10
     DB 'LOADING......',0
 
 ERR_MSG DB 'READ ERR 1',0

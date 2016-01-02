@@ -116,7 +116,7 @@ static byte UHCIController_GetDescriptor(unsigned uiIOBase, char devAddr, unsign
 	UHCIDataHandler_SetTDAttribute(pTD3, UHCI_ATTR_TD_MAXLEN, TD_MAXLEN_BLK) ;
 	UHCIDataHandler_SetTDAttribute(pTD3, UHCI_ATTR_TD_PID, TOKEN_PID_OUT) ;
 
-	if(MOSMain_IsKernelDebugOn())
+	if(UpanixMain_IsKernelDebugOn())
 	{
 		printf("\n QH Element Pointer = %x", pQH->uiElementLinkPointer) ;
 		printf("\n TD1 Status = %x/%x/%x\n TD2 Status = %x/%x/%x\n TD3 Status = %x/%x/%x", 
@@ -239,7 +239,7 @@ static byte UHCIController_GetConfiguration(unsigned uiIOBase, char devAddr, cha
 	UHCIDataHandler_SetTDAttribute(pTD3, UHCI_ATTR_TD_MAXLEN, TD_MAXLEN_BLK) ;
 	UHCIDataHandler_SetTDAttribute(pTD3, UHCI_ATTR_TD_PID, TOKEN_PID_OUT) ;
 
-	if(MOSMain_IsKernelDebugOn())
+	if(UpanixMain_IsKernelDebugOn())
 	{
 		printf("\n QH Element Pointer = %x", pQH->uiElementLinkPointer) ;
 		printf("\n TD1 Status = %x/%x/%x\n TD2 Status = %x/%x/%x\n TD3 Status = %x/%x/%x", 
@@ -342,7 +342,7 @@ static byte UHCIController_SetConfiguration(unsigned uiIOBase, char devAddr, cha
 	UHCIDataHandler_SetTDAttribute(pTD2, UHCI_ATTR_TD_DATA_TOGGLE, 1) ;
 	UHCIDataHandler_SetTDAttribute(pTD2, UHCI_ATTR_TD_PID, TOKEN_PID_IN) ;
 
-	if(MOSMain_IsKernelDebugOn())
+	if(UpanixMain_IsKernelDebugOn())
 	{
 		printf("\n QH Element Pointer = %x", pQH->uiElementLinkPointer) ;
 		printf("\n TD1 Status = %x/%x/%x\n TD2 Status = %x/%x/%x\n",
@@ -455,7 +455,7 @@ static byte UHCIController_SetAddress(unsigned uiIOBase, char devAddr)
 	UHCIDataHandler_SetTDAttribute(pTD2, UHCI_ATTR_TD_DATA_TOGGLE, 1) ;
 	UHCIDataHandler_SetTDAttribute(pTD2, UHCI_ATTR_TD_PID, TOKEN_PID_IN) ;
 
-	if(MOSMain_IsKernelDebugOn())
+	if(UpanixMain_IsKernelDebugOn())
 	{
 		printf("\n QH Element Pointer = %x", pQH->uiElementLinkPointer) ;
 		printf("\n TD1 Status = %x/%x/%x\n TD2 Status = %x/%x/%x\n",
@@ -731,7 +731,7 @@ bool UHCIDevice::GetMaxLun(byte* bLUN)
 	UHCIDataHandler_SetTDAttribute(pTD3, UHCI_ATTR_TD_PID, TOKEN_PID_OUT) ;
 	UHCIDataHandler_SetTDAttribute(pTD3, UHCI_ATTR_TD_TERMINATE, 1) ;
 
-	if(MOSMain_IsKernelDebugOn())
+	if(UpanixMain_IsKernelDebugOn())
 	{
 		printf("\n QH Element Pointer = %x", pQH->uiElementLinkPointer) ;
 		printf("\n TD1 Status = %x/%x/%x", (unsigned)pTD1, pTD1->uiControlnStatus, pTD1->uiToken) ;
@@ -831,7 +831,7 @@ bool UHCIDevice::CommandReset()
 	UHCIDataHandler_SetTDAttribute(pTD2, UHCI_ATTR_TD_MAXLEN, TD_MAXLEN_BLK) ;
 	UHCIDataHandler_SetTDAttribute(pTD2, UHCI_ATTR_TD_PID, TOKEN_PID_OUT) ;
 
-	if(MOSMain_IsKernelDebugOn())
+	if(UpanixMain_IsKernelDebugOn())
 	{
 		printf("\n QH Element Pointer = %x", pQH->uiElementLinkPointer) ;
 		printf("\n TD1 Status = %x/%x/%x\n TD2 Status = %x/%x/%x\n",
@@ -930,7 +930,7 @@ bool UHCIDevice::ClearHaltEndPoint(USBulkDisk* pDisk, bool bIn)
 	UHCIDataHandler_SetTDAttribute(pTD2, UHCI_ATTR_TD_MAXLEN, TD_MAXLEN_BLK) ;
 	UHCIDataHandler_SetTDAttribute(pTD2, UHCI_ATTR_TD_PID, (bIn) ? TOKEN_PID_IN : TOKEN_PID_OUT) ;
 
-	if(MOSMain_IsKernelDebugOn())
+	if(UpanixMain_IsKernelDebugOn())
 	{
 		printf("\n QH Element Pointer = %x", pQH->uiElementLinkPointer) ;
 		printf("\n TD1 Status = %x/%x/%x\n TD2 Status = %x/%x/%x\n",

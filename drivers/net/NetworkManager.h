@@ -15,8 +15,8 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
-#ifndef _MOS_NETWORK_H_
-#define _MOS_NETWORK_H_
+#ifndef _UPANIX_NETWORK_H_
+#define _UPANIX_NETWORK_H_
 
 #include <list.h>
 class NIC ;

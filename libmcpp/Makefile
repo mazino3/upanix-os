@@ -17,7 +17,7 @@ CXX = ${COMPILER}
 INCLUDE = ${INCLUDES}
 CPPFLAGS = ${CPP_FLAGS} ${INCLUDE}
 
-MOS_LIBMCPP_OBJS := $(patsubst %.cpp,%.o,$(shell find . -name *.cpp))
+UPANIX_LIBMCPP_OBJS := $(patsubst %.cpp,%.o,$(shell find . -name *.cpp))
 
 build: subdir libmcpp.a
 
@@ -26,8 +26,8 @@ subdir:
 	cd mem && make
 	cd cal && make
 
-libmcpp.a: ${MOS_LIBMCPP_OBJS}
-	ar -r libmcpp.a ${MOS_LIBMCPP_OBJS}
+libmcpp.a: ${UPANIX_LIBMCPP_OBJS}
+	ar -r libmcpp.a ${UPANIX_LIBMCPP_OBJS}
 
 clean:
 	cd ds && make clean

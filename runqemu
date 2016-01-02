@@ -92,6 +92,7 @@ sleep 1
 #-usbdevice disk:$UPANIX_HOME/USBImage/30MUSB.img
 #-hda /dev/sda \
 
+
 QEMU_PATH=
 $SUDO qemu-system-x86_64 \
 -fda $FDA \
@@ -107,4 +108,4 @@ $SUDO qemu-system-x86_64 \
 -device usb-ehci,id=ehci \
 -device usb-storage,bus=ehci.0,drive=usbdrive \
 \
--hda $UPANIX_HOME/HDImage/30MHD.img 
+-hda $UPANIX_HOME/HDImage/30MHD.img
