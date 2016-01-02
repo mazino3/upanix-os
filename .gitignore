@@ -4,7 +4,7 @@
 *.img
 depend.d
 tags
-MOSStart_Main.grub
+UpanixStart_Main.grub
 .dll
 .procinit
 .realmode

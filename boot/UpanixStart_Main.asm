@@ -89,11 +89,6 @@ __SECT__
 SECTION .text
 _start:
 
-  MOV EAX, 0x42
-  MOV [0xB8000], EAX
-  MOV EAX, ' '
-  MOV [0xB8001], EAX
-  ;HLT
 	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 	; COPY MULTI BOOT INFO TO KERNEL ADDRESS
 	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
