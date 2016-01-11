@@ -77,11 +77,11 @@ void Console_StartUpanixConsole()
 	Console_DisplayCommandLine() ;
 
 	//Default init code
-	Console_ProcessCommand("eusbprobe");
+/*	Console_ProcessCommand("eusbprobe");
 	Console_ProcessCommand("mount usda");
 	Console_ProcessCommand("chd usda");
 	Console_ProcessCommand("test");
-
+*/
 	while(SUCCESS)
 	{
 		ch = Keyboard_GetKeyInBlockMode() ;

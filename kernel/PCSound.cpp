@@ -15,29 +15,40 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
-#ifndef _TIMER_H_
-#define _TIMER_H_
 
-#include <Global.h>
+#include <PIT.h>
+#include <PortCom.h>
+#include <ProcessManager.h>
+#include <PCSound.h>
 
-#define CLOCK_TICK_RATE 1193181 // Input Frequency of PIT
-#define PIT_MODE_PORT 0x43
-#define PIT_COUNTER_0_PORT 0x40
-#define PIT_COUNTER_2_PORT 0x42
+PCSound::PCSound()
+{
+}
 
-class IRQ ;
+//Play sound using built in speaker
+void PCSound::Play(unsigned freq)
+{
+  //Set the PIT to the desired frequency
+  unsigned div = CLOCK_TICK_RATE / freq;
+  PortCom_SendByte(PIT_MODE_PORT, 0xb6);
+  PortCom_SendByte(PIT_COUNTER_2_PORT, (byte)div);
+  PortCom_SendByte(PIT_COUNTER_2_PORT, (byte)(div >> 8));
+ 
+  //And play the sound using the PC speaker
+  byte tmp = PortCom_ReceiveByte(0x61);
+  if (tmp != (tmp | 3)) 
+    PortCom_SendByte(0x61, tmp | 3);
+}
+ 
+//make it shutup
+void PCSound::Stop()
+{
+  PortCom_SendByte(0x61, PortCom_ReceiveByte(0x61) & 0xFC);
+}
 
-void PIT_Initialize() ;
-void PIT_Handler() ;
-
-unsigned PIT_GetClockCount() ;
-
-unsigned char PIT_IsContextSwitch() ;
-void PIT_SetContextSwitch(bool flag) ;
-
-unsigned char PIT_IsTaskSwitch() ;
-void PIT_SetTaskSwitch(bool flag) ;
-
-unsigned PIT_RoundSleepTime(__volatile__ unsigned uiSleepTime) ;
-
-#endif
+void PCSound::Beep()
+{
+  Play(1000);
+  ProcessManager::Instance().Sleep(1000);
+  Stop();
+}

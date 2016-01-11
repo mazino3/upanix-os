@@ -19,11 +19,12 @@
 #define _MULTI_BOOT_H_
 
 #include <Global.h>
+#include <stdio.h>
 
 /**** These Multi boot structures are taken from GRUB multiboot.h ****/
 
 /* The Multiboot header.  */
-typedef struct multiboot_header
+typedef struct
 {
   unsigned long magic;
   unsigned long flags;
@@ -33,44 +34,96 @@ typedef struct multiboot_header
   unsigned long load_end_addr;
   unsigned long bss_end_addr;
   unsigned long entry_addr;
-} multiboot_header_t;
+} PACKED multiboot_header_t;
 
 /* The symbol table for a.out.  */
-typedef struct aout_symbol_table
+typedef struct
 {
-  unsigned long tabsize;
-  unsigned long strsize;
-  unsigned long addr;
-  unsigned long reserved;
-} aout_symbol_table_t;
+  unsigned tabsize;
+  unsigned strsize;
+  unsigned addr;
+  unsigned reserved;
+} PACKED aout_symbol_table_t;
 
 /* The section header table for ELF.  */
-typedef struct elf_section_header_table
+typedef struct
 {
-  unsigned long num;
-  unsigned long size;
-  unsigned long addr;
-  unsigned long shndx;
-} elf_section_header_table_t;
+  unsigned num;
+  unsigned size;
+  unsigned addr;
+  unsigned shndx;
+} PACKED elf_section_header_table_t;
+
+typedef struct 
+{
+  unsigned vbe_control_info;
+  unsigned vbe_mode_info;
+  unsigned short vbe_mode;
+  unsigned short vbe_interface_seg;
+  unsigned short vbe_interface_off;
+  unsigned short vbe_interface_len;
+} PACKED vbe_info_t;
+
+typedef struct 
+{
+  unsigned long long framebuffer_addr;
+  unsigned framebuffer_pitch;
+  unsigned framebuffer_width;
+  unsigned framebuffer_height;
+  byte framebuffer_bpp;
+#define MULTIBOOT_FRAMEBUFFER_TYPE_INDEXED 0
+#define MULTIBOOT_FRAMEBUFFER_TYPE_RGB     1
+#define MULTIBOOT_FRAMEBUFFER_TYPE_EGA_TEXT 2
+  byte framebuffer_type;
+  union
+  {
+    struct
+    {
+      unsigned framebuffer_palette_addr;
+      unsigned short framebuffer_palette_num_colors;
+    } PACKED;
+    struct
+    {
+      byte framebuffer_red_field_position;
+      byte framebuffer_red_mask_size;
+      byte framebuffer_green_field_position;
+      byte framebuffer_green_mask_size;
+      byte framebuffer_blue_field_position;
+      byte framebuffer_blue_mask_size;
+    } PACKED;
+  } PACKED;
+} PACKED framebuffer_info_t;
 
 /* The Multiboot information.  */
-typedef struct multiboot_info
+typedef struct
 {
-  unsigned long flags;
-  unsigned long mem_lower;
-  unsigned long mem_upper;
-  unsigned char boot_device[4];
-  unsigned long cmdline;
-  unsigned long mods_count;
-  unsigned long mods_addr;
+  unsigned flags;
+  unsigned mem_lower;
+  unsigned mem_upper;
+  char boot_device[4];
+  unsigned cmdline;
+  unsigned mods_count;
+  unsigned mods_addr;
   union
   {
     aout_symbol_table_t aout_sym;
     elf_section_header_table_t elf_sec;
   } u;
-  unsigned long mmap_length;
-  unsigned long mmap_addr;
-} multiboot_info_t;
+  unsigned mmap_length;
+  unsigned mmap_addr;
+  
+  unsigned drives_length;
+  unsigned drives_addr;
+
+  unsigned  config_table;
+  unsigned  boot_loader_name;
+
+  unsigned apm_table;
+
+  vbe_info_t vbe_info;
+
+  framebuffer_info_t framebuffer_info;
+} PACKED multiboot_info_t;
 
 /* The module structure.  */
 typedef struct module
@@ -110,8 +163,11 @@ class MultiBoot
 		unsigned GetRamSize();
 		byte GetBootDeviceID();
 		byte GetBootPartitionID();
+    const framebuffer_info_t* VideoFrameBufferInfo() const;
+    void Print();
 	private:
 		multiboot_info_t* _pInfo;
+    unsigned          _memSizeInKB;
 };
 
 #endif 

@@ -174,6 +174,7 @@ bool MemManager::BuildPageTable()
 	
 	if((uiNoOfPDEEntries * 4) > (MEM_PDE_END - MEM_PDE_START))
 	{
+
 		KC::MDisplay().Message("\n PDE Size InSufficient\n", 'A') ;
 		return false ;
 	}

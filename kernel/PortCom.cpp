@@ -54,3 +54,30 @@ unsigned PortCom_ReceiveDoubleWord(const unsigned short portAddress)
 	return data ;
 }
 
+COM::COM(unsigned short port) : _port(port)
+{
+  PortCom_SendByte(_port + 1, 0x00);    // Disable all interrupts
+  PortCom_SendByte(_port + 3, 0x80);    // Enable DLAB (set baud rate divisor)
+  PortCom_SendByte(_port + 0, 0x03);    // Set divisor to 3 (lo byte) 38400 baud
+  PortCom_SendByte(_port + 1, 0x00);    //                  (hi byte)
+  PortCom_SendByte(_port + 3, 0x03);    // 8 bits, no parity, one stop bit
+  PortCom_SendByte(_port + 2, 0xC7);    // Enable FIFO, clear them, with 14-byte threshold
+  PortCom_SendByte(_port + 4, 0x0B);    // IRQs enabled, RTS/DSR set
+}
+
+byte COM::IsTransmitReady()
+{
+  return PortCom_ReceiveByte(_port + 5) & 0x20;
+}
+ 
+void COM::Write(byte data)
+{
+  while(IsTransmitReady() == 0);
+  PortCom_SendByte(_port, data);
+}
+
+void COM::Write(const upan::string& msg)
+{
+  for(unsigned i = 0; i < msg.length(); ++i)
+    Write(msg[i]);
+}

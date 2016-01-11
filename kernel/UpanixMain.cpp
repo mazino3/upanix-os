@@ -136,6 +136,21 @@ void Initialize()
 	KC::MDisplay().Message("\n****    Welcome To Upanix   ****\n", Display::Attribute(' ')) ;
 	ProcFileManager_InitForKernel();
 	MultiBoot::Instance();
+
+  const framebuffer_info_t* f = MultiBoot::Instance().VideoFrameBufferInfo();
+//  //writing to video mem before page table setup as well work
+//  if(f)
+//  {
+//    for(unsigned y = 0; y < f->framebuffer_height; ++y)
+//    {
+//      for(unsigned x = 0; x < f->framebuffer_width; ++x)
+//      {
+//        unsigned* ptr = (unsigned*)(f->framebuffer_addr + y * f->framebuffer_pitch + x * 4);
+//        *ptr = 0xFFAA0000;
+//      }
+//    }
+//  }
+
 	MemManager::Instance();
 
 	//defined in osutils/crti.s - this is C++ init to call global objects' constructor
@@ -143,6 +158,33 @@ void Initialize()
 //	TestException(); while(1);
   try
   {
+//    if(f)
+//    {
+//      const unsigned framebuffer_addr = f->framebuffer_addr;
+//      unsigned uiPDEAddress = MEM_PDBR;
+//      unsigned noOfPages = ((f->framebuffer_height * f->framebuffer_width * 4) / PAGE_SIZE) + 1;
+//      for(unsigned i = 0; i < noOfPages; ++i)
+//      {
+//        unsigned addr = framebuffer_addr + PAGE_SIZE * i;
+//        unsigned uiPDEIndex = ((framebuffer_addr >> 22) & 0x3FF);
+//        unsigned uiPTEAddress = (((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPDEIndex]) & 0xFFFFF000;
+//        unsigned uiPTEIndex = ((addr >> 12) & 0x3FF);
+//        // This page is a Read Only area for user process. 0x5 => 101 => User Domain, Read Only, Present Bit
+//        ((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPTEIndex] = (addr & 0xFFFFF000) | 0x5;
+//        MemManager::Instance().MarkPageAsAllocated(addr / PAGE_SIZE);
+//      }
+//      Mem_FlushTLB();
+//
+//      for(unsigned y = 0; y < f->framebuffer_height; ++y)
+//      {
+//        for(unsigned x = 0; x < f->framebuffer_width; ++x)
+//        {
+//          unsigned* ptr = (unsigned*)(framebuffer_addr + y * f->framebuffer_pitch + x * 4);
+//          *ptr = 0xFFAAAA00;
+//        }
+//      }
+//    }
+
     IDT::Instance();
     PIC::Instance();
     DMA_Initialize();

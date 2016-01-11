@@ -15,29 +15,22 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
-#ifndef _TIMER_H_
-#define _TIMER_H_
+#ifndef _PC_SOUND_H_
+#define _PC_SOUND_H_
 
-#include <Global.h>
-
-#define CLOCK_TICK_RATE 1193181 // Input Frequency of PIT
-#define PIT_MODE_PORT 0x43
-#define PIT_COUNTER_0_PORT 0x40
-#define PIT_COUNTER_2_PORT 0x42
-
-class IRQ ;
-
-void PIT_Initialize() ;
-void PIT_Handler() ;
-
-unsigned PIT_GetClockCount() ;
-
-unsigned char PIT_IsContextSwitch() ;
-void PIT_SetContextSwitch(bool flag) ;
-
-unsigned char PIT_IsTaskSwitch() ;
-void PIT_SetTaskSwitch(bool flag) ;
-
-unsigned PIT_RoundSleepTime(__volatile__ unsigned uiSleepTime) ;
+class PCSound
+{
+  private:
+    PCSound();
+  public:
+    static PCSound& Instance()
+    {
+      static PCSound instance;
+      return instance;
+    }
+    void Play(unsigned freq);
+    void Stop();
+    void Beep();
+};
 
 #endif

@@ -22,59 +22,7 @@ clear
 UPANIX_HOME=`pwd`
 export UPANIX_HOME
 
-BootFileType=$1
-
-if [ "$#" -eq "0" -o "$1" = "image" ]
-then
-
-	BootFileType="image"
-	FDA=$UPANIX_HOME/floppy/1.44M-FLOPPY.img
-	FDB=$UPANIX_HOME/floppy/DRV1.FDD.img
-	
-elif [ "$1" = "BT" ]
-then
-
-	FDA=$UPANIX_HOME/floppy/BootTest.img
-	FDB=$UPANIX_HOME/floppy/DRV1.FDD.img
-
-
-elif [ "$1" = "floppy" ]
-then
-
-	FDA=/dev/fd0
-	FDB=$UPANIX_HOME/floppy/DRV1.FDD.img
-
-elif [ "$1" = "grub_ext" ]
-then
-
-	FDA=$UPANIX_HOME/floppy/GrubFloppy_ext.img
-	FDB=$UPANIX_HOME/floppy/DRV1.FDD.img
-
-elif [ "$1" = "grub_mos" ]
-then
-
-	FDA=$UPANIX_HOME/floppy/GrubFloppy_mos.img
-	FDB=$UPANIX_HOME/floppy/DRV1.FDD.img
-
-elif [ "$1" = "setup_ext" ]
-then
-
-	FDA=$UPANIX_HOME/floppy/RawGrubFloppy.img
-	FDB=$UPANIX_HOME/floppy/GrubFloppy_ext.img
-
-elif [ "$1" = "install_mos" ]
-then
-
-	FDA=$UPANIX_HOME/floppy/RawGrubFloppy.img
-	FDB=$UPANIX_HOME/floppy/GrubFloppy_mos.img
-
-elif [ "$1" = "setup_mos" ]
-then
-
-	FDA=$UPANIX_HOME/floppy/GrubFloppy_ext.img
-	FDB=$UPANIX_HOME/floppy/GrubFloppy_mos.img
-
-fi
+OVMF_VERSION=$1
 
 SUDO=""
 if [ "$2" = "sudo" ]
@@ -83,7 +31,7 @@ then
 fi
 
 echo "\n\n*****************************************************************************\n\n"
-echo "					Booting From $BootFileType File"
+echo "					Booting from $OVMF_VERSION file"
 echo "\n\n*****************************************************************************\n\n"
 
 sleep 1
@@ -91,22 +39,22 @@ sleep 1
 #-hda $UPANIX_HOME/USBImage/30MUSB.img
 #-usbdevice disk:$UPANIX_HOME/USBImage/30MUSB.img
 #-hda /dev/sda \
+#
+#-drive if=none,id=usbdrive,file=$UPANIX_HOME/USBImage/200MUSB.img \
 
+FDA=$UPANIX_HOME/floppy/GrubFloppy_ext.img
+FDB=$UPANIX_HOME/floppy/DRV1.FDD.img
 
 QEMU_PATH=
 $SUDO qemu-system-x86_64 \
 -serial file:serial_debug.log \
--fda $FDA \
--fdb $FDB \
--boot a \
+-L $UPANIX_HOME/ovmf.$OVMF_VERSION \
+-bios OVMF.fd \
 -m 128 \
 -smp 1 \
 -net none \
 \
--drive if=none,id=usbdrive,file=$UPANIX_HOME/USBImage/30MUSB.img \
-\
+-drive if=none,id=usbdrive,file=$UPANIX_HOME/USBImage/200MUSB.img \
 -usb \
 -device usb-ehci,id=ehci \
--device usb-storage,bus=ehci.0,drive=usbdrive \
-\
--hda $UPANIX_HOME/HDImage/30MHD.img
+-device usb-storage,bus=ehci.0,drive=usbdrive

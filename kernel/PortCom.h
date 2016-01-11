@@ -19,6 +19,7 @@
 #define _PORTCOM_H_
 
 #include <Global.h>
+#include <string.h>
 
 void PortCom_SendByte(const unsigned short portAddress, const byte data) ;
 byte PortCom_ReceiveByte(const unsigned short portAddress) ;
@@ -26,5 +27,29 @@ void PortCom_SendWord(const unsigned short portAddress, const unsigned short dat
 unsigned short PortCom_ReceiveWord(const unsigned short portAddress) ;
 void PortCom_SendDoubleWord(const unsigned short portAddress, const unsigned data) ;
 unsigned PortCom_ReceiveDoubleWord(const unsigned short portAddress) ;
+
+class COM
+{
+  public:
+    void Write(byte data);
+    void Write(const upan::string& msg);
+
+  protected:
+    byte IsTransmitReady();
+    COM(unsigned short port);
+    const unsigned short _port;
+};
+
+class COM1 final : public COM
+{
+  private:
+    COM1() : COM(0x3F8) {}
+  public:
+    static COM1& Instance()
+    {
+      static COM1 instance;
+      return instance;
+    }
+};
 
 #endif

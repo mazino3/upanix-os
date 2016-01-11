@@ -52,6 +52,7 @@
 #include <MouseDriver.h>
 #include <exception.h>
 #include <stdio.h>
+#include <PCSound.h>
 
 /**** Command Fucntion Declarations  *****/
 static void ConsoleCommands_ChangeDrive() ;
@@ -109,6 +110,7 @@ static void ConsoleCommands_Test() ;
 static void ConsoleCommands_Testv() ;
 static void ConsoleCommands_TestNet() ;
 static void ConsoleCommands_TestCPP() ;
+static void ConsoleCommands_Beep();
 
 /*****************************************/
 
@@ -171,6 +173,7 @@ static const ConsoleCommand ConsoleCommands_CommandList[] = {
 	{ "testv",		&ConsoleCommands_Testv },
 	{ "testn",		&ConsoleCommands_TestNet },
 	{ "testcpp", &ConsoleCommands_TestCPP },
+	{ "beep", &ConsoleCommands_Beep },
 	{ "\0",			NULL }
 } ;
 
@@ -884,9 +887,7 @@ void ConsoleCommands_Date()
 
 void ConsoleCommands_MultiBootHeader()
 {
-	KC::MDisplay().Address("\n Mem Size = ", MultiBoot::Instance().GetRamSize()) ;
-	KC::MDisplay().Address("\n Boot Device ID = ", MultiBoot::Instance().GetBootDeviceID()) ;
-	KC::MDisplay().Address("\n Boot Partition ID = ", MultiBoot::Instance().GetBootPartitionID()) ;
+  MultiBoot::Instance().Print();
 }
 
 void ConsoleCommands_ListCommands()
@@ -1240,3 +1241,7 @@ void ConsoleCommands_TestCPP()
 Global x;
 }
 
+void ConsoleCommands_Beep()
+{
+  PCSound::Instance().Beep();
+}

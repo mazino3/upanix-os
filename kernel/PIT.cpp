@@ -28,11 +28,7 @@
 #include <MemUtil.h>
 #include <Atomic.h>
 
-#define CLOCK_TICK_RATE 1193181 // Input Frequency of PIT
 #define INT_PER_SEC 100
-
-#define PIT_MODE_PORT 0x43
-#define PIT_COUNTER_0_PORT 0x40
 
 static unsigned PIT_ClockCountForSleep ;
 static unsigned char Process_bContextSwitch ;

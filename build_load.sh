@@ -25,3 +25,15 @@ fi
 cp -f bin/upanix.elf floppy/MntFloppy/boot
 
 echo rahasya | sudo -S umount floppy/MntFloppy 
+
+#sudo kpartx -av USBImage/200MUSB.img
+echo rahasya | sudo -S mount /dev/mapper/loop0p1 usb_boot/MntUSB 
+
+if [ $? -ne 0 ]
+then
+exit 100
+fi
+
+echo rahasya | sudo -S cp -f bin/upanix.elf usb_boot/MntUSB/efi/boot/
+
+echo rahasya | sudo -S umount usb_boot/MntUSB

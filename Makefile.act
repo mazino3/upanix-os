@@ -40,6 +40,7 @@ UPANIX_OBJS = \
 	./kernel/PIC.o \
 	./kernel/MountManager.o \
 	./kernel/PIT.o \
+	./kernel/PCSound.o \
 	./kernel/MultiBoot.o \
 	./kernel/IDT.o \
 	./kernel/Atomic.o \
