@@ -32,6 +32,7 @@ export INCLUDE="-I./ \
 -I${UPANIX_HOME}/drivers/ide/vendorspec \
 -I${UPANIX_HOME}/drivers/usb/ \
 -I${UPANIX_HOME}/drivers/usb/disk \
+-I${UPANIX_HOME}/drivers/video \
 -I${UPANIX_HOME}/drivers/net \
 -I${UPANIX_HOME}/drivers/ \
 \

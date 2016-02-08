@@ -23,6 +23,7 @@
 # include <DMM.h>
 # include <Display.h>
 # include <KernelComponents.h>
+# include <GraphicsVideo.h>
 
 #define VIDEO_BUFFER_ADDRESS			0xB8000
 #define VIDEOMEM						(DisplayManager::GetDisplayMemAddress(ProcessManager::GetCurrentProcessID()))
@@ -53,6 +54,9 @@ DisplayBuffer& DisplayManager::KernelDisplayBuffer()
 
 void DisplayManager::Initialize()
 {
+  //Temp solution
+  GraphicsVideo::Create();
+
 	// This function will be executed atmost once
 	static bool bDone = false ;
 

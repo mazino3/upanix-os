@@ -127,6 +127,7 @@ UPANIX_OBJS = \
 	./drivers/usb/UHCIDataHandler.o \
 	./drivers/usb/UHCIController.o \
 	./drivers/usb/disk/USBMassBulkStorageDisk.o \
+	./drivers/video/GraphicsVideo.o \
 	./drivers/net/RealtekNIC.o \
 	./drivers/net/NIC.o \
 	./drivers/net/NetworkManager.o \

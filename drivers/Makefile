@@ -23,6 +23,7 @@ build: ${OBJS}
 	cd bus && make 
 	cd ide && make 
 	cd usb && make
+	cd video && make
 	cd net && make
 
 include depend.d
@@ -35,6 +36,7 @@ clean:
 	cd bus && make clean
 	cd ide && make clean
 	cd usb && make clean
+	cd video && make clean
 	cd net && make clean
 
 distclean:
@@ -45,4 +47,5 @@ distclean:
 	cd bus && make distclean
 	cd ide && make distclean
 	cd usb && make distclean
+	cd video && make distclean
 	cd net && make distclean
