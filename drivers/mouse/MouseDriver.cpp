@@ -208,8 +208,8 @@ void MouseDriver::Process(unsigned data)
 	*/
 
 	iCurPos = KC::MDisplay().GetMouseCursorPos() ;
-	iX = iCurPos % KC::MDisplay().GetMaxCols() ;
-	iY = iCurPos / KC::MDisplay().GetMaxCols() ;
+	iX = iCurPos % KC::MDisplay().MaxColumns() ;
+	iY = iCurPos / KC::MDisplay().MaxRows() ;
 
 	// X - Horizontal
 	// Y - Vertical
@@ -230,11 +230,11 @@ void MouseDriver::Process(unsigned data)
 
 	if(iX < 0) iX = 0 ;
 	if(iY < 0) iY = 0 ;
-	if(iX >= KC::MDisplay().GetMaxCols()) iX = KC::MDisplay().GetMaxCols() - 1 ;
-	if(iY >= KC::MDisplay().GetMaxRows()) iY = KC::MDisplay().GetMaxRows() - 1 ;
+	if(iX >= (int)KC::MDisplay().MaxColumns()) iX = KC::MDisplay().MaxColumns() - 1 ;
+	if(iY >= (int)KC::MDisplay().MaxRows()) iY = KC::MDisplay().MaxRows() - 1 ;
 
 	//printf("\n (%d, %d, %d, %d, %d, %d, %d, %d) = ", iX, iY, iCurPos, iNewCurPos, xMov, yMov, iXsign, iYsign) ;
-	iNewCurPos = iY * KC::MDisplay().GetMaxCols() + iX ;
-	KC::MDisplay().SetMouseCursorPos(iNewCurPos) ;
+	iNewCurPos = iY * KC::MDisplay().MaxColumns() + iX;
+	KC::MDisplay().SetMouseCursorPos(iNewCurPos);
 }
 

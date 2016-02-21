@@ -22,10 +22,11 @@
 #include <MouseDriver.h>
 #include <NetworkManager.h>
 
+Display* KC::_dm = nullptr;
+
 Display& KC::MDisplay()
 {
-	static Display kDisplay ;
-	return kDisplay ;
+	return *_dm;
 }
 
 KernelService& KC::MKernelService()

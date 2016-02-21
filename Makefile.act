@@ -49,7 +49,6 @@ UPANIX_OBJS = \
 	./kernel/video.o \
 	./kernel/VM86.o \
  \
-	./display/DisplayManager.o \
 	./display/Display.o \
  \
 	./kernelprocs/console/CommandLineParser.o \
@@ -69,7 +68,7 @@ UPANIX_OBJS = \
 	./process/ProcessAllocator.o \
 	./process/ProcessManager.o \
 	./process/ProcessLoader.o \
-	./process/ProcessGroupManager.o \
+	./process/ProcessGroup.o \
 	./process/DynamicLinkLoader.o \
 	./process/ProcessEnv.o \
  \
@@ -128,6 +127,7 @@ UPANIX_OBJS = \
 	./drivers/usb/UHCIController.o \
 	./drivers/usb/disk/USBMassBulkStorageDisk.o \
 	./drivers/video/GraphicsVideo.o \
+	./drivers/video/GraphicsFont.o \
 	./drivers/net/RealtekNIC.o \
 	./drivers/net/NIC.o \
 	./drivers/net/NetworkManager.o \

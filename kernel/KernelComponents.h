@@ -18,19 +18,25 @@
 #ifndef _KERNEL_COMP_H_
 #define _KERNEL_COMP_H_
 
+class MemManager;
+class KernelService;
+class MouseDriver;
+class NetworkManager;
 class Display;
-class MemManager ;
-class KernelService ;
-class MouseDriver ;
-class NetworkManager ;
 
 class KC
 {
 	public:
-		static Display& MDisplay() ; 
-		static KernelService& MKernelService() ;
-		static MouseDriver& MMouseDriver() ;
-		static NetworkManager& MNetworkManager() ;
+		static Display& MDisplay(); 
+		static KernelService& MKernelService();
+		static MouseDriver& MMouseDriver();
+		static NetworkManager& MNetworkManager();
+
+  private:
+    static void SetDisplay(Display& dm) { _dm = &dm; }
+    static Display* _dm;
+
+    friend class Display;
 };
 
 #endif

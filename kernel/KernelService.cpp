@@ -228,10 +228,10 @@ void KernelService::Server(KernelService* pService)
 		}
 
 		ProcessAddressSpace* pPAS = &ProcessManager::Instance().GetCurrentPAS();
-		int iKSProcessGroupID = pPAS->iProcessGroupID ;
-		pPAS->iProcessGroupID = ProcessManager::Instance().GetAddressSpace( pRequest->GetRequestProcessID() ).iProcessGroupID ;
+		auto ksProcessGroupID = pPAS->_processGroup;
+		pPAS->_processGroup = ProcessManager::Instance().GetAddressSpace( pRequest->GetRequestProcessID() )._processGroup;
 		pRequest->Process() ;
-		pPAS->iProcessGroupID = iKSProcessGroupID ;
+		pPAS->_processGroup = ksProcessGroupID ;
 
 		ProcessManager::Instance().WakeUpFromKSWait(pRequest->GetRequestProcessID()) ;
 	}

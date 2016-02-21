@@ -17,7 +17,6 @@
  */
 #include <ProcessManager.h>
 #include <Display.h>
-#include <DisplayManager.h>
 #include <MemUtil.h>
 #include <MemManager.h>
 #include <FileSystem.h>
@@ -34,7 +33,7 @@
 #include <KernelService.h>
 #include <ProcFileManager.h>
 #include <UserManager.h>
-#include <ProcessGroupManager.h>
+#include <ProcessGroup.h>
 #include <MountManager.h>
 #include <StringUtil.h>
 #include <UpanixMain.h>
@@ -76,7 +75,6 @@ ProcessManager::ProcessManager() :
 	sysTSS->IO_MAP_BASE = 103 ;
 
   ProcessLoader::Instance();
-	ProcessGroupManager::Instance();
 
 	DLLLoader_Initialize() ;	
 
@@ -345,13 +343,11 @@ void ProcessManager::Destroy(int iDeleteProcessID)
 	DeAllocateResources(iDeleteProcessID) ;
 
   // Release From Process Group
-	ProcessGroupManager::Instance().RemoveFromFGProcessList(iDeleteProcessID) ;
-	ProcessGroupManager::Instance().RemoveProcessFromGroup(iDeleteProcessID) ;
+  pas._processGroup->RemoveFromFGProcessList(iDeleteProcessID);
+  pas._processGroup->RemoveProcess();
 
-	int iProcessGroupID = pas.iProcessGroupID ;
-
-	if(ProcessGroupManager::Instance().GetProcessCount(iProcessGroupID) == 0)
-		ProcessGroupManager::Instance().DestroyProcessGroup(iProcessGroupID) ;
+  if(pas._processGroup->Size() == 0)
+    delete pas._processGroup;
 
 	// Child processes of this process (if any) will be redirected to "kernel" process
 	int iNextProcessID = pas.iNextProcessID ;
@@ -694,24 +690,18 @@ byte ProcessManager::CreateKernelImage(const unsigned uiTaskAddress, int iParent
 	
 	newPAS.iUserID = ROOT_USER_ID ;
 	newPAS.iParentProcessID = iParentProcessID ;
-	int iProcessGroupID ;
 
 	if(iParentProcessID == NO_PROCESS_ID)
-	{
-    iProcessGroupID = ProcessGroupManager::Instance().CreateProcessGroup(bIsFGProcess);
-	}
+    newPAS._processGroup = new ProcessGroup(bIsFGProcess);
 	else
-	{
-		iProcessGroupID = GetAddressSpace(iParentProcessID).iProcessGroupID ;
-	}
+    newPAS._processGroup = GetAddressSpace(iParentProcessID)._processGroup;
 
-	newPAS.iProcessGroupID = iProcessGroupID ;
-	ProcessGroupManager::Instance().AddProcessToGroup(iNewProcessID) ;
+  newPAS._processGroup->AddProcess();
 
 	*iProcessID = iNewProcessID ;
 
 	if(bIsFGProcess)
-		ProcessGroupManager::Instance().PutOnFGProcessList(iNewProcessID) ;
+    newPAS._processGroup->PutOnFGProcessList(iNewProcessID);
 
 	if(szKernelProcName == NULL)
 		szKernelProcName = DEF_KERNEL_PROC_NAME ;
@@ -800,28 +790,24 @@ byte ProcessManager::Create(const char* szProcessName, int iParentProcessID, byt
 	*iProcessID = iNewProcessID ;
 
 	newPAS.iParentProcessID = iParentProcessID ;
-	int iProcessGroupID ;
 
 	if(iParentProcessID == NO_PROCESS_ID)
 	{
-    iProcessGroupID = ProcessGroupManager::Instance().CreateProcessGroup(bIsFGProcess);
+    newPAS._processGroup = new ProcessGroup(bIsFGProcess);
 	}
 	else
 	{
     ProcessAddressSpace& parentPAS = GetAddressSpace(iParentProcessID);
 		newPAS.iDriveID = parentPAS.iDriveID ;
-		iProcessGroupID = parentPAS.iProcessGroupID ;
+		newPAS._processGroup = parentPAS._processGroup;
 	}
 
-	newPAS.iProcessGroupID = iProcessGroupID ;
-	ProcessGroupManager::Instance().AddProcessToGroup(iNewProcessID) ;
+  newPAS._processGroup->AddProcess();
 
 	*iProcessID = iNewProcessID ;
 
 	if(bIsFGProcess)
-		ProcessGroupManager::Instance().PutOnFGProcessList(iNewProcessID) ;
-
-	DisplayManager::SetupPageTableForDisplayBuffer(iProcessGroupID, uiPDEAddress) ;
+    newPAS._processGroup->PutOnFGProcessList(iNewProcessID);
 
 	newPAS.pname = (char*)DMM_AllocateForKernel(strlen(szProcessName) + 1) ;
 	strcpy(newPAS.pname, szProcessName) ;
@@ -867,7 +853,7 @@ PS* ProcessManager::GetProcListASync()
 		pPS[i].pid = *it;
 		pPS[i].status = p.status ;
 		pPS[i].iParentProcessID = p.iParentProcessID ;
-		pPS[i].iProcessGroupID = p.iProcessGroupID ;
+		pPS[i].iProcessGroupID = p._processGroup->Id();
 		pPS[i].iUserID = p.iUserID ;
 
 		char* pname ;
@@ -1000,8 +986,8 @@ bool ProcessManager::WakeupProcessOnInterrupt(__volatile__ int iProcessID)
 
 	if(irq == PIC::Instance().KEYBOARD_IRQ)
 	{
-		if(!(ProcessGroupManager::Instance().IsFGProcess(p->iProcessGroupID, iProcessID) && ProcessGroupManager::Instance().IsFGProcessGroup(p->iProcessGroupID)))
-			return false ;
+    if(!(p->_processGroup->IsFGProcess(iProcessID) && p->_processGroup->IsFGProcessGroup()))
+			return false;
 	}
 	
 	if(irq.Consume())

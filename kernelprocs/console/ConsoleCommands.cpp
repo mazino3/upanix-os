@@ -418,7 +418,7 @@ void ConsoleCommands_CopyFile()
 	}
 
 	KC::MDisplay().Message("\n Progress = ", Display::WHITE_ON_BLACK()) ;
-	int cr = KC::MDisplay().GetCursor() ;
+	int cr = KC::MDisplay().GetCurrentCursorPosition();
 	int i = 0 ;
 	FileSystem_FileStat fStat ;	
 	FileOperations_GetStatFD(fd, &fStat) ;

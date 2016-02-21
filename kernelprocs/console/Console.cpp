@@ -62,7 +62,7 @@ void Console_DisplayCommandLine()
 
 void Console_StartUpanixConsole()
 {
-	DisplayManager::RefreshScreen() ;
+  KC::MDisplay().RefreshScreen() ;
 	
 	debug_point = 0 ;
 

@@ -1,3 +1,20 @@
+/*
+ *	Upanix - An x86 based Operating System
+ *  Copyright (C) 2011 'Prajwala Prabhakar' 'srinivasa_prajwal@yahoo.co.in'
+ *                                                                          
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *                                                                          
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *                                                                          
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/
+ */
 #include <exception.h>
 #include <MemManager.h>
 #include <GraphicsVideo.h>
@@ -27,6 +44,7 @@ GraphicsVideo::GraphicsVideo(const framebuffer_info_t& fbinfo)
   _pitch = fbinfo.framebuffer_pitch;
   _bpp = fbinfo.framebuffer_bpp;
   _bytesPerPixel = _bpp / 8;
+  FillRect(0, 0, _width, _height, 0x0);
 }
 
 void GraphicsVideo::MemMapLFB()
@@ -44,9 +62,6 @@ void GraphicsVideo::MemMapLFB()
     MemManager::Instance().MarkPageAsAllocated(addr / PAGE_SIZE);
   }
   Mem_FlushTLB();
-
-  //FillRect(0, 0, _width, _height, 0xAAAA00);
-  DrawChar(100, 100);
 }
 
 void GraphicsVideo::SetPixel(unsigned x, unsigned y, unsigned color)

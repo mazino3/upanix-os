@@ -39,7 +39,7 @@
 # include <RTC.h>
 # include <MultiBoot.h>
 # include <MountManager.h>
-# include <DisplayManager.h>
+# include <Display.h>
 # include <UHCIController.h>
 # include <EHCIManager.h>
 # include <exception.h>
@@ -134,7 +134,7 @@ void Initialize()
 	SPECIAL_TASK = false ;
 
 	MultiBoot::Instance();
-	DisplayManager::Initialize();
+	Display::Create();
 	KC::MDisplay().Message("\n****    Welcome To Upanix   ****\n", Display::Attribute(' ')) ;
 	ProcFileManager_InitForKernel();
 

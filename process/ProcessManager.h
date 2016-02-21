@@ -68,6 +68,8 @@ typedef enum
 	TERMINATED,
 } PROCESS_STATUS ;
 
+class ProcessGroup;
+
 typedef struct
 {
 	unsigned short	backlink ;
@@ -195,7 +197,7 @@ typedef struct
 	unsigned uiNoOfPagesForDLLPTE ;
 	unsigned uiStartPDEForDLL ;
 	
-	int iProcessGroupID ;
+  ProcessGroup* _processGroup;
 
 	int iUserID ;
 

@@ -459,8 +459,10 @@ byte DiskDrive::RawRead(unsigned uiStartSector, unsigned uiNoOfSectors, byte* bD
     case DEV_SCSI_USB_DISK:
       uiTotalUSBDiskReads++ ;
       return SCSIHandler_GenericRead((SCSIDevice*)Device(), uiStartSector, uiNoOfSectors, bDataBuffer) ;
+
+    default:
+      return DeviceDrive_ERR_UNKNOWN_DEVICE_TYPE ;
 	}
-  return DeviceDrive_ERR_UNKNOWN_DEVICE_TYPE ;
 }
 
 byte DiskDrive::Write(unsigned uiStartSector, unsigned uiNoOfSectors, byte* bDataBuffer)
@@ -573,9 +575,10 @@ byte DiskDrive::RawWrite(unsigned uiStartSector, unsigned uiNoOfSectors, byte* b
 
 	case DEV_SCSI_USB_DISK:
 		return SCSIHandler_GenericWrite((SCSIDevice*)Device(), uiStartSector, uiNoOfSectors, bDataBuffer) ;
-	}
 
-  return DeviceDrive_ERR_UNKNOWN_DEVICE_TYPE ;
+  default:
+    return DeviceDrive_ERR_UNKNOWN_DEVICE_TYPE ;
+	}
 }
 
 byte DiskDrive::FlushDirtyCacheSectors(int iCount)
@@ -976,8 +979,8 @@ RESOURCE_KEYS DiskDriveManager::GetResourceType(DEVICE_TYPE deviceType)
 		case DEV_FLOPPY: return RESOURCE_FDD;
 		case DEV_ATA_IDE: return RESOURCE_HDD;
 		case DEV_SCSI_USB_DISK: return RESOURCE_USD;
+    default: return RESOURCE_GENERIC_DISK;
 	}
-  return RESOURCE_GENERIC_DISK;
 }
 
 RESOURCE_KEYS DiskDriveManager::GetResourceType(RAW_DISK_TYPES diskType)
@@ -986,10 +989,10 @@ RESOURCE_KEYS DiskDriveManager::GetResourceType(RAW_DISK_TYPES diskType)
 	{
 		case ATA_HARD_DISK: return RESOURCE_HDD;
 		case USB_SCSI_DISK: return RESOURCE_USD;
+	//TODO: FLOPPY falls under this category which should be changed to particular disk type
+    default: return RESOURCE_GENERIC_DISK;
 	}
 
-	//TODO: FLOPPY falls under this category which should be changed to particular disk type
-	return RESOURCE_GENERIC_DISK;
 }
 
 byte RawDiskDrive::Read(unsigned uiStartSector, unsigned uiNoOfSectors, byte* pDataBuffer)
@@ -1001,8 +1004,9 @@ byte RawDiskDrive::Read(unsigned uiStartSector, unsigned uiNoOfSectors, byte* pD
 			return ATADrive_Read((ATAPort*)Device(), uiStartSector, pDataBuffer, uiNoOfSectors) ;
 		case USB_SCSI_DISK:
 			return SCSIHandler_GenericRead((SCSIDevice*)Device(), uiStartSector, uiNoOfSectors, pDataBuffer) ;
+    default:
+      return DeviceDrive_ERR_UNKNOWN_DEVICE_TYPE ;
 	}
-  return DeviceDrive_ERR_UNKNOWN_DEVICE_TYPE ;
 }
 
 byte RawDiskDrive::Write(unsigned uiStartSector, unsigned uiNoOfSectors, byte* pDataBuffer)
@@ -1014,7 +1018,8 @@ byte RawDiskDrive::Write(unsigned uiStartSector, unsigned uiNoOfSectors, byte* p
 			return ATADrive_Write((ATAPort*)Device(), uiStartSector, pDataBuffer, uiNoOfSectors) ;
 		case USB_SCSI_DISK:
 			return SCSIHandler_GenericWrite((SCSIDevice*)Device(), uiStartSector, uiNoOfSectors, pDataBuffer) ;
+    default:
+      return DeviceDrive_ERR_UNKNOWN_DEVICE_TYPE ;
 	}
-  return DeviceDrive_ERR_UNKNOWN_DEVICE_TYPE ;
 }
 

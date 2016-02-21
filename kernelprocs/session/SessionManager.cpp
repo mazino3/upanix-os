@@ -26,7 +26,7 @@
 # include <UserManager.h>
 # include <GenericUtil.h>
 # include <Keyboard.h>
-# include <ProcessGroupManager.h>
+# include <ProcessGroup.h>
 # include <KernelService.h>
 
 #define MAX_NO_OF_SESSIONS 8
@@ -134,7 +134,7 @@ void SessionManager_SwitchToSession(int key)
 		return ;
 	}
 
-	ProcessGroupManager::Instance().SwitchFGProcessGroup(SessionManager_List[key]);
-	DisplayManager::RefreshScreen() ;
+  ProcessManager::Instance().GetAddressSpace(SessionManager_List[key])._processGroup->SwitchToFG(); 
+	KC::MDisplay().RefreshScreen() ;
 }
 

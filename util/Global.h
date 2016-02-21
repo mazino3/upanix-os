@@ -34,7 +34,7 @@ typedef unsigned			DWORD ;
 
 #define IS_KERNEL_PROCESS(pid) (ProcessManager::Instance().GetAddressSpace(pid).bIsKernelProcess || SPECIAL_TASK)
 
-#define IS_FG_PROCESS_GROUP() (ProcessGroupManager::Instance().IsFGProcessGroup(ProcessManager::Instance().GetCurrentPAS().iProcessGroupID))
+#define IS_FG_PROCESS_GROUP() (ProcessManager::Instance().GetCurrentPAS()._processGroup->IsFGProcessGroup())
 
 #define KERNEL_MOUNT_DRIVE true
 

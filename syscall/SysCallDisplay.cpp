@@ -95,7 +95,7 @@ __volatile__ unsigned uiP9)
 
 		case SYS_CALL_DISPLAY_GET_CURSOR :
 			{
-				*piRetVal = KC::MDisplay().GetCursor() ;
+				*piRetVal = KC::MDisplay().GetCurrentCursorPosition();
 			}
 			break ;
 
