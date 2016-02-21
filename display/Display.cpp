@@ -125,9 +125,9 @@ void Display::Create()
   bDone = true;
 }
 
-Display::Display(byte* buffer, unsigned rows, unsigned height) 
+Display::Display(unsigned rows, unsigned height) 
   : _maxRows(rows), _maxColumns(height), 
-    _kernelFrameBuffer(buffer, rows, height, true)
+    _kernelBuffer((byte*)(MEM_GRAPHICS_TEXT_BUFFER_START - GLOBAL_DATA_SEGMENT_BASE), rows, height, true)
 {
 }
 
@@ -268,7 +268,7 @@ void Display::DDNumberInDec(const char *message, DDWORD ddNumber)
 DisplayBuffer& Display::GetDisplayBuffer(int pid)
 {
 	if(IS_KERNEL())
-		return _kernelFrameBuffer;
+		return _kernelBuffer;
 	return ProcessManager::Instance().GetAddressSpace(pid)._processGroup->GetDisplayBuffer();
 }
 
@@ -435,14 +435,16 @@ byte Display::GetChar(int iPos)
   return GetDisplayBuffer().GetChar(iPos);
 }
 
-void Display::PutChar(DisplayBuffer& db, int iPos, byte ch, byte attr)
+void Display::PutChar(int iPos, byte ch, byte attr)
 {
+  auto& db = GetDisplayBuffer();
   db.PutChar(iPos, ch);
   db.PutChar(iPos + 1, attr);
+	if(IS_KERNEL() || IS_FG_PROCESS_GROUP())
+    DirectPutChar(iPos, ch, attr);
 }
 
-VGATextConsole::VGATextConsole() 
-  : Display((byte*)(VIDEO_BUFFER_ADDRESS - GLOBAL_DATA_SEGMENT_BASE), 25, 80)
+VGATextConsole::VGATextConsole() : Display(25, 80)
 {
   InitCursor();
 }
@@ -478,8 +480,7 @@ void VGATextConsole::Goto(int x, int y)
   PortCom_SendByte(CRT_DATA_REG, (iPos >> 8) & 0xFF);
 }
 
-GraphicsTextConsole::GraphicsTextConsole(unsigned rows, unsigned columns)
-  : Display((byte*)(MEM_GRAPHICS_TEXT_BUFFER_START - GLOBAL_DATA_SEGMENT_BASE), rows, columns)
+GraphicsTextConsole::GraphicsTextConsole(unsigned rows, unsigned columns) : Display(rows, columns)
 {
   GraphicsVideo::Create();
 }
@@ -489,24 +490,22 @@ void GraphicsTextConsole::Goto(int x, int y)
   //TODO
 }
 
-void VGATextConsole::PutChar(int iPos, byte ch, byte attr)
+void VGATextConsole::DirectPutChar(int iPos, byte ch, byte attr)
 {
-  Display::PutChar(GetDisplayBuffer(), iPos, ch, attr);
-	if(!IS_KERNEL() && IS_FG_PROCESS_GROUP())
-    Display::PutChar(_kernelFrameBuffer, iPos, ch, attr);
+  static byte* vga_frame_buffer = (byte*)(VIDEO_BUFFER_ADDRESS - GLOBAL_DATA_SEGMENT_BASE);
+  vga_frame_buffer[iPos] = ch;
+  vga_frame_buffer[iPos + 1] = attr;
 }
 
-void GraphicsTextConsole::PutChar(int iPos, byte ch, byte attr)
+void GraphicsTextConsole::DirectPutChar(int iPos, byte ch, byte attr)
 {
-  Display::PutChar(GetDisplayBuffer(), iPos, ch, attr);
+  const int curPos = iPos / NO_BYTES_PER_CHARACTER;
+  const unsigned x = (curPos % _maxColumns) * 8;
+	const unsigned y = (curPos / _maxColumns) * 8;
 
-  if(IS_FG_PROCESS_GROUP())
-  {
-    //TODO:
-    //1. convert iPos correct offest on graphics lfb
-    //2. convert attr to suitable fg and bg mask
-    //GraphicsVideo::Instance().DrawChar(ch);
-  }
+  //TODO:
+  //2. convert attr to suitable fg and bg mask
+  GraphicsVideo::Instance()->DrawChar(ch, x, y);
 }
 
 void Display::RefreshScreen()
@@ -514,18 +513,17 @@ void Display::RefreshScreen()
 	ProcessGroup* pFGGroup = ProcessGroup::GetFGProcessGroup();
   if(!pFGGroup)
     return;
-	DisplayBuffer& mDisplayBuffer = pFGGroup->GetDisplayBuffer();
 
-	char* pDestDisplayBuf = (char*)(VIDEO_BUFFER_ADDRESS - GLOBAL_DATA_SEGMENT_BASE);
-	char* pSrcDisplayBuf = (char*)(mDisplayBuffer.GetBuffer() - GLOBAL_DATA_SEGMENT_BASE);
+  DisplayBuffer& db = pFGGroup->GetDisplayBuffer();
 
 	const unsigned noOfDisplayBytes = TextBufferSize();
+	byte* buffer = db.GetBuffer();
 
-	for(unsigned i = 0; i < noOfDisplayBytes; i++)
-		pDestDisplayBuf[i] = pSrcDisplayBuf[i];
+	for(unsigned i = 0; i < noOfDisplayBytes; i += 2)
+    DirectPutChar(i, buffer[i], buffer[i+1]);
 
-	int x = mDisplayBuffer.GetCursor().GetCurPos() % _maxColumns;
-	int y = mDisplayBuffer.GetCursor().GetCurPos() / _maxColumns;
+	int x = db.GetCursor().GetCurPos() % _maxColumns;
+	int y = db.GetCursor().GetCurPos() / _maxColumns;
 
 	Goto(x, y);
 }

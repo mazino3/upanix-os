@@ -27,16 +27,18 @@ class GraphicsVideo
   public:
     static void Create();
     static GraphicsVideo* Instance() { return _instance; }
-    void MemMapLFB();
+    unsigned LFBAddress() const { return _lfbaddress; }
+    unsigned LFBSize() const { return _lfbSize; }
     void SetPixel(unsigned x, unsigned y, unsigned color);
     void FillRect(unsigned sx, unsigned sy, unsigned width, unsigned height, unsigned color);
-    void DrawChar(unsigned x, unsigned y);
+    void DrawChar(byte ch, unsigned x, unsigned y);
   private:
     static GraphicsVideo* _instance;
     unsigned _lfbaddress;
     unsigned _pitch;
     unsigned _width;
     unsigned _height;
+    unsigned _lfbSize;
     byte     _bpp;
     byte     _bytesPerPixel;
 };

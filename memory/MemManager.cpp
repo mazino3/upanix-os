@@ -27,6 +27,7 @@
 #include <IDT.h>
 #include <Atomic.h>
 #include <exception.h>
+#include <GraphicsVideo.h>
 
 extern "C" { 
 	unsigned MEM_PDBR ;
@@ -107,13 +108,14 @@ MemManager::MemManager() :
 	{
 		if(BuildPageTable())
 		{
+      MemMapGraphicsLFB();
 			Mem_EnablePaging() ;
 	
 			KC::MDisplay().LoadMessage("Memory Manager Initialization", Success) ;
 			printf("\n\tRAM SIZE = %d", RAM_SIZE) ;
 			printf("\n\tNo. of Pages = %d", m_uiNoOfPages) ;
 			printf("\n\tNo. of Resv Pages = %d", m_uiNoOfResvPages) ;
-			return ;
+			return;
 		}
 	}
 
@@ -121,11 +123,29 @@ MemManager::MemManager() :
 	while(1) ;
 }
 
+void MemManager::MemMapGraphicsLFB()
+{
+  if(!GraphicsVideo::Instance())
+    return;
+  unsigned uiPDEAddress = MEM_PDBR;
+  unsigned noOfPages = (GraphicsVideo::Instance()->LFBSize() / PAGE_SIZE) + 1;
+  unsigned lfbaddress = GraphicsVideo::Instance()->LFBAddress();
+  for(unsigned i = 0; i < noOfPages; ++i)
+  {
+    unsigned addr = lfbaddress + PAGE_SIZE * i;
+    unsigned uiPDEIndex = ((lfbaddress >> 22) & 0x3FF);
+    unsigned uiPTEAddress = (((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPDEIndex]) & 0xFFFFF000;
+    unsigned uiPTEIndex = ((addr >> 12) & 0x3FF);
+    // This page is a Read Only area for user process. 0x5 => 101 => User Domain, Read Only, Present Bit
+    ((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPTEIndex] = (addr & 0xFFFFF000) | 0x5;
+    MarkPageAsAllocated(addr / PAGE_SIZE);
+  }
+}
+
 void MemManager::InitPage(unsigned uiPage)
 {
 	uiPage = uiPage * PAGE_SIZE ;
-	int x ;
-	for(x = 0; x < 1024; x++)
+	for(int x = 0; x < 1024; x++)
 		((unsigned*)(uiPage - GLOBAL_DATA_SEGMENT_BASE))[x] = 0 ;
 }
 

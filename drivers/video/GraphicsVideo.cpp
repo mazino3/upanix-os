@@ -18,6 +18,7 @@
 #include <exception.h>
 #include <MemManager.h>
 #include <GraphicsVideo.h>
+#include <GraphicsFont.h>
 
 GraphicsVideo* GraphicsVideo::_instance = nullptr;
 
@@ -44,24 +45,8 @@ GraphicsVideo::GraphicsVideo(const framebuffer_info_t& fbinfo)
   _pitch = fbinfo.framebuffer_pitch;
   _bpp = fbinfo.framebuffer_bpp;
   _bytesPerPixel = _bpp / 8;
+  _lfbSize = _height * _width * _bytesPerPixel;
   FillRect(0, 0, _width, _height, 0x0);
-}
-
-void GraphicsVideo::MemMapLFB()
-{
-  unsigned uiPDEAddress = MEM_PDBR;
-  unsigned noOfPages = ((_height * _width * 4) / PAGE_SIZE) + 1;
-  for(unsigned i = 0; i < noOfPages; ++i)
-  {
-    unsigned addr = _lfbaddress + PAGE_SIZE * i;
-    unsigned uiPDEIndex = ((_lfbaddress >> 22) & 0x3FF);
-    unsigned uiPTEAddress = (((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPDEIndex]) & 0xFFFFF000;
-    unsigned uiPTEIndex = ((addr >> 12) & 0x3FF);
-    // This page is a Read Only area for user process. 0x5 => 101 => User Domain, Read Only, Present Bit
-    ((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPTEIndex] = (addr & 0xFFFFF000) | 0x5;
-    MemManager::Instance().MarkPageAsAllocated(addr / PAGE_SIZE);
-  }
-  Mem_FlushTLB();
 }
 
 void GraphicsVideo::SetPixel(unsigned x, unsigned y, unsigned color)
@@ -86,27 +71,9 @@ void GraphicsVideo::FillRect(unsigned sx, unsigned sy, unsigned width, unsigned 
   }
 }
 
-byte font_data[] = {
-//  0x18,
-//  0x3C,
-//  0x66,
-//  0x7E,
-//  0x66,
-//  0x66,
-//  0x00,
-//  0x00
-		0x00, /* 00000000 */
-		0x00, /* 00000000 */
-		0x7c, /* 01111100 */
-		0x06, /* 00000110 */
-		0x7e, /* 01111110 */
-		0xc6, /* 11000110 */
-		0x7e, /* 01111110 */
-		0x00, /* 00000000 */
-};
-
-void GraphicsVideo::DrawChar(unsigned x, unsigned y)
+void GraphicsVideo::DrawChar(byte ch, unsigned x, unsigned y)
 {
+  byte* font_data = GraphicsFont::Get(ch);
   for(unsigned f = 0; f < 8; ++f, ++y)
   {
     unsigned xa = x;

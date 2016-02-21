@@ -140,7 +140,6 @@ class Display
 
     static void Create();
     DisplayBuffer& CreateDisplayBuffer();
-    virtual void PutChar(int iPos, byte ch, byte attr) = 0;
     unsigned TextBufferSize() const { return _maxRows * _maxColumns * NO_BYTES_PER_CHARACTER; }
     unsigned MaxRows() const { return _maxRows; }
     unsigned MaxColumns() const { return _maxColumns; }
@@ -173,9 +172,10 @@ class Display
 		static const Attribute& WHITE_ON_BLACK();
 
 	protected:
-		Display(byte* buffer, unsigned rows, unsigned columns);
+		Display(unsigned rows, unsigned columns);
 		
-    void PutChar(DisplayBuffer&, int iPos, byte ch, byte attr);
+    void PutChar(int iPos, byte ch, byte attr);
+    virtual void DirectPutChar(int iPos, byte ch, byte attr) = 0;
 		DisplayBuffer& GetDisplayBuffer(int pid);
 		DisplayBuffer& GetDisplayBuffer();
 
@@ -191,7 +191,7 @@ class Display
   protected:
     const unsigned _maxRows;
     const unsigned _maxColumns;
-    DisplayBuffer  _kernelFrameBuffer;
+    DisplayBuffer  _kernelBuffer;
 };
 
 class VGATextConsole : public Display
@@ -200,7 +200,7 @@ class VGATextConsole : public Display
     VGATextConsole();
 		void InitCursor();
 		virtual void Goto(int x, int y);
-    virtual void PutChar(int iPos, byte ch, byte attr);
+    virtual void DirectPutChar(int iPos, byte ch, byte attr);
 
     class VideoBuffer : public DisplayBuffer
     {
@@ -215,7 +215,7 @@ class GraphicsTextConsole : public Display
   private:
     GraphicsTextConsole(unsigned rows, unsigned columns);
 		virtual void Goto(int x, int y);
-    virtual void PutChar(int iPos, byte ch, byte attr);
+    virtual void DirectPutChar(int iPos, byte ch, byte attr);
 
     class VideoBuffer : public DisplayBuffer
     {

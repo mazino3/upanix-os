@@ -79,6 +79,7 @@ class MemManager
 	private:
 		bool BuildRawPageMap() ;
 		bool BuildPageTable() ;
+    void MemMapGraphicsLFB();
 
 	private:
 		unsigned m_uiNoOfPages ;

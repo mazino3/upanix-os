@@ -145,8 +145,6 @@ void Initialize()
 //	TestException(); while(1);
   try
   {
-    if(GraphicsVideo::Instance())
-      GraphicsVideo::Instance()->MemMapLFB();
     IDT::Instance();
     PIC::Instance();
     DMA_Initialize();
