@@ -1,3 +1,6 @@
+Date 25 Feb 2016
+- support for new type Global Partition Tables (GPTs)
+
 Date: 22 Feb 2016
 - fix error while booting on real machine (laptop)
 - support for colors in linear graphics mode
