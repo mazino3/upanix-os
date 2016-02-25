@@ -31,7 +31,7 @@ class GraphicsVideo
     unsigned LFBSize() const { return _lfbSize; }
     void SetPixel(unsigned x, unsigned y, unsigned color);
     void FillRect(unsigned sx, unsigned sy, unsigned width, unsigned height, unsigned color);
-    void DrawChar(byte ch, unsigned x, unsigned y);
+    void DrawChar(byte ch, unsigned x, unsigned y, unsigned fg, unsigned bg);
   private:
     static GraphicsVideo* _instance;
     unsigned _lfbaddress;

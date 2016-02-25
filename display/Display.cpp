@@ -72,10 +72,10 @@ Display::Attribute::Attribute(const Display::Blink& blink, const Display::FGColo
 
 Display::Attribute::Attribute(const byte& rawAttr)
 {
-	m_Attr = rawAttr;
 	m_blink = static_cast<Display::Blink>(rawAttr & 0x80);
 	m_fgColor = static_cast<Display::FGColor>(rawAttr & Display::FG_BRIGHT_WHITE);
 	m_bgColor = static_cast<Display::BGColor>(rawAttr & Display::BG_WHITE);
+  UpdateAttrVal();
 }
 
 void Display::Attribute::SetBlink(const Display::Blink& blink)
@@ -499,13 +499,31 @@ void VGATextConsole::DirectPutChar(int iPos, byte ch, byte attr)
 
 void GraphicsTextConsole::DirectPutChar(int iPos, byte ch, byte attr)
 {
+  static const unsigned GRAPHICS_COLOR[] = {
+    0x000000, //FG_BLACK
+    0x0000FF, //FG_BLUE
+    0x00FF00, //FG_GREEN
+    0x00FFFF, //FG_CYAN
+    0xFF0000, //FG_RED
+    0xFF00FF, //FG_MAGENTA
+    0xA52A2A, //FG_BROWN
+    0xFFFFFF, //FG_WHITE
+    0x404040, //FG_DARK_GRAY
+    0x1A1AFF, //FG_BRIGHT_BLUE
+    0x1AFF1A, //FG_BRIGHT_GREEN
+    0x1AFFFF, //FG_BRIGHT_CYAN
+    0xFFC0CB, //FG_PINK
+    0xFF1AFF, //FG_BRIGHT_MAGENTA
+    0xFFFF00, //FG_YELLOW
+    0xFFFFFF, //FG_BRIGHT_WHITE
+  };
   const int curPos = iPos / NO_BYTES_PER_CHARACTER;
   const unsigned x = (curPos % _maxColumns) * 8;
 	const unsigned y = (curPos / _maxColumns) * 8;
 
-  //TODO:
-  //2. convert attr to suitable fg and bg mask
-  GraphicsVideo::Instance()->DrawChar(ch, x, y);
+  GraphicsVideo::Instance()->DrawChar(ch, x, y, 
+    GRAPHICS_COLOR[attr & FG_BRIGHT_WHITE], 
+    GRAPHICS_COLOR[(attr & BG_WHITE) >> 4]);
 }
 
 void Display::RefreshScreen()

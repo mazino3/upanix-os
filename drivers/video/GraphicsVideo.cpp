@@ -71,16 +71,17 @@ void GraphicsVideo::FillRect(unsigned sx, unsigned sy, unsigned width, unsigned 
   }
 }
 
-void GraphicsVideo::DrawChar(byte ch, unsigned x, unsigned y)
+void GraphicsVideo::DrawChar(byte ch, unsigned x, unsigned y, unsigned fg, unsigned bg)
 {
   if((y + 7) >= _height || (x + 7) >= _width)
     return;
-
+  fg |= 0xFF000000;
+  bg |= 0xFF000000;
   const byte* font_data = GraphicsFont::Get(ch);
   for(unsigned f = 0; f < 8; ++f, ++y)
   {
     unsigned lfbp = _lfbaddress + y * _pitch + x * _bytesPerPixel;
     for(unsigned i = 0x80; i != 0; i >>= 1, lfbp += _bytesPerPixel)
-      *(unsigned*)lfbp = font_data[f] & i ? 0xFFFFFFFF : 0xFF000000;
+      *(unsigned*)lfbp = font_data[f] & i ? fg : bg;
   }
 }
