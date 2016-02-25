@@ -1,7 +1,9 @@
 Date: 22 Feb 2016
 - fix error while booting on real machine (laptop)
 - support for colors in linear graphics mode
+--> Done
 - optimize plotting character in linear graphics mode
+--> Done
 
 Date: 10 Dec 2015
 - improvize kernel memory de-allocation algorithm to combine adjacent free blocks to avoid fragmentation
