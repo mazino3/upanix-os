@@ -112,7 +112,7 @@ void Display::Create()
   auto f = MultiBoot::Instance().VideoFrameBufferInfo();
   if(f)
   {
-    static GraphicsTextConsole gc(f->framebuffer_height / 8, f->framebuffer_width / 8);
+    static GraphicsTextConsole gc(f->framebuffer_height / 16, f->framebuffer_width / 8); 
     KC::SetDisplay(gc);
   }
   else
@@ -518,8 +518,8 @@ void GraphicsTextConsole::DirectPutChar(int iPos, byte ch, byte attr)
     0xFFFFFF, //FG_BRIGHT_WHITE
   };
   const int curPos = iPos / NO_BYTES_PER_CHARACTER;
-  const unsigned x = (curPos % _maxColumns) * 8;
-	const unsigned y = (curPos / _maxColumns) * 8;
+  const unsigned x = (curPos % _maxColumns);
+	const unsigned y = (curPos / _maxColumns);
 
   GraphicsVideo::Instance()->DrawChar(ch, x, y, 
     GRAPHICS_COLOR[attr & FG_BRIGHT_WHITE], 
