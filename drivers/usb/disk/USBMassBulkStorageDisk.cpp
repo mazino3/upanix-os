@@ -113,12 +113,6 @@ static void USBMassBulkStorageDisk_AddDeviceDrive(RawDiskDrive* pDisk)
     DiskDriveManager::Instance().Create(driveName, DEV_SCSI_USB_DISK, USD_DRIVE0,
       uiLBAStartSector,
       pPartitionInfo->LBANoOfSectors,
-      pPartitionInfo->StartCylinder,
-      pPartitionInfo->StartHead,
-      pPartitionInfo->StartSector,
-      pPartitionInfo->EndCylinder,
-      pPartitionInfo->EndHead,
-      pPartitionInfo->EndSector,
       1, 1, 1, pDevice, pDisk, uiSectorsInFreePool, uiSectorsInTableCache, uiMountPointStart, uiMountPointEnd);
 	}
 }

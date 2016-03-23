@@ -89,12 +89,6 @@ class DiskDrive
       DRIVE_NO driveNumber,
       unsigned uiLBAStartSector,
       unsigned uiSizeInSectors,
-      unsigned uiStartCynlider,
-      unsigned uiStartHead,
-      unsigned uiStartSector,
-      unsigned uiEndCynlider,
-      unsigned uiEndHead,
-      unsigned uiEndSector,
       unsigned uiSectorsPerTrack,
       unsigned uiTracksPerHead,
       unsigned uiNoOfHeads,
@@ -127,12 +121,6 @@ class DiskDrive
     DRIVE_NO DriveNumber() const { return _driveNumber; }
     unsigned LBAStartSector() const { return _uiLBAStartSector; }
     unsigned SizeInSectors() const { return _uiSizeInSectors; }
-    unsigned StartCynlider() const { return _uiStartCynlider; }
-    unsigned StartHead() const { return _uiStartHead; }
-    unsigned StartSector() const { return _uiStartSector; }
-    unsigned EndCynlider() const { return _uiEndCynlider; }
-    unsigned EndHead() const { return _uiEndHead; }
-    unsigned EndSector() const { return _uiEndSector; }
     unsigned SectorsPerTrack() const { return _uiSectorsPerTrack; }
     unsigned TracksPerHead() const { return _uiTracksPerHead; }
     unsigned NoOfHeads() const { return _uiNoOfHeads; }
@@ -171,12 +159,6 @@ class DiskDrive
     DRIVE_NO     _driveNumber;
     unsigned     _uiLBAStartSector;
     unsigned     _uiSizeInSectors;
-    unsigned     _uiStartCynlider;
-    unsigned     _uiStartHead;
-    unsigned     _uiStartSector;
-    unsigned     _uiEndCynlider;
-    unsigned     _uiEndHead;
-    unsigned     _uiEndSector;
     unsigned     _uiSectorsPerTrack;
     unsigned     _uiTracksPerHead;
     unsigned     _uiNoOfHeads;
@@ -251,8 +233,6 @@ class DiskDriveManager
     void Create(const upan::string& driveName, 
       DEVICE_TYPE deviceType, DRIVE_NO driveNumber,
       unsigned uiLBAStartSector, unsigned uiSizeInSectors,
-      unsigned uiStartCynlider, unsigned uiStartHead, unsigned uiStartSector,
-      unsigned uiEndCynlider, unsigned uiEndHead, unsigned uiEndSector,
       unsigned uiSectorsPerTrack, unsigned uiTracksPerHead, unsigned uiNoOfHeads,
       void* device, RawDiskDrive* rawDisk,
       unsigned uiMaxSectorsInFreePoolCache, unsigned uiNoOfSectorsInTableCache,
