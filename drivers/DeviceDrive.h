@@ -188,6 +188,7 @@ typedef enum
 	FLOPPY_DISK,
 } RAW_DISK_TYPES ;
 
+class PartitionTable;
 class RawDiskDrive
 {
   private:
@@ -195,6 +196,9 @@ class RawDiskDrive
   public:
     byte Read(unsigned uiStartSector, unsigned uiNoOfSectors, byte* pDataBuffer);
     byte Write(unsigned uiStartSector, unsigned uiNoOfSectors, byte* pDataBuffer);
+    byte ReadPartitionTable(PartitionTable* pPartitionTable);
+    byte ClearPartitionTable();
+    byte UpdateSystemIndicator(unsigned uiLBAStartSector, unsigned uiSystemIndicator);
 
     const upan::string& Name() const { return _name; }
     RAW_DISK_TYPES Type() const { return _type; }

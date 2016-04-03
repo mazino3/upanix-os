@@ -932,7 +932,7 @@ byte DiskDriveManager::FormatDrive(const upan::string& szDriveName)
 	{
 		case DEV_ATA_IDE:
 		case DEV_SCSI_USB_DISK:
-			if(PartitionManager_UpdateSystemIndicator(pDiskDrive->RawDisk(), pDiskDrive->LBAStartSector(), 0x93) != PartitionManager_SUCCESS)
+			if(pDiskDrive->RawDisk()->UpdateSystemIndicator(pDiskDrive->LBAStartSector(), 0x93) != PartitionManager_SUCCESS)
 				return DeviceDrive_ERR_PARTITION_UPDATE ;
 			break ;
 	}
@@ -1007,3 +1007,52 @@ byte RawDiskDrive::Write(unsigned uiStartSector, unsigned uiNoOfSectors, byte* p
 	}
 }
 
+byte RawDiskDrive::ReadPartitionTable(PartitionTable* pPartitionTable)
+{
+	byte bStatus ;
+
+	RETURN_IF_NOT(bStatus, pPartitionTable->ReadPrimaryPartition(this), PartitionManager_SUCCESS) ;
+
+	RETURN_IF_NOT(bStatus, pPartitionTable->ReadExtPartition(this), PartitionManager_SUCCESS) ;
+
+	return PartitionManager_SUCCESS ;
+}
+
+byte RawDiskDrive::ClearPartitionTable()
+{
+	byte bBootSectorBuffer[512] ;
+
+	RETURN_X_IF_NOT(Read(0, 1, bBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
+
+	MemUtil_Set((bBootSectorBuffer + 0x1BE), 0, sizeof(PartitionInfo) * MAX_NO_OF_PRIMARY_PARTITIONS) ;
+
+	bBootSectorBuffer[510] = 0x55 ;
+	bBootSectorBuffer[511] = 0xAA ;
+
+	RETURN_X_IF_NOT(Write(0, 1, bBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
+
+	return PartitionManager_SUCCESS ;
+}
+
+byte RawDiskDrive::UpdateSystemIndicator(unsigned uiLBAStartSector, unsigned uiSystemIndicator)
+{
+	byte bBootSectorBuffer[512] ;
+
+	RETURN_X_IF_NOT(Read(0, 1, bBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
+
+	PartitionInfo* pPartitionTable = ((PartitionInfo*)(bBootSectorBuffer + 0x1BE)) ;
+	
+  const unsigned NO_OF_PARTITIONS = 4;
+	for(unsigned i = 0; i < NO_OF_PARTITIONS; i++)
+	{
+		if(pPartitionTable[i].LBAStartSector == uiLBAStartSector)
+		{
+			pPartitionTable[i].SystemIndicator = uiSystemIndicator ;
+			break ;
+		}
+	}
+
+	RETURN_X_IF_NOT(Write(0, 1, bBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
+
+	return PartitionManager_SUCCESS ;
+}

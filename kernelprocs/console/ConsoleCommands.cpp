@@ -557,7 +557,7 @@ void ConsoleCommands_ShowPartitionTable()
 
 	printf("\n Total Sectors = %d", pDisk->SizeInSectors());
 
-	bStatus = PartitionManager_ReadPartitionInfo(pDisk, &partitionTable) ;
+	bStatus = pDisk->ReadPartitionTable(&partitionTable) ;
 	if(bStatus == PartitionManager_FAILURE)
 	{
 		KC::MDisplay().Message("\n Fatal Error:- Reading Partition Table", ' ') ;
@@ -569,64 +569,64 @@ void ConsoleCommands_ShowPartitionTable()
 		return ;
 	}
 
-	PartitionInfo* pPartitionInfo ;
-	unsigned i ;
-	byte bPFirst = true, bEFirst = true ;
-	for(i = 0; i < partitionTable.uiNoOfPrimaryPartitions + partitionTable.uiNoOfExtPartitions + partitionTable.bIsExtPartitionPresent; i++)
-	{
-		if(i < partitionTable.uiNoOfPrimaryPartitions)
-		{
-			if(bPFirst)
-			{
-				KC::MDisplay().Message("\n Primary Partitions\n", ' ') ;
-				bPFirst = false ;
-			}
-			pPartitionInfo = &partitionTable.PrimaryParitions[i] ;
-		}
-		else
-		{
-			if(bEFirst)
-			{
-				KC::MDisplay().Message("\n Extended Partitions\n", ' ') ;
-				bEFirst = false ;
-				pPartitionInfo = &partitionTable.ExtPartitionEntry ;
-			}
-			else
-				pPartitionInfo = &partitionTable.ExtPartitions[i - partitionTable.uiNoOfPrimaryPartitions - 1].CurrentPartition ;
-		}
+	const PartitionInfo* pPartitionInfo = nullptr;
+  auto print_partition_info = [](const PartitionInfo* pi) {
+    if(!pi)
+      return;
+    printf("\n%-4d %-4d %-4d %-4d %-4d %-4d %-4d %-4d %-10d %-10d", 
+        pi->BootIndicator,
+        pi->StartHead,
+        pi->StartSector,
+        pi->StartCylinder,
+        pi->SystemIndicator,
+        pi->EndHead,
+        pi->EndSector,
+        pi->EndCylinder,
+        pi->LBAStartSector,
+        pi->LBANoOfSectors);
+  };
 
-		printf("\n%-4d %-4d %-4d %-4d %-4d %-4d %-4d %-4d %-10d %-10d", 
-				pPartitionInfo->BootIndicator,
-				pPartitionInfo->StartHead,
-				pPartitionInfo->StartSector,
-				pPartitionInfo->StartCylinder,
-				pPartitionInfo->SystemIndicator,
-				pPartitionInfo->EndHead,
-				pPartitionInfo->EndSector,
-				pPartitionInfo->EndCylinder,
-				pPartitionInfo->LBAStartSector,
-				pPartitionInfo->LBANoOfSectors) ;
-	}
+  if(partitionTable.NoOfPrimaryPartitions() > 0)
+  {
+    printf("\n Primary Partitions\n");
+    for(unsigned i = 0;; ++i)
+    {
+      pPartitionInfo = partitionTable.GetPrimaryPartition(i);
+      if(!pPartitionInfo)
+        break;
+      print_partition_info(pPartitionInfo);
+    }
+  }
+  if(partitionTable.IsExtPartitionPresent())
+  {
+    printf("\n Extended Primary Partition\n");
+		pPartitionInfo = &partitionTable.ExtPartitionEntry();
+    print_partition_info(pPartitionInfo);
+    printf("\n Extended Partitions\n");
+    for(unsigned i = 0;; ++i)
+    {
+      pPartitionInfo = partitionTable.GetExtPartition(i);
+      if(!pPartitionInfo)
+        break;
+      print_partition_info(pPartitionInfo);
+    }
+  }
 }
 
 void ConsoleCommands_ClearPartitionTable()
 {
 	RawDiskDrive* pDisk = ConsoleCommands_CheckDiskParam() ;
-
 	if(!pDisk)
 		return ;
-
-	PartitionManager_ClearPartitionTable(pDisk) ;
+  pDisk->ClearPartitionTable() ;
 }
 
 void ConsoleCommands_SetSysIdForPartition()
 {
 	RawDiskDrive* pDisk = ConsoleCommands_CheckDiskParam() ;
-
 	if(!pDisk)
 		return ;
-
-	PartitionManager_UpdateSystemIndicator(pDisk, 63, 0x83) ;
+  pDisk->UpdateSystemIndicator(63, 0x83) ;
 }
 
 void ConsoleCommands_CreatePrimaryPartition()
@@ -639,15 +639,11 @@ void ConsoleCommands_CreatePrimaryPartition()
 	PartitionTable partitionTable ;
 	byte bStatus ;
 
-	bStatus = PartitionManager_ReadPartitionInfo(pDisk, &partitionTable) ;
+	bStatus = pDisk->ReadPartitionTable(&partitionTable) ;
 	if(bStatus == PartitionManager_FAILURE)
 	{
 		KC::MDisplay().Message("\n Fatal Error:- Reading Partition Table", ' ') ;
 		return ;
-	}
-	else if(bStatus == PartitionManager_ERR_NOT_PARTITIONED)
-	{
-		PartitionManager_InitializePartitionTable(&partitionTable) ;
 	}
 
 	char szSizeInSectors[11] ;
@@ -662,7 +658,7 @@ void ConsoleCommands_CreatePrimaryPartition()
 		return ;
 	}
 
-	bStatus = PartitionManager_CreatePrimaryPartitionEntry(pDisk, &partitionTable, uiSizeInSectors, false, false) ;
+	bStatus = partitionTable.CreatePrimaryPartitionEntry(pDisk, uiSizeInSectors, false, false) ;
 
 	if(bStatus != PartitionManager_SUCCESS)
 	{
@@ -683,7 +679,7 @@ void ConsoleCommands_CreateExtendedPartitionEntry()
 	PartitionTable partitionTable ;
 	byte bStatus ;
 
-	bStatus = PartitionManager_ReadPartitionInfo(pDisk, &partitionTable) ;
+	bStatus = pDisk->ReadPartitionTable(&partitionTable) ;
 	if(bStatus == PartitionManager_FAILURE)
 	{
 		KC::MDisplay().Message("\n Fatal Error:- Reading Partition Table", ' ') ;
@@ -707,7 +703,7 @@ void ConsoleCommands_CreateExtendedPartitionEntry()
 		return ;
 	}
 
-	bStatus = PartitionManager_CreatePrimaryPartitionEntry(pDisk, &partitionTable, uiSizeInSectors, false, true) ;
+	bStatus = partitionTable.CreatePrimaryPartitionEntry(pDisk, uiSizeInSectors, false, true) ;
 
 	if(bStatus != PartitionManager_SUCCESS)
 	{
@@ -728,7 +724,7 @@ void ConsoleCommands_CreateExtendedPartition()
 	PartitionTable partitionTable ;
 	byte bStatus ;
 
-	bStatus = PartitionManager_ReadPartitionInfo(pDisk, &partitionTable) ;
+	bStatus = pDisk->ReadPartitionTable(&partitionTable) ;
 	if(bStatus == PartitionManager_FAILURE)
 	{
 		KC::MDisplay().Message("\n Fatal Error:- Reading Partition Table", ' ') ;
@@ -752,7 +748,7 @@ void ConsoleCommands_CreateExtendedPartition()
 		return ;
 	}
 
-	bStatus = PartitionManager_CreateExtPartitionEntry(pDisk, &partitionTable, uiSizeInSectors) ;
+	bStatus = partitionTable.CreateExtPartitionEntry(pDisk, uiSizeInSectors) ;
 
 	if(bStatus != PartitionManager_SUCCESS)
 	{
@@ -773,7 +769,7 @@ void ConsoleCommands_DeletePrimaryPartition()
 	PartitionTable partitionTable ;
 	byte bStatus ;
 
-	bStatus = PartitionManager_ReadPartitionInfo(pDisk, &partitionTable) ;
+	bStatus = pDisk->ReadPartitionTable(&partitionTable) ;
 	if(bStatus == PartitionManager_FAILURE)
 	{
 		KC::MDisplay().Message("\n Fatal Error:- Reading Partition Table", ' ') ;
@@ -785,7 +781,7 @@ void ConsoleCommands_DeletePrimaryPartition()
 		return ;
 	}
 
-	bStatus = PartitionManager_DeletePrimaryPartition(pDisk, &partitionTable) ;
+	bStatus = partitionTable.DeletePrimaryPartition(pDisk) ;
 
 	if(bStatus != PartitionManager_SUCCESS)
 		KC::MDisplay().Message("\n Failed to Delete Partition", ' ') ;
@@ -803,7 +799,7 @@ void ConsoleCommands_DeleteExtendedPartition()
 	PartitionTable partitionTable ;
 	byte bStatus ;
 
-	bStatus = PartitionManager_ReadPartitionInfo(pDisk, &partitionTable) ;
+	bStatus = pDisk->ReadPartitionTable(&partitionTable) ;
 	if(bStatus == PartitionManager_FAILURE)
 	{
 		KC::MDisplay().Message("\n Fatal Error:- Reading Partition Table", ' ') ;
@@ -815,7 +811,7 @@ void ConsoleCommands_DeleteExtendedPartition()
 		return ;
 	}
 
-	bStatus = PartitionManager_DeleteExtPartition(pDisk, &partitionTable) ;
+	bStatus = partitionTable.DeleteExtPartition(pDisk) ;
 
 	if(bStatus != PartitionManager_SUCCESS)
 		KC::MDisplay().Message("\n Failed to Delete Partition", ' ') ;

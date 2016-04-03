@@ -39,49 +39,122 @@
 #define MAX_NO_OF_PRIMARY_PARTITIONS	4
 #define MAX_NO_OF_EXT_PARTITIONS		32
 
-typedef struct
+class PartitionInfo
 {
-	byte		BootIndicator ;
+  public:
+    PartitionInfo() :
+      BootIndicator(0),
+      StartHead(0),
+      StartSector(0),
+      StartCylinder(0),
+      SystemIndicator(0),
+      EndHead(0),
+      EndSector(0),
+      EndCylinder(0),
+      LBAStartSector(0),
+      LBANoOfSectors(0)
+    {
+    }
 
-	byte		StartHead ;
-	byte		StartSector ;
-	byte		StartCylinder ;
+    PartitionInfo(unsigned lss, unsigned lnos) :
+      BootIndicator(0x00),
+      StartHead(255),
+      StartSector(255),
+      StartCylinder(254),
+      SystemIndicator(0x05),
+      EndHead(255),
+      EndSector(255),
+      EndCylinder(254),
+      LBAStartSector(lss),
+      LBANoOfSectors(lnos)
+    {
+    }
 
-	byte		SystemIndicator ;
+	byte		BootIndicator;
 
-	byte		EndHead ;
-	byte		EndSector ;
-	byte		EndCylinder ;
+	byte		StartHead;
+	byte		StartSector;
+	byte		StartCylinder;
 
-	unsigned 	LBAStartSector ;
-	unsigned 	LBANoOfSectors ;
-} PACKED PartitionInfo ;
+	byte		SystemIndicator;
 
-typedef struct
+	byte		EndHead;
+	byte		EndSector;
+	byte		EndCylinder;
+
+	unsigned 	LBAStartSector;
+	unsigned 	LBANoOfSectors;
+
+} PACKED;
+
+class ExtPartitionTable
 {
-	PartitionInfo CurrentPartition ;
-	PartitionInfo NextPartition ;
-	unsigned	uiActualStartSector ;
-} ExtPartitionTable ;
+  public:
+    ExtPartitionTable(const PartitionInfo& cur, const PartitionInfo& next, unsigned actualStartSec)
+      : _currentPartition(cur), _nextPartition(next), _uiActualStartSector(actualStartSec)
+    {
+    }
+    ExtPartitionTable(const PartitionInfo& cur, unsigned actualStartSec)
+      : _currentPartition(cur), _uiActualStartSector(actualStartSec)
+    {
+    }
+    //TODO: Remove default constructor - if possible make _extPartitions a list
+    ExtPartitionTable() : _uiActualStartSector(0)
+    {
+    }
+    void NextPartition(const PartitionInfo& np) { _nextPartition = np; }
+    const PartitionInfo& CurrentPartition() const { return _currentPartition; }
+    unsigned ActualStartSector() const { return _uiActualStartSector; }
+  private:
+    PartitionInfo _currentPartition;
+    PartitionInfo _nextPartition;
+    unsigned	_uiActualStartSector;
+};
 
-typedef struct
+class PartitionTable
 {
-	unsigned uiNoOfPrimaryPartitions ;
-	byte bIsExtPartitionPresent ;
-	unsigned uiNoOfExtPartitions ;
+  public:
+    PartitionTable();
 
-	PartitionInfo PrimaryParitions [ MAX_NO_OF_PRIMARY_PARTITIONS ] ;
-	PartitionInfo ExtPartitionEntry ;
-	ExtPartitionTable ExtPartitions [ MAX_NO_OF_EXT_PARTITIONS ] ;
-} PartitionTable ;
+    unsigned NoOfPrimaryPartitions() const { return _uiNoOfPrimaryPartitions; }
+    unsigned NoOfExtPartitions() const { return _uiNoOfExtPartitions; }
+    bool IsExtPartitionPresent() const { return _bIsExtPartitionPresent; }
 
-void PartitionManager_InitializePartitionTable(PartitionTable* pPartitionTable) ;
-byte PartitionManager_ReadPartitionInfo(RawDiskDrive* pDisk, PartitionTable* pPartitionTable) ; 
-byte PartitionManager_ClearPartitionTable(RawDiskDrive* pDisk) ;
-byte PartitionManager_CreatePrimaryPartitionEntry(RawDiskDrive* pDisk, PartitionTable* pPartitionTable, unsigned uiSizeInSectors, byte bIsActive, byte bIsExt) ;
-byte PartitionManager_CreateExtPartitionEntry(RawDiskDrive* pDisk, PartitionTable* pPartitionTable, unsigned uiSizeInSectors) ;
-byte PartitionManager_DeletePrimaryPartition(RawDiskDrive* pDisk, PartitionTable* pPartitionTable) ;
-byte PartitionManager_DeleteExtPartition(RawDiskDrive* pDisk, PartitionTable* pPartitionTable) ;
-byte PartitionManager_UpdateSystemIndicator(RawDiskDrive* pDisk, unsigned uiLBAStartSector, unsigned uiSystemIndicator) ;
+    byte ReadPrimaryPartition(RawDiskDrive* pDisk);
+    byte ReadExtPartition(RawDiskDrive* pDisk);
+    byte CreatePrimaryPartitionEntry(RawDiskDrive* pDisk, unsigned uiSizeInSectors, byte bIsActive, byte bIsExt);
+    byte DeletePrimaryPartition(RawDiskDrive* pDisk);
+    byte CreateExtPartitionEntry(RawDiskDrive* pDisk, unsigned uiSizeInSectors);
+    byte DeleteExtPartition(RawDiskDrive* pDisk);
+
+    const PartitionInfo& ExtPartitionEntry() const { return _extPartitionEntry; }
+    const PartitionInfo* GetPrimaryPartition(unsigned index)
+    {
+      if(index >= _uiNoOfPrimaryPartitions)
+        return nullptr;
+      return &_primaryParitions[index];
+    }
+    const PartitionInfo* GetExtPartition(unsigned index)
+    {
+      if(index >= _uiNoOfExtPartitions)
+        return nullptr;
+      return &_extPartitions[index].CurrentPartition();
+    }
+    const ExtPartitionTable* GetExtPartitionTable(unsigned index)
+    {
+      if(index >= _uiNoOfExtPartitions)
+        return nullptr;
+      return &_extPartitions[index];
+    }
+
+  private:
+    unsigned _uiNoOfPrimaryPartitions;
+    unsigned _uiNoOfExtPartitions;
+    bool     _bIsExtPartitionPresent;
+
+    PartitionInfo _primaryParitions[MAX_NO_OF_PRIMARY_PARTITIONS];
+    PartitionInfo _extPartitionEntry;
+    ExtPartitionTable _extPartitions[MAX_NO_OF_EXT_PARTITIONS];
+};
 
 #endif

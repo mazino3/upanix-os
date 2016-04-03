@@ -424,7 +424,7 @@ static void ATADeviceController_AddATADrive(RawDiskDrive* pDisk)
 	byte bStatus ;
 
 	ATAPort* pPort = (ATAPort*)pDisk->Device();
-	bStatus = PartitionManager_ReadPartitionInfo(pDisk, &partitionTable) ;
+	bStatus = pDisk->ReadPartitionTable(&partitionTable) ;
 	if(bStatus == PartitionManager_FAILURE)
 	{
 		KC::MDisplay().Message("\n Fatal Error:- Reading Partition Table", ' ') ;
@@ -437,8 +437,8 @@ static void ATADeviceController_AddATADrive(RawDiskDrive* pDisk)
 	}
 
 	unsigned i ;
-	unsigned uiTotalPartitions = partitionTable.uiNoOfPrimaryPartitions + partitionTable.uiNoOfExtPartitions ;
-	PartitionInfo* pPartitionInfo ;
+	unsigned uiTotalPartitions = partitionTable.NoOfPrimaryPartitions() + partitionTable.NoOfExtPartitions();
+	const PartitionInfo* pPartitionInfo ;
 
 	/*** Calculate MountSpacePerPartition, TableCacheSize *****/
 	const unsigned uiSectorsInFreePool = 4096 ;
@@ -476,15 +476,15 @@ static void ATADeviceController_AddATADrive(RawDiskDrive* pDisk)
 		}
 
     unsigned uiLBAStartSector;
-		if(i < partitionTable.uiNoOfPrimaryPartitions)
+		if(i < partitionTable.NoOfPrimaryPartitions())
 		{
-			pPartitionInfo = &partitionTable.PrimaryParitions[i] ;
+			pPartitionInfo = partitionTable.GetPrimaryPartition(i);
 			uiLBAStartSector = pPartitionInfo->LBAStartSector ;
 		}
 		else
 		{
-			pPartitionInfo = &partitionTable.ExtPartitions[i - partitionTable.uiNoOfPrimaryPartitions].CurrentPartition ;
-			uiLBAStartSector = partitionTable.ExtPartitions[i - partitionTable.uiNoOfPrimaryPartitions].uiActualStartSector + pPartitionInfo->LBAStartSector ;
+			pPartitionInfo = partitionTable.GetExtPartition(i - partitionTable.NoOfPrimaryPartitions());
+			uiLBAStartSector = partitionTable.GetExtPartitionTable(i - partitionTable.NoOfPrimaryPartitions())->ActualStartSector() + pPartitionInfo->LBAStartSector ;
 		}
 
 		driveName[3] = driveCh + ATADeviceController_uiHDDDeviceID++ ;
