@@ -1020,16 +1020,10 @@ byte RawDiskDrive::ReadPartitionTable(PartitionTable* pPartitionTable)
 
 byte RawDiskDrive::ClearPartitionTable()
 {
-	byte bBootSectorBuffer[512] ;
+  PartitionTable partitionTable;
+  ReadPartitionTable(&partitionTable);
 
-	RETURN_X_IF_NOT(Read(0, 1, bBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
-
-	MemUtil_Set((bBootSectorBuffer + 0x1BE), 0, sizeof(PartitionInfo) * MAX_NO_OF_PRIMARY_PARTITIONS) ;
-
-	bBootSectorBuffer[510] = 0x55 ;
-	bBootSectorBuffer[511] = 0xAA ;
-
-	RETURN_X_IF_NOT(Write(0, 1, bBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
+  while(partitionTable.DeletePrimaryPartition(this) == PartitionManager_SUCCESS);
 
 	return PartitionManager_SUCCESS ;
 }

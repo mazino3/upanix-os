@@ -56,12 +56,12 @@ class PartitionInfo
     {
     }
 
-    PartitionInfo(unsigned lss, unsigned lnos) :
+    PartitionInfo(unsigned lss, unsigned lnos, byte si) :
       BootIndicator(0x00),
       StartHead(255),
       StartSector(255),
       StartCylinder(254),
-      SystemIndicator(0x05),
+      SystemIndicator(si),
       EndHead(255),
       EndSector(255),
       EndCylinder(254),

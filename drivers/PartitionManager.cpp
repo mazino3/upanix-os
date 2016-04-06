@@ -20,7 +20,7 @@
 #include <DMM.h>
 #include <MemUtil.h>
 
-#define SI_EXT	15
+#define SI_EXT	5
 #define SI_EMTY	0x01
 #define DEF_START_SEC 63
 /****************************** Static Functions ******************************************/
@@ -266,19 +266,20 @@ byte PartitionTable::CreateExtPartitionEntry(RawDiskDrive* pDisk, unsigned uiSiz
       - _extPartitionEntry.LBAStartSector ;
 	}
 
-	unsigned uiTotalSizeInSectors = _extPartitionEntry.LBANoOfSectors ;
+	const unsigned uiTotalSizeInSectors = _extPartitionEntry.LBANoOfSectors ;
 
 	if(uiTotalSizeInSectors >= uiUsedSizeInSectors)
 		if((uiTotalSizeInSectors - uiUsedSizeInSectors) < uiSizeInSectors)
 			return PartitionManager_ERR_INSUF_SPACE ;
 	
-	unsigned uiLBAStartSector = DEF_START_SEC ;
-	unsigned uiLBANoOfSectors = uiSizeInSectors - DEF_START_SEC ;
-	
-	byte bBootSectorBuffer[512] ;
+	const unsigned uiLBAStartSector = DEF_START_SEC ;
+	const unsigned uiLBANoOfSectors = uiSizeInSectors - DEF_START_SEC ;
+	const unsigned uiNewPartitionSector = uiUsedSizeInSectors + _extPartitionEntry.LBAStartSector ;
 
-	unsigned uiNewPartitionSector = uiUsedSizeInSectors + _extPartitionEntry.LBAStartSector ;
-  _extPartitions[_uiNoOfExtPartitions] = ExtPartitionTable(PartitionInfo(uiLBAStartSector, uiLBANoOfSectors), uiNewPartitionSector);
+	byte bBootSectorBuffer[512] ;
+  const PartitionInfo extPartitionInfo(uiLBAStartSector, uiLBANoOfSectors, SI_EMTY);
+
+  _extPartitions[_uiNoOfExtPartitions] = ExtPartitionTable(extPartitionInfo, uiNewPartitionSector);
 
 	RETURN_X_IF_NOT(pDisk->Read(uiNewPartitionSector, 1, bBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
 
@@ -287,33 +288,27 @@ byte PartitionTable::CreateExtPartitionEntry(RawDiskDrive* pDisk, unsigned uiSiz
 
 	PartitionInfo* pRealPartitionTableEntry = ((PartitionInfo*)(bBootSectorBuffer + 0x1BE)) ;
 
-	pRealPartitionTableEntry[0] = PartitionInfo(uiLBAStartSector, uiLBANoOfSectors);
+	pRealPartitionTableEntry[0] = extPartitionInfo;
 	MemUtil_Set((byte*)&(pRealPartitionTableEntry[1]), 0, sizeof(PartitionInfo)) ;
 
 	RETURN_X_IF_NOT(pDisk->Write(uiNewPartitionSector, 1, bBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
 
 	if(_uiNoOfExtPartitions > 0)
 	{
-    _extPartitions[_uiNoOfExtPartitions - 1].NextPartition(PartitionInfo(uiLBAStartSector, uiLBANoOfSectors));
-
-		unsigned uiPreviousExtPartitionStartSector ;
-
-		uiPreviousExtPartitionStartSector = _extPartitions[_uiNoOfExtPartitions - 1].ActualStartSector();
+		const auto uiPreviousExtPartitionStartSector = _extPartitions[_uiNoOfExtPartitions - 1].ActualStartSector();
 
 		RETURN_X_IF_NOT(pDisk->Read(uiPreviousExtPartitionStartSector, 1, bBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
 
 		pRealPartitionTableEntry = ((PartitionInfo*)(bBootSectorBuffer + 0x1BE)) ;
 
-		uiLBAStartSector = uiUsedSizeInSectors ;
-		uiLBANoOfSectors = uiSizeInSectors ;
-
-		pRealPartitionTableEntry[1] = PartitionInfo(uiLBAStartSector, uiLBANoOfSectors);
-		_extPartitions[_uiNoOfExtPartitions - 1].NextPartition(PartitionInfo(uiLBAStartSector, uiLBANoOfSectors));
+    const PartitionInfo nextPartitionInfo(uiUsedSizeInSectors, uiSizeInSectors, SI_EXT);
+		pRealPartitionTableEntry[1] = nextPartitionInfo;
+		_extPartitions[_uiNoOfExtPartitions - 1].NextPartition(nextPartitionInfo);
 
 		RETURN_X_IF_NOT(pDisk->Write(uiPreviousExtPartitionStartSector, 1, bBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
 	}
 
-  --_uiNoOfExtPartitions;
+  ++_uiNoOfExtPartitions;
 	
 	return PartitionManager_SUCCESS ;
 }
@@ -361,8 +356,8 @@ byte PartitionTable::DeletePrimaryPartition(RawDiskDrive* pDisk)
 		--_uiNoOfPrimaryPartitions;
 	}
 
-	MemUtil_Set((byte*)pPartitionTableEntry, 0, sizeof(PartitionInfo)) ;
-	MemUtil_Set((byte*)pRealPartitionTableEntry, 0, sizeof(PartitionInfo)) ;
+  *pPartitionTableEntry = PartitionInfo();
+  *pRealPartitionTableEntry = PartitionInfo();
 
 	RETURN_X_IF_NOT(pDisk->Write(0, 1, bBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
 
@@ -404,4 +399,3 @@ byte PartitionTable::DeleteExtPartition(RawDiskDrive* pDisk)
 
 	return PartitionManager_SUCCESS ;
 }
-
