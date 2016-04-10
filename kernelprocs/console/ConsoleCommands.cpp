@@ -593,13 +593,8 @@ void ConsoleCommands_ShowPartitionTable()
 		pPartitionInfo = &partitionTable.ExtPartitionEntry();
     print_partition_info(pPartitionInfo);
     printf("\n Extended Partitions\n");
-    for(unsigned i = 0;; ++i)
-    {
-      pPartitionInfo = partitionTable.GetExtPartition(i);
-      if(!pPartitionInfo)
-        break;
-      print_partition_info(pPartitionInfo);
-    }
+    for(const auto ep : partitionTable.GetExtPartitions())
+      print_partition_info(&ep->CurrentPartition());
   }
 }
 

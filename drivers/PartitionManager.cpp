@@ -125,7 +125,6 @@ byte PartitionTable::ReadPrimaryPartition(RawDiskDrive* pDisk)
 
 byte PartitionTable::ReadExtPartition(RawDiskDrive* pDisk)
 {
-  _uiNoOfExtPartitions = 0;
 	if(!_bIsExtPartitionPresent)
 		return PartitionManager_SUCCESS ;
 
@@ -145,8 +144,7 @@ byte PartitionTable::ReadExtPartition(RawDiskDrive* pDisk)
 		if(pPartitionInfo[0].IsEmpty())
 			break ;
 
-    _extPartitions[_uiNoOfExtPartitions] = ExtPartitionTable(pPartitionInfo[0], uiExtSectorID);
-    ++_uiNoOfExtPartitions;
+    _extPartitions.push_back(new ExtPartitionTable(pPartitionInfo[0], uiExtSectorID));
 
 		if(pPartitionInfo[1].IsEmpty())
 			break;
@@ -160,10 +158,15 @@ byte PartitionTable::ReadExtPartition(RawDiskDrive* pDisk)
 /******************************************************************************************/
 
 PartitionTable::PartitionTable() 
-  : _uiNoOfPrimaryPartitions(0), 
-    _uiNoOfExtPartitions(0),
+  : _uiNoOfPrimaryPartitions(0),
     _bIsExtPartitionPresent(false)
 {
+}
+
+PartitionTable::~PartitionTable()
+{
+  for(auto ep : _extPartitions)
+    delete ep;
 }
 
 byte PartitionTable::CreatePrimaryPartitionEntry(RawDiskDrive* pDisk, unsigned uiSizeInSectors, PartitionInfo::PartitionTypes type)
@@ -226,18 +229,16 @@ byte PartitionTable::CreatePrimaryPartitionEntry(RawDiskDrive* pDisk, unsigned u
 
 byte PartitionTable::CreateExtPartitionEntry(RawDiskDrive* pDisk, unsigned uiSizeInSectors)
 {
-	if(_uiNoOfExtPartitions == MAX_NO_OF_EXT_PARTITIONS)
-		return PartitionManager_ERR_EXT_PARTITION_FULL ;
-
 	if(!_bIsExtPartitionPresent)
 		return PartitionManager_ERR_NO_EXT_PARTITION ;
 
+  auto lastExtPartition = _extPartitions.rbegin();
 	unsigned uiUsedSizeInSectors = 0 ;
-	if(_uiNoOfExtPartitions > 0)
+	if(lastExtPartition != _extPartitions.rend())
 	{
-		uiUsedSizeInSectors = _extPartitions[_uiNoOfExtPartitions - 1].ActualStartSector()
-      + _extPartitions[_uiNoOfExtPartitions - 1].CurrentPartition().LBAStartSector 
-      + _extPartitions[_uiNoOfExtPartitions - 1].CurrentPartition().LBANoOfSectors 
+		uiUsedSizeInSectors = lastExtPartition->ActualStartSector()
+      + lastExtPartition->CurrentPartition().LBAStartSector 
+      + lastExtPartition->CurrentPartition().LBANoOfSectors 
       - _extPartitionEntry.LBAStartSector ;
 	}
 
@@ -254,7 +255,7 @@ byte PartitionTable::CreateExtPartitionEntry(RawDiskDrive* pDisk, unsigned uiSiz
 	byte bBootSectorBuffer[512] ;
   const PartitionInfo extPartitionInfo(uiLBAStartSector, uiLBANoOfSectors, PartitionInfo::NORMAL);
 
-  _extPartitions[_uiNoOfExtPartitions] = ExtPartitionTable(extPartitionInfo, uiNewPartitionSector);
+  _extPartitions.push_back(new ExtPartitionTable(extPartitionInfo, uiNewPartitionSector));
 
 	RETURN_X_IF_NOT(pDisk->Read(uiNewPartitionSector, 1, bBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
 
@@ -268,9 +269,9 @@ byte PartitionTable::CreateExtPartitionEntry(RawDiskDrive* pDisk, unsigned uiSiz
 
 	RETURN_X_IF_NOT(pDisk->Write(uiNewPartitionSector, 1, bBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
 
-	if(_uiNoOfExtPartitions > 0)
+	if(lastExtPartition != _extPartitions.rend())
 	{
-		const auto uiPreviousExtPartitionStartSector = _extPartitions[_uiNoOfExtPartitions - 1].ActualStartSector();
+		const auto uiPreviousExtPartitionStartSector = lastExtPartition->ActualStartSector();
 
 		RETURN_X_IF_NOT(pDisk->Read(uiPreviousExtPartitionStartSector, 1, bBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
 
@@ -282,8 +283,6 @@ byte PartitionTable::CreateExtPartitionEntry(RawDiskDrive* pDisk, unsigned uiSiz
 		RETURN_X_IF_NOT(pDisk->Write(uiPreviousExtPartitionStartSector, 1, bBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
 	}
 
-  ++_uiNoOfExtPartitions;
-	
 	return PartitionManager_SUCCESS ;
 }
 
@@ -307,20 +306,19 @@ byte PartitionTable::DeletePrimaryPartition(RawDiskDrive* pDisk)
 		byte bExtBootSectorBuffer[512] ;
 		PartitionInfo* pExtRealPartitionTable ;
 
-		for(unsigned i = 0; i < _uiNoOfExtPartitions; i++)
+    for(auto ep : _extPartitions)
 		{
-			uiExtSector = _extPartitions[i].ActualStartSector();
+			uiExtSector = ep->ActualStartSector();
 			RETURN_X_IF_NOT(pDisk->Read(uiExtSector, 1, bExtBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
 			pExtRealPartitionTable = ((PartitionInfo*)(bExtBootSectorBuffer + 0x1BE)) ;
 
-			_extPartitions[i] = ExtPartitionTable();
 			pExtRealPartitionTable[0] = PartitionInfo();
 			pExtRealPartitionTable[1] = PartitionInfo();
 
 			RETURN_X_IF_NOT(pDisk->Write(uiExtSector, 1, bExtBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
+      delete ep;
 		}
-
-    _uiNoOfExtPartitions = 0;
+    _extPartitions.clear();
     _bIsExtPartitionPresent = false;
 	}
 	else
@@ -340,18 +338,17 @@ byte PartitionTable::DeletePrimaryPartition(RawDiskDrive* pDisk)
 
 byte PartitionTable::DeleteExtPartition(RawDiskDrive* pDisk)
 {
-	if(_uiNoOfExtPartitions == 0 || _bIsExtPartitionPresent == false)
+	if(_extPartitions.empty() || _bIsExtPartitionPresent == false)
 		return PartitionManager_ERR_ETX_PARTITION_TABLE_EMPTY ;
 	
 	byte bExtBootSectorBuffer[512] ;
 
-	unsigned uiCurrentExtPartitionStartSector ;
-	uiCurrentExtPartitionStartSector = _extPartitions[_uiNoOfExtPartitions - 1].ActualStartSector();
-
-	if(_uiNoOfExtPartitions > 1)
+  auto lastExtPartition = _extPartitions.rbegin();
+	const unsigned uiCurrentExtPartitionStartSector = lastExtPartition->ActualStartSector();
+  ++lastExtPartition;
+	if(lastExtPartition != _extPartitions.rend())
 	{
-		unsigned uiPreviousExtPartitionStartSector ;
-		uiPreviousExtPartitionStartSector = _extPartitions[_uiNoOfExtPartitions - 2].ActualStartSector();
+		const unsigned uiPreviousExtPartitionStartSector = lastExtPartition->ActualStartSector();
 
 		RETURN_X_IF_NOT(pDisk->Read(uiPreviousExtPartitionStartSector, 1, bExtBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
 
@@ -367,7 +364,7 @@ byte PartitionTable::DeleteExtPartition(RawDiskDrive* pDisk)
 
 	RETURN_X_IF_NOT(pDisk->Write(uiCurrentExtPartitionStartSector, 1, bExtBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
 
-  --_uiNoOfExtPartitions;
+  _extPartitions.erase(_extPartitions.rbegin());
 
 	return PartitionManager_SUCCESS ;
 }
