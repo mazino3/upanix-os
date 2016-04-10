@@ -52,8 +52,9 @@ static void USBMassBulkStorageDisk_AddDeviceDrive(RawDiskDrive* pDisk)
 		return ;
 	}
 	
+  const auto& priPartitions = partitionTable.GetPrimaryPartitions();
   const auto& extPartitions = partitionTable.GetExtPartitions();
-	unsigned uiTotalPartitions = partitionTable.NoOfPrimaryPartitions() + extPartitions.size();
+	unsigned uiTotalPartitions = priPartitions.size() + extPartitions.size();
 	const PartitionInfo* pPartitionInfo ;
 
 	/*** Calculate MountSpacePerPartition, FreePoolSize, TableCacheSize *****/
@@ -86,6 +87,7 @@ static void USBMassBulkStorageDisk_AddDeviceDrive(RawDiskDrive* pDisk)
 	}
 	/*** DONE - Calculating mount stuff ***/
 	
+  auto priPartitionIt = priPartitions.begin();
   auto extPartitionIt = extPartitions.begin();
 	for(unsigned i = 0; i < uiTotalPartitions; i++)
 	{
@@ -98,10 +100,11 @@ static void USBMassBulkStorageDisk_AddDeviceDrive(RawDiskDrive* pDisk)
 		}
 
     unsigned uiLBAStartSector;
-		if(i < partitionTable.NoOfPrimaryPartitions())
+		if(priPartitionIt != priPartitions.end())
 		{
-			pPartitionInfo = partitionTable.GetPrimaryPartition(i);
+			pPartitionInfo = *priPartitionIt;
 			uiLBAStartSector = pPartitionInfo->LBAStartSector ;
+      ++priPartitionIt;
 		}
 		else if(extPartitionIt != extPartitions.end())
 		{

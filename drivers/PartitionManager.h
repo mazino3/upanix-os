@@ -121,7 +121,6 @@ class PartitionTable
     PartitionTable();
     ~PartitionTable();
 
-    unsigned NoOfPrimaryPartitions() const { return _uiNoOfPrimaryPartitions; }
     bool IsExtPartitionPresent() const { return _bIsExtPartitionPresent; }
 
     byte ReadPrimaryPartition(RawDiskDrive* pDisk);
@@ -131,26 +130,17 @@ class PartitionTable
     byte CreateExtPartitionEntry(RawDiskDrive* pDisk, unsigned uiSizeInSectors);
     byte DeleteExtPartition(RawDiskDrive* pDisk);
 
+    const upan::list<PartitionInfo*>& GetPrimaryPartitions() const { return _primaryParitions; }
     const PartitionInfo& ExtPartitionEntry() const { return _extPartitionEntry; }
-    const PartitionInfo* GetPrimaryPartition(unsigned index)
-    {
-      if(index >= _uiNoOfPrimaryPartitions)
-        return nullptr;
-      return &_primaryParitions[index];
-    }
-    const upan::list<ExtPartitionTable*>& GetExtPartitions() const
-    {
-      return _extPartitions;
-    }
+    const upan::list<ExtPartitionTable*>& GetExtPartitions() const { return _extPartitions; }
 
   private:
     byte VerifyMBR(RawDiskDrive* pDisk, const PartitionInfo* pPartitionInfo) const;
 
-    unsigned _uiNoOfPrimaryPartitions;
     bool     _bIsExtPartitionPresent;
 
-    PartitionInfo _primaryParitions[MAX_NO_OF_PRIMARY_PARTITIONS];
     PartitionInfo _extPartitionEntry;
+    upan::list<PartitionInfo*> _primaryParitions;
     upan::list<ExtPartitionTable*> _extPartitions;
 };
 

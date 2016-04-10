@@ -436,8 +436,9 @@ static void ATADeviceController_AddATADrive(RawDiskDrive* pDisk)
 		return ;
 	}
 
+  const auto& priPartitions = partitionTable.GetPrimaryPartitions();
   const auto& extPartitions = partitionTable.GetExtPartitions();
-	unsigned uiTotalPartitions = partitionTable.NoOfPrimaryPartitions() + extPartitions.size();
+	unsigned uiTotalPartitions = priPartitions.size() + extPartitions.size();
 	const PartitionInfo* pPartitionInfo ;
 
 	/*** Calculate MountSpacePerPartition, TableCacheSize *****/
@@ -464,7 +465,8 @@ static void ATADeviceController_AddATADrive(RawDiskDrive* pDisk)
 		uiSectorsInTableCache = uiMountSpaceAvailablePerDrive / FileSystem_GetSizeForTableCache(1) ;
 	}
 	/*** DONE - Calculating mount stuff ***/
-  auto extPartitionIt = extPartitions.begin();	
+  auto extPartitionIt = extPartitions.begin();
+  auto priPartitionIt = priPartitions.begin();
 	for(unsigned i = 0; i < uiTotalPartitions; i++)
 	{
     unsigned uiMountPointStart = 0;
@@ -476,10 +478,11 @@ static void ATADeviceController_AddATADrive(RawDiskDrive* pDisk)
 		}
 
     unsigned uiLBAStartSector;
-		if(i < partitionTable.NoOfPrimaryPartitions())
+		if(priPartitionIt != priPartitions.end())
 		{
-			pPartitionInfo = partitionTable.GetPrimaryPartition(i);
+			pPartitionInfo = *priPartitionIt;
 			uiLBAStartSector = pPartitionInfo->LBAStartSector ;
+      ++priPartitionIt;
 		}
 		else if(extPartitionIt != extPartitions.end())
 		{

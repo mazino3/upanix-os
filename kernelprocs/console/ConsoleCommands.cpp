@@ -576,16 +576,12 @@ void ConsoleCommands_ShowPartitionTable()
     printf("\n%-4d %-4d %-10d %-10d", pi->BootIndicator, pi->SystemIndicator, pi->LBAStartSector, pi->LBANoOfSectors);
   };
 
-  if(partitionTable.NoOfPrimaryPartitions() > 0)
+  const auto& primaryPartitions = partitionTable.GetPrimaryPartitions();
+  if(!primaryPartitions.empty())
   {
     printf("\n Primary Partitions\n");
-    for(unsigned i = 0;; ++i)
-    {
-      pPartitionInfo = partitionTable.GetPrimaryPartition(i);
-      if(!pPartitionInfo)
-        break;
-      print_partition_info(pPartitionInfo);
-    }
+    for(const auto pp : primaryPartitions)
+      print_partition_info(pp);
   }
   if(partitionTable.IsExtPartitionPresent())
   {
