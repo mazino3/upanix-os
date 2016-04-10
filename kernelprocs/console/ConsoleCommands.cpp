@@ -573,17 +573,7 @@ void ConsoleCommands_ShowPartitionTable()
   auto print_partition_info = [](const PartitionInfo* pi) {
     if(!pi)
       return;
-    printf("\n%-4d %-4d %-4d %-4d %-4d %-4d %-4d %-4d %-10d %-10d", 
-        pi->BootIndicator,
-        pi->StartHead,
-        pi->StartSector,
-        pi->StartCylinder,
-        pi->SystemIndicator,
-        pi->EndHead,
-        pi->EndSector,
-        pi->EndCylinder,
-        pi->LBAStartSector,
-        pi->LBANoOfSectors);
+    printf("\n%-4d %-4d %-10d %-10d", pi->BootIndicator, pi->SystemIndicator, pi->LBAStartSector, pi->LBANoOfSectors);
   };
 
   if(partitionTable.NoOfPrimaryPartitions() > 0)
@@ -658,7 +648,7 @@ void ConsoleCommands_CreatePrimaryPartition()
 		return ;
 	}
 
-	bStatus = partitionTable.CreatePrimaryPartitionEntry(pDisk, uiSizeInSectors, false, false) ;
+	bStatus = partitionTable.CreatePrimaryPartitionEntry(pDisk, uiSizeInSectors, PartitionInfo::NORMAL);
 
 	if(bStatus != PartitionManager_SUCCESS)
 	{
@@ -703,7 +693,7 @@ void ConsoleCommands_CreateExtendedPartitionEntry()
 		return ;
 	}
 
-	bStatus = partitionTable.CreatePrimaryPartitionEntry(pDisk, uiSizeInSectors, false, true) ;
+	bStatus = partitionTable.CreatePrimaryPartitionEntry(pDisk, uiSizeInSectors, PartitionInfo::EXTENEDED);
 
 	if(bStatus != PartitionManager_SUCCESS)
 	{

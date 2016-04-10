@@ -42,58 +42,64 @@
 class PartitionInfo
 {
   public:
+    enum PartitionTypes { ACTIVE, EXTENEDED, NORMAL };
+
     PartitionInfo() :
       BootIndicator(0),
-      StartHead(0),
-      StartSector(0),
-      StartCylinder(0),
+      _StartHead(0),
+      _StartSector(0),
+      _StartCylinder(0),
       SystemIndicator(0),
-      EndHead(0),
-      EndSector(0),
-      EndCylinder(0),
+      _EndHead(0),
+      _EndSector(0),
+      _EndCylinder(0),
       LBAStartSector(0),
       LBANoOfSectors(0)
     {
     }
 
-    PartitionInfo(unsigned lss, unsigned lnos, byte si) :
-      BootIndicator(0x00),
-      StartHead(255),
-      StartSector(255),
-      StartCylinder(254),
-      SystemIndicator(si),
-      EndHead(255),
-      EndSector(255),
-      EndCylinder(254),
-      LBAStartSector(lss),
-      LBANoOfSectors(lnos)
+    PartitionInfo(unsigned lbaStart, unsigned size, PartitionTypes type);
+	  bool IsEmpty() const 
     {
+      return SystemIndicator == 0x0 || LBANoOfSectors == 0x0;
     }
 
 	byte		BootIndicator;
 
-	byte		StartHead;
-	byte		StartSector;
-	byte		StartCylinder;
+	byte		_StartHead;
+	byte		_StartSector;
+	byte		_StartCylinder;
 
 	byte		SystemIndicator;
 
-	byte		EndHead;
-	byte		EndSector;
-	byte		EndCylinder;
+	byte		_EndHead;
+	byte		_EndSector;
+	byte		_EndCylinder;
 
 	unsigned 	LBAStartSector;
 	unsigned 	LBANoOfSectors;
 
 } PACKED;
 
+class PartitionEntry
+{
+  public:
+    PartitionEntry(unsigned startSector, unsigned sizeInSectors) :
+      _uiStartSector(startSector), _uiSize(sizeInSectors)
+    {
+    }
+
+    unsigned StartSector() const { return _uiStartSector; }
+    unsigned Size() const { return _uiSize; }
+
+  private:
+    const unsigned _uiStartSector;
+    const unsigned _uiSize;
+};
+
 class ExtPartitionTable
 {
   public:
-    ExtPartitionTable(const PartitionInfo& cur, const PartitionInfo& next, unsigned actualStartSec)
-      : _currentPartition(cur), _nextPartition(next), _uiActualStartSector(actualStartSec)
-    {
-    }
     ExtPartitionTable(const PartitionInfo& cur, unsigned actualStartSec)
       : _currentPartition(cur), _uiActualStartSector(actualStartSec)
     {
@@ -102,12 +108,10 @@ class ExtPartitionTable
     ExtPartitionTable() : _uiActualStartSector(0)
     {
     }
-    void NextPartition(const PartitionInfo& np) { _nextPartition = np; }
     const PartitionInfo& CurrentPartition() const { return _currentPartition; }
     unsigned ActualStartSector() const { return _uiActualStartSector; }
   private:
     PartitionInfo _currentPartition;
-    PartitionInfo _nextPartition;
     unsigned	_uiActualStartSector;
 };
 
@@ -122,7 +126,7 @@ class PartitionTable
 
     byte ReadPrimaryPartition(RawDiskDrive* pDisk);
     byte ReadExtPartition(RawDiskDrive* pDisk);
-    byte CreatePrimaryPartitionEntry(RawDiskDrive* pDisk, unsigned uiSizeInSectors, byte bIsActive, byte bIsExt);
+    byte CreatePrimaryPartitionEntry(RawDiskDrive* pDisk, unsigned uiSizeInSectors, PartitionInfo::PartitionTypes);
     byte DeletePrimaryPartition(RawDiskDrive* pDisk);
     byte CreateExtPartitionEntry(RawDiskDrive* pDisk, unsigned uiSizeInSectors);
     byte DeleteExtPartition(RawDiskDrive* pDisk);
@@ -148,6 +152,8 @@ class PartitionTable
     }
 
   private:
+    byte VerifyMBR(RawDiskDrive* pDisk, const PartitionInfo* pPartitionInfo) const;
+
     unsigned _uiNoOfPrimaryPartitions;
     unsigned _uiNoOfExtPartitions;
     bool     _bIsExtPartitionPresent;

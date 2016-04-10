@@ -23,56 +23,37 @@
 #define SI_EXT	5
 #define SI_EMTY	0x01
 #define DEF_START_SEC 63
-/****************************** Static Functions ******************************************/
-static void PartitionManager_PopulatePrimaryPartitionEntry(RawDiskDrive* pDisk, PartitionInfo* pPartitionEntry, unsigned uiLBAStartSector, unsigned uiLBAEndSector, byte bIsActive, byte bIsExt)
+
+PartitionInfo::PartitionInfo(unsigned lbaStart, unsigned size, PartitionInfo::PartitionTypes type) :
+  BootIndicator(type == ACTIVE ? 0x80 : 0x00),
+  _StartHead(255),
+  _StartSector(255),
+  _StartCylinder(254),
+  SystemIndicator(type == EXTENEDED ? SI_EXT : SI_EMTY),
+  _EndHead(255),
+  _EndSector(255),
+  _EndCylinder(254),
+	LBAStartSector(lbaStart),
+	LBANoOfSectors(size)
 {
-	if(bIsActive)
-		pPartitionEntry->BootIndicator = 0x80 ;
-	else
-		pPartitionEntry->BootIndicator = 0x00 ;
-
-	if(bIsExt && !bIsActive)
-		pPartitionEntry->SystemIndicator = SI_EXT ;
-	else
-		pPartitionEntry->SystemIndicator = SI_EMTY ;
-
-	pPartitionEntry->LBAStartSector = uiLBAStartSector ;
-	pPartitionEntry->LBANoOfSectors = uiLBAEndSector - uiLBAStartSector + 1 ;
 	
-	int iSectorsPerTrack, iHeadsPerCynlider ;
-	switch(pDisk->Type())
-	{
+/*
 		case ATA_HARD_DISK:
 				iSectorsPerTrack = ((ATAPort*)pDisk->Device())->id.usSectors ;
 				iHeadsPerCynlider = ((ATAPort*)pDisk->Device())->id.usHead ;
 
-				pPartitionEntry->StartCylinder = (uiLBAStartSector / iSectorsPerTrack) / iHeadsPerCynlider ;
-				pPartitionEntry->StartHead = (uiLBAStartSector / iSectorsPerTrack) % iHeadsPerCynlider ;
-				pPartitionEntry->StartSector = (uiLBAStartSector % iSectorsPerTrack) + 1 ;
+				StartCylinder = (uiLBAStartSector / iSectorsPerTrack) / iHeadsPerCynlider ;
+				StartHead = (uiLBAStartSector / iSectorsPerTrack) % iHeadsPerCynlider ;
+				StartSector = (uiLBAStartSector % iSectorsPerTrack) + 1 ;
 				
-				pPartitionEntry->EndCylinder = (uiLBAEndSector / iSectorsPerTrack) / iHeadsPerCynlider ;
-				pPartitionEntry->EndHead = (uiLBAEndSector / iSectorsPerTrack) % iHeadsPerCynlider ;
-				pPartitionEntry->EndSector = (uiLBAEndSector % iSectorsPerTrack) + 1 ;
+				EndCylinder = (uiLBAEndSector / iSectorsPerTrack) / iHeadsPerCynlider ;
+				EndHead = (uiLBAEndSector / iSectorsPerTrack) % iHeadsPerCynlider ;
+				EndSector = (uiLBAEndSector % iSectorsPerTrack) + 1 ;
 				break ;
-
-		default:
-				pPartitionEntry->StartCylinder = 254 ;
-				pPartitionEntry->StartHead = 255 ;
-				pPartitionEntry->StartSector = 255 ;
-				
-				pPartitionEntry->EndCylinder = 254 ;
-				pPartitionEntry->EndHead = 255 ;
-				pPartitionEntry->EndSector = 255 ;
-				break ;
-	}
+*/
 }
 
-static byte PartitionManager_IsEmptyPartitionEntry(PartitionInfo* pPartitionEntry)
-{
-	return (pPartitionEntry->SystemIndicator == 0x0 || pPartitionEntry->LBANoOfSectors == 0x0) ;
-}
-
-static byte PartitionManager_VerifyMBR(RawDiskDrive* pDisk, const PartitionInfo* pPartitionInfo)
+byte PartitionTable::VerifyMBR(RawDiskDrive* pDisk, const PartitionInfo* pPartitionInfo) const
 {
 	unsigned i ;
 	unsigned uiActivePartitionCount = 0 ;
@@ -85,7 +66,7 @@ static byte PartitionManager_VerifyMBR(RawDiskDrive* pDisk, const PartitionInfo*
 		if(pPartitionInfo[i].BootIndicator == 0x80)
 			uiActivePartitionCount++ ;
 
-		if(!PartitionManager_IsEmptyPartitionEntry((PartitionInfo*)&pPartitionInfo[i]))
+		if(!pPartitionInfo[i].IsEmpty())
 		{
 			if(pPartitionInfo[i].LBAStartSector > uiPrevEndLBASector)
 			{
@@ -119,12 +100,12 @@ byte PartitionTable::ReadPrimaryPartition(RawDiskDrive* pDisk)
 
 	PartitionInfo* pPartitionInfo = ((PartitionInfo*)(bBootSectorBuffer + 0x1BE)) ;
 	
-	RETURN_X_IF_NOT(PartitionManager_VerifyMBR(pDisk, pPartitionInfo), PartitionManager_SUCCESS, PartitionManager_ERR_NOT_PARTITIONED) ;
+	RETURN_X_IF_NOT(VerifyMBR(pDisk, pPartitionInfo), PartitionManager_SUCCESS, PartitionManager_ERR_NOT_PARTITIONED) ;
 
   _uiNoOfPrimaryPartitions = 0;
 	for(unsigned i = 0; i < MAX_NO_OF_PRIMARY_PARTITIONS; i++)
 	{
-		if(PartitionManager_IsEmptyPartitionEntry(&pPartitionInfo[i]))
+		if(pPartitionInfo[i].IsEmpty())
 			break ;
 
 		if(pPartitionInfo[i].SystemIndicator == SI_EXT)
@@ -161,18 +142,14 @@ byte PartitionTable::ReadExtPartition(RawDiskDrive* pDisk)
 
 		pPartitionInfo = ((PartitionInfo*)(bBootSectorBuffer + 0x1BE)) ;
 	
-		if(PartitionManager_IsEmptyPartitionEntry(&pPartitionInfo[0]))
+		if(pPartitionInfo[0].IsEmpty())
 			break ;
 
-		if(PartitionManager_IsEmptyPartitionEntry(&pPartitionInfo[1]))
-		{
-      _extPartitions[_uiNoOfExtPartitions] = ExtPartitionTable(pPartitionInfo[0], uiExtSectorID);
-      ++_uiNoOfExtPartitions;
-			break;
-		}
-
-    _extPartitions[_uiNoOfExtPartitions] = ExtPartitionTable(pPartitionInfo[0], pPartitionInfo[1], uiExtSectorID);
+    _extPartitions[_uiNoOfExtPartitions] = ExtPartitionTable(pPartitionInfo[0], uiExtSectorID);
     ++_uiNoOfExtPartitions;
+
+		if(pPartitionInfo[1].IsEmpty())
+			break;
 
 		uiExtSectorID = uiStartExtSectorID + pPartitionInfo[1].LBAStartSector ;
 	}
@@ -189,7 +166,7 @@ PartitionTable::PartitionTable()
 {
 }
 
-byte PartitionTable::CreatePrimaryPartitionEntry(RawDiskDrive* pDisk, unsigned uiSizeInSectors, byte bIsActive, byte bIsExt)
+byte PartitionTable::CreatePrimaryPartitionEntry(RawDiskDrive* pDisk, unsigned uiSizeInSectors, PartitionInfo::PartitionTypes type)
 {
 	if(_uiNoOfPrimaryPartitions == MAX_NO_OF_PRIMARY_PARTITIONS)
 		return PartitionManager_ERR_PRIMARY_PARTITION_FULL ;
@@ -199,10 +176,10 @@ byte PartitionTable::CreatePrimaryPartitionEntry(RawDiskDrive* pDisk, unsigned u
 
 	if(_uiNoOfPrimaryPartitions == 0)
 	{
-		if(bIsExt)
+		if(type == PartitionInfo::EXTENEDED)
 			return PartitionManager_ERR_NO_PRIM_PART ;
 	
-		bIsActive = true ;
+    type = PartitionInfo::ACTIVE;
 	}
 
 	unsigned uiUsedSizeInSectors = DEF_START_SEC ;
@@ -217,7 +194,6 @@ byte PartitionTable::CreatePrimaryPartitionEntry(RawDiskDrive* pDisk, unsigned u
 			return PartitionManager_ERR_INSUF_SPACE ;
 
 	unsigned uiLBAStartSector = uiUsedSizeInSectors ;
-	unsigned uiLBAEndSector = uiUsedSizeInSectors + uiSizeInSectors - 1 ;
 
 	byte bBootSectorBuffer[512] ;
 
@@ -228,19 +204,18 @@ byte PartitionTable::CreatePrimaryPartitionEntry(RawDiskDrive* pDisk, unsigned u
 
 	PartitionInfo* pRealPartitionTableEntry = ((PartitionInfo*)(bBootSectorBuffer + 0x1BE)) ;
 
-	unsigned i ;
-	if(bIsActive)
+	if(type == PartitionInfo::ACTIVE)
 	{
-		for(i = 0; i < _uiNoOfPrimaryPartitions; i++)
+		for(unsigned i = 0; i < _uiNoOfPrimaryPartitions; i++)
 		{
-			_primaryParitions[i].BootIndicator = 0 ;
-			pRealPartitionTableEntry[i].BootIndicator = 0 ;
+			_primaryParitions[i].BootIndicator = 0;
+			pRealPartitionTableEntry[i].BootIndicator = 0;
 		}
 	}
 
-	PartitionManager_PopulatePrimaryPartitionEntry(pDisk, &(_primaryParitions[_uiNoOfPrimaryPartitions]), uiLBAStartSector, uiLBAEndSector, bIsActive, bIsExt) ;
-
-	PartitionManager_PopulatePrimaryPartitionEntry(pDisk, &(pRealPartitionTableEntry[_uiNoOfPrimaryPartitions]), uiLBAStartSector, uiLBAEndSector, bIsActive, bIsExt) ;
+  PartitionInfo pi(uiLBAStartSector, uiSizeInSectors, type);
+  _primaryParitions[_uiNoOfPrimaryPartitions] = pi;
+  pRealPartitionTableEntry[_uiNoOfPrimaryPartitions] = pi;
 
 	RETURN_X_IF_NOT(pDisk->Write(0, 1, bBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
 
@@ -277,7 +252,7 @@ byte PartitionTable::CreateExtPartitionEntry(RawDiskDrive* pDisk, unsigned uiSiz
 	const unsigned uiNewPartitionSector = uiUsedSizeInSectors + _extPartitionEntry.LBAStartSector ;
 
 	byte bBootSectorBuffer[512] ;
-  const PartitionInfo extPartitionInfo(uiLBAStartSector, uiLBANoOfSectors, SI_EMTY);
+  const PartitionInfo extPartitionInfo(uiLBAStartSector, uiLBANoOfSectors, PartitionInfo::NORMAL);
 
   _extPartitions[_uiNoOfExtPartitions] = ExtPartitionTable(extPartitionInfo, uiNewPartitionSector);
 
@@ -301,9 +276,8 @@ byte PartitionTable::CreateExtPartitionEntry(RawDiskDrive* pDisk, unsigned uiSiz
 
 		pRealPartitionTableEntry = ((PartitionInfo*)(bBootSectorBuffer + 0x1BE)) ;
 
-    const PartitionInfo nextPartitionInfo(uiUsedSizeInSectors, uiSizeInSectors, SI_EXT);
+    const PartitionInfo nextPartitionInfo(uiUsedSizeInSectors, uiSizeInSectors, PartitionInfo::EXTENEDED);
 		pRealPartitionTableEntry[1] = nextPartitionInfo;
-		_extPartitions[_uiNoOfExtPartitions - 1].NextPartition(nextPartitionInfo);
 
 		RETURN_X_IF_NOT(pDisk->Write(uiPreviousExtPartitionStartSector, 1, bBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
 	}
@@ -383,8 +357,6 @@ byte PartitionTable::DeleteExtPartition(RawDiskDrive* pDisk)
 
 		PartitionInfo* pRealPartitionEntry = &((PartitionInfo*)(bExtBootSectorBuffer + 0x1BE))[1] ;
     *pRealPartitionEntry = PartitionInfo();
-
-		_extPartitions[_uiNoOfExtPartitions - 2].NextPartition(PartitionInfo());
 
 		RETURN_X_IF_NOT(pDisk->Write(uiPreviousExtPartitionStartSector, 1, bExtBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
 	}
