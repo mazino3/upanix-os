@@ -569,7 +569,6 @@ void ConsoleCommands_ShowPartitionTable()
 		return ;
 	}
 
-	const PartitionInfo* pPartitionInfo = nullptr;
   auto print_partition_info = [](const PartitionInfo* pi) {
     if(!pi)
       return;
@@ -586,11 +585,14 @@ void ConsoleCommands_ShowPartitionTable()
   if(partitionTable.IsExtPartitionPresent())
   {
     printf("\n Extended Primary Partition\n");
-		pPartitionInfo = &partitionTable.ExtPartitionEntry();
-    print_partition_info(pPartitionInfo);
-    printf("\n Extended Partitions\n");
-    for(const auto ep : partitionTable.GetExtPartitions())
-      print_partition_info(&ep->CurrentPartition());
+    print_partition_info(&partitionTable.ExtPartitionEntry());
+    const auto& extPartitions = partitionTable.GetExtPartitions();
+    if(!extPartitions.empty())
+    {
+      printf("\n Extended Partitions\n");
+      for(const auto ep : partitionTable.GetExtPartitions())
+        print_partition_info(&ep->CurrentPartition());
+    }
   }
 }
 

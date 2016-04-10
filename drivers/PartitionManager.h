@@ -104,10 +104,6 @@ class ExtPartitionTable
       : _currentPartition(cur), _uiActualStartSector(actualStartSec)
     {
     }
-    //TODO: Remove default constructor - if possible make _extPartitions a list
-    ExtPartitionTable() : _uiActualStartSector(0)
-    {
-    }
     const PartitionInfo& CurrentPartition() const { return _currentPartition; }
     unsigned ActualStartSector() const { return _uiActualStartSector; }
   private:

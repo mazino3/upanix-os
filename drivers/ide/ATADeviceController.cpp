@@ -481,13 +481,13 @@ static void ATADeviceController_AddATADrive(RawDiskDrive* pDisk)
 		if(priPartitionIt != priPartitions.end())
 		{
 			pPartitionInfo = *priPartitionIt;
-			uiLBAStartSector = pPartitionInfo->LBAStartSector ;
+			uiLBAStartSector = pPartitionInfo->LBAStartSector;
       ++priPartitionIt;
 		}
 		else if(extPartitionIt != extPartitions.end())
 		{
 			pPartitionInfo = &extPartitionIt->CurrentPartition();
-			uiLBAStartSector = extPartitionIt->ActualStartSector() + pPartitionInfo->LBAStartSector ;
+			uiLBAStartSector = extPartitionIt->ActualStartSector() + pPartitionInfo->LBAStartSector;
       ++extPartitionIt;
 		}
     else
