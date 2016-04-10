@@ -31,6 +31,10 @@ class list
     typedef list_iterator iterator;
     typedef const list_iterator const_iterator;
 
+    class list_reverse_iterator;
+    typedef list_reverse_iterator reverse_iterator;
+    typedef const list_reverse_iterator const_reverse_iterator;
+
     list();
     list(const list<T>& rhs);
     ~list();
@@ -44,19 +48,24 @@ class list
     T& back();
     const T& back() const;
     bool erase(const_iterator& it);
+    bool erase(const_reverse_iterator& it);
     bool erase(const T& v);
-    iterator begin() const;
-    iterator end() const;
     unsigned size() const { return _size; }
     bool empty() const { return _size == 0; }
+    iterator begin() const;
+    iterator end() const;
     iterator insert(iterator pos, const T& v);
     iterator sorted_insert_asc(const T& v);
     iterator sorted_insert_desc(const T& v);
+    reverse_iterator rbegin() const;
+    reverse_iterator rend() const;
+    reverse_iterator insert(reverse_iterator pos, const T& v);
+    reverse_iterator sorted_reverse_insert_asc(const T& v);
+    reverse_iterator sorted_reverse_insert_desc(const T& v);
     void clear();
 
   private:
     bool pop(bool front);
-
     class node
     {
       public:
@@ -81,7 +90,13 @@ class list
         node* _next;
         node* _prev;
     };
-
+    node* last() const
+    {
+      if(!_first)
+        return nullptr;
+        return _first->prev();
+    }
+    bool delete_node(node* cur);
   public:
     class list_iterator
     {
@@ -141,7 +156,66 @@ class list
         mutable node*  _node;
         friend class list<T>;
     };
+    class list_reverse_iterator
+    {
+      private:
+        list_reverse_iterator(const list<T>* parent, node* n) : _parent(parent), _node(n)
+        {
+        }
+      public:
+        list_reverse_iterator() : _parent(nullptr), _node(nullptr)
+        {
+        }
+        typedef T value_type;
+
+        T& operator*() { return const_cast<T&>(value()); }
+        const T& operator*() const { return value(); }
+
+        T& operator->() { return const_cast<T&>(value()); }
+        const T& operator->() const { return value(); }
+
+        list_reverse_iterator& operator++() { return const_cast<list_reverse_iterator&>(pre_inc()); }
+        const list_reverse_iterator& operator++() const { return pre_inc(); }
+
+        list_reverse_iterator operator++(int) { return post_inc(); }
+        list_reverse_iterator operator++(int) const { return post_inc(); }
+
+        bool operator==(const list_reverse_iterator& rhs) const { return _node == rhs._node; }
+        bool operator!=(const list_reverse_iterator& rhs) const { return !operator==(rhs); }
+      private:
+        bool is_end() const { return _node == nullptr; }
+        const T& value() const
+        {
+          check_end();
+          return _node->value();
+        }
+        void check_end() const
+        {
+          if(is_end())
+            throw exception(XLOC, "list: accessing end iterator");
+        }
+        const list_reverse_iterator& pre_inc() const
+        {
+          check_end();
+          if(_parent->last() == _node->prev())
+            _node = nullptr;
+          else
+            _node = _node->prev();
+          return *this;
+        }
+        list_reverse_iterator post_inc() const
+        {
+          list_reverse_iterator tmp(*this);
+          pre_inc();
+          return tmp;
+        }
+      private:
+        const list<T>* _parent;
+        mutable node*  _node;
+        friend class list<T>;
+    };
     friend class list_iterator;
+    friend class list_reverese_iterator;
   private:
     unsigned _size;
     node*    _first;
@@ -177,9 +251,9 @@ void list<T>::push_back(const T& value)
   }
   else
   {
-    auto last = _first->prev();
-    last->next(n);
-    n->prev(last);
+    auto l = last();
+    l->next(n);
+    n->prev(l);
     n->next(_first);
     _first->prev(n);
   }
@@ -200,7 +274,22 @@ bool list<T>::erase(list<T>::const_iterator& it)
     return false;
   if(empty())
     return false;
-  node* cur = it._node;
+  return delete_node(it._node);
+}
+
+template <typename T>
+bool list<T>::erase(list<T>::const_reverse_iterator& it)
+{
+  if(it == rend())
+    return false;
+  if(empty())
+    return false;
+  return delete_node(it._node);
+}
+
+template <typename T>
+bool list<T>::delete_node(node* cur)
+{
   if(_size == 1)
   {
     if(_first == cur)
@@ -295,7 +384,7 @@ typename list<T>::iterator list<T>::insert(iterator pos, const T& v)
   if(pos == end())
   {
     push_back(v);
-    return begin();
+    return iterator(this, last());
   }
   if(pos == begin())
   {
@@ -341,6 +430,61 @@ template <typename T>
 typename list<T>::iterator list<T>::end() const 
 { 
   return list<T>::iterator(); 
+}
+
+template <typename T>
+typename list<T>::reverse_iterator list<T>::insert(reverse_iterator pos, const T& v)
+{
+  ++_size;
+  if(pos == rend())
+  {
+    push_front(v);
+    return iterator(this, _first);
+  }
+  if(pos == rbegin())
+  {
+    push_back(v);
+    return rbegin();
+  }
+  node* new_node = new node(v);
+  node* cur = pos._node;
+  cur->next()->prev(new_node);
+  new_node->next(cur->next());
+  new_node->prev(cur);
+  cur->next(new_node);
+  return reverse_iterator(this, new_node);
+}
+
+template <typename T>
+typename list<T>::reverse_iterator list<T>::sorted_reverse_insert_asc(const T& v)
+{
+  reverse_iterator i = rbegin();
+  for(; i != rend(); ++i)
+    if(v > *i || !(*i > v))
+      break;
+  return insert(i, v);
+}
+
+template <typename T>
+typename list<T>::reverse_iterator list<T>::sorted_reverse_insert_desc(const T& v)
+{
+  reverse_iterator i = rbegin();
+  for(; i != rend(); ++i)
+    if(*i > v || !(v > *i))
+      break;
+  return insert(i, v);
+}
+
+template <typename T>
+typename list<T>::reverse_iterator list<T>::rbegin() const
+{
+  return list<T>::reverse_iterator(this, last());
+}
+
+template <typename T>
+typename list<T>::reverse_iterator list<T>::rend() const
+{
+  return list<T>::reverse_iterator();
 }
 
 template <typename T>
