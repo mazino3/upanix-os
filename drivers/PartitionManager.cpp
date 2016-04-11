@@ -114,7 +114,7 @@ byte PartitionTable::ReadPrimaryPartition(RawDiskDrive* pDisk)
 		}
     else
     {
-      _primaryParitions.push_back(new PartitionInfo(pPartitionInfo[i]));
+      _primaryPartitions.push_back(new PartitionInfo(pPartitionInfo[i]));
     }
 	}
 
@@ -161,7 +161,7 @@ PartitionTable::PartitionTable() : _bIsExtPartitionPresent(false)
 
 PartitionTable::~PartitionTable()
 {
-  for(auto pp : _primaryParitions)
+  for(auto pp : _primaryPartitions)
     delete pp;
   for(auto ep : _extPartitions)
     delete ep;
@@ -169,13 +169,13 @@ PartitionTable::~PartitionTable()
 
 byte PartitionTable::CreatePrimaryPartitionEntry(RawDiskDrive* pDisk, unsigned uiSizeInSectors, PartitionInfo::PartitionTypes type)
 {
-	if(_primaryParitions.size() == MAX_NO_OF_PRIMARY_PARTITIONS)
+	if(_primaryPartitions.size() == MAX_NO_OF_PRIMARY_PARTITIONS)
 		return PartitionManager_ERR_PRIMARY_PARTITION_FULL ;
 
 	if(_bIsExtPartitionPresent)
 		return PartitionManager_ERR_EXT_PARTITION_BLOCKED ;
 
-	if(_primaryParitions.empty())
+	if(_primaryPartitions.empty())
 	{
 		if(type == PartitionInfo::EXTENEDED)
 			return PartitionManager_ERR_NO_PRIM_PART ;
@@ -185,9 +185,9 @@ byte PartitionTable::CreatePrimaryPartitionEntry(RawDiskDrive* pDisk, unsigned u
 
 	unsigned uiUsedSizeInSectors = DEF_START_SEC ;
 
-	if(!_primaryParitions.empty())
+	if(!_primaryPartitions.empty())
   {
-    auto lastPP = _primaryParitions.rbegin();
+    auto lastPP = _primaryPartitions.rbegin();
 		uiUsedSizeInSectors = lastPP->LBAStartSector + lastPP->LBANoOfSectors;
   }
 		
@@ -211,7 +211,7 @@ byte PartitionTable::CreatePrimaryPartitionEntry(RawDiskDrive* pDisk, unsigned u
 	if(type == PartitionInfo::ACTIVE)
 	{
     unsigned i = 0;
-		for(auto pp : _primaryParitions)
+		for(auto pp : _primaryPartitions)
 		{
       pp->BootIndicator = 0;
 			pRealPartitionTableEntry[i++].BootIndicator = 0;
@@ -219,8 +219,8 @@ byte PartitionTable::CreatePrimaryPartitionEntry(RawDiskDrive* pDisk, unsigned u
 	}
 
   PartitionInfo* pi = new PartitionInfo(uiLBAStartSector, uiSizeInSectors, type);
-  pRealPartitionTableEntry[_primaryParitions.size()] = *pi;
-  _primaryParitions.push_back(pi);
+  pRealPartitionTableEntry[_primaryPartitions.size()] = *pi;
+  _primaryPartitions.push_back(pi);
 
 	RETURN_X_IF_NOT(pDisk->Write(0, 1, bBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
 
@@ -288,7 +288,7 @@ byte PartitionTable::CreateExtPartitionEntry(RawDiskDrive* pDisk, unsigned uiSiz
 
 byte PartitionTable::DeletePrimaryPartition(RawDiskDrive* pDisk)
 {
-	if(_primaryParitions.empty())
+	if(_primaryPartitions.empty())
 		return PartitionManager_ERR_PARTITION_TABLE_EMPTY ;
 	
 	byte bBootSectorBuffer[512] ;
@@ -298,7 +298,7 @@ byte PartitionTable::DeletePrimaryPartition(RawDiskDrive* pDisk)
 
 	if(_bIsExtPartitionPresent)
 	{
-		pRealPartitionTableEntry = &(((PartitionInfo*)(bBootSectorBuffer + 0x1BE))[_primaryParitions.size()]);
+		pRealPartitionTableEntry = &(((PartitionInfo*)(bBootSectorBuffer + 0x1BE))[_primaryPartitions.size()]);
 		unsigned uiExtSector ;
 		byte bExtBootSectorBuffer[512] ;
 		PartitionInfo* pExtRealPartitionTable ;
@@ -321,8 +321,8 @@ byte PartitionTable::DeletePrimaryPartition(RawDiskDrive* pDisk)
 	}
 	else
 	{
-    _primaryParitions.pop_back();
-		pRealPartitionTableEntry = &(((PartitionInfo*)(bBootSectorBuffer + 0x1BE))[_primaryParitions.size()]);
+    _primaryPartitions.pop_back();
+		pRealPartitionTableEntry = &(((PartitionInfo*)(bBootSectorBuffer + 0x1BE))[_primaryPartitions.size()]);
 	}
 
   *pRealPartitionTableEntry = PartitionInfo();
@@ -363,4 +363,26 @@ byte PartitionTable::DeleteExtPartition(RawDiskDrive* pDisk)
   _extPartitions.pop_back();
 
 	return PartitionManager_SUCCESS ;
+}
+
+void PartitionTable::VerbosePrint() const
+{
+  printf("\n%-4s %-10s %-10s %-10s", "Boot", "Start", "End", "SysId");
+  auto print = [](const PartitionInfo& pi) {
+    const char* sysId = "EMPTY";
+    if(pi.SystemIndicator == SI_EXT)
+      sysId = "Extended";
+    else if(pi.SystemIndicator == 0x93)
+      sysId = "MOSFS";
+    printf("\n%-4d %-10d %-10d %-10s", pi.BootIndicator, pi.LBAStartSector, pi.LBANoOfSectors, sysId);
+  };
+
+  for(const auto pp : _primaryPartitions)
+    print(*pp);
+  if(_bIsExtPartitionPresent)
+  {
+    print(_extPartitionEntry);
+    for(const auto ep : _extPartitions)
+      print(ep->CurrentPartition());
+  }
 }

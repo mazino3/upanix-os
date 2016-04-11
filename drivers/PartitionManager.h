@@ -84,17 +84,19 @@ class PartitionInfo
 class PartitionEntry
 {
   public:
-    PartitionEntry(unsigned startSector, unsigned sizeInSectors) :
-      _uiStartSector(startSector), _uiSize(sizeInSectors)
+    PartitionEntry(unsigned startSector, unsigned sizeInSectors, byte fsId) :
+      _uiLBAStartSector(startSector), _uiLBASize(sizeInSectors), _fsId(fsId)
     {
     }
 
-    unsigned StartSector() const { return _uiStartSector; }
-    unsigned Size() const { return _uiSize; }
+    unsigned LBAStartSector() const { return _uiLBAStartSector; }
+    unsigned LBASize() const { return _uiLBASize; }
+    byte FileSystemID() const { return _fsId; }
 
   private:
-    const unsigned _uiStartSector;
-    const unsigned _uiSize;
+    const unsigned _uiLBAStartSector;
+    const unsigned _uiLBASize;
+    const byte     _fsId;
 };
 
 class ExtPartitionTable
@@ -126,7 +128,10 @@ class PartitionTable
     byte CreateExtPartitionEntry(RawDiskDrive* pDisk, unsigned uiSizeInSectors);
     byte DeleteExtPartition(RawDiskDrive* pDisk);
 
-    const upan::list<PartitionInfo*>& GetPrimaryPartitions() const { return _primaryParitions; }
+    void VerbosePrint() const;
+
+    const upan::list<PartitionEntry> GetPartitions() const { return _partitions; }
+    const upan::list<PartitionInfo*>& GetPrimaryPartitions() const { return _primaryPartitions; }
     const PartitionInfo& ExtPartitionEntry() const { return _extPartitionEntry; }
     const upan::list<ExtPartitionTable*>& GetExtPartitions() const { return _extPartitions; }
 
@@ -136,8 +141,9 @@ class PartitionTable
     bool     _bIsExtPartitionPresent;
 
     PartitionInfo _extPartitionEntry;
-    upan::list<PartitionInfo*> _primaryParitions;
+    upan::list<PartitionInfo*> _primaryPartitions;
     upan::list<ExtPartitionTable*> _extPartitions;
+    upan::list<PartitionEntry> _partitions;
 };
 
 #endif
