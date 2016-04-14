@@ -52,11 +52,6 @@ static void USBMassBulkStorageDisk_AddDeviceDrive(RawDiskDrive* pDisk)
 		return ;
 	}
 	
-  const auto& priPartitions = partitionTable.GetPrimaryPartitions();
-  const auto& extPartitions = partitionTable.GetExtPartitions();
-	unsigned uiTotalPartitions = priPartitions.size() + extPartitions.size();
-	const PartitionInfo* pPartitionInfo ;
-
 	/*** Calculate MountSpacePerPartition, FreePoolSize, TableCacheSize *****/
 	const unsigned uiSectorsInFreePool = 4096 ;
 	unsigned uiSectorsInTableCache = 1024 ;
@@ -64,7 +59,7 @@ static void USBMassBulkStorageDisk_AddDeviceDrive(RawDiskDrive* pDisk)
 	const unsigned uiMinMountSpaceRequired =  FileSystem_GetSizeForTableCache(uiSectorsInTableCache) ;
 	const unsigned uiTotalMountSpaceAvailable = MEM_USD_FS_END - MEM_USD_FS_START ;
 	
-	unsigned uiNoOfParitions = uiTotalPartitions ;
+	unsigned uiNoOfParitions = partitionTable.GetPartitions().size();
 	unsigned uiMountSpaceAvailablePerDrive = 0 ;
 	while(true)
 	{
@@ -86,40 +81,21 @@ static void USBMassBulkStorageDisk_AddDeviceDrive(RawDiskDrive* pDisk)
 		uiSectorsInTableCache = uiMountSpaceAvailablePerDrive / FileSystem_GetSizeForTableCache(1) ;
 	}
 	/*** DONE - Calculating mount stuff ***/
-	
-  auto priPartitionIt = priPartitions.begin();
-  auto extPartitionIt = extPartitions.begin();
-	for(unsigned i = 0; i < uiTotalPartitions; i++)
+  unsigned peCount = 0;
+	for(const auto& pe : partitionTable.GetPartitions())
 	{
     unsigned uiMountPointStart = 0;
     unsigned uiMountPointEnd = 0;
-		if(i < uiNoOfParitions)
+		if(peCount < uiNoOfParitions)
 		{
-			uiMountPointStart = MEM_USD_FS_START + uiMountSpaceAvailablePerDrive * i ;
-			uiMountPointEnd = MEM_USD_FS_START + uiMountSpaceAvailablePerDrive * (i + 1) ;
+			uiMountPointStart = MEM_USD_FS_START + uiMountSpaceAvailablePerDrive * peCount ;
+			uiMountPointEnd = MEM_USD_FS_START + uiMountSpaceAvailablePerDrive * (peCount + 1) ;
 		}
-
-    unsigned uiLBAStartSector;
-		if(priPartitionIt != priPartitions.end())
-		{
-			pPartitionInfo = *priPartitionIt;
-			uiLBAStartSector = pPartitionInfo->LBAStartSector ;
-      ++priPartitionIt;
-		}
-		else if(extPartitionIt != extPartitions.end())
-		{
-			pPartitionInfo = &extPartitionIt->CurrentPartition();
-			uiLBAStartSector = extPartitionIt->ActualStartSector() + pPartitionInfo->LBAStartSector;
-      ++extPartitionIt;
-		}
-    else
-      break;
+    ++peCount;
 
 		driveName[3] = driveCh + USDDeviceId++;
-
     DiskDriveManager::Instance().Create(driveName, DEV_SCSI_USB_DISK, USD_DRIVE0,
-      uiLBAStartSector,
-      pPartitionInfo->LBANoOfSectors,
+      pe.LBAStartSector(), pe.LBASize(),
       1, 1, 1, pDevice, pDisk, uiSectorsInFreePool, uiSectorsInTableCache, uiMountPointStart, uiMountPointEnd);
 	}
 }

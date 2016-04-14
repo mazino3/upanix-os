@@ -119,21 +119,14 @@ class PartitionTable
     PartitionTable();
     ~PartitionTable();
 
-    bool IsExtPartitionPresent() const { return _bIsExtPartitionPresent; }
-
     byte ReadPrimaryPartition(RawDiskDrive* pDisk);
     byte ReadExtPartition(RawDiskDrive* pDisk);
     byte CreatePrimaryPartitionEntry(RawDiskDrive* pDisk, unsigned uiSizeInSectors, PartitionInfo::PartitionTypes);
     byte DeletePrimaryPartition(RawDiskDrive* pDisk);
     byte CreateExtPartitionEntry(RawDiskDrive* pDisk, unsigned uiSizeInSectors);
     byte DeleteExtPartition(RawDiskDrive* pDisk);
-
     void VerbosePrint() const;
-
     const upan::list<PartitionEntry> GetPartitions() const { return _partitions; }
-    const upan::list<PartitionInfo*>& GetPrimaryPartitions() const { return _primaryPartitions; }
-    const PartitionInfo& ExtPartitionEntry() const { return _extPartitionEntry; }
-    const upan::list<ExtPartitionTable*>& GetExtPartitions() const { return _extPartitions; }
 
   private:
     byte VerifyMBR(RawDiskDrive* pDisk, const PartitionInfo* pPartitionInfo) const;
