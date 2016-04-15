@@ -25,12 +25,12 @@
 #define MAX_NO_OF_PRIMARY_PARTITIONS	4
 #define MAX_NO_OF_EXT_PARTITIONS		32
 
-class PartitionInfo
+class MBRPartitionInfo
 {
   public:
-    enum PartitionTypes { ACTIVE, EXTENEDED, NORMAL };
+    enum Types { ACTIVE, EXTENEDED, NORMAL };
 
-    PartitionInfo() :
+    MBRPartitionInfo() :
       BootIndicator(0),
       _StartHead(0),
       _StartSector(0),
@@ -44,7 +44,7 @@ class PartitionInfo
     {
     }
 
-    PartitionInfo(unsigned lbaStart, unsigned size, PartitionTypes type);
+    MBRPartitionInfo(unsigned lbaStart, unsigned size, Types type);
 	  bool IsEmpty() const 
     {
       return SystemIndicator == 0x0 || LBANoOfSectors == 0x0;
@@ -88,14 +88,14 @@ class PartitionEntry
 class ExtPartitionTable
 {
   public:
-    ExtPartitionTable(const PartitionInfo& cur, unsigned actualStartSec)
+    ExtPartitionTable(const MBRPartitionInfo& cur, unsigned actualStartSec)
       : _currentPartition(cur), _uiActualStartSector(actualStartSec)
     {
     }
-    const PartitionInfo& CurrentPartition() const { return _currentPartition; }
+    const MBRPartitionInfo& CurrentPartition() const { return _currentPartition; }
     unsigned ActualStartSector() const { return _uiActualStartSector; }
   private:
-    PartitionInfo _currentPartition;
+    MBRPartitionInfo _currentPartition;
     unsigned	_uiActualStartSector;
 };
 
@@ -109,7 +109,7 @@ class PartitionTable
     bool IsEmpty() const { return _partitions.empty(); }
     const upan::list<PartitionEntry> GetPartitions() const { return _partitions; }
     void ClearPartitionTable();
-    void CreatePrimaryPartitionEntry(unsigned uiSizeInSectors, PartitionInfo::PartitionTypes);
+    void CreatePrimaryPartitionEntry(unsigned uiSizeInSectors, MBRPartitionInfo::Types);
     void DeletePrimaryPartition();
     void CreateExtPartitionEntry(unsigned uiSizeInSectors);
     void DeleteExtPartition();
@@ -117,12 +117,12 @@ class PartitionTable
   private:
     void ReadPrimaryPartition();
     void ReadExtPartition();
-    bool VerifyMBR(const PartitionInfo* pPartitionInfo) const;
+    bool VerifyMBR(const MBRPartitionInfo* pPartitionInfo) const;
 
     bool _bIsExtPartitionPresent;
     RawDiskDrive& _disk;
-    PartitionInfo _extPartitionEntry;
-    upan::list<PartitionInfo*> _primaryPartitions;
+    MBRPartitionInfo _extPartitionEntry;
+    upan::list<MBRPartitionInfo*> _primaryPartitions;
     upan::list<ExtPartitionTable*> _extPartitions;
     upan::list<PartitionEntry> _partitions;
 };

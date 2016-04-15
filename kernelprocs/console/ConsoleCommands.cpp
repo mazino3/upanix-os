@@ -592,7 +592,7 @@ void ConsoleCommands_CreatePrimaryPartition()
 		return ;
 	}
 
-	partitionTable.CreatePrimaryPartitionEntry(uiSizeInSectors, PartitionInfo::NORMAL);
+	partitionTable.CreatePrimaryPartitionEntry(uiSizeInSectors, MBRPartitionInfo::NORMAL);
 	KC::MDisplay().Message("\n Partition Created", ' ') ;
 }
 
@@ -621,7 +621,7 @@ void ConsoleCommands_CreateExtendedPartitionEntry()
 		KC::MDisplay().Message("\n Invalid Number", ' ') ;
 		return ;
 	}
-	partitionTable.CreatePrimaryPartitionEntry(uiSizeInSectors, PartitionInfo::EXTENEDED);
+	partitionTable.CreatePrimaryPartitionEntry(uiSizeInSectors, MBRPartitionInfo::EXTENEDED);
 	printf("\n Partition Created");
 }
 

@@ -24,7 +24,7 @@
 #define SI_EMTY	0x01
 #define DEF_START_SEC 63
 
-PartitionInfo::PartitionInfo(unsigned lbaStart, unsigned size, PartitionInfo::PartitionTypes type) :
+MBRPartitionInfo::MBRPartitionInfo(unsigned lbaStart, unsigned size, MBRPartitionInfo::Types type) :
   BootIndicator(type == ACTIVE ? 0x80 : 0x00),
   _StartHead(255),
   _StartSector(255),
@@ -74,7 +74,7 @@ void PartitionTable::ClearPartitionTable()
     DeletePrimaryPartition();
 }
 
-bool PartitionTable::VerifyMBR(const PartitionInfo* pPartitionInfo) const
+bool PartitionTable::VerifyMBR(const MBRPartitionInfo* pPartitionInfo) const
 {
 	unsigned i ;
 	unsigned uiActivePartitionCount = 0 ;
@@ -116,7 +116,7 @@ void PartitionTable::ReadPrimaryPartition()
   
 	_disk.Read(0, 1, bBootSectorBuffer);
 
-	PartitionInfo* pPartitionInfo = ((PartitionInfo*)(bBootSectorBuffer + 0x1BE)) ;
+	MBRPartitionInfo* pPartitionInfo = ((MBRPartitionInfo*)(bBootSectorBuffer + 0x1BE)) ;
   if(!VerifyMBR(pPartitionInfo))
     return;
 
@@ -132,7 +132,7 @@ void PartitionTable::ReadPrimaryPartition()
 		}
     else
     {
-      _primaryPartitions.push_back(new PartitionInfo(pPartitionInfo[i]));
+      _primaryPartitions.push_back(new MBRPartitionInfo(pPartitionInfo[i]));
       _partitions.push_back(PartitionEntry(pPartitionInfo[i].LBAStartSector, pPartitionInfo[i].LBANoOfSectors, pPartitionInfo[i].SystemIndicator));
     }
 	}
@@ -144,7 +144,7 @@ void PartitionTable::ReadExtPartition()
     return;
 
 	unsigned uiExtSectorID, uiStartExtSectorID;
-	PartitionInfo* pPartitionInfo ;
+	MBRPartitionInfo* pPartitionInfo ;
 
 	byte bBootSectorBuffer[512] ;
 
@@ -154,7 +154,7 @@ void PartitionTable::ReadExtPartition()
 	{
 		_disk.Read(uiExtSectorID, 1, bBootSectorBuffer);
 
-		pPartitionInfo = ((PartitionInfo*)(bBootSectorBuffer + 0x1BE)) ;
+		pPartitionInfo = ((MBRPartitionInfo*)(bBootSectorBuffer + 0x1BE)) ;
 	
 		if(pPartitionInfo[0].IsEmpty())
 			break ;
@@ -170,7 +170,7 @@ void PartitionTable::ReadExtPartition()
 }
 
 
-void PartitionTable::CreatePrimaryPartitionEntry(unsigned uiSizeInSectors, PartitionInfo::PartitionTypes type)
+void PartitionTable::CreatePrimaryPartitionEntry(unsigned uiSizeInSectors, MBRPartitionInfo::Types type)
 {
 	if(_primaryPartitions.size() == MAX_NO_OF_PRIMARY_PARTITIONS)
     throw upan::exception(XLOC, "primary partition is full");
@@ -180,10 +180,10 @@ void PartitionTable::CreatePrimaryPartitionEntry(unsigned uiSizeInSectors, Parti
 
 	if(_primaryPartitions.empty())
 	{
-		if(type == PartitionInfo::EXTENEDED)
+		if(type == MBRPartitionInfo::EXTENEDED)
       throw upan::exception(XLOC, "no primary paritions - can't create extended partition");
 	
-    type = PartitionInfo::ACTIVE;
+    type = MBRPartitionInfo::ACTIVE;
 	}
 
 	unsigned uiUsedSizeInSectors = DEF_START_SEC ;
@@ -209,9 +209,9 @@ void PartitionTable::CreatePrimaryPartitionEntry(unsigned uiSizeInSectors, Parti
 	bBootSectorBuffer[510] = 0x55 ;
 	bBootSectorBuffer[511] = 0xAA ;
 
-	PartitionInfo* pRealPartitionTableEntry = ((PartitionInfo*)(bBootSectorBuffer + 0x1BE)) ;
+	MBRPartitionInfo* pRealPartitionTableEntry = ((MBRPartitionInfo*)(bBootSectorBuffer + 0x1BE)) ;
 
-	if(type == PartitionInfo::ACTIVE)
+	if(type == MBRPartitionInfo::ACTIVE)
 	{
     unsigned i = 0;
 		for(auto pp : _primaryPartitions)
@@ -221,7 +221,7 @@ void PartitionTable::CreatePrimaryPartitionEntry(unsigned uiSizeInSectors, Parti
 		}
 	}
 
-  PartitionInfo* pi = new PartitionInfo(uiLBAStartSector, uiSizeInSectors, type);
+  MBRPartitionInfo* pi = new MBRPartitionInfo(uiLBAStartSector, uiSizeInSectors, type);
   pRealPartitionTableEntry[_primaryPartitions.size()] = *pi;
   _primaryPartitions.push_back(pi);
 
@@ -254,7 +254,7 @@ void PartitionTable::CreateExtPartitionEntry(unsigned uiSizeInSectors)
 	const unsigned uiNewPartitionSector = uiUsedSizeInSectors + _extPartitionEntry.LBAStartSector ;
 
 	byte bBootSectorBuffer[512] ;
-  const PartitionInfo extPartitionInfo(uiLBAStartSector, uiLBANoOfSectors, PartitionInfo::NORMAL);
+  const MBRPartitionInfo extPartitionInfo(uiLBAStartSector, uiLBANoOfSectors, MBRPartitionInfo::NORMAL);
 
   _extPartitions.push_back(new ExtPartitionTable(extPartitionInfo, uiNewPartitionSector));
 
@@ -263,10 +263,10 @@ void PartitionTable::CreateExtPartitionEntry(unsigned uiSizeInSectors)
 	bBootSectorBuffer[510] = 0x55 ;
 	bBootSectorBuffer[511] = 0xAA ;
 
-	PartitionInfo* pRealPartitionTableEntry = ((PartitionInfo*)(bBootSectorBuffer + 0x1BE)) ;
+	MBRPartitionInfo* pRealPartitionTableEntry = ((MBRPartitionInfo*)(bBootSectorBuffer + 0x1BE)) ;
 
 	pRealPartitionTableEntry[0] = extPartitionInfo;
-	MemUtil_Set((byte*)&(pRealPartitionTableEntry[1]), 0, sizeof(PartitionInfo)) ;
+	MemUtil_Set((byte*)&(pRealPartitionTableEntry[1]), 0, sizeof(MBRPartitionInfo)) ;
 
 	_disk.Write(uiNewPartitionSector, 1, bBootSectorBuffer);
 
@@ -276,9 +276,9 @@ void PartitionTable::CreateExtPartitionEntry(unsigned uiSizeInSectors)
 
 		_disk.Read(uiPreviousExtPartitionStartSector, 1, bBootSectorBuffer);
 
-		pRealPartitionTableEntry = ((PartitionInfo*)(bBootSectorBuffer + 0x1BE)) ;
+		pRealPartitionTableEntry = ((MBRPartitionInfo*)(bBootSectorBuffer + 0x1BE)) ;
 
-    const PartitionInfo nextPartitionInfo(uiUsedSizeInSectors, uiSizeInSectors, PartitionInfo::EXTENEDED);
+    const MBRPartitionInfo nextPartitionInfo(uiUsedSizeInSectors, uiSizeInSectors, MBRPartitionInfo::EXTENEDED);
 		pRealPartitionTableEntry[1] = nextPartitionInfo;
 
 		_disk.Write(uiPreviousExtPartitionStartSector, 1, bBootSectorBuffer);
@@ -293,23 +293,23 @@ void PartitionTable::DeletePrimaryPartition()
 	byte bBootSectorBuffer[512] ;
 	_disk.Read(0, 1, bBootSectorBuffer);
 
-	PartitionInfo* pRealPartitionTableEntry ;
+	MBRPartitionInfo* pRealPartitionTableEntry ;
 
 	if(_bIsExtPartitionPresent)
 	{
-		pRealPartitionTableEntry = &(((PartitionInfo*)(bBootSectorBuffer + 0x1BE))[_primaryPartitions.size()]);
+		pRealPartitionTableEntry = &(((MBRPartitionInfo*)(bBootSectorBuffer + 0x1BE))[_primaryPartitions.size()]);
 		unsigned uiExtSector ;
 		byte bExtBootSectorBuffer[512] ;
-		PartitionInfo* pExtRealPartitionTable ;
+		MBRPartitionInfo* pExtRealPartitionTable ;
 
     for(auto ep : _extPartitions)
 		{
 			uiExtSector = ep->ActualStartSector();
 			_disk.Read(uiExtSector, 1, bExtBootSectorBuffer);
-			pExtRealPartitionTable = ((PartitionInfo*)(bExtBootSectorBuffer + 0x1BE)) ;
+			pExtRealPartitionTable = ((MBRPartitionInfo*)(bExtBootSectorBuffer + 0x1BE)) ;
 
-			pExtRealPartitionTable[0] = PartitionInfo();
-			pExtRealPartitionTable[1] = PartitionInfo();
+			pExtRealPartitionTable[0] = MBRPartitionInfo();
+			pExtRealPartitionTable[1] = MBRPartitionInfo();
 
 			_disk.Write(uiExtSector, 1, bExtBootSectorBuffer);
       delete ep;
@@ -317,16 +317,16 @@ void PartitionTable::DeletePrimaryPartition()
 		}
     _extPartitions.clear();
     _bIsExtPartitionPresent = false;
-    _extPartitionEntry = PartitionInfo();
+    _extPartitionEntry = MBRPartitionInfo();
 	}
 	else
 	{
     _primaryPartitions.pop_back();
     _partitions.pop_back();
-		pRealPartitionTableEntry = &(((PartitionInfo*)(bBootSectorBuffer + 0x1BE))[_primaryPartitions.size()]);
+		pRealPartitionTableEntry = &(((MBRPartitionInfo*)(bBootSectorBuffer + 0x1BE))[_primaryPartitions.size()]);
 	}
 
-  *pRealPartitionTableEntry = PartitionInfo();
+  *pRealPartitionTableEntry = MBRPartitionInfo();
 
 	_disk.Write(0, 1, bBootSectorBuffer);
 }
@@ -347,15 +347,15 @@ void PartitionTable::DeleteExtPartition()
 
 		_disk.Read(uiPreviousExtPartitionStartSector, 1, bExtBootSectorBuffer);
 
-		PartitionInfo* pRealPartitionEntry = &((PartitionInfo*)(bExtBootSectorBuffer + 0x1BE))[1] ;
-    *pRealPartitionEntry = PartitionInfo();
+		MBRPartitionInfo* pRealPartitionEntry = &((MBRPartitionInfo*)(bExtBootSectorBuffer + 0x1BE))[1] ;
+    *pRealPartitionEntry = MBRPartitionInfo();
 
 		_disk.Write(uiPreviousExtPartitionStartSector, 1, bExtBootSectorBuffer);
 	}
 
 	_disk.Read(uiCurrentExtPartitionStartSector, 1, bExtBootSectorBuffer);
 
-	MemUtil_Set((byte*)(bExtBootSectorBuffer + 0x1BE), 0, sizeof(PartitionInfo) * 2) ;
+	MemUtil_Set((byte*)(bExtBootSectorBuffer + 0x1BE), 0, sizeof(MBRPartitionInfo) * 2) ;
 
 	_disk.Write(uiCurrentExtPartitionStartSector, 1, bExtBootSectorBuffer);
 
@@ -366,7 +366,7 @@ void PartitionTable::DeleteExtPartition()
 void PartitionTable::VerbosePrint() const
 {
   printf("\n%-4s %-10s %-10s %-10s", "Boot", "Start", "End", "SysId");
-  auto print = [](const PartitionInfo& pi) {
+  auto print = [](const MBRPartitionInfo& pi) {
     const char* sysId = "EMPTY";
     if(pi.SystemIndicator == SI_EXT)
       sysId = "Extended";

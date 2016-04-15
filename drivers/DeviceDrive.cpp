@@ -1020,7 +1020,7 @@ void RawDiskDrive::UpdateSystemIndicator(unsigned uiLBAStartSector, unsigned uiS
 
 	Read(0, 1, bBootSectorBuffer);
 
-	PartitionInfo* pPartitionTable = ((PartitionInfo*)(bBootSectorBuffer + 0x1BE)) ;
+	MBRPartitionInfo* pPartitionTable = ((MBRPartitionInfo*)(bBootSectorBuffer + 0x1BE)) ;
 	
   const unsigned NO_OF_PARTITIONS = 4;
 	for(unsigned i = 0; i < NO_OF_PARTITIONS; i++)
