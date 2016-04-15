@@ -420,20 +420,12 @@ static void ATADeviceController_AddATADrive(RawDiskDrive* pDisk)
 	char driveCh = 'a' ;
 	char driveName[5] = { 'h', 'd', 'd', '\0', '\0' } ;
 
-	PartitionTable partitionTable ;
-	byte bStatus ;
-
 	ATAPort* pPort = (ATAPort*)pDisk->Device();
-	bStatus = pDisk->ReadPartitionTable(&partitionTable) ;
-	if(bStatus == PartitionManager_FAILURE)
+	PartitionTable partitionTable(*pDisk);
+	if(partitionTable.IsEmpty())
 	{
-		KC::MDisplay().Message("\n Fatal Error:- Reading Partition Table", ' ') ;
-		return ;
-	}
-	else if(bStatus == PartitionManager_ERR_NOT_PARTITIONED)
-	{
-		KC::MDisplay().Number("\n Disk Not Partitioned: ", bStatus) ;
-		return ;
+		printf("\n Disk Not Partitioned");
+		return;
 	}
 
 	/*** Calculate MountSpacePerPartition, TableCacheSize *****/
@@ -576,7 +568,14 @@ static byte ATADeviceController_Add(ATAController* pController)
 		{
 			szName[iCntIndex] += i ;
 			RawDiskDrive* pDisk = DiskDriveManager::Instance().CreateRawDisk(szName, ATA_HARD_DISK, pController->pPort[ i ]) ;
-			ATADeviceController_AddATADrive(pDisk) ;
+      try
+      {
+  			ATADeviceController_AddATADrive(pDisk) ;
+      }
+      catch(const upan::exception& ex)
+      {
+        printf("\n failed to read partition table - %s", ex.Error().c_str());
+      }
 		}
 		else if(pController->pPort[i]->uiDevice == ATA_DEV_ATAPI)
 			ATADeviceController_AddATAPIDrive(pController->pPort[i]) ;

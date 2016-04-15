@@ -932,8 +932,7 @@ byte DiskDriveManager::FormatDrive(const upan::string& szDriveName)
 	{
 		case DEV_ATA_IDE:
 		case DEV_SCSI_USB_DISK:
-			if(pDiskDrive->RawDisk()->UpdateSystemIndicator(pDiskDrive->LBAStartSector(), 0x93) != PartitionManager_SUCCESS)
-				return DeviceDrive_ERR_PARTITION_UPDATE ;
+			pDiskDrive->RawDisk()->UpdateSystemIndicator(pDiskDrive->LBAStartSector(), 0x93);
 			break ;
 	}
 
@@ -979,60 +978,47 @@ RESOURCE_KEYS DiskDriveManager::GetResourceType(RAW_DISK_TYPES diskType)
 
 }
 
-byte RawDiskDrive::Read(unsigned uiStartSector, unsigned uiNoOfSectors, byte* pDataBuffer)
+void RawDiskDrive::Read(unsigned uiStartSector, unsigned uiNoOfSectors, byte* pDataBuffer)
 {
   MutexGuard g(_diskMutex);
 	switch(_type)
 	{
 		case ATA_HARD_DISK:
-			return ATADrive_Read((ATAPort*)Device(), uiStartSector, pDataBuffer, uiNoOfSectors) ;
+			if(ATADrive_Read((ATAPort*)Device(), uiStartSector, pDataBuffer, uiNoOfSectors) != ATADrive_SUCCESS)
+        throw upan::exception(XLOC, "error reading from ata disk drive");
+       break;
 		case USB_SCSI_DISK:
-			return SCSIHandler_GenericRead((SCSIDevice*)Device(), uiStartSector, uiNoOfSectors, pDataBuffer) ;
+			if(SCSIHandler_GenericRead((SCSIDevice*)Device(), uiStartSector, uiNoOfSectors, pDataBuffer) != SCSIHandler_SUCCESS)
+        throw upan::exception(XLOC, "error reading from usb disk drive");
+      break;
     default:
-      return DeviceDrive_ERR_UNKNOWN_DEVICE_TYPE ;
+      throw upan::exception(XLOC, "error reading - unknown device type: %d", _type);
 	}
 }
 
-byte RawDiskDrive::Write(unsigned uiStartSector, unsigned uiNoOfSectors, byte* pDataBuffer)
+void RawDiskDrive::Write(unsigned uiStartSector, unsigned uiNoOfSectors, byte* pDataBuffer)
 {
 	MutexGuard g(_diskMutex);
 	switch(_type)
 	{
 		case ATA_HARD_DISK:
-			return ATADrive_Write((ATAPort*)Device(), uiStartSector, pDataBuffer, uiNoOfSectors) ;
+      if(ATADrive_Write((ATAPort*)Device(), uiStartSector, pDataBuffer, uiNoOfSectors) != ATADrive_SUCCESS)
+        throw upan::exception(XLOC, "error writing to ata disk drive");
+      break;
 		case USB_SCSI_DISK:
-			return SCSIHandler_GenericWrite((SCSIDevice*)Device(), uiStartSector, uiNoOfSectors, pDataBuffer) ;
+			if(SCSIHandler_GenericWrite((SCSIDevice*)Device(), uiStartSector, uiNoOfSectors, pDataBuffer) != SCSIHandler_SUCCESS)
+        throw upan::exception(XLOC, "error writing to usb disk drive");
+      break;
     default:
-      return DeviceDrive_ERR_UNKNOWN_DEVICE_TYPE ;
+      throw upan::exception(XLOC, "error reading - unknown device type: %d", _type);
 	}
 }
 
-byte RawDiskDrive::ReadPartitionTable(PartitionTable* pPartitionTable)
-{
-	byte bStatus ;
-
-	RETURN_IF_NOT(bStatus, pPartitionTable->ReadPrimaryPartition(this), PartitionManager_SUCCESS) ;
-
-	RETURN_IF_NOT(bStatus, pPartitionTable->ReadExtPartition(this), PartitionManager_SUCCESS) ;
-
-	return PartitionManager_SUCCESS ;
-}
-
-byte RawDiskDrive::ClearPartitionTable()
-{
-  PartitionTable partitionTable;
-  ReadPartitionTable(&partitionTable);
-
-  while(partitionTable.DeletePrimaryPartition(this) == PartitionManager_SUCCESS);
-
-	return PartitionManager_SUCCESS ;
-}
-
-byte RawDiskDrive::UpdateSystemIndicator(unsigned uiLBAStartSector, unsigned uiSystemIndicator)
+void RawDiskDrive::UpdateSystemIndicator(unsigned uiLBAStartSector, unsigned uiSystemIndicator)
 {
 	byte bBootSectorBuffer[512] ;
 
-	RETURN_X_IF_NOT(Read(0, 1, bBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
+	Read(0, 1, bBootSectorBuffer);
 
 	PartitionInfo* pPartitionTable = ((PartitionInfo*)(bBootSectorBuffer + 0x1BE)) ;
 	
@@ -1046,7 +1032,5 @@ byte RawDiskDrive::UpdateSystemIndicator(unsigned uiLBAStartSector, unsigned uiS
 		}
 	}
 
-	RETURN_X_IF_NOT(Write(0, 1, bBootSectorBuffer), DeviceDrive_SUCCESS, PartitionManager_FAILURE) ;
-
-	return PartitionManager_SUCCESS ;
+	Write(0, 1, bBootSectorBuffer);
 }

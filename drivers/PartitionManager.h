@@ -22,20 +22,6 @@
 #include <ATADeviceController.h>
 #include <DeviceDrive.h>
 
-#define PartitionManager_SUCCESS					0
-#define PartitionManager_ERR_NOT_PARTITIONED		1
-#define PartitionManager_ERR_INVALID				2
-#define PartitionManager_ERR_PARTITION_TABLE_FULL	3
-#define PartitionManager_ERR_PRIMARY_PARTITION_FULL	4
-#define PartitionManager_ERR_INSUF_SPACE			5
-#define PartitionManager_ERR_EXT_PARTITION_FULL		6
-#define PartitionManager_ERR_NO_EXT_PARTITION		7
-#define PartitionManager_ERR_EXT_PARTITION_BLOCKED	8
-#define PartitionManager_ERR_PARTITION_TABLE_EMPTY	9
-#define PartitionManager_ERR_ETX_PARTITION_TABLE_EMPTY	10
-#define PartitionManager_ERR_NO_PRIM_PART			11
-#define PartitionManager_FAILURE					12
-
 #define MAX_NO_OF_PRIMARY_PARTITIONS	4
 #define MAX_NO_OF_EXT_PARTITIONS		32
 
@@ -116,23 +102,25 @@ class ExtPartitionTable
 class PartitionTable
 {
   public:
-    PartitionTable();
+    PartitionTable(RawDiskDrive& disk);
     ~PartitionTable();
 
-    byte ReadPrimaryPartition(RawDiskDrive* pDisk);
-    byte ReadExtPartition(RawDiskDrive* pDisk);
-    byte CreatePrimaryPartitionEntry(RawDiskDrive* pDisk, unsigned uiSizeInSectors, PartitionInfo::PartitionTypes);
-    byte DeletePrimaryPartition(RawDiskDrive* pDisk);
-    byte CreateExtPartitionEntry(RawDiskDrive* pDisk, unsigned uiSizeInSectors);
-    byte DeleteExtPartition(RawDiskDrive* pDisk);
     void VerbosePrint() const;
+    bool IsEmpty() const { return _partitions.empty(); }
     const upan::list<PartitionEntry> GetPartitions() const { return _partitions; }
+    void ClearPartitionTable();
+    void CreatePrimaryPartitionEntry(unsigned uiSizeInSectors, PartitionInfo::PartitionTypes);
+    void DeletePrimaryPartition();
+    void CreateExtPartitionEntry(unsigned uiSizeInSectors);
+    void DeleteExtPartition();
 
   private:
-    byte VerifyMBR(RawDiskDrive* pDisk, const PartitionInfo* pPartitionInfo) const;
+    void ReadPrimaryPartition();
+    void ReadExtPartition();
+    bool VerifyMBR(const PartitionInfo* pPartitionInfo) const;
 
-    bool     _bIsExtPartitionPresent;
-
+    bool _bIsExtPartitionPresent;
+    RawDiskDrive& _disk;
     PartitionInfo _extPartitionEntry;
     upan::list<PartitionInfo*> _primaryPartitions;
     upan::list<ExtPartitionTable*> _extPartitions;

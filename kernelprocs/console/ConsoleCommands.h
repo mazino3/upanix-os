@@ -29,7 +29,7 @@ typedef struct
 } ConsoleCommand ;
 
 void ConsoleCommands_Init() ;
-bool ConsoleCommands_ExecuteInternalCommand(const char* szCommand) ;
+void ConsoleCommands_ExecuteInternalCommand(const char* szCommand) ;
 bool ConsoleCommands_ExecuteProcess() ;
 
 #endif

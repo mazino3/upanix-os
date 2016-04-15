@@ -35,20 +35,11 @@ static void USBMassBulkStorageDisk_AddDeviceDrive(RawDiskDrive* pDisk)
 	char driveCh = 'a' ;
 	char driveName[5] = { 'u', 's', 'd', '\0', '\0' } ;
 
-	PartitionTable partitionTable ;
-	byte bStatus ;
-
 	SCSIDevice* pDevice = (SCSIDevice*)pDisk->Device();
-	bStatus = pDisk->ReadPartitionTable(&partitionTable) ;
-
-	if(bStatus == PartitionManager_FAILURE)
+	PartitionTable partitionTable(*pDisk);
+	if(partitionTable.IsEmpty())
 	{
-		KC::MDisplay().Message("\n Fatal Error:- Reading Partition Table", ' ') ;
-		return ;
-	}
-	else if(bStatus == PartitionManager_ERR_NOT_PARTITIONED)
-	{
-		KC::MDisplay().Number("\n Disk Not Partitioned: ", bStatus) ;
+    printf("\n Disk Not Partitioned");
 		return ;
 	}
 	
@@ -618,7 +609,14 @@ bool USBDiskDriver::DoAddDevice(USBDevice* pUSBDevice)
 
 		szName[ iCntIndex ] += iLun ;
 		RawDiskDrive* pDisk = DiskDriveManager::Instance().CreateRawDisk(szName, USB_SCSI_DISK, pSCSIDevice) ;
-		USBMassBulkStorageDisk_AddDeviceDrive(pDisk) ;
+    try
+    {
+  		USBMassBulkStorageDisk_AddDeviceDrive(pDisk) ;
+    }
+    catch(const upan::exception& ex)
+    {
+      printf("\n failed to read partition table - %s", ex.Error().c_str());
+    }
 
 		bDeviceFound = true ;
 	}

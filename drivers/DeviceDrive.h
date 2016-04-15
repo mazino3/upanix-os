@@ -194,11 +194,9 @@ class RawDiskDrive
   private:
     RawDiskDrive(const upan::string& name, RAW_DISK_TYPES type, void* device);
   public:
-    byte Read(unsigned uiStartSector, unsigned uiNoOfSectors, byte* pDataBuffer);
-    byte Write(unsigned uiStartSector, unsigned uiNoOfSectors, byte* pDataBuffer);
-    byte ReadPartitionTable(PartitionTable* pPartitionTable);
-    byte ClearPartitionTable();
-    byte UpdateSystemIndicator(unsigned uiLBAStartSector, unsigned uiSystemIndicator);
+    void Read(unsigned uiStartSector, unsigned uiNoOfSectors, byte* pDataBuffer);
+    void Write(unsigned uiStartSector, unsigned uiNoOfSectors, byte* pDataBuffer);
+    void UpdateSystemIndicator(unsigned uiLBAStartSector, unsigned uiSystemIndicator);
 
     const upan::string& Name() const { return _name; }
     RAW_DISK_TYPES Type() const { return _type; }

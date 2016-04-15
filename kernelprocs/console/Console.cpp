@@ -140,29 +140,18 @@ void Console_StartUpanixConsole()
 	}
 }
 
-void Console_ProcessCommand(const char* cmd)
-{
-	if(!Console_ExecuteCommand(cmd))
-		puts("\n No Such Command\n") ;
-}
-
 void Console_ProcessCommand()
 {
 	Console_commandLine[Console_currentCommandPos] = '\0' ;
 	Console_currentCommandPos = 0 ;
-	Console_ProcessCommand(Console_commandLine);
+	Console_ExecuteCommand(Console_commandLine);
 	Console_ClearCommandLine() ;
 }
 
-bool Console_ExecuteCommand(const char* szCommandLine)
+void Console_ExecuteCommand(const char* szCommandLine)
 {
 	CommandLineParser_Parse(szCommandLine) ;
-
 	if(CommandLineParser_GetNoOfCommandLineEntries() != 0)
-	{
-		return ConsoleCommands_ExecuteInternalCommand(CommandLineParser_GetCommand()) ;
-	}
-
-	return true ;
+		ConsoleCommands_ExecuteInternalCommand(CommandLineParser_GetCommand()) ;
 }
 

@@ -20,12 +20,11 @@
 
 # include <Global.h>
 
-void	Console_Initialize() ;
-void	Console_StartUpanixConsole() ;
-void	Console_DisplayCommandLine() ;
-void	Console_BuildCommand() ;
-void	Console_ProcessCommand(const char*) ;
-void	Console_ProcessCommand() ;
-bool	Console_ExecuteCommand(const char* szCommandLine) ;
+void Console_Initialize() ;
+void Console_StartUpanixConsole() ;
+void Console_DisplayCommandLine() ;
+void Console_BuildCommand() ;
+void Console_ProcessCommand() ;
+void Console_ExecuteCommand(const char* szCommandLine) ;
 
 #endif
