@@ -99,6 +99,8 @@ static void ProcessAllocator_InitializeProcessSpaceForOS(unsigned* uiPDEAddress)
 		}
 	}
 
+  MemManager::Instance().MemMapGraphicsLFB(*uiPDEAddress);
+
 //	unsigned uiKernelHeapPageCount ;
 //	unsigned uiPageAddress = MemManager_uiKernelHeapStartAddress ;	
 //	for(i = PROCESS_SPACE_FOR_OS, uiKernelHeapPageCount = 0; 

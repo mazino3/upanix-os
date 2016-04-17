@@ -108,7 +108,7 @@ MemManager::MemManager() :
 	{
 		if(BuildPageTable())
 		{
-      MemMapGraphicsLFB();
+      MemMapGraphicsLFB(MEM_PDBR);
 			Mem_EnablePaging() ;
 	
 			KC::MDisplay().LoadMessage("Memory Manager Initialization", Success) ;
@@ -123,23 +123,32 @@ MemManager::MemManager() :
 	while(1) ;
 }
 
-void MemManager::MemMapGraphicsLFB()
+void MemManager::MemMapGraphicsLFB(unsigned uiPDEAddress)
 {
   if(!GraphicsVideo::Instance())
     return;
-  unsigned uiPDEAddress = MEM_PDBR;
   unsigned noOfPages = (GraphicsVideo::Instance()->LFBSize() / PAGE_SIZE) + 1;
-  unsigned lfbaddress = GraphicsVideo::Instance()->LFBAddress();
+  unsigned availablePages = MEM_GRAPHICS_VIDEO_MAP_SIZE / PAGE_SIZE;
+  if(noOfPages > availablePages)
+  {
+    printf("\n Insufficient graphics video buffer. Required pages: %u", noOfPages);
+    while(1);
+  }
+  unsigned lfbaddress = GraphicsVideo::Instance()->FlatLFBAddress();
+  unsigned mapAddress = MEM_GRAPHICS_VIDEO_MAP_START;
   for(unsigned i = 0; i < noOfPages; ++i)
   {
     unsigned addr = lfbaddress + PAGE_SIZE * i;
-    unsigned uiPDEIndex = ((lfbaddress >> 22) & 0x3FF);
+    unsigned uiPDEIndex = ((mapAddress >> 22) & 0x3FF);
     unsigned uiPTEAddress = (((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPDEIndex]) & 0xFFFFF000;
-    unsigned uiPTEIndex = ((addr >> 12) & 0x3FF);
+    unsigned uiPTEIndex = ((mapAddress >> 12) & 0x3FF);
     // This page is a Read Only area for user process. 0x5 => 101 => User Domain, Read Only, Present Bit
     ((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPTEIndex] = (addr & 0xFFFFF000) | 0x5;
-    MarkPageAsAllocated(addr / PAGE_SIZE);
+    //No need to mark page as allocated as that would be already done while building PTE for reserved area
+//    MarkPageAsAllocated(mapAddress / PAGE_SIZE);
+    mapAddress += PAGE_SIZE;
   }
+  GraphicsVideo::Instance()->MappedLFBAddress(MEM_GRAPHICS_VIDEO_MAP_START);
 }
 
 void MemManager::InitPage(unsigned uiPage)

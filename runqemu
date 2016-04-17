@@ -103,7 +103,7 @@ $SUDO qemu-system-x86_64 \
 -smp 1 \
 -net none \
 \
--drive if=none,id=usbdrive,file=$UPANIX_HOME/USBImage/200MUSB.img \
+-drive if=none,id=usbdrive,file=$UPANIX_HOME/USBImage/300MUSB.img \
 \
 -usb \
 -device usb-ehci,id=ehci \

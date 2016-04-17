@@ -75,11 +75,11 @@ class MemManager
 		{
 			return m_uiKernelAUTAddress ;
 		}
+    void MemMapGraphicsLFB(unsigned uiPDEAddress);
 
 	private:
 		bool BuildRawPageMap() ;
 		bool BuildPageTable() ;
-    void MemMapGraphicsLFB();
 
 	private:
 		unsigned m_uiNoOfPages ;

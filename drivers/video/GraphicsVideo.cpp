@@ -39,7 +39,8 @@ void GraphicsVideo::Create()
 
 GraphicsVideo::GraphicsVideo(const framebuffer_info_t& fbinfo)
 {
-  _lfbaddress = fbinfo.framebuffer_addr;
+  _flatLFBAddress = fbinfo.framebuffer_addr;
+  _mappedLFBAddress = fbinfo.framebuffer_addr;
   _height = fbinfo.framebuffer_height;
   _width = fbinfo.framebuffer_width;
   _pitch = fbinfo.framebuffer_pitch;
@@ -53,7 +54,7 @@ void GraphicsVideo::SetPixel(unsigned x, unsigned y, unsigned color)
 {
   if(y >= _height || x >= _width)
     return;
-  unsigned* p = (unsigned*)(_lfbaddress + y * _pitch + x * _bytesPerPixel);
+  unsigned* p = (unsigned*)(_mappedLFBAddress + y * _pitch + x * _bytesPerPixel);
   *p = (color | 0xFF000000);
 }
 
@@ -65,7 +66,7 @@ void GraphicsVideo::FillRect(unsigned sx, unsigned sy, unsigned width, unsigned 
     y_offset = y * _pitch;
     for(unsigned x = sx; x < (sx + width) && x < _width; ++x)
     {
-      unsigned* p = (unsigned*)(_lfbaddress + y_offset + x * _bytesPerPixel);
+      unsigned* p = (unsigned*)(_mappedLFBAddress + y_offset + x * _bytesPerPixel);
       *p = (color | 0xFF000000);
     }
   }
@@ -85,7 +86,7 @@ void GraphicsVideo::DrawChar(byte ch, unsigned x, unsigned y, unsigned fg, unsig
   unsigned yr = 0;
   for(unsigned f = 0; f < 8; ++y)
   {
-    unsigned lfbp = _lfbaddress + y * _pitch + x * _bytesPerPixel;
+    unsigned lfbp = _mappedLFBAddress + y * _pitch + x * _bytesPerPixel;
     for(unsigned i = 0x80; i != 0; i >>= 1, lfbp += _bytesPerPixel)
       *(unsigned*)lfbp = font_data[f] & i ? fg : bg;
 
