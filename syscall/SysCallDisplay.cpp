@@ -107,5 +107,16 @@ __volatile__ unsigned uiP9)
 				KC::MDisplay().RawCharacter((char)(uiP1), uiP2, uiP3) ; 
 			}
 			break ;
+
+    case SYS_CALL_DISPLAY_SIZE:
+      // P1 => Row size (return)
+      // P2 => Column size (return)
+      {
+        unsigned* maxRows = KERNEL_ADDR(bDoAddrTranslation, unsigned*, uiP1);
+        unsigned* maxCols = KERNEL_ADDR(bDoAddrTranslation, unsigned*, uiP2);
+        *maxRows = KC::MDisplay().MaxRows();
+        *maxCols = KC::MDisplay().MaxColumns();
+      }
+      break;
 	}
 }
