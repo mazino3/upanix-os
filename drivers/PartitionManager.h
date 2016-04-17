@@ -27,8 +27,11 @@
 
 class GPTHeader
 {
+  public:
+    void CheckSignature() const;
+    uint64_t PartArrStartLBA() const { return _partArrStartLBA; }
   private:
-    byte _signature[8]; //"EFI PART", 45h 46h 49h 20h 50h 41h 52h 54h or 0x5452415020494645ULL[a] on little-endian machines
+    uint8_t  _signature[8]; //"EFI PART", 45h 46h 49h 20h 50h 41h 52h 54h or 0x5452415020494645ULL[a] on little-endian machines
     uint32_t _revision; //for GPT version 1.0 (through at least UEFI version 2.3.1), the value is 00h 00h 01h 00h
     uint32_t _headerSize; //usually 92 bytes
     uint32_t _crc32; //offset +0 up to header size, with this field zeroed during calculation
@@ -37,12 +40,27 @@ class GPTHeader
     uint64_t _backupLBA; //location of the other header copy
     uint64_t _firstUsableLBA; //primary partition table last LBA + 1
     uint64_t _lastUsableLBA; //secondary partition table first LBA - 1
-    byte _diskGUID[16]; //also referred as UUID on UNIXes
-    uint64_t _startLBAPartArr; //Starting LBA of array of partition entries (always 2 in primary copy)
+    uint8_t  _diskGUID[16]; //also referred as UUID on UNIXes
+    uint64_t _partArrStartLBA; //Starting LBA of array of partition entries (always 2 in primary copy)
     uint32_t _partArrSize; //Number of partition entries in array
     uint32_t _partEntrySize; //Size of a single partition entry (usually 80h or 128)
     uint32_t _partArrCRC32; //CRC32 of partition array
 } PACKED;
+
+class GPTPartitionEntry
+{
+  public:
+    bool IsEmpty() const;
+    uint64_t FirstLBA() const { return _firstLBA; }
+    uint64_t Size() const { return _lastLBA - _firstLBA + 1; }
+  private:
+    uint8_t  _partitionTypeGUID[16];
+    uint8_t  _uniquePartitionGUID[16];
+    uint64_t _firstLBA;
+    uint64_t _lastLBA; //inclusive, usually odd
+    uint64_t _attrFlags; //Attribute flags (e.g. bit 60 denotes read-only)
+    uint8_t  _partitionName[72];
+};
 
 class MBRPartitionInfo
 {
@@ -134,10 +152,12 @@ class PartitionTable
     void DeleteExtPartition();
 
   private:
-    void ReadPrimaryPartition();
-    void ReadExtPartition();
-    bool VerifyMBR(const MBRPartitionInfo* pPartitionInfo) const;
+    void ReadGPT();
+    void ReadMBRPartition(const MBRPartitionInfo*);
+    void VerifyMBR(const MBRPartitionInfo*);
 
+    bool _bIsGPTPartition;
+    bool _bIsMBRPartition;
     bool _bIsExtPartitionPresent;
     RawDiskDrive& _disk;
     MBRPartitionInfo _extPartitionEntry;

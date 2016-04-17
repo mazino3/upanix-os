@@ -22,7 +22,26 @@
 
 #define SI_EXT	5
 #define SI_EMTY	0x01
+#define SI_GPT  0xEE
 #define DEF_START_SEC 63
+
+void GPTHeader::CheckSignature() const
+{
+  static const char* EFI_SIG = "EFI PART";
+  char signature[9];
+  memcpy(signature, _signature, 8);
+  signature[8] = '\0';
+  if(strcmp(signature, EFI_SIG) != 0)
+    throw upan::exception(XLOC, "GPT Header with unsupported Signature: %s", signature);
+}
+
+bool GPTPartitionEntry::IsEmpty() const
+{
+  for(int i = 0; i < 16; ++i)
+    if(_partitionTypeGUID[i] != 0)
+      return false;
+  return true;
+}
 
 MBRPartitionInfo::MBRPartitionInfo(unsigned lbaStart, unsigned size, MBRPartitionInfo::Types type) :
   BootIndicator(type == ACTIVE ? 0x80 : 0x00),
@@ -53,11 +72,19 @@ MBRPartitionInfo::MBRPartitionInfo(unsigned lbaStart, unsigned size, MBRPartitio
 */
 }
 
-PartitionTable::PartitionTable(RawDiskDrive& disk) : _bIsExtPartitionPresent(false), _disk(disk)
+PartitionTable::PartitionTable(RawDiskDrive& disk) 
+  : _bIsGPTPartition(false), _bIsMBRPartition(false), 
+    _bIsExtPartitionPresent(false), _disk(disk)
 {
-  ReadPrimaryPartition();
-  if(_bIsExtPartitionPresent)
-  	ReadExtPartition();
+	byte bBootSectorBuffer[512] ;
+	_disk.Read(0, 1, bBootSectorBuffer);
+	MBRPartitionInfo* pPartitionInfo = ((MBRPartitionInfo*)(bBootSectorBuffer + 0x1BE));
+  VerifyMBR(pPartitionInfo);
+
+  if(_bIsMBRPartition)
+    ReadMBRPartition(pPartitionInfo);
+  else if(_bIsGPTPartition)
+    ReadGPT();
 }
 
 PartitionTable::~PartitionTable()
@@ -74,15 +101,14 @@ void PartitionTable::ClearPartitionTable()
     DeletePrimaryPartition();
 }
 
-bool PartitionTable::VerifyMBR(const MBRPartitionInfo* pPartitionInfo) const
+void PartitionTable::VerifyMBR(const MBRPartitionInfo* pPartitionInfo)
 {
-	unsigned i ;
 	unsigned uiActivePartitionCount = 0 ;
 	byte bPartitioned = false ;
 	unsigned uiPrevEndLBASector = 0 ;
 	unsigned uiSectorCount = 0 ;
 
-	for(i = 0; i < MAX_NO_OF_PRIMARY_PARTITIONS; i++)
+	for(unsigned i = 0; i < MAX_NO_OF_PRIMARY_PARTITIONS; i++)
 	{
 		if(pPartitionInfo[i].BootIndicator == 0x80)
 			uiActivePartitionCount++ ;
@@ -94,6 +120,11 @@ bool PartitionTable::VerifyMBR(const MBRPartitionInfo* pPartitionInfo) const
 				uiPrevEndLBASector = pPartitionInfo[i].LBAStartSector + pPartitionInfo[i].LBANoOfSectors - 1 ;
 				uiSectorCount += pPartitionInfo[i].LBANoOfSectors ;
 				bPartitioned = true ;
+        if(i == 0 && pPartitionInfo[i].SystemIndicator == SI_GPT)
+        {
+          _bIsGPTPartition = true;
+          return;
+        }
 			}
 			else
 			{
@@ -106,20 +137,35 @@ bool PartitionTable::VerifyMBR(const MBRPartitionInfo* pPartitionInfo) const
 	}
 
 	unsigned uiSectorLimit = _disk.SizeInSectors();
-
-	return !(bPartitioned == false || uiActivePartitionCount != 1 || uiSectorCount > uiSectorLimit);
+  _bIsMBRPartition = !(bPartitioned == false || uiActivePartitionCount != 1 || uiSectorCount > uiSectorLimit);
 }
 
-void PartitionTable::ReadPrimaryPartition()
+void PartitionTable::ReadGPT()
+{
+  byte bGPTHeaderBuffer[ 512 ];
+  _disk.Read(1, 1, bGPTHeaderBuffer);
+  GPTHeader* gptHeader = reinterpret_cast<GPTHeader*>(bGPTHeaderBuffer);
+  gptHeader->CheckSignature();
+  byte bPartitionEntry[ 512 ];
+  // 128 bytes per partition entry --> 4 entries per sector
+  for(unsigned s = gptHeader->PartArrStartLBA(); ; ++s)
+  {
+    _disk.Read(s, 1, bPartitionEntry);
+    GPTPartitionEntry* pe = reinterpret_cast<GPTPartitionEntry*>(bPartitionEntry);
+    for(unsigned i = 0; i < 4; ++i)
+    {
+      if(pe[i].IsEmpty())
+        return;
+      //TODO: SI_EMPTY to valid partition type
+      _partitions.push_back(PartitionEntry(pe[i].FirstLBA(), pe[i].Size(), SI_EMTY));
+    }
+  }
+}
+
+void PartitionTable::ReadMBRPartition(const MBRPartitionInfo* pPartitionInfo)
 {
 	byte bBootSectorBuffer[512] ;
   
-	_disk.Read(0, 1, bBootSectorBuffer);
-
-	MBRPartitionInfo* pPartitionInfo = ((MBRPartitionInfo*)(bBootSectorBuffer + 0x1BE)) ;
-  if(!VerifyMBR(pPartitionInfo))
-    return;
-
 	for(unsigned i = 0; i < MAX_NO_OF_PRIMARY_PARTITIONS; i++)
 	{
 		if(pPartitionInfo[i].IsEmpty())
@@ -136,20 +182,11 @@ void PartitionTable::ReadPrimaryPartition()
       _partitions.push_back(PartitionEntry(pPartitionInfo[i].LBAStartSector, pPartitionInfo[i].LBANoOfSectors, pPartitionInfo[i].SystemIndicator));
     }
 	}
-}
 
-void PartitionTable::ReadExtPartition()
-{
-	if(!_bIsExtPartitionPresent)
+  if(!_bIsExtPartitionPresent)
     return;
-
 	unsigned uiExtSectorID, uiStartExtSectorID;
-	MBRPartitionInfo* pPartitionInfo ;
-
-	byte bBootSectorBuffer[512] ;
-
 	uiExtSectorID = uiStartExtSectorID = _extPartitionEntry.LBAStartSector ;
-
 	for(;;)
 	{
 		_disk.Read(uiExtSectorID, 1, bBootSectorBuffer);
@@ -168,7 +205,6 @@ void PartitionTable::ReadExtPartition()
 		uiExtSectorID = uiStartExtSectorID + pPartitionInfo[1].LBAStartSector ;
 	}
 }
-
 
 void PartitionTable::CreatePrimaryPartitionEntry(unsigned uiSizeInSectors, MBRPartitionInfo::Types type)
 {
@@ -363,6 +399,7 @@ void PartitionTable::DeleteExtPartition()
   _partitions.pop_back();
 }
 
+//TODO: should work for GPT partitions
 void PartitionTable::VerbosePrint() const
 {
   printf("\n%-4s %-10s %-10s %-10s", "Boot", "Start", "End", "SysId");
