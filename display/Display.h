@@ -146,7 +146,6 @@ class Display
     void ClearScreen();
 		void UpdateCursorPosition(int iCursorPos, bool bUpdateCursorOnScreen);
     void NextLine();
-    void ScrollDown();
     void Message(const __volatile__ char* message, const Attribute& attr);
     void Message(const __volatile__ char* message, const byte& rawAttr);
     void nMessage(const __volatile__ char* message, int len, const Attribute& attr);
@@ -163,6 +162,7 @@ class Display
     void ClearLine(int iStartPos);
 		void RefreshScreen();
 		int GetCurrentCursorPosition();
+    void ScrollDown();
 
     //TODO
     int GetMouseCursorPos() { return 0; }
@@ -174,12 +174,14 @@ class Display
 	protected:
 		Display(unsigned rows, unsigned columns);
 		
+    void PutCharOnBuffer(int iPos, byte ch, byte attr);
     void PutChar(int iPos, byte ch, byte attr);
     virtual void DirectPutChar(int iPos, byte ch, byte attr) = 0;
 		DisplayBuffer& GetDisplayBuffer(int pid);
 		DisplayBuffer& GetDisplayBuffer();
 
 		virtual void Goto(int x, int y) = 0;
+    virtual void DoScrollDown() = 0;
 
 		byte* GetDisplayMemAddress(int pid);
 		byte GetChar(int iPos);
@@ -201,6 +203,7 @@ class VGATextConsole : public Display
 		void InitCursor();
 		virtual void Goto(int x, int y);
     virtual void DirectPutChar(int iPos, byte ch, byte attr);
+    virtual void DoScrollDown();
 
     class VideoBuffer : public DisplayBuffer
     {
@@ -216,6 +219,7 @@ class GraphicsTextConsole : public Display
     GraphicsTextConsole(unsigned rows, unsigned columns);
 		virtual void Goto(int x, int y);
     virtual void DirectPutChar(int iPos, byte ch, byte attr);
+    virtual void DoScrollDown();
 
     class VideoBuffer : public DisplayBuffer
     {

@@ -40,7 +40,8 @@ sleep 1
 #-usbdevice disk:$UPANIX_HOME/USBImage/30MUSB.img
 #-hda /dev/sda \
 #
-#-drive if=none,id=usbdrive,file=$UPANIX_HOME/USBImage/200MUSB.img \
+#-drive if=none,id=usbdrive,file=/dev/sdb \
+#-drive if=none,id=usbdrive,file=$UPANIX_HOME/USBImage/300MUSB.img \
 
 FDA=$UPANIX_HOME/floppy/GrubFloppy_ext.img
 FDB=$UPANIX_HOME/floppy/DRV1.FDD.img
@@ -53,7 +54,6 @@ $SUDO qemu-system-x86_64 \
 -m 128 \
 -smp 1 \
 -net none \
-\
 -drive if=none,id=usbdrive,file=$UPANIX_HOME/USBImage/300MUSB.img \
 -usb \
 -device usb-ehci,id=ehci \

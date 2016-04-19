@@ -99,3 +99,18 @@ void GraphicsVideo::DrawChar(byte ch, unsigned x, unsigned y, unsigned fg, unsig
       ++yr;
   }
 }
+
+//TODO: this is assuming 4 bytes per pixel
+//TODO: initialize y and x scale as class members and base all calculations on y/x scale instead of assuming/hardcoding
+void GraphicsVideo::ScrollDown()
+{
+  static const unsigned maxSize = _width * _height;
+  //1 line = 16 rows as we are scaling y axis by 16
+  static const unsigned oneLine = _width * 16;
+
+  memcpy(_mappedLFBAddress, _mappedLFBAddress + oneLine * _bytesPerPixel, (maxSize - oneLine) * _bytesPerPixel);
+  unsigned i = maxSize - oneLine;
+  unsigned* lfb = (unsigned*)(_mappedLFBAddress);
+  for(; i < maxSize; ++i)
+    lfb[i] = 0xFF000000;
+}

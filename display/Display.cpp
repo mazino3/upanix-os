@@ -309,24 +309,6 @@ void Display::NextLine()
   ScrollDown();
 }
 
-void Display::ScrollDown()
-{
-  static const unsigned NO_OF_DISPLAY_BYTES = (_maxRows - 1) * _maxColumns * NO_BYTES_PER_CHARACTER;
-  static const unsigned OFFSET = _maxColumns * NO_BYTES_PER_CHARACTER;
-	
-	if(!(GetCurrentCursorPosition() >= (int)(_maxRows * _maxColumns)))
-		return;
-
-  unsigned i;
-	for(i = 0; i < NO_OF_DISPLAY_BYTES; i += 2)
-		PutChar(i, GetChar(i + OFFSET), GetChar(i + OFFSET + 1));
-
-	for(; i < NO_OF_DISPLAY_BYTES + _maxColumns * NO_BYTES_PER_CHARACTER; i += 2)
-    PutChar(i, ' ', WHITE_ON_BLACK());
-
-	UpdateCursorPosition(NO_OF_DISPLAY_BYTES / 2, true);
-}
-
 void Display::ClearLine(int iStartPos)
 {
 	if(iStartPos == START_CURSOR_POS)
@@ -435,13 +417,40 @@ byte Display::GetChar(int iPos)
   return GetDisplayBuffer().GetChar(iPos);
 }
 
-void Display::PutChar(int iPos, byte ch, byte attr)
+void Display::PutCharOnBuffer(int iPos, byte ch, byte attr)
 {
   auto& db = GetDisplayBuffer();
   db.PutChar(iPos, ch);
   db.PutChar(iPos + 1, attr);
+}
+
+void Display::PutChar(int iPos, byte ch, byte attr)
+{
+  PutCharOnBuffer(iPos, ch, attr);
 	if(IS_KERNEL() || IS_FG_PROCESS_GROUP())
     DirectPutChar(iPos, ch, attr);
+}
+
+void Display::ScrollDown()
+{
+	if(!(GetCurrentCursorPosition() >= (int)(_maxRows * _maxColumns)))
+		return;
+
+  static const unsigned NO_OF_DISPLAY_BYTES = (_maxRows - 1) * _maxColumns * NO_BYTES_PER_CHARACTER;
+  static const unsigned OFFSET = _maxColumns * NO_BYTES_PER_CHARACTER;
+
+  byte* buffer = GetDisplayBuffer().GetBuffer();
+  memcpy(buffer, buffer + OFFSET, NO_OF_DISPLAY_BYTES);
+	for(unsigned i = NO_OF_DISPLAY_BYTES; i < NO_OF_DISPLAY_BYTES + _maxColumns * NO_BYTES_PER_CHARACTER; i += 2)
+  {
+    buffer[i] = ' '; 
+    buffer[i + 1] = WHITE_ON_BLACK();
+  }
+
+  if(IS_KERNEL() || IS_FG_PROCESS_GROUP())
+    DoScrollDown();
+
+  UpdateCursorPosition(NO_OF_DISPLAY_BYTES / 2, true);
 }
 
 VGATextConsole::VGATextConsole() : Display(25, 80)
@@ -478,6 +487,20 @@ void VGATextConsole::Goto(int x, int y)
 
   PortCom_SendByte(CRT_INDEX_REG, 14);
   PortCom_SendByte(CRT_DATA_REG, (iPos >> 8) & 0xFF);
+}
+
+void VGATextConsole::DoScrollDown()
+{
+  static const unsigned NO_OF_DISPLAY_BYTES = (_maxRows - 1) * _maxColumns * NO_BYTES_PER_CHARACTER;
+  static const unsigned OFFSET = _maxColumns * NO_BYTES_PER_CHARACTER;
+
+  static byte* vga_frame_buffer = (byte*)(VIDEO_BUFFER_ADDRESS - GLOBAL_DATA_SEGMENT_BASE);
+  memcpy(vga_frame_buffer, vga_frame_buffer + OFFSET, NO_OF_DISPLAY_BYTES);
+	for(unsigned i = NO_OF_DISPLAY_BYTES; i < NO_OF_DISPLAY_BYTES + _maxColumns * NO_BYTES_PER_CHARACTER; i += 2)
+  {
+    vga_frame_buffer[i] = ' '; 
+    vga_frame_buffer[i + 1] = WHITE_ON_BLACK();
+  }
 }
 
 GraphicsTextConsole::GraphicsTextConsole(unsigned rows, unsigned columns) : Display(rows, columns)
@@ -524,6 +547,11 @@ void GraphicsTextConsole::DirectPutChar(int iPos, byte ch, byte attr)
   GraphicsVideo::Instance()->DrawChar(ch, x, y, 
     GRAPHICS_COLOR[attr & FG_BRIGHT_WHITE], 
     GRAPHICS_COLOR[(attr & BG_WHITE) >> 4]);
+}
+
+void GraphicsTextConsole::DoScrollDown()
+{
+  GraphicsVideo::Instance()->ScrollDown();
 }
 
 void Display::RefreshScreen()

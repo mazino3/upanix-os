@@ -33,6 +33,7 @@ class GraphicsVideo
     void SetPixel(unsigned x, unsigned y, unsigned color);
     void FillRect(unsigned sx, unsigned sy, unsigned width, unsigned height, unsigned color);
     void DrawChar(byte ch, unsigned x, unsigned y, unsigned fg, unsigned bg);
+    void ScrollDown();
   private:
     static GraphicsVideo* _instance;
     unsigned _flatLFBAddress;
