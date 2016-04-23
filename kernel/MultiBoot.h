@@ -138,12 +138,10 @@ typedef struct module
    but no size.  */
 typedef struct memory_map
 {
-  unsigned long size;
-  unsigned long base_addr_low;
-  unsigned long base_addr_high;
-  unsigned long length_low;
-  unsigned long length_high;
-  unsigned long type;
+  uint32_t size;
+  uint64_t base_addr;
+  uint64_t length;
+  uint32_t type;
 } memory_map_t;
 
 /********************** These are UPANIX Specific declarations ***********************/
@@ -158,16 +156,17 @@ class MultiBoot
 			static MultiBoot instance;
 			return instance;
 		}
-		unsigned GetRamSizeInKB();
-		unsigned GetRamSizeInMB();
-		unsigned GetRamSize();
+    //GetRamSize - for 32bit OS - with a cap of 4 GB
+		unsigned GetRamSize() { return _ramSize; }
+    uint64_t GetRealRamSize() { return _realRamSize; }
 		byte GetBootDeviceID();
 		byte GetBootPartitionID();
     const framebuffer_info_t* VideoFrameBufferInfo() const;
     void Print();
 	private:
 		multiboot_info_t* _pInfo;
-    unsigned          _memSizeInKB;
+    uint64_t          _realRamSize;
+    unsigned          _ramSize;
 };
 
 #endif 

@@ -19,28 +19,25 @@
 #include <MemConstants.h>
 #include <PortCom.h>
 
-MultiBoot::MultiBoot()
+MultiBoot::MultiBoot() : _realRamSize(0), _ramSize(0)
 {
 	_pInfo = (multiboot_info_t*)(&MULTIBOOT_INFO_ADDR) ;
-  unsigned _littleLessThan4GB = 4 * 1024 * 1023;
-  _memSizeInKB = _pInfo->mem_lower + _pInfo->mem_upper;
-  if(_memSizeInKB > _littleLessThan4GB)
-    _memSizeInKB = _littleLessThan4GB;
-}
-
-unsigned MultiBoot::GetRamSizeInKB()
-{
-	return _memSizeInKB;
-}
-
-unsigned MultiBoot::GetRamSizeInMB()
-{
-	return MultiBoot::GetRamSizeInKB() / 1024 ;
-}
-
-unsigned MultiBoot::GetRamSize()
-{
-	return MultiBoot::GetRamSizeInKB() * 1024 ;
+  if((_pInfo->flags) & (1 << 6))
+  {
+    unsigned LITTLE_LESS_THAN_4GB = 4 * 1024 * 1024 * 1023;
+    memory_map_t* mmap = (memory_map_t*)(_pInfo->mmap_addr);
+    while((unsigned)mmap < _pInfo->mmap_addr + _pInfo->mmap_length)
+    {
+      _realRamSize += mmap->length;
+      mmap = (memory_map_t*)((unsigned)mmap + mmap->size + sizeof(uint32_t));
+    }
+    if(_realRamSize > LITTLE_LESS_THAN_4GB)
+      _ramSize = LITTLE_LESS_THAN_4GB;
+    else
+      _ramSize = _realRamSize;
+  }
+  else //TODO: use some other approach to find RAM or KERNEL PANIC
+    _ramSize = 128 * 1024 * 1024; //fake it
 }
 
 byte MultiBoot::GetBootDeviceID()
@@ -67,8 +64,27 @@ void MultiBoot::Print()
 
   sprintf(buffer, "\n FLAG: 0x%x", _pInfo->flags);
   msg += buffer;
-  sprintf(buffer, "\n MEM_SIZE: %u", GetRamSizeInMB());
-  msg += buffer;
+  
+  if((_pInfo->flags) & 0x1)
+  {
+    sprintf(buffer, "\n LOWER_MEM: %u, UPPER_MEM: %u", _pInfo->mem_lower, _pInfo->mem_upper);
+    msg += buffer;
+  }
+
+  if((_pInfo->flags) & (1 << 6))
+  {
+    memory_map_t* mmap = (memory_map_t*)(_pInfo->mmap_addr);
+    int i = 0;
+    while((unsigned)mmap < _pInfo->mmap_addr + _pInfo->mmap_length)
+    {
+      sprintf(buffer, "\n%d) Address: %llu, Length: %llu, Type: %u", ++i, mmap->base_addr, mmap->length, mmap->type);
+      msg += buffer;
+      mmap = (memory_map_t*)((unsigned)mmap + mmap->size + sizeof(uint32_t));
+    }
+
+    sprintf(buffer, "\n Total RAM SIZE: %llu", _realRamSize);
+    msg += buffer;
+  }
 
   if((_pInfo->flags) & (1 << 11))
   {
