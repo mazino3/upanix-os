@@ -1382,8 +1382,6 @@ static void UHCIController_IRQHandler()
 
 UHCIManager::UHCIManager()
 {
-	bool bControllerFound = false ;
-
 	for(auto pPCIEntry : PCIBusHandler::Instance().PCIEntries())
 	{
 		if(pPCIEntry->bHeaderType & PCI_HEADER_BRIDGE)
@@ -1395,11 +1393,10 @@ UHCIManager::UHCIManager()
 		{
       printf("\n Interface = %u, Class = %u, SubClass = %u", pPCIEntry->bInterface, pPCIEntry->bClassCode, pPCIEntry->bSubClass);
       _uhciEntries.push_back(pPCIEntry);
-			bControllerFound = true ;
 		}
 	}
 	
-	if(bControllerFound)
+	if(_uhciEntries.size())
 		KC::MDisplay().LoadMessage("USB UHCI Controller Found", Success) ;
 	else
 		KC::MDisplay().LoadMessage("No USB UHCI Controller Found", Failure) ;
