@@ -35,8 +35,8 @@
 EHCIController::EHCIController(PCIEntry* pPCIEntry, int iMemMapIndex) 
   : _pPCIEntry(pPCIEntry), _pCapRegs(nullptr), _pOpRegs(nullptr), _pAsyncReclaimQueueHead(nullptr)
 {
-	if(!pPCIEntry->BusEntity.NonBridge.bInterruptLine)
-    throw upan::exception(XLOC, "EHCI device with no IRQ. Check BIOS/PCI settings!");
+//	if(!pPCIEntry->BusEntity.NonBridge.bInterruptLine)
+  //  throw upan::exception(XLOC, "EHCI device with no IRQ. Check BIOS/PCI settings!");
 
 	unsigned uiIOAddr = pPCIEntry->BusEntity.NonBridge.uiBaseAddress0;
 	printf("\n PCI Base Addr: %x", uiIOAddr);

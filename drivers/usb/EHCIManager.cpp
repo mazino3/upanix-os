@@ -21,8 +21,6 @@
 
 EHCIManager::EHCIManager()
 {
-	byte bControllerFound = false ;
-
 	for(auto pPCIEntry : PCIBusHandler::Instance().PCIEntries())
 	{
 		if(pPCIEntry->bHeaderType & PCI_HEADER_BRIDGE)
@@ -34,12 +32,18 @@ EHCIManager::EHCIManager()
 		{
       printf("\n Interface = %u, Class = %u, SubClass = %u", pPCIEntry->bInterface, pPCIEntry->bClassCode, pPCIEntry->bSubClass);
       int memMapIndex = _controllers.size();
-      _controllers.push_back(new EHCIController(pPCIEntry, memMapIndex));
-			bControllerFound = true ;
+      try
+      {
+        _controllers.push_back(new EHCIController(pPCIEntry, memMapIndex));
+      }
+      catch(const upan::exception& ex)
+      {
+        printf("\n Failed to add EHCI controller - Reason: %s", ex.Error().c_str());
+      }
 		}
 	}
 	
-	if(bControllerFound)
+	if(_controllers.size())
 		KC::MDisplay().LoadMessage("USB EHCI Controller Found", Success) ;
 	else
 		KC::MDisplay().LoadMessage("No USB EHCI Controller Found", Failure) ;
