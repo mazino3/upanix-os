@@ -145,7 +145,7 @@ void MemManager::MemMapGraphicsLFB(unsigned uiPDEAddress)
     // This page is a Read Only area for user process. 0x5 => 101 => User Domain, Read Only, Present Bit
     ((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPTEIndex] = (addr & 0xFFFFF000) | 0x5;
     //No need to mark page as allocated as that would be already done while building PTE for reserved area
-//    MarkPageAsAllocated(mapAddress / PAGE_SIZE);
+    MarkPageAsAllocated(addr / PAGE_SIZE);
     mapAddress += PAGE_SIZE;
   }
   GraphicsVideo::Instance()->MappedLFBAddress(MEM_GRAPHICS_VIDEO_MAP_START);
@@ -153,9 +153,8 @@ void MemManager::MemMapGraphicsLFB(unsigned uiPDEAddress)
 
 void MemManager::InitPage(unsigned uiPage)
 {
-	uiPage = uiPage * PAGE_SIZE ;
-	for(int x = 0; x < 1024; x++)
-		((unsigned*)(uiPage - GLOBAL_DATA_SEGMENT_BASE))[x] = 0 ;
+	uiPage = uiPage * PAGE_SIZE;
+  memset((void*)(uiPage - GLOBAL_DATA_SEGMENT_BASE), 0, PAGE_SIZE);
 }
 
 bool MemManager::BuildRawPageMap()
@@ -276,6 +275,9 @@ Result MemManager::MarkPageAsAllocated(unsigned uiPageNumber)
 {
   ProcessSwitchLock pLock;
 	unsigned uiPageMapIndex = uiPageNumber / 32 ;
+  //Sometimes MEM IO addresses can fall beyond actual ram size (?) - no need to mark those pages as allocated then
+  if(uiPageMapIndex >= m_uiPageMapSize)
+    return Success;
 	unsigned uiPageBitIndex = uiPageNumber % 32 ;
 	unsigned uiCurVal = (m_uiPageMap[ uiPageMapIndex ] >> uiPageBitIndex) & 0x1 ;
 	if(uiCurVal)
