@@ -37,7 +37,7 @@ static void KBDriver_Handler()
 
 	__volatile__ char key ;
 
-	//KC::MDisplay().Message("\n KB IRQ") ;
+//  printf("\nKB IRQ\n") ;
 	KBDriver::Instance().WaitForRead();
 	if(!(PortCom_ReceiveByte(KB_STAT_PORT) & 0x20))
 	{
