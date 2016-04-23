@@ -76,8 +76,6 @@ PIC::PIC() : NO_IRQ(999),
 	PortCom_SendByte(SLAVE_PORTB, 0xff) ;
 
 	m_IRQMask = 0xFFFF ;
-
-	KC::MDisplay().LoadMessage("PIC Initialization", Success) ;
 }
 
 void PIC::EnableAllInterrupts()

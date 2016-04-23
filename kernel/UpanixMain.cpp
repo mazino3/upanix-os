@@ -44,6 +44,7 @@
 # include <EHCIManager.h>
 # include <exception.h>
 # include <GraphicsVideo.h>
+# include <KBDriver.h>
 
 /**** Global Variable declaration/definition *****/
 byte KERNEL_MODE ;
@@ -133,6 +134,7 @@ void Initialize()
 	KERNEL_MODE = true ;
 	SPECIAL_TASK = false ;
 
+  PIC::Instance();
 	MultiBoot::Instance();
 	Display::Create();
 	KC::MDisplay().Message("\n****    Welcome To Upanix   ****\n", Display::Attribute(' ')) ;
@@ -146,7 +148,6 @@ void Initialize()
   try
   {
     IDT::Instance();
-    PIC::Instance();
     DMA_Initialize();
     PIT_Initialize();
 
@@ -174,7 +175,6 @@ void Initialize()
   /*End - Peripheral Device Initialization */
 
     RTC::Initialize() ;
-    //while(1) ;
     
     //USB
     USBController::Instance();
