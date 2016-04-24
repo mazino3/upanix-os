@@ -39,7 +39,7 @@ EHCIDevice::EHCIDevice(EHCIController& controller)
 	char bConfigValue = 0;
   if(!GetConfigValue(bConfigValue))
     throw upan::exception(XLOC, "GetConfigVal Failed") ;
-	printf("\n\n ConfifValue: %d", bConfigValue) ;
+	printf("\n ConfifValue: %d", bConfigValue) ;
 
   if(!CheckConfiguration(bConfigValue, devDesc.bNumConfigs))
     throw upan::exception(XLOC, "CheckConfig Failed");
@@ -47,13 +47,13 @@ EHCIDevice::EHCIDevice(EHCIController& controller)
   if(!GetConfigDescriptor(devDesc.bNumConfigs, &_pArrConfigDesc))
     throw upan::exception(XLOC, "GeConfigDesc Failed");
 
-  if(!GetStringDescriptorZero(&_pStrDescZero))
-    throw upan::exception(XLOC, "GetStringDescZero Failed");
-
 	USBDataHandler_CopyDevDesc(&_deviceDesc, &devDesc, sizeof(USBStandardDeviceDesc)) ;
 
-	SetLangId();
-
+  if(GetStringDescriptorZero(&_pStrDescZero))
+	  SetLangId();
+  else
+//    throw upan::exception(XLOC, "GetStringDescZero Failed");
+    printf("\n String DESC not supported!");
 	_iConfigIndex = 0 ;
 
 	for(int i = 0; i < devDesc.bNumConfigs; i++)
@@ -283,7 +283,7 @@ void EHCIDevice::GetDeviceStringDesc(upan::string& desc, int descIndex)
     return;
 
   int iLen = ((USBStringDescZero*)&szPart)->bLength ;
-  printf("\n String Index: %u, String Desc Size: %d", descIndex, iLen) ;
+//  printf("\n String Index: %u, String Desc Size: %d", descIndex, iLen) ;
   if(iLen == 0)
     return;
 

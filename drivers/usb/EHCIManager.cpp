@@ -52,7 +52,16 @@ EHCIManager::EHCIManager()
 void EHCIManager::ProbeDevice()
 {
   for(auto c : _controllers)
-    c->Probe();
+  {
+    try
+    {
+      c->Probe();
+    }
+    catch(const upan::exception& ex)
+    {
+      printf("\n Error probing - %s", ex.Error().c_str());
+    }
+  }
 }
 
 byte EHCIManager::RouteToCompanionController()

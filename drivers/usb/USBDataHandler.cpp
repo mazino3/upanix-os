@@ -24,21 +24,25 @@
 
 void USBDataHandler_DisplayDevDesc(const USBStandardDeviceDesc* pDevDesc)
 {
-	printf("\n bLength = %d", pDevDesc->bLength) ;
-	printf("\n bDescType = %d", pDevDesc->bDescType) ;
-	printf("\n bcdUSB = %d", pDevDesc->bcdUSB) ;
-	printf("\n bDeviceClass = %d", pDevDesc->bDeviceClass) ;
-	printf("\n bDeviceSubClass = %d", pDevDesc->bDeviceSubClass) ;
-	printf("\n bDeviceProtocol = %d", pDevDesc->bDeviceProtocol) ;
-	printf("\n bMaxPacketSize0 = %d", pDevDesc->bMaxPacketSize0) ;
+	printf("\n Len=%d,DType=%d,bcd=%d", 
+    pDevDesc->bLength, 
+    pDevDesc->bDescType, 
+    pDevDesc->bcdUSB);
 
-	printf("\n sVendorID = %d", pDevDesc->sVendorID) ;
-	printf("\n sProductID = %d", pDevDesc->sProductID) ;
-	printf("\n bcdDevice = %d", pDevDesc->bcdDevice) ;
-	printf("\n indexManufacturer = %d", pDevDesc->indexManufacturer) ;
-	printf("\n indexProduct = %d", pDevDesc->indexProduct) ;
-	printf("\n indexSerialNum = %d", pDevDesc->indexSerialNum) ;
-	printf("\n bNumConfigs = %d", pDevDesc->bNumConfigs) ;
+	printf(",Dev C=%d,SubC=%d,Proto=%d,MaxPkSize=%d", 
+    pDevDesc->bDeviceClass, 
+    pDevDesc->bDeviceSubClass, 
+    pDevDesc->bDeviceProtocol, 
+    pDevDesc->bMaxPacketSize0);
+
+	printf(",VenID=%d,ProdID=%d,bcdDev=%d,iManufac=%d,iProd=%d,iSlNo=%d,nConfigs=%d", 
+    pDevDesc->sVendorID,
+    pDevDesc->sProductID,
+    pDevDesc->bcdDevice,
+    pDevDesc->indexManufacturer,
+    pDevDesc->indexProduct,
+    pDevDesc->indexSerialNum,
+    pDevDesc->bNumConfigs);
 }
 
 void USBDataHandler_InitDevDesc(USBStandardDeviceDesc* pDesc)
@@ -132,15 +136,15 @@ void USBDataHandler_CopyDevDesc(void* pDestv, const void* pSrcv, size_t iLen)
 
 void USBDataHandler_DisplayConfigDesc(const USBStandardConfigDesc* pConfigDesc)
 {
-	printf("\n bLength = %d", pConfigDesc->bLength) ;
-	printf("\n bDescriptorType = %d", pConfigDesc->bDescriptorType) ;
-	printf("\n wTotalLength = %d", pConfigDesc->wTotalLength) ;
-	printf("\n bNumInterfaces = %d", pConfigDesc->bNumInterfaces) ;
-	printf("\n bConfigurationValue = %d", pConfigDesc->bConfigurationValue) ;
-	printf("\n iConfiguration = %d", pConfigDesc->iConfiguration) ;
-	printf("\n bmAttributes = %x", pConfigDesc->bmAttributes) ;
-
-	printf("\n bMaxPower = %d", pConfigDesc->bMaxPower) ;
+  printf("\n Len=%d,DType=%d,TotLen=%d,nInterfs=%d,ConfVal=%d,Conf=%d,Attrs=%x,MaxPower=%d", 
+    pConfigDesc->bLength,
+    pConfigDesc->bDescriptorType,
+    pConfigDesc->wTotalLength,
+    pConfigDesc->bNumInterfaces,
+    pConfigDesc->bConfigurationValue,
+    pConfigDesc->iConfiguration,
+    pConfigDesc->bmAttributes,
+    pConfigDesc->bMaxPower);
 }
 
 void USBDataHandler_InitConfigDesc(USBStandardConfigDesc* pDesc)
@@ -203,12 +207,9 @@ void USBDataHandler_CopyStrDescZero(USBStringDescZero* pDest, const void* pSrcv)
 
 void USBDataHandler_DisplayStrDescZero(USBStringDescZero* pStringDescZero)
 {
-	printf("\n bLength: %d", pStringDescZero->bLength) ;
-	printf("\n bDescriptorType: %d", pStringDescZero->bDescriptorType) ;
-
-	int i ;
-	for(i = 0; i < (pStringDescZero->bLength - 2) / 2; i++)
-		printf("\n LangId[ %d ] = 0x%x", i, pStringDescZero->usLangID[i]) ;
+	printf("\n Len: %d,DType: %d", pStringDescZero->bLength, pStringDescZero->bDescriptorType);
+	for(int i = 0; i < (pStringDescZero->bLength - 2) / 2; i++)
+		printf(",LangId[ %d ]=0x%x", i, pStringDescZero->usLangID[i]) ;
 }
 
 void USBDataHandler_InitInterfaceDesc(USBStandardInterface* pInt)
@@ -227,15 +228,16 @@ void USBDataHandler_InitInterfaceDesc(USBStandardInterface* pInt)
 
 void USBDataHandler_DisplayInterfaceDesc(const USBStandardInterface* pInt)
 {
-	printf("\n bLength = %d", pInt->bLength) ;
-	printf("\n bDescriptorType = %d", pInt->bDescriptorType) ;
-	printf("\n bInterfaceNumber = %d", pInt->bInterfaceNumber) ;
-	printf("\n bAlternateSetting = %d", pInt->bAlternateSetting) ;
-	printf("\n bNumEndpoints = %d", pInt->bNumEndpoints) ;
-	printf("\n bInterfaceClass = %d", pInt->bInterfaceClass) ;
-	printf("\n bInterfaceSubClass = %d", pInt->bInterfaceSubClass) ;
-	printf("\n bInterfaceProtocol = %d", pInt->bInterfaceProtocol) ;
-	printf("\n iInterface = %d", pInt->iInterface) ;
+  printf("\n Len=%d,DType=%d,IntrfceNo=%d,AltSetting=%d,nEpts=%d,IC=%d,ISubC=%d,IProto=%d,Intrfce=%d", 
+    pInt->bLength,
+    pInt->bDescriptorType,
+    pInt->bInterfaceNumber,
+    pInt->bAlternateSetting,
+    pInt->bNumEndpoints,
+    pInt->bInterfaceClass,
+    pInt->bInterfaceSubClass,
+    pInt->bInterfaceProtocol,
+    pInt->iInterface);
 }
 
 void USBDataHandler_InitEndPtDesc(USBStandardEndPt* pDesc)
@@ -250,17 +252,18 @@ void USBDataHandler_InitEndPtDesc(USBStandardEndPt* pDesc)
 
 void USBDataHandler_DisplayEndPtDesc(const USBStandardEndPt* pDesc)
 {
-	printf("\n bLength = %d", pDesc->bLength) ;
-	printf("\n bDescriptorType = %d", pDesc->bDescriptorType) ;
-	printf("\n bEndpointAddress = %d", pDesc->bEndpointAddress) ;
-	printf("\n bmAttributes = %d", pDesc->bmAttributes) ;
-	printf("\n wMaxPacketSize = %d", pDesc->wMaxPacketSize) ;
-	printf("\n bInterval = %d", pDesc->bInterval) ;
+  printf("\n Len=%d,DType=%d,EpAddr=%d,Attrs=%d,MaxPktSize=%d,Intrvl=%d", 
+    pDesc->bLength,
+    pDesc->bDescriptorType,
+    pDesc->bEndpointAddress,
+    pDesc->bmAttributes,
+    pDesc->wMaxPacketSize,
+    pDesc->bInterval);
 }
 
 void USBDataHandler_DisplayDeviceStringDetails(const USBDevice* pUSBDevice)
 {
-	printf("\n USB Device Details...\n Manufacturer: %s\n Product: %s\n Serial Number: %s\n",
+	printf("\n USBDevDetails: Manufac: %s,Prod: %s,SlNo: %s\n",
 			pUSBDevice->_manufacturer.c_str(), pUSBDevice->_product.c_str(), pUSBDevice->_serialNum.c_str()) ;
 }
 

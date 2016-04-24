@@ -1414,7 +1414,7 @@ byte UHCIManager::ProbeDevice()
 	{
 		if(!pPCIEntry->BusEntity.NonBridge.bInterruptLine)
 		{
-			KC::MDisplay().Message("UHCI device with no IRQ. Check BIOS/PCI settings!", ' ');
+      printf("\nUHCI device with no IRQ. Check BIOS/PCI settings!");
 			continue ;
 			//return UHCIController_FAILURE ;
 		}

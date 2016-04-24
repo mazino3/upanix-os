@@ -39,11 +39,11 @@ EHCIController::EHCIController(PCIEntry* pPCIEntry, int iMemMapIndex)
   //  throw upan::exception(XLOC, "EHCI device with no IRQ. Check BIOS/PCI settings!");
 
 	unsigned uiIOAddr = pPCIEntry->BusEntity.NonBridge.uiBaseAddress0;
-	printf("\n PCI Base Addr: %x", uiIOAddr);
+	printf("\n PCI BaseAddr: %x", uiIOAddr);
 
 	uiIOAddr = uiIOAddr & PCI_ADDRESS_MEMORY_32_MASK;
 	unsigned uiIOSize = pPCIEntry->GetPCIMemSize(0);
-	printf("\n Raw MMIO Base Addr: %x, IO Size: %d", uiIOAddr, uiIOSize);
+	printf(", Raw MMIO BaseAddr: %x, IOSize: %d", uiIOAddr, uiIOSize);
 
 	if(uiIOSize > PAGE_SIZE)
     throw upan::exception(XLOC, "EHCI IO Size greater then 1 Page (4096b) not supported currently !");
@@ -82,22 +82,19 @@ EHCIController::EHCIController(PCIEntry* pPCIEntry, int iMemMapIndex)
 	unsigned uiHCCParams = _pCapRegs->uiHCCParams ;
 	unsigned uiConfigFlag = _pOpRegs->uiConfigFlag ;
 
-	printf("\n HCSPARAMS: %x\n HCCPARAMS: %x\n CAP Len: %x\n CF Bit: %d", uiHCSParams, uiHCCParams, bCapLen, uiConfigFlag) ;
-	printf("\n Bus: %d, Device: %d, Function: %d", pPCIEntry->uiBusNumber, pPCIEntry->uiDeviceNumber, pPCIEntry->uiFunction) ;
-	printf("\n Enabling Bus Master...") ;
+	printf("\n HCSPARAMS: %x, HCCPARAMS: %x, CAPLen: %x, CFBit: %d", uiHCSParams, uiHCCParams, bCapLen, uiConfigFlag) ;
+	printf(", Bus: %d, Dev: %d, Func: %d", pPCIEntry->uiBusNumber, pPCIEntry->uiDeviceNumber, pPCIEntry->uiFunction) ;
 	/* Enable busmaster */
 	unsigned short usCommand ;
 	pPCIEntry->ReadPCIConfig(PCI_COMMAND, 2, &usCommand);
-	printf("\n Current value of PCI_COMMAND: %x", usCommand) ;
+	printf("\n CurVal of PCI_COMMAND: %x", usCommand) ;
 	pPCIEntry->WritePCIConfig(PCI_COMMAND, 2, usCommand | PCI_COMMAND_IO | PCI_COMMAND_MASTER) ;
-	printf("\n After Bus Master Enable, value of PCI_COMMAND: %x", usCommand) ;
+	printf(" -> After Bus Master Enable, PCI_COMMAND: %x", usCommand) ;
 }
 
 void EHCIController::DisplayStats()
 {
-	printf("\n Command: %x", _pOpRegs->uiUSBCommand) ;
-	printf("\n Status: %x", _pOpRegs->uiUSBStatus) ;
-	printf("\n Interrupt: %x", _pOpRegs->uiUSBInterrupt) ;
+	printf("\n Cmd: %x, Status: %x, Interrupt: %x", _pOpRegs->uiUSBCommand, _pOpRegs->uiUSBStatus, _pOpRegs->uiUSBInterrupt);
 }
 
 bool EHCIController::PollWait(unsigned* pValue, int iBitPos, unsigned value)
@@ -310,23 +307,23 @@ unsigned EHCIController::GetNoOfPorts()
 
 void EHCIController::SetupPorts()
 {
-	printf("\n Setting up EHCI Controller Ports") ;
+	printf("\n Setup Ports") ;
 
 	unsigned uiNoOfPorts = GetNoOfPorts() ;
 	bool bPPC = (_pCapRegs->uiHCSParams & 0x10) == 0x10 ;
 
-	printf("\n No. of ports = %d", uiNoOfPorts) ;
+	printf("-> NumPorts = %d", uiNoOfPorts) ;
 	if(bPPC)
-		printf("\n Software Port Power Control") ;
+		printf("-> Software PortPowerCntrl") ;
 	else
-		printf("\n Hardware Port Power Control") ;
+		printf("-> Hardware PortPowerCtrl") ;
 
 	unsigned i ;
 	for(i = 0; i < uiNoOfPorts; i++)
 	{
 		unsigned* pPort = &(_pOpRegs->uiPortReg[ i ]) ;
 
-		printf("\n Setting up Port: %d. Initial Value: %x", i, *pPort) ;
+		printf("\n Setup Port: %d. Initial Value: %x", i, *pPort) ;
 
 		if(bPPC)
 		{
@@ -336,7 +333,7 @@ void EHCIController::SetupPorts()
 
 		if((*pPort & (1 << 13)))
 		{
-			printf("\n EHCI do not own this port. Not setting up this port.") ;
+			printf("-> EHCI do not own this port. Not setting up this port.") ;
 			continue ;
 		}
 
@@ -354,15 +351,15 @@ void EHCIController::SetupPorts()
 
 		if(!(*pPort & 0x4))
 		{
-			printf("\n Could not enable this port") ;
+			printf("-> Couldn't enable") ;
 			continue ;
 		}
 
-		printf("\n Port successfully enabled") ;
+		printf("-> Enabled") ;
 		if((*pPort & 0x1))
-			printf("\n High Speed Device Connected to this port") ;
+			printf("-> High Speed Dev Cncted") ;
 
-		printf("\n New value of Port: %d is: %x", i, *pPort) ;
+		printf("-> New value: %x", i, *pPort) ;
 		break ;
 	}
 }
@@ -371,13 +368,13 @@ byte EHCIController::AsyncDoorBell()
 {
 	if(!(_pOpRegs->uiUSBCommand & (1 << 5)) || !(_pOpRegs->uiUSBStatus & (1 << 15)))
 	{
-		printf("\n Asycn Schedule is disabled. DoorBell HandShake cannot be performed.") ;
+		printf("\n Async Schedule is disabled. DoorBell HandShake cannot be performed.") ;
 		return EHCIController_FAILURE ;
 	}
 
 	if(_pOpRegs->uiUSBCommand & (1 << 6))
 	{
-		printf("\n Already a DoorBell is in progress!") ;
+		printf("-> Already a DoorBell is in progress!") ;
 		return EHCIController_FAILURE ;
 	}
 
@@ -432,9 +429,9 @@ byte EHCIController::Probe()
 	USBDriver* pDriver = USBController::Instance().FindDriver(new EHCIDevice(*this));
 
 	if(pDriver)
-		printf("\n'%s' driver found for the USB Device\n", pDriver->Name().c_str());
+		printf("\n'%s' driver found for the USB Device", pDriver->Name().c_str());
 	else
-		printf("\nNo Driver found for this USB device\n") ;
+		printf("\nNo Driver found for this USB device") ;
 
 	return EHCIController_SUCCESS ;
 }
@@ -445,8 +442,7 @@ byte EHCIController::PerformBiosToOSHandoff()
 
 	if(bEECPOffSet)
 	{
-		printf("\n Trying to perform complete handoff of EHCI Controller from BIOS to OS...") ;
-		printf("\n EECP Offset: %x", bEECPOffSet) ;
+		printf("\n Trying to perform complete handoff of EHCI Controller from BIOS to OS - EECP Offset: %x", bEECPOffSet) ;
 
 		unsigned uiLegSup ;
 		_pPCIEntry->ReadPCIConfig(bEECPOffSet, 4, &uiLegSup) ;
@@ -454,7 +450,7 @@ byte EHCIController::PerformBiosToOSHandoff()
 		printf("\n USB EHCI LEGSUP: %x", uiLegSup) ;
 		if((uiLegSup & (1 << 24)) == 0x1)
 		{
-			printf("\n EHCI Controller is already owned by OS. No need for Handoff") ;
+			printf(", EHCI Controller is already owned by OS. No need for Handoff") ;
 			return EHCIController_SUCCESS ;
 		}
 
@@ -464,7 +460,7 @@ byte EHCIController::PerformBiosToOSHandoff()
 		ProcessManager::Instance().Sleep(500) ;
 		_pPCIEntry->ReadPCIConfig(bEECPOffSet, 4, &uiLegSup) ;
 
-		printf("\n New USB EHCI LEGSUP: %x", uiLegSup) ;
+		printf(", New USB EHCI LEGSUP: %x", uiLegSup) ;
 		if((uiLegSup & (1 << 24)) == 0x0)
 		{
 			printf("\n BIOS to OS Handoff failed") ;
