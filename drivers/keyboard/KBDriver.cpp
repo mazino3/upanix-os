@@ -118,3 +118,11 @@ void KBDriver::Reboot()
 	PortCom_SendByte(KB_STAT_PORT, KB_REBOOT);
 	__asm__ __volatile__("cli; hlt");
 }
+
+//just wait for a keyboard char input
+void KBDriver::Getch()
+{
+  byte ch;
+  while(!GetCharInNonBlockMode(&ch));
+  while(!GetCharInNonBlockMode(&ch));
+}

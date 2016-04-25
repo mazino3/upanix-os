@@ -18,6 +18,7 @@
 # include <GenericUtil.h>
 # include <Display.h>
 # include <Keyboard.h>
+# include <KBDriver.h>
 # include <Display.h>
 # include <MemConstants.h>
 # include <ProcessEnv.h>
@@ -25,7 +26,6 @@
 # include <ProcFileManager.h>
 # include <FileOperations.h>
 # include <DMM.h>
-
 
 class StrPathTokenizer : public StringTokenizer
 {
@@ -178,3 +178,9 @@ byte GenericUtil_GetFullFilePathFromEnv(const char* szPathEnvVar, const char* sz
 	return (byte)tokenizer.IsFound() ;
 }
 
+void debug_step(const char* msg)
+{
+  printf("\n%s...", msg);
+  KBDriver::Instance().Getch();
+  printf("\n%s - done!");
+}

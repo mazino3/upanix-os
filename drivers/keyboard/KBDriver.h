@@ -44,6 +44,7 @@ class KBDriver
     bool WaitForRead();
     void Reboot();
     bool PutToQueueBuffer(byte data);
+    void Getch();
   private:
     bool GetFromQueueBuffer(byte *data);
 
