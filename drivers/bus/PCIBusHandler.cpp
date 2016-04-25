@@ -44,7 +44,7 @@ void PCIBusHandler::Initialize()
 
       int i = 0;
 			for(auto p : _pciEntries)
-        printf("\n%d) Vendor = %u Device = %u ClassCode = %u", ++i, p->usVendorID, p->usDeviceID, p->bClassCode);
+        printf("\n%d) Vendor = %u Dev = %u If = %u CCode = %u SubCCode = %u", ++i, p->usVendorID, p->usDeviceID, p->bInterface, p->bClassCode, p->bSubClass);
 		}
 	}
 
