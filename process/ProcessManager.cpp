@@ -70,6 +70,7 @@ ProcessManager::ProcessManager() :
   PIT_SetContextSwitch(false) ;
 
 	TaskState* sysTSS = (TaskState*)(MEM_SYS_TSS_START - GLOBAL_DATA_SEGMENT_BASE) ;
+  memset(sysTSS, 0, sizeof(TaskState));
 	sysTSS->CR3_PDBR = MEM_PDBR ;
 	sysTSS->DEBUG_T_BIT = 0 ;
 	sysTSS->IO_MAP_BASE = 103 ;
