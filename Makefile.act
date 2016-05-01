@@ -118,13 +118,16 @@ UPANIX_OBJS = \
 	./drivers/bus/SCSIHandler.o \
 	./drivers/usb/USBDataHandler.o \
 	./drivers/usb/USBController.o \
-	./drivers/usb/EHCIDevice.o \
-	./drivers/usb/EHCITransaction.o \
-	./drivers/usb/EHCIManager.o \
-	./drivers/usb/EHCIController.o \
-	./drivers/usb/EHCIDataHandler.o \
-	./drivers/usb/UHCIDataHandler.o \
-	./drivers/usb/UHCIController.o \
+	./drivers/usb/uhci/UHCIDataHandler.o \
+	./drivers/usb/uhci/UHCIController.o \
+	./drivers/usb/ehci/EHCIDevice.o \
+	./drivers/usb/ehci/EHCITransaction.o \
+	./drivers/usb/ehci/EHCIManager.o \
+	./drivers/usb/ehci/EHCIController.o \
+	./drivers/usb/ehci/EHCIDataHandler.o \
+	./drivers/usb/xhci/XHCIStructures.o \
+	./drivers/usb/xhci/XHCIManager.o \
+	./drivers/usb/xhci/XHCIController.o \
 	./drivers/usb/disk/USBMassBulkStorageDisk.o \
 	./drivers/video/GraphicsVideo.o \
 	./drivers/video/GraphicsFont.o \

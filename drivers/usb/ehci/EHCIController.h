@@ -38,7 +38,7 @@ class EHCIController
     EHCIController(PCIEntry*, int iMemMapIndex);
     byte Probe();
     void DisplayStats();
-    byte AsyncDoorBell();
+    bool AsyncDoorBell();
     EHCIQueueHead* CreateDeviceQueueHead(int iMaxPacketSize, int iEndPtAddr, int iDevAddr);
 
   private:

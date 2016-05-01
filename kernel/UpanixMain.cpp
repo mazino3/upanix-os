@@ -42,9 +42,11 @@
 # include <Display.h>
 # include <UHCIController.h>
 # include <EHCIManager.h>
+# include <XHCIManager.h>
 # include <exception.h>
 # include <GraphicsVideo.h>
 # include <KBDriver.h>
+# include <GenericUtil.h>
 
 /**** Global Variable declaration/definition *****/
 byte KERNEL_MODE ;
@@ -178,8 +180,9 @@ void Initialize()
     
     //USB
     USBController::Instance();
-    EHCIManager::Instance();
     UHCIManager::Instance();
+    EHCIManager::Instance();
+    XHCIManager::Instance();
     USBMassBulkStorageDisk_Initialize() ;
 
     SessionManager_Initialize() ;

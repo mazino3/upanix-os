@@ -130,7 +130,9 @@ extern unsigned RAM_SIZE ;
 #define PROCESS_VIDEO_BUFFER	0x841000 // 8 MB + 260 KB
 #define PROCESS_FD_PAGE			0x842000 // 8 MB + 264 KB
 #define EHCI_MMIO_BASE_ADDR		0x843000 // 8 MB + 268 KB
-#define EHCI_MMIO_BASE_ADDR_END	0x863000 // 8 MB + 276 KB
+#define EHCI_MMIO_BASE_ADDR_END	0x873000 // 48 pages
+#define XHCI_MMIO_BASE_ADDR		0x873000 // 8 MB + 268 KB + 48 pages
+#define XHCI_MMIO_BASE_ADDR_END	0x8B3000 // 64 pages
 
 /********** There is unused space between 8 MB + 241 KB + 6 * PAGE_SIZE to 9 MB. Can be used as required */
 

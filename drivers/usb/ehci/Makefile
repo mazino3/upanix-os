@@ -17,23 +17,11 @@ DEPS := $(shell $(UPANIX_HOME)/depend.sh)
 OBJS := $(patsubst %.cpp,%.o,$(wildcard *.cpp))
 
 build: ${OBJS}
-	cd uhci && make
-	cd ehci && make
-	cd xhci && make
-	cd disk && make
 
 include depend.d
 
 clean:
 	rm -f *.o
-	cd uhci && make clean
-	cd ehci && make clean
-	cd xhci && make clean
-	cd disk && make clean
 
 distclean:
 	rm -f *.o
-	cd uhci && make distclean
-	cd ehci && make distclean
-	cd xhci && make distclean
-	cd disk && make distclean

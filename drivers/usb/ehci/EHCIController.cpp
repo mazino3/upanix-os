@@ -97,27 +97,6 @@ void EHCIController::DisplayStats()
 	printf("\n Cmd: %x, Status: %x, Interrupt: %x", _pOpRegs->uiUSBCommand, _pOpRegs->uiUSBStatus, _pOpRegs->uiUSBInterrupt);
 }
 
-bool EHCIController::PollWait(unsigned* pValue, int iBitPos, unsigned value)
-{
-	value &= 1;
-	if(iBitPos > 31 || iBitPos < 0)
-		return false ;
-
-	int iMaxLimit = 10000 ; // 10 Sec
-	unsigned uiSleepTime = 10 ; // 10 ms
-
-	while(iMaxLimit > 10)
-	{
-		if( (((*pValue) >> iBitPos) & 1) == value )
-			return true ;
-
-		ProcessManager::Instance().Sleep(uiSleepTime) ;
-		iMaxLimit -= uiSleepTime ;
-	}
-
-	return false ;
-}
-
 void EHCIController::AddAsyncQueueHead(EHCIQueueHead* pQH)
 {
 	pQH->uiHeadHorizontalLink = _pAsyncReclaimQueueHead->uiHeadHorizontalLink ;
@@ -236,12 +215,9 @@ bool EHCIController::CheckHCActive()
 
 bool EHCIController::WaitCheckAsyncScheduleStatus(bool bValue)
 {
-	bool bStatus = PollWait(&(_pOpRegs->uiUSBCommand), 5, bValue) ;
-
-	if(bStatus)
-		bStatus = PollWait(&(_pOpRegs->uiUSBStatus), 15, bValue) ;
-
-	return bStatus ;
+  if(ProcessManager::Instance().ConditionalWait(&_pOpRegs->uiUSBCommand, 5, bValue))
+    return ProcessManager::Instance().ConditionalWait(&_pOpRegs->uiUSBStatus, 15, bValue);
+  return false;
 }
 
 bool EHCIController::StartAsyncSchedule()
@@ -364,34 +340,30 @@ void EHCIController::SetupPorts()
 	}
 }
 
-byte EHCIController::AsyncDoorBell()
+bool EHCIController::AsyncDoorBell()
 {
 	if(!(_pOpRegs->uiUSBCommand & (1 << 5)) || !(_pOpRegs->uiUSBStatus & (1 << 15)))
 	{
 		printf("\n Async Schedule is disabled. DoorBell HandShake cannot be performed.") ;
-		return EHCIController_FAILURE ;
+    return false;
 	}
 
 	if(_pOpRegs->uiUSBCommand & (1 << 6))
 	{
 		printf("-> Already a DoorBell is in progress!") ;
-		return EHCIController_FAILURE ;
+    return false;
 	}
 
 	_pOpRegs->uiUSBStatus |= ((1 << 5)) ;
 	_pOpRegs->uiUSBCommand |= (1 << 6) ;
 
-	bool bStatus = PollWait(&(_pOpRegs->uiUSBCommand), 6, 0) ;
-
-	if(bStatus)
-		bStatus = PollWait(&(_pOpRegs->uiUSBStatus), 5, 1) ;
+  bool res = ProcessManager::Instance().ConditionalWait(&_pOpRegs->uiUSBCommand, 6, false);
+  if(res)
+    res = ProcessManager::Instance().ConditionalWait(&_pOpRegs->uiUSBStatus, 5, true);
 
 	_pOpRegs->uiUSBStatus |= ((1 << 5)) ;
 
-	if(!bStatus)
-		return EHCIController_FAILURE ;
-
-	return EHCIController_SUCCESS ;
+  return res;
 }
 
 byte EHCIController::Probe()

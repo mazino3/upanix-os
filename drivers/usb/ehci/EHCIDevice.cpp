@@ -684,7 +684,7 @@ bool EHCIDevice::SetAddress()
 
 	_pControlQH->uiEndPointCap_Part1 |= (_devAddr & 0x7F) ;
 
-	if(_controller.AsyncDoorBell() != EHCIController_SUCCESS)
+	if(!_controller.AsyncDoorBell())
 	{
 		printf("\n Async Door Bell failed while Setting Device Address") ;
 		_controller.DisplayStats() ;

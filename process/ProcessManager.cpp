@@ -563,7 +563,7 @@ void ProcessManager::DisableTaskSwitch()
 
 void ProcessManager::Sleep(__volatile__ unsigned uiSleepTime) // in Mili Seconds
 {
-	if(DoPoleWait())
+	if(DoPollWait())
 	{
 		KernelUtil::Wait(uiSleepTime) ;
 		return ;
@@ -580,7 +580,7 @@ void ProcessManager::Sleep(__volatile__ unsigned uiSleepTime) // in Mili Seconds
 
 void ProcessManager::WaitOnInterrupt(const IRQ& irq)
 {
-	if(DoPoleWait())
+	if(DoPollWait())
 	{
 		KernelUtil::WaitOnInterrupt(irq);
 		return;
@@ -1065,7 +1065,29 @@ void ProcessManager::Release(int iProcessID)
 		DMM_DeAllocateForKernel((unsigned)(pas.pProcessStateInfo)) ;
 }
 
-bool ProcessManager::DoPoleWait()
+bool ProcessManager::DoPollWait()
 {
 	return (KERNEL_MODE || !PIT_IsTaskSwitch()) ;
 }
+
+bool ProcessManager::ConditionalWait(const unsigned* registry, unsigned bitPos, bool waitfor)
+{
+	if(bitPos > 31 || bitPos < 0)
+		return false ;
+  unsigned value = 1 << bitPos;
+
+	int iMaxLimit = 10000 ; // 10 Sec
+	unsigned uiSleepTime = 10 ; // 10 ms
+
+	while(iMaxLimit > 10)
+	{
+    const bool res = ((*registry) & value) ? true : false;
+    if(res == waitfor)
+      return true;
+		Sleep(uiSleepTime) ;
+		iMaxLimit -= uiSleepTime ;
+	}
+
+	return false ;
+}
+

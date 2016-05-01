@@ -47,7 +47,6 @@ void PCIBusHandler::Initialize()
         printf("\n%d) Vendor = %u Dev = %u If = %u CCode = %u SubCCode = %u", ++i, p->usVendorID, p->usDeviceID, p->bInterface, p->bClassCode, p->bSubClass);
 		}
 	}
-
 	KC::MDisplay().LoadMessage("PCI Bus Initialization", result) ;
 }
 

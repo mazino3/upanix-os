@@ -262,6 +262,7 @@ class ProcessManager
     void WaitOnKernelService();
     bool IsKernelProcess(int iProcessID);
     void BuildCallGate(unsigned short usGateSelector, unsigned uiOffset, unsigned short usSelector, byte bParameterCount);
+    bool ConditionalWait(const unsigned* registry, unsigned bitPos, bool waitfor);
 
     static int GetCurrentProcessID() { return _iCurrentProcessID; }
     static void EnableTaskSwitch() ;
@@ -275,7 +276,7 @@ class ProcessManager
     void DeAllocateProcessInitDockMem(ProcessAddressSpace& pas);
     void DeAllocateResources(int iProcessID);
     void Release(int iProcessID);
-    bool DoPoleWait();
+    bool DoPollWait();
     void BuildDescriptor(Descriptor* descriptor, unsigned uiLimit, unsigned uiBase, byte bType, byte bFlag);
     void BuildLDT(ProcessLDT* processLDT);
     void BuildKernelTaskLDT(int iProcessID);
