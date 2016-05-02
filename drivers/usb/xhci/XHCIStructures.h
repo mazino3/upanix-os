@@ -123,9 +123,30 @@ private:
   unsigned _hccParams2;
 } PACKED;
 
-class XHCIPortRegisterSet
+class XHCIPortRegister
 {
 public:
+  bool IsDeviceConnected() const { return _portSC & 0x1 ? true : false; }
+  bool IsEnabled() const { return _portSC & 0x2 ? true : false; }
+  void Reset();
+  bool IsPowerOn() const { return _portSC & 0x20 ? true : false; }
+  void PowerOn();
+  void WakeOnConnect(bool enable)
+  {
+    if(enable)
+      _portSC |= 0x2000000;
+    else
+      _portSC &= ~(0x2000000);
+  }
+  void WakeOnDisconnect(bool enable)
+  {
+    if(enable)
+      _portSC |= 0x4000000;
+    else
+      _portSC &= ~(0x4000000);
+  }
+  bool IsRemovableDevice() const { return _portSC & 0x40000000 ? true : false; }
+private:
   unsigned _portSC;
   unsigned _portPMSC;
   unsigned _portLI;
@@ -277,7 +298,7 @@ private:
   uint64_t _dcBaap; //Device Context Base Address Array Pointer
   unsigned _config;
   byte     _reserved4[964];
-  XHCIPortRegisterSet* _portRegSet;
+  XHCIPortRegister* _portRegs;
 } PACKED;
 
 #endif
