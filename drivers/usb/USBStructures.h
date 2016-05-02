@@ -170,22 +170,18 @@ struct USBulkDisk
 class USBDriver
 {
   public:
-    USBDriver(const upan::string& name) : _name(name), _deviceAdded(false) {}
+    USBDriver(const upan::string& name) : _name(name) {}
 
     const upan::string& Name() const { return _name; }
 
     bool AddDevice(USBDevice* d)
     {
-      if(_deviceAdded)
-        return false;
-      _deviceAdded = DoAddDevice(d);
-      return _deviceAdded;
+      return DoAddDevice(d);
     }
 
     void RemoveDevice(USBDevice* d)
     {
       DoRemoveDevice(d);
-      _deviceAdded = false;
     }
 
   protected:
@@ -193,7 +189,6 @@ class USBDriver
     virtual void DoRemoveDevice(USBDevice*) = 0;
 
     const upan::string _name;
-    bool _deviceAdded;
 };
 
 #endif

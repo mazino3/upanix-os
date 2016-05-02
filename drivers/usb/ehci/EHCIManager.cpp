@@ -64,16 +64,18 @@ void EHCIManager::ProbeDevice()
   }
 }
 
-byte EHCIManager::RouteToCompanionController()
+void EHCIManager::RouteToCompanionController()
 {
   for(auto c : _controllers)
 	{
-		if(c->PerformBiosToOSHandoff() != EHCIController_SUCCESS)
-			continue ;
-
-		if(c->SetConfigFlag(false) != EHCIController_SUCCESS)
-			continue ;
+    try
+    {
+  		c->PerformBiosToOSHandoff();
+	  	c->SetConfigFlag(false);
+    }
+    catch(const upan::exception& ex)
+    {
+      printf("%s", ex.Error().c_str());
+    }
 	}
-
-	return EHCIController_SUCCESS ;
 }

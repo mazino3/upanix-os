@@ -90,6 +90,33 @@ EHCIController::EHCIController(PCIEntry* pPCIEntry, int iMemMapIndex)
 	printf("\n CurVal of PCI_COMMAND: %x", usCommand) ;
 	pPCIEntry->WritePCIConfig(PCI_COMMAND, 2, usCommand | PCI_COMMAND_IO | PCI_COMMAND_MASTER) ;
 	printf(" -> After Bus Master Enable, PCI_COMMAND: %x", usCommand) ;
+
+  PerformBiosToOSHandoff();
+
+	_pOpRegs->uiCtrlDSSegment = 0 ;
+
+	SetupInterrupts();
+
+	SetupPeriodicFrameList();
+	SetupAsyncList();
+
+	SetSchedEnable(PERIODIC_SCHEDULE_ENABLE, false) ;
+	SetSchedEnable(ASYNC_SCHEDULE_ENABLE, false) ;
+	SetFrameListSize() ;
+
+	Start() ;
+
+	ProcessManager::Instance().Sleep(100) ;
+
+  SetConfigFlag(true);
+
+	if(!CheckHCActive())
+	{
+		DisplayStats() ;
+    throw upan::exception(XLOC, "Failed to start EHCI Host Controller");
+	}
+
+	StartAsyncSchedule();
 }
 
 void EHCIController::DisplayStats()
@@ -103,7 +130,7 @@ void EHCIController::AddAsyncQueueHead(EHCIQueueHead* pQH)
 	_pAsyncReclaimQueueHead->uiHeadHorizontalLink = KERNEL_REAL_ADDRESS(pQH) | 0x2 ;
 }
 
-byte EHCIController::SetConfigFlag(bool bSet)
+void EHCIController::SetConfigFlag(bool bSet)
 {
 	unsigned uiCompareValue = bSet ? 0 : 1 ;
 	unsigned uiConfigFlag = _pOpRegs->uiConfigFlag ;
@@ -124,17 +151,12 @@ byte EHCIController::SetConfigFlag(bool bSet)
 
 		ProcessManager::Instance().Sleep(100) ;
 		if((_pOpRegs->uiConfigFlag & 0x1) == uiCompareValue)
-		{
-			printf("\n Failed to Set Config Flag to: %d:", bSet ? 1 : 0) ;
-			return EHCIController_FAILURE ;
-		}
+      throw upan::exception(XLOC, "Failed to Set Config Flag to: %d:", bSet ? 1 : 0) ;
 	}
 	else
 	{
 		printf("\n Config Bit is already set to: %d", bSet ? 1 : 0) ;
 	}
-
-	return EHCIController_SUCCESS ;
 }
 
 void EHCIController::SetupInterrupts()
@@ -147,7 +169,7 @@ void EHCIController::SetupInterrupts()
 	_pOpRegs->uiUSBInterrupt = 0 ;
 }
 
-byte EHCIController::SetupPeriodicFrameList()
+void EHCIController::SetupPeriodicFrameList()
 {
 	unsigned uiFreePageNo = MemManager::Instance().AllocatePhysicalPage();
 
@@ -158,11 +180,9 @@ byte EHCIController::SetupPeriodicFrameList()
 		pFrameList[ i ] = 0x1 ;
 
 	_pOpRegs->uiPeriodicListBase = (unsigned)pFrameList + GLOBAL_DATA_SEGMENT_BASE ;
-
-	return EHCIController_SUCCESS;
 }
 
-byte EHCIController::SetupAsyncList()
+void EHCIController::SetupAsyncList()
 {
 	unsigned uiQHAddress = DMM_AllocateAlignForKernel(sizeof(EHCIQueueHead), 32);
 	memset((void*)(uiQHAddress), 0, sizeof(EHCIQueueHead));
@@ -180,8 +200,6 @@ byte EHCIController::SetupAsyncList()
 	pQHH->uiHeadHorizontalLink = KERNEL_REAL_ADDRESS(uiQHAddress) | 0x2;
 
 	_pAsyncReclaimQueueHead = pQHH;
-
-	return EHCIController_SUCCESS;
 }
 
 void EHCIController::SetSchedEnable(unsigned uiScheduleType, bool bEnable)
@@ -220,25 +238,21 @@ bool EHCIController::WaitCheckAsyncScheduleStatus(bool bValue)
   return false;
 }
 
-bool EHCIController::StartAsyncSchedule()
+void EHCIController::StartAsyncSchedule()
 {
 	SetSchedEnable(ASYNC_SCHEDULE_ENABLE, true) ;
 
 	if(!WaitCheckAsyncScheduleStatus(true))
 	{
-		printf("\n Failed to Start Async Schedule") ;
 		DisplayStats() ;
-		return false ;
+		throw upan::exception(XLOC, "Failed to Start Async Schedule");
 	}
 
 	if(!CheckHCActive())
 	{
-		printf("\n Controller has stopped !!!") ;
 		DisplayStats() ;
-		return false ;
+    throw upan::exception(XLOC, "Controller has stopped !!!");
 	}
-
-	return true ;
 }
 
 bool EHCIController::StopAsyncSchedule()
@@ -281,7 +295,33 @@ unsigned EHCIController::GetNoOfPorts()
 	return uiNoOfPorts ;
 }
 
-void EHCIController::SetupPorts()
+bool EHCIController::AsyncDoorBell()
+{
+	if(!(_pOpRegs->uiUSBCommand & (1 << 5)) || !(_pOpRegs->uiUSBStatus & (1 << 15)))
+	{
+		printf("\n Async Schedule is disabled. DoorBell HandShake cannot be performed.") ;
+    return false;
+	}
+
+	if(_pOpRegs->uiUSBCommand & (1 << 6))
+	{
+		printf("-> Already a DoorBell is in progress!") ;
+    return false;
+	}
+
+	_pOpRegs->uiUSBStatus |= ((1 << 5)) ;
+	_pOpRegs->uiUSBCommand |= (1 << 6) ;
+
+  bool res = ProcessManager::Instance().ConditionalWait(&_pOpRegs->uiUSBCommand, 6, false);
+  if(res)
+    res = ProcessManager::Instance().ConditionalWait(&_pOpRegs->uiUSBStatus, 5, true);
+
+	_pOpRegs->uiUSBStatus |= ((1 << 5)) ;
+
+  return res;
+}
+
+void EHCIController::Probe()
 {
 	printf("\n Setup Ports") ;
 
@@ -294,8 +334,7 @@ void EHCIController::SetupPorts()
 	else
 		printf("-> Hardware PortPowerCtrl") ;
 
-	unsigned i ;
-	for(i = 0; i < uiNoOfPorts; i++)
+	for(unsigned i = 0; i < uiNoOfPorts; i++)
 	{
 		unsigned* pPort = &(_pOpRegs->uiPortReg[ i ]) ;
 
@@ -334,118 +373,43 @@ void EHCIController::SetupPorts()
 		printf("-> Enabled") ;
 		if((*pPort & 0x1))
 			printf("-> High Speed Dev Cncted") ;
-
 		printf("-> New value: %x", i, *pPort) ;
-		break ;
+
+    auto driver = USBController::Instance().FindDriver(new EHCIDevice(*this));
+    if(driver)
+      printf("\n'%s' driver found for the USB Device", driver->Name().c_str());
+    else
+      printf("\nNo Driver found for this USB device") ;
 	}
 }
 
-bool EHCIController::AsyncDoorBell()
-{
-	if(!(_pOpRegs->uiUSBCommand & (1 << 5)) || !(_pOpRegs->uiUSBStatus & (1 << 15)))
-	{
-		printf("\n Async Schedule is disabled. DoorBell HandShake cannot be performed.") ;
-    return false;
-	}
-
-	if(_pOpRegs->uiUSBCommand & (1 << 6))
-	{
-		printf("-> Already a DoorBell is in progress!") ;
-    return false;
-	}
-
-	_pOpRegs->uiUSBStatus |= ((1 << 5)) ;
-	_pOpRegs->uiUSBCommand |= (1 << 6) ;
-
-  bool res = ProcessManager::Instance().ConditionalWait(&_pOpRegs->uiUSBCommand, 6, false);
-  if(res)
-    res = ProcessManager::Instance().ConditionalWait(&_pOpRegs->uiUSBStatus, 5, true);
-
-	_pOpRegs->uiUSBStatus |= ((1 << 5)) ;
-
-  return res;
-}
-
-byte EHCIController::Probe()
-{
-  RETURN_X_IF_NOT(PerformBiosToOSHandoff(), EHCIController_SUCCESS, EHCIController_FAILURE);
-
-	_pOpRegs->uiCtrlDSSegment = 0 ;
-
-	SetupInterrupts();
-
-	RETURN_X_IF_NOT(SetupPeriodicFrameList(), EHCIController_SUCCESS, EHCIController_FAILURE) ;
-	RETURN_X_IF_NOT(SetupAsyncList(), EHCIController_SUCCESS, EHCIController_FAILURE) ;
-
-	SetSchedEnable(PERIODIC_SCHEDULE_ENABLE, false) ;
-	SetSchedEnable(ASYNC_SCHEDULE_ENABLE, false) ;
-	SetFrameListSize() ;
-
-	Start() ;
-
-	ProcessManager::Instance().Sleep(100) ;
-
-  RETURN_X_IF_NOT(SetConfigFlag(true), EHCIController_SUCCESS, EHCIController_FAILURE);
-
-	if(!CheckHCActive())
-	{
-		printf("\n Failed to start EHCI Host Controller") ;
-		DisplayStats() ;
-		return EHCIController_FAILURE ;
-	}
-
-	SetupPorts() ;
-
-	RETURN_X_IF_NOT(StartAsyncSchedule(), true, EHCIController_FAILURE) ;
-
-	USBDriver* pDriver = USBController::Instance().FindDriver(new EHCIDevice(*this));
-
-	if(pDriver)
-		printf("\n'%s' driver found for the USB Device", pDriver->Name().c_str());
-	else
-		printf("\nNo Driver found for this USB device") ;
-
-	return EHCIController_SUCCESS ;
-}
-
-byte EHCIController::PerformBiosToOSHandoff()
+void EHCIController::PerformBiosToOSHandoff()
 {
 	byte bEECPOffSet = (_pCapRegs->uiHCCParams >> 8) & 0xFF ;
 
-	if(bEECPOffSet)
-	{
-		printf("\n Trying to perform complete handoff of EHCI Controller from BIOS to OS - EECP Offset: %x", bEECPOffSet) ;
+	if(!bEECPOffSet)
+    throw upan::exception(XLOC, "EHCI: System does not support Extended Capabilities. Cannot perform Bios Handoff") ;
+  printf("\n Trying to perform complete handoff of EHCI Controller from BIOS to OS - EECP Offset: %x", bEECPOffSet) ;
 
-		unsigned uiLegSup ;
-		_pPCIEntry->ReadPCIConfig(bEECPOffSet, 4, &uiLegSup) ;
+  unsigned uiLegSup ;
+  _pPCIEntry->ReadPCIConfig(bEECPOffSet, 4, &uiLegSup) ;
 
-		printf("\n USB EHCI LEGSUP: %x", uiLegSup) ;
-		if((uiLegSup & (1 << 24)) == 0x1)
-		{
-			printf(", EHCI Controller is already owned by OS. No need for Handoff") ;
-			return EHCIController_SUCCESS ;
-		}
+  printf("\n USB EHCI LEGSUP: %x", uiLegSup) ;
+  if((uiLegSup & (1 << 24)) == 0x1)
+  {
+    printf(", EHCI Controller is already owned by OS. No need for Handoff") ;
+    return;
+  }
 
-		uiLegSup = uiLegSup | ( 1 << 24 ) ;
+  uiLegSup = uiLegSup | ( 1 << 24 ) ;
 
-		_pPCIEntry->WritePCIConfig(bEECPOffSet, 4, uiLegSup) ;
-		ProcessManager::Instance().Sleep(500) ;
-		_pPCIEntry->ReadPCIConfig(bEECPOffSet, 4, &uiLegSup) ;
+  _pPCIEntry->WritePCIConfig(bEECPOffSet, 4, uiLegSup) ;
+  ProcessManager::Instance().Sleep(500) ;
+  _pPCIEntry->ReadPCIConfig(bEECPOffSet, 4, &uiLegSup) ;
 
-		printf(", New USB EHCI LEGSUP: %x", uiLegSup) ;
-		if((uiLegSup & (1 << 24)) == 0x0)
-		{
-			printf("\n BIOS to OS Handoff failed") ;
-			return EHCIController_FAILURE ;
-		}
-	}
-	else
-	{
-		printf("\n EHCI: System does not support Extended Capabilities. Cannot perform Bios Handoff") ;
-		return EHCIController_FAILURE ;
-	}
-
-	return EHCIController_SUCCESS ;
+  printf(", New USB EHCI LEGSUP: %x", uiLegSup) ;
+  if((uiLegSup & (1 << 24)) == 0x0)
+    throw upan::exception(XLOC, "BIOS to OS Handoff failed");
 }
 
 EHCIQueueHead* EHCIController::CreateDeviceQueueHead(int iMaxPacketSize, int iEndPtAddr, int iDevAddr)

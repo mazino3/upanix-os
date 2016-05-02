@@ -424,10 +424,8 @@ bool USBDiskDriver::DoAddDevice(USBDevice* pUSBDevice)
 
 	if(pUSBDevice->_deviceDesc.sVendorID == 0x05DC)
 	{
-		KC::MDisplay().Message("Lexar Jumpshot USB CF Reader detected\n", Display::WHITE_ON_BLACK()) ;
-		KC::MDisplay().Message("Not supported yet !", ' ') ;
-
-		return USBMassBulkStorageDisk_FAILURE ;
+    printf("\nLexar Jumpshot USB CF Reader detected - Not supported yet!");
+		return false;
 	}
 
 	if(bFound == false)
@@ -591,8 +589,7 @@ bool USBDiskDriver::DoAddDevice(USBDevice* pUSBDevice)
 	for(iLun = 0; iLun <= pDisk->bMaxLun; iLun++)
 		pDisk->pSCSIDeviceList[ iLun ] = NULL ;
 
-	char szName[10] = "usbdisk0" ;
-	int iCntIndex = 7 ;
+	char szName[10];
 	bool bDeviceFound = false ;
 
 	//TODO: For the time configuring only LUN 0
@@ -607,7 +604,7 @@ bool USBDiskDriver::DoAddDevice(USBDevice* pUSBDevice)
 			continue ;
 		}
 
-		szName[ iCntIndex ] += iLun ;
+    sprintf(szName, "usbdisk%d", _deviceId++);
 		RawDiskDrive* pDisk = DiskDriveManager::Instance().CreateRawDisk(szName, USB_SCSI_DISK, pSCSIDevice) ;
     try
     {

@@ -90,9 +90,11 @@ typedef struct
 class USBDiskDriver final : public USBDriver
 {
   public:
-    USBDiskDriver(const upan::string& name) : USBDriver(name) {}
+    USBDiskDriver(const upan::string& name) : USBDriver(name), _deviceId(0) {}
     bool DoAddDevice(USBDevice*);
     void DoRemoveDevice(USBDevice*);
+  private:
+    int _deviceId;
 };
 
 byte USBMassBulkStorageDisk_Initialize() ;

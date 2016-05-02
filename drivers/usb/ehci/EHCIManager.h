@@ -34,7 +34,7 @@ class EHCIManager
       return instance;
     }
     void ProbeDevice();
-    byte RouteToCompanionController();
+    void RouteToCompanionController();
   private:
     upan::list<EHCIController*> _controllers;    
 };

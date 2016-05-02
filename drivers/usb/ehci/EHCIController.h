@@ -36,26 +36,25 @@ class EHCIController
 {
   public:
     EHCIController(PCIEntry*, int iMemMapIndex);
-    byte Probe();
+    void Probe();
     void DisplayStats();
     bool AsyncDoorBell();
     EHCIQueueHead* CreateDeviceQueueHead(int iMaxPacketSize, int iEndPtAddr, int iDevAddr);
 
   private:
-    byte PerformBiosToOSHandoff();
+    void PerformBiosToOSHandoff();
     void SetupInterrupts();
-    byte SetupPeriodicFrameList();
-    byte SetupAsyncList();
+    void SetupPeriodicFrameList();
+    void SetupAsyncList();
     void SetSchedEnable(unsigned uiScheduleType, bool bEnable);
     void SetFrameListSize();
     void Start();
     void Stop();
-    byte SetConfigFlag(bool bSet);
+    void SetConfigFlag(bool bSet);
     bool CheckHCActive();
-    void SetupPorts();
     unsigned GetNoOfPortsActual();
     unsigned GetNoOfPorts();
-    bool StartAsyncSchedule();
+    void StartAsyncSchedule();
     bool StopAsyncSchedule();
     bool WaitCheckAsyncScheduleStatus(bool bValue);
     bool PollWait(unsigned* pValue, int iBitPos, unsigned value);
