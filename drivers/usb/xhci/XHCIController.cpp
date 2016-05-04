@@ -25,7 +25,7 @@
 unsigned XHCIController::_memMapBaseAddress = XHCI_MMIO_BASE_ADDR;
 
 XHCIController::XHCIController(PCIEntry* pPCIEntry)
-  : _pPCIEntry(pPCIEntry), _pCapRegs(nullptr), _pOpRegs(nullptr)
+  : _pPCIEntry(pPCIEntry), _capReg(nullptr), _opReg(nullptr)
 {
 //	if(!pPCIEntry->BusEntity.NonBridge.bInterruptLine)
   //  throw upan::exception(XLOC, "XHCI device with no IRQ. Check BIOS/PCI settings!");
@@ -63,10 +63,10 @@ XHCIController::XHCIController(PCIEntry* pPCIEntry)
 
 	Mem_FlushTLB();
 
-	_pCapRegs = (XHCICapRegister*)uiMappedIOAddr;
-	_pOpRegs = (XHCIOpRegister*)(uiMappedIOAddr + _pCapRegs->CapLength());
+	_capReg = (XHCICapRegister*)uiMappedIOAddr;
+	_opReg = (XHCIOpRegister*)(uiMappedIOAddr + _capReg->CapLength());
 
-  _pCapRegs->Print();
+  _capReg->Print();
 	printf("\n Bus: %d, Dev: %d, Func: %d", pPCIEntry->uiBusNumber, pPCIEntry->uiDeviceNumber, pPCIEntry->uiFunction);
 	/* Enable busmaster */
 	unsigned short usCommand;
@@ -74,4 +74,19 @@ XHCIController::XHCIController(PCIEntry* pPCIEntry)
 	printf("\n CurVal of PCI_COMMAND: %x", usCommand);
 	pPCIEntry->WritePCIConfig(PCI_COMMAND, 2, usCommand | PCI_COMMAND_IO | PCI_COMMAND_MASTER);
 	printf(" -> After Bus Master Enable, PCI_COMMAND: %x", usCommand);
+
+  if(!_opReg->IsHCReady())
+  {
+    ProcessManager::Instance().Sleep(100);
+    if(!_opReg->IsHCReady())
+      throw upan::exception(XLOC, "HC is not ready yet!");
+  }
+
+  //program Max slots
+  _opReg->MaxSlotsEnabled(_capReg->MaxSlots());
+
+  //program device context base address pointer
+  unsigned deviceContextTable = MemManager::Instance().AllocatePhysicalPage() * PAGE_SIZE;
+  memset((void*)(deviceContextTable - GLOBAL_DATA_SEGMENT_BASE), 0, PAGE_SIZE);
+  _opReg->SetDCBaap(deviceContextTable);
 }

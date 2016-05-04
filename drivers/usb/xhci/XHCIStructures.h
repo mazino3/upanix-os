@@ -268,7 +268,10 @@ public:
 
   void SetDCBaap(uint64_t ptr)
   {
-    _dcBaap = (_dcBaap & 0x3F) | (ptr & ~(0x3F));
+    //require LSB 6 bits to be zero
+    if(ptr & 0x3F)
+      throw upan::exception(XLOC, "invalid DC_BAAP '%llx' not aligned to 64 byte", ptr)
+    _dcBaap = ptr;
   }
 
   unsigned MaxSlotsEnabled() const { return _config & 0xFF; }

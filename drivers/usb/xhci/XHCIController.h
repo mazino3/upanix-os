@@ -30,8 +30,8 @@ class XHCIController
   private:
     static unsigned _memMapBaseAddress;
     PCIEntry* _pPCIEntry;
-    XHCICapRegister* _pCapRegs;
-    XHCIOpRegister*  _pOpRegs;
+    XHCICapRegister* _capReg;
+    XHCIOpRegister*  _opReg;
 
     friend class XHCIManager;
 };
