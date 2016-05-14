@@ -61,7 +61,7 @@ void XHCIOpRegister::Stop()
 
 void XHCIOpRegister::HCReset()
 {
-  if(IsHCHalted())
+  if(!IsHCHalted())
     throw upan::exception(XLOC, "Cannot reset while HC is halted");
   
   if(_usbCmd & 0x2)
@@ -163,28 +163,32 @@ void XHCIOpRegister::MaxSlotsEnabled(unsigned val)
 {
   if(IsHCRunning())
     throw upan::exception(XLOC, "Cannot set max-slots-enabled while HC is running");
-  val &= 0xFF;
   _config = (_config & ~(0xFF)) | (val & 0xFF);
 }
 
 void XHCIPortRegister::Reset()
 {
-  if(_portSC & 0x10)
+  if(_sc & 0x10)
     throw upan::exception(XLOC, "Cannot reset while reset is in-progress");
 
   //Clear port reset change bit
-  _portSC |= 0x200000;
-  _portSC |= 0x80;
+  _sc |= 0x200000;
+  _sc |= 0x10;
 
-  if(!ProcessManager::Instance().ConditionalWait(&_portSC, 21, true))
+  if(!ProcessManager::Instance().ConditionalWait(&_sc, 21, true))
     throw upan::exception(XLOC, "Failed to complete reset - timedout");
 
   //Clear port reset change bit
-  _portSC |= 0x200000;
+  _sc |= 0x200000;
 }
 
 void XHCIPortRegister::PowerOn()
 {
-  _portSC |= 0x20;
+  _sc |= 0x200;
   ProcessManager::Instance().Sleep(100);
+}
+
+void XHCIPortRegister::Print()
+{
+  printf("SC: 0x%x, PMSC: 0x%x, LI: 0x%x, HLPMC: 0x%x", _sc, _pmsc, _li, _hlpmc);
 }

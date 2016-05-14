@@ -1076,7 +1076,7 @@ bool ProcessManager::ConditionalWait(const unsigned* registry, unsigned bitPos, 
 		return false ;
   unsigned value = 1 << bitPos;
 
-	int iMaxLimit = 10000 ; // 10 Sec
+	int iMaxLimit = 2000 ; // 10 Sec
 	unsigned uiSleepTime = 10 ; // 10 ms
 
 	while(iMaxLimit > 10)

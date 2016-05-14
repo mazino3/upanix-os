@@ -49,3 +49,18 @@ XHCIManager::XHCIManager()
 	else
 		KC::MDisplay().LoadMessage("No USB XHCI Controller Found", Failure) ;
 }
+
+void XHCIManager::ProbeDevice()
+{
+  for(auto c : _controllers)
+  {
+    try
+    {
+      c->Probe();
+    }
+    catch(const upan::exception& ex)
+    {
+      printf("\n Error probing - %s", ex.Error().c_str());
+    }
+  }
+}

@@ -22,18 +22,43 @@
 #include <PCIBusHandler.h>
 #include <XHCIStructures.h>
 
+class CommandManager;
+
 class XHCIController
 {
   public:
     XHCIController(PCIEntry*);
+    void Probe();
 
   private:
-    static unsigned _memMapBaseAddress;
-    PCIEntry* _pPCIEntry;
+    void PerformBiosToOSHandoff(unsigned base);
+
+    static unsigned  _memMapBaseAddress;
+    PCIEntry*        _pPCIEntry;
     XHCICapRegister* _capReg;
     XHCIOpRegister*  _opReg;
+    CommandManager*  _cmdManager;
 
     friend class XHCIManager;
+};
+
+class CommandManager
+{
+  private:
+    CommandManager(XHCICapRegister&, XHCIOpRegister&);
+
+  private:
+    struct Ring
+    {
+      TRB _cmd;
+      TRB _link;
+    } PACKED;
+
+    bool             _pcs;
+    Ring*            _ring;
+    XHCICapRegister& _capReg;
+    XHCIOpRegister&  _opReg;
+  friend class XHCIController;
 };
 
 #endif

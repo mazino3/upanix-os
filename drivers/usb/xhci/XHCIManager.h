@@ -33,6 +33,7 @@ class XHCIManager
       static XHCIManager instance;
       return instance;
     }
+    void ProbeDevice();
   private:
     upan::list<XHCIController*> _controllers;    
 };
