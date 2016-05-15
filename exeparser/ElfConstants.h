@@ -24,8 +24,6 @@
 
 #define GLOBAL_REL_ADDR(paddr, base_addr) (paddr + base_addr - GLOBAL_DATA_SEGMENT_BASE) 
 
-#define UNKNOWN "UnKnown"
-
 typedef unsigned Elf32_Addr ;
 typedef unsigned Elf32_Off ;
 typedef unsigned Elf32_Word ;

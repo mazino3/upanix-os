@@ -107,13 +107,13 @@ namespace ELFHeader
 		"Intel 80386",
 		"Motorola 68000",
 		"Motorola 88000",
-		UNKNOWN,
+    "UnKnown",
 		"Intel 80860",
 		"MIPS RS3000",
-		UNKNOWN,
-		UNKNOWN,
-		UNKNOWN,
-		UNKNOWN
+    "UnKnown",
+    "UnKnown",
+    "UnKnown",
+    "UnKnown"
 	} ;
 
 	static const unsigned EM_NONE = 0 ;
