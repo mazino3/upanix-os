@@ -30,8 +30,15 @@ then
 	SUDO=sudo
 fi
 
+if [ -z "$3" ]
+then
+  BOOT_DRIVE="$UPANIX_HOME/USBImage/300MUSB.img"
+else
+  BOOT_DRIVE="/dev/$3"
+fi
+
 echo "\n\n*****************************************************************************\n\n"
-echo "					Booting from $OVMF_VERSION file"
+echo "					Booting from $OVMF_VERSION, `basename $BOOT_DRIVE`"
 echo "\n\n*****************************************************************************\n\n"
 
 sleep 1
@@ -43,9 +50,6 @@ sleep 1
 #-drive if=none,id=usbdrive,file=/dev/sdb \
 #-drive if=none,id=usbdrive,file=$UPANIX_HOME/USBImage/300MUSB.img \
 
-FDA=$UPANIX_HOME/floppy/GrubFloppy_ext.img
-FDB=$UPANIX_HOME/floppy/DRV1.FDD.img
-
 QEMU_PATH=
 $SUDO qemu-system-x86_64 \
 -serial file:serial_debug.log \
@@ -54,7 +58,21 @@ $SUDO qemu-system-x86_64 \
 -m 128 \
 -smp 1 \
 -net none \
--drive if=none,id=usbdrive,file=$UPANIX_HOME/USBImage/300MUSB.img \
 -usb \
+-drive if=none,id=usbdrive,file=$BOOT_DRIVE \
+-drive if=none,id=usbdrive1,file=$UPANIX_HOME/USBImage/300MUSB.img \
+-drive if=none,id=usbdrive2,file=$UPANIX_HOME/USBImage/300MUSB.img \
+\
 -device usb-ehci,id=ehci \
--device usb-storage,bus=ehci.0,drive=usbdrive
+-device usb-storage,bus=ehci.0,drive=usbdrive \
+-device usb-storage,bus=ehci.0,drive=usbdrive1 \
+\
+-device nec-usb-xhci,id=xhci \
+-device usb-storage,bus=xhci.0,drive=usbdrive2
+
+#-drive if=none,id=usbdrive,file=/dev/sdb \
+#-device usb-ehci,id=ehci1 \
+#-device usb-storage,bus=ehci1.0,drive=usbdrive \
+#-drive if=none,id=usbdrive1,file=$UPANIX_HOME/USBImage/300MUSB.img \
+#-device usb-ehci,id=ehci2 \
+#-device usb-storage,bus=ehci2.0,drive=usbdrive1
