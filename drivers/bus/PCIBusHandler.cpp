@@ -117,7 +117,7 @@ Result PCIBusHandler::ScanBus(unsigned uiBusNumber)
 				{
 					RETURN_X_IF_NOT(ReadPCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, PCI_COMMAND, 2, &usCommand), Success, Failure) ;
 
-					RETURN_X_IF_NOT(WritePCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, PCI_COMMAND, 2, (usCommand & ~(PCI_COMMAND_IO | PCI_COMMAND_MEMORY))), Success, Failure) ;
+					RETURN_X_IF_NOT(WritePCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, PCI_COMMAND, 2, (usCommand & ~(PCI_COMMAND_IO | PCI_COMMAND_MMIO))), Success, Failure) ;
 
 					RETURN_X_IF_NOT(WritePCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, PCI_BUS_PRIMARY, 1, uiBusNumber), Success, Failure) ;
 
@@ -131,7 +131,7 @@ Result PCIBusHandler::ScanBus(unsigned uiBusNumber)
 
 					RETURN_X_IF_NOT(ReadPCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, PCI_COMMAND, 2, &usCommand), Success, Failure) ;
 
-					RETURN_X_IF_NOT(WritePCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, PCI_COMMAND, 2, (usCommand | PCI_COMMAND_IO | PCI_COMMAND_MEMORY)), Success, Failure) ;
+					RETURN_X_IF_NOT(WritePCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, PCI_COMMAND, 2, (usCommand | PCI_COMMAND_IO | PCI_COMMAND_MMIO)), Success, Failure) ;
 				}
 
         if(_pciEntries.size() < MAX_PCI_DEVICES)

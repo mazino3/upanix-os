@@ -25,6 +25,12 @@ void XHCICapRegister::Print() const
   printf("\n HCCPARAMS1: %x, HCCPARAMS2: %x, DoorBellOffset: %x, RTSOffset: %x", _hccParams1, _hccParams2, DoorBellOffset(), RTSOffset());
 }
 
+void XHCIOpRegister::Print() const
+{
+  printf("\n CMD: %x, STAT: %x, PAGESIZE: %x, DNCTRL: %x", _usbCmd, _usbStatus, _pageSize, _dnCtrl);
+  printf("\n CRCR: %llx, DCBAAP: %llx, CONFIG: %x", _crcr, _dcBaap, _config);
+}
+
 void XHCIOpRegister::Run()
 {
   if(!IsHCRunning())
@@ -166,6 +172,16 @@ void XHCIOpRegister::MaxSlotsEnabled(unsigned val)
   _config = (_config & ~(0xFF)) | (val & 0xFF);
 }
 
+bool XHCIOpRegister::IsHCReady() const 
+{ 
+  if(Bit::IsSet(_usbStatus, 0x800))
+  {
+    ProcessManager::Instance().Sleep(100);
+    return !Bit::IsSet(_usbStatus, 0x800);
+  }
+  return true;
+}
+
 void XHCIPortRegister::Reset()
 {
   if(_sc & 0x10)
@@ -176,19 +192,58 @@ void XHCIPortRegister::Reset()
   _sc |= 0x10;
 
   if(!ProcessManager::Instance().ConditionalWait(&_sc, 21, true))
-    throw upan::exception(XLOC, "Failed to complete reset - timedout");
+    throw upan::exception(XLOC, "Failed to complete reset - timedout (SC = %x)", _sc);
 
   //Clear port reset change bit
   _sc |= 0x200000;
 }
 
+void XHCIPortRegister::WarmReset()
+{
+  if(_sc & 0x10)
+    throw upan::exception(XLOC, "Cannot reset while reset is in-progress");
+
+  //Clear port reset change bit
+  _sc |= 0x80000;
+  _sc |= 0x80000000;
+
+  if(!ProcessManager::Instance().ConditionalWait(&_sc, 19, true))
+    throw upan::exception(XLOC, "Failed to complete reset - timedout");
+
+  //Clear port reset change bit
+  _sc |= 0x80000;
+}
+
 void XHCIPortRegister::PowerOn()
 {
-  _sc |= 0x200;
+  Bit::Set(_sc, 0x200, true);
+  ProcessManager::Instance().Sleep(100);
+}
+
+void XHCIPortRegister::PowerOff()
+{
+  Bit::Set(_sc, 0x200, false);
   ProcessManager::Instance().Sleep(100);
 }
 
 void XHCIPortRegister::Print()
 {
   printf("SC: 0x%x, PMSC: 0x%x, LI: 0x%x, HLPMC: 0x%x", _sc, _pmsc, _li, _hlpmc);
+}
+
+void LegSupXCap::BiosToOSHandoff()
+{
+  if(IsOSOwned())
+  {
+    printf("XHCI Controller is already owned by OS. No need for Handoff");
+    return;
+  }
+
+  _usbLegSup |= 0x1000000;
+  if(!ProcessManager::Instance().ConditionalWait(&_usbLegSup, 24, true))
+    throw upan::exception(XLOC, "BIOS to OS Handoff failed - HC Owned bit is stil not set");
+  if(!ProcessManager::Instance().ConditionalWait(&_usbLegSup, 16, false))
+    throw upan::exception(XLOC, "BIOS to OS Handoff failed - Bios Owned bit is still set");
+
+  printf("\n XHCI Bios to OS Handoff completed");
 }

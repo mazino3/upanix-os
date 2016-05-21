@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <cstring.h>
 #include <StringUtil.h>
+#include <KBDriver.h>
 
 #include <USBStructures.h>
 #include <USBDataHandler.h>
@@ -88,7 +89,8 @@ EHCIController::EHCIController(PCIEntry* pPCIEntry, int iMemMapIndex)
 	unsigned short usCommand ;
 	pPCIEntry->ReadPCIConfig(PCI_COMMAND, 2, &usCommand);
 	printf("\n CurVal of PCI_COMMAND: %x", usCommand) ;
-	pPCIEntry->WritePCIConfig(PCI_COMMAND, 2, usCommand | PCI_COMMAND_IO | PCI_COMMAND_MASTER) ;
+	pPCIEntry->WritePCIConfig(PCI_COMMAND, 2, usCommand | PCI_COMMAND_MMIO | PCI_COMMAND_MASTER) ;
+	pPCIEntry->ReadPCIConfig(PCI_COMMAND, 2, &usCommand);
 	printf(" -> After Bus Master Enable, PCI_COMMAND: %x", usCommand) ;
 
   PerformBiosToOSHandoff();

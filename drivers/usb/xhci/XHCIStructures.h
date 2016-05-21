@@ -22,6 +22,14 @@
 #include <Bit.h>
 #include <exception.h>
 
+enum USB_PROTOCOL
+{
+  USB1,
+  USB2,
+  USB3,
+  UNKNOWN
+};
+
 class XHCICapRegister
 {
   public:
@@ -131,8 +139,10 @@ class XHCIPortRegister
     bool IsDeviceConnected() const { return Bit::IsSet(_sc, 0x1); }
     bool IsEnabled() const { return Bit::IsSet(_sc, 0x2); }
     void Reset();
+    void WarmReset();
     bool IsPowerOn() const { return Bit::IsSet(_sc, 0x200); }
     void PowerOn();
+    void PowerOff();
     void WakeOnConnect(bool enable)
     {
       _sc = Bit::Set(_sc, 0x2000000, enable);
@@ -153,6 +163,8 @@ class XHCIPortRegister
 class XHCIOpRegister
 {
   public:
+    void Print() const;
+
     bool IsHCRunning() const { return Bit::IsSet(_usbCmd, 0x1); }
     void Run();
     void Stop();
@@ -232,6 +244,7 @@ class XHCIOpRegister
         _usbCmd = Bit::Set(_usbCmd, 0x2000, false);
     }
 
+    void SetDNCTRL(unsigned val) { _dnCtrl |= val; }
     //Status 
     //Host System Error
     bool IsHSError() const { return Bit::IsSet(_usbStatus, 0x4); }
@@ -247,7 +260,7 @@ class XHCIOpRegister
     bool IsSRError() const { return Bit::IsSet(_usbStatus, 0x400); }
     void ClearSRError() { _usbStatus = Bit::Set(_usbStatus, 0x400, true); }
 
-    bool IsHCReady() const { return !Bit::IsSet(_usbStatus, 0x800); }
+    bool IsHCReady() const;
     //Host Controller Error
     bool IsHCError() const { return Bit::IsSet(_usbStatus, 0x1000); }
 
@@ -255,12 +268,13 @@ class XHCIOpRegister
     unsigned SupportedPageSize() const;
 
     bool IsCommandRingRunning() const { return Bit::IsSet(_crcr, 0x8); }
-    void StopCommandRing() { _crcr = Bit::Set(_crcr, 0x2, true); }
-    void AbortCommandRing() { _crcr = Bit::Set(_crcr, 0x4, true); }
+    //crcr is 64 bit
+    //void StopCommandRing() { _crcr = Bit::Set(_crcr, 0x2, true); }
+    //void AbortCommandRing() { _crcr = Bit::Set(_crcr, 0x4, true); }
 
     void SetCommandRingPointer(uint64_t ptr)
     {
-      _crcr = (_crcr & 0x3F) | (ptr & ~((uint64_t)0x3F));
+      _crcr = (_crcr & (uint64_t)0x3F) | (ptr & ~((uint64_t)0x3F));
     }
 
     void SetDCBaap(uint64_t ptr)
@@ -378,5 +392,51 @@ class LinkTRB
   private:
     TRB& _trb;
 };
+
+class LegSupXCap
+{
+  public:
+    bool IsBiosOwned() const { return Bit::IsSet(_usbLegSup, 0x10000); }
+    bool IsOSOwned() const { return Bit::IsSet(_usbLegSup, 0x1000000); }
+    void BiosToOSHandoff();
+  private:
+    unsigned _usbLegSup;
+    unsigned _usbLegCtlSts; 
+} PACKED;
+
+class SupProtocolXCap
+{
+  public:
+    unsigned MajorVersion() const { return (_revision >> 24) & 0xFF; }
+    unsigned MinorVersion() const { return (_revision >> 16) & 0xFF; }
+    
+    USB_PROTOCOL Protocol() const
+    {
+      switch(MajorVersion())
+      {
+        case 3: return USB_PROTOCOL::USB3;
+        case 2: return USB_PROTOCOL::USB2;
+        case 1: return USB_PROTOCOL::USB1;
+      }
+      return USB_PROTOCOL::UNKNOWN;
+    }
+
+    bool HasPort(unsigned portId) const
+    {
+      unsigned startPortNo = _portDetails & 0xFF;
+      unsigned endPortNo = startPortNo + ((_portDetails >> 8) & 0xFF);
+      return portId >= startPortNo && portId < endPortNo;
+    }
+
+    void Print() const
+    {
+      printf("\n B1: %x, B2: %x, B3: %x", _revision, _name, _portDetails);
+    }
+  private:
+    unsigned _revision;
+    unsigned _name;
+    unsigned _portDetails;
+
+} PACKED;
 
 #endif

@@ -42,13 +42,14 @@ typedef enum {
 #define PCI_LATENCY			0x0D
 #define PCI_HEADER_TYPE		0x0E
 #define PCI_BASE_REGISTERS	0x10
+#define PCI_POWER           0x34
 #define PCI_INTERRUPT_LINE	0x3C
 #define PCI_INTERRUPT_PIN	0x3D
 #define PCI_MIN_GRANT		0x3E
 #define PCI_MAX_LATENCY		0x3F
 
 #define PCI_COMMAND_IO		0x001
-#define PCI_COMMAND_MEMORY	0x002
+#define PCI_COMMAND_MMIO	0x002
 #define PCI_COMMAND_MASTER	0x004
 
 #define PCI_IO_ADDRESS_SPACE		0x01

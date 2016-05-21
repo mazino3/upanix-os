@@ -20,12 +20,14 @@
 #include <MemManager.h>
 #include <MemUtil.h>
 #include <stdio.h>
+#include <KBDriver.h>
 #include <XHCIController.h>
 
 unsigned XHCIController::_memMapBaseAddress = XHCI_MMIO_BASE_ADDR;
 
 XHCIController::XHCIController(PCIEntry* pPCIEntry)
-  : _pPCIEntry(pPCIEntry), _capReg(nullptr), _opReg(nullptr)
+  : _pPCIEntry(pPCIEntry), _capReg(nullptr), _opReg(nullptr),
+    _legSupXCap(nullptr)
 {
 //	if(!pPCIEntry->BusEntity.NonBridge.bInterruptLine)
   //  throw upan::exception(XLOC, "XHCI device with no IRQ. Check BIOS/PCI settings!");
@@ -64,31 +66,62 @@ XHCIController::XHCIController(PCIEntry* pPCIEntry)
 
 	Mem_FlushTLB();
 
+	printf("\n Bus: %d, Dev: %d, Func: %d", pPCIEntry->uiBusNumber, pPCIEntry->uiDeviceNumber, pPCIEntry->uiFunction);
+	printf("\n Vendor: %x, Device: %x, Rev: %x", pPCIEntry->usVendorID, pPCIEntry->usDeviceID, pPCIEntry->bRevisionID);
+
 	_capReg = (XHCICapRegister*)uiMappedIOAddr;
 	_opReg = (XHCIOpRegister*)(uiMappedIOAddr + _capReg->CapLength());
 
   _capReg->Print();
-	printf("\n Bus: %d, Dev: %d, Func: %d", pPCIEntry->uiBusNumber, pPCIEntry->uiDeviceNumber, pPCIEntry->uiFunction);
+
 	/* Enable busmaster */
 	unsigned short usCommand;
 	pPCIEntry->ReadPCIConfig(PCI_COMMAND, 2, &usCommand);
 	printf("\n CurVal of PCI_COMMAND: %x", usCommand);
-	pPCIEntry->WritePCIConfig(PCI_COMMAND, 2, usCommand | PCI_COMMAND_IO | PCI_COMMAND_MASTER);
+	pPCIEntry->WritePCIConfig(PCI_COMMAND, 2, usCommand | PCI_COMMAND_MMIO | PCI_COMMAND_MASTER | PCI_COMMAND_IO);
+	pPCIEntry->ReadPCIConfig(PCI_COMMAND, 2, &usCommand);
 	printf(" -> After Bus Master Enable, PCI_COMMAND: %x", usCommand);
 
-  PerformBiosToOSHandoff(uiMappedIOAddr);
-
-  if(!_opReg->IsHCReady())
+  //Enable Ports for Intel PanthorPoint XHCI
+  if(pPCIEntry->usVendorID == 0x8086
+    && pPCIEntry->usDeviceID == 0x1E31)
   {
-    ProcessManager::Instance().Sleep(100);
-    if(!_opReg->IsHCReady())
-      throw upan::exception(XLOC, "HC is not ready yet!");
+    unsigned portsAvailable;
+
+    portsAvailable = 0xFFFFFFFF;
+    /* Write USB3_PSSEN, the USB 3.0 Port SuperSpeed Enable
+     * Register, to turn on SuperSpeed terminations for all
+     * available ports.
+     */
+    pPCIEntry->WritePCIConfig(0xD8, 4, portsAvailable);
+    pPCIEntry->ReadPCIConfig(0xD8, 4, &portsAvailable);
+    printf("\n USB 3.0 ports that are now enabled: %d", portsAvailable);
+
+    /* Write XUSB2PR, the xHC USB 2.0 Port Routing Register, to
+     * switch the USB 2.0 power and data lines over to the xHCI
+     * host.
+     */
+    portsAvailable = 0xFFFFFFFF;
+    pPCIEntry->WritePCIConfig(0xD0, 4, portsAvailable);
+    pPCIEntry->ReadPCIConfig(0xD0, 4, &portsAvailable);
+    printf("\n USB 2.0 ports that are now enabled: %d", portsAvailable);
   }
 
+  if(!_opReg->IsHCReady())
+    throw upan::exception(XLOC, "HC is not ready yet!");
+
+  _opReg->Stop();
   _opReg->HCReset();
+
+  if(!_opReg->IsHCReady())
+    throw upan::exception(XLOC, "HC is not ready yet!");
+
+  LoadXCaps(uiMappedIOAddr);
+  PerformBiosToOSHandoff();
 
   //program Max slots
   _opReg->MaxSlotsEnabled(_capReg->MaxSlots());
+  _opReg->SetDNCTRL(0x2);
 
   //program device context base address pointer
   unsigned deviceContextTable = MemManager::Instance().AllocatePhysicalPage() * PAGE_SIZE;
@@ -104,54 +137,86 @@ XHCIController::XHCIController(PCIEntry* pPCIEntry)
   ProcessManager::Instance().Sleep(100);
   if(!_opReg->IsHCRunning() || _opReg->IsHCHalted())
     throw upan::exception(XLOC, "Failed to start XHCI HC");
+  _opReg->Print();
+  KBDriver::Instance().Getch();
   Probe();
 }
 
-void XHCIController::PerformBiosToOSHandoff(unsigned base)
+void XHCIController::LoadXCaps(unsigned base)
 {
 	unsigned ecpOffset = _capReg->ECPOffset();
 
 	if(!ecpOffset)
   {
-    printf("\nXHCI System does not support Extended Capabilities. Cannot perform Bios Handoff");
+    printf("\nXHCI System does not support Extended Capabilities");
     return;
   }
-  printf("\n Trying to perform complete handoff of XHCI Controller from BIOS to OS - ECP Offset: 0x%x", ecpOffset);
 
+  _legSupXCap = nullptr;
+  _supProtoXCaps.clear();
+
+  base += ecpOffset;
   while(true)
   {
-    unsigned& xCapReg = *(unsigned*)(base + ecpOffset);
+    unsigned& xCapReg = *(unsigned*)(base);
     unsigned capId = xCapReg & 0xFF;
     if(!capId)
       throw upan::exception(XLOC, "Invalid Xtended CapID 0!");
-    if(capId != 1)
+
+    if(capId == 1)
     {
-      unsigned nextOffset = (xCapReg >> 6) & 0x3FC;
-      if(!nextOffset)
-      {
-        printf("\n Didn't find LEGSUP Capability");
-        return;
-      }
-      ecpOffset += nextOffset;
+      if(!_legSupXCap)
+        _legSupXCap = (LegSupXCap*)&xCapReg;
+      else
+        printf("\n Found more than 1 LEG SUP Extended capability entries - something wrong!!");
+    }
+    else if(capId == 2)
+    {
+      _supProtoXCaps.push_back((SupProtocolXCap*)&xCapReg);
     }
     else
     {
-      printf("\n USB XHCI LEGSUP: 0x%x", xCapReg);
-      if((xCapReg & (1 << 24)) == 0x1)
-      {
-        printf(", XHCI Controller is already owned by OS. No need for Handoff");
-        return;
-      }
-
-      xCapReg |= ( 1 << 24 );
-      if(!ProcessManager::Instance().ConditionalWait(&xCapReg, 24, true))
-        throw upan::exception(XLOC, "BIOS to OS Handoff failed - HC Owned bit is stil not set");
-      if(!ProcessManager::Instance().ConditionalWait(&xCapReg, 16, false))
-        throw upan::exception(XLOC, "BIOS to OS Handoff failed - Bios Owned bit is still set");
-
-      printf(", New USB XHCI LEGSUP: 0x%x", xCapReg) ;
-      break;
+      printf("\n Unhandled Extended CapID: %d", capId);
     }
+    unsigned nextOffset = (xCapReg >> 6) & 0x3FC;
+    if(!nextOffset)
+      break;
+    base += nextOffset;
+  }
+  for(auto i : _supProtoXCaps)
+    i->Print();
+}
+
+void XHCIController::PerformBiosToOSHandoff()
+{
+  if(!_legSupXCap)
+  {
+    printf("\n LEG SUP Extended capability is not supported - cannot perform BIOS to OS Handoff");
+    return;
+  }
+  printf("\n Trying to perform complete handoff of XHCI Controller from BIOS to OS");
+  _legSupXCap->BiosToOSHandoff();
+}
+
+USB_PROTOCOL XHCIController::PortProtocol(unsigned portId) const
+{
+  for(auto i : _supProtoXCaps)
+  {
+    if(i->HasPort(portId))
+      return i->Protocol();
+  }
+  return USB_PROTOCOL::UNKNOWN;
+}
+
+const char* XHCIController::PortProtocolName(USB_PROTOCOL protocol) const
+{
+  switch(protocol)
+  {
+    case USB_PROTOCOL::USB3: return "usb3";
+    case USB_PROTOCOL::USB2: return "usb2";
+    case USB_PROTOCOL::USB1: return "usb1";
+    default:
+      return "unknown";
   }
 }
 
@@ -164,7 +229,8 @@ CommandManager::CommandManager(XHCICapRegister& creg, XHCIOpRegister& oreg)
   link.SetLinkAddr((uint64_t)&_ring->_cmd);
   link.SetToggleBit(true);
 
-  _opReg.SetCommandRingPointer((uint64_t)_ring); 
+  uint64_t ringAddr = (unsigned)_ring - GLOBAL_DATA_SEGMENT_BASE;
+  _opReg.SetCommandRingPointer(ringAddr);
 }
 
 void XHCIController::Probe()
@@ -179,10 +245,16 @@ void XHCIController::Probe()
 	for(unsigned i = 0; i < uiNoOfPorts; i++)
 	{
     auto& port = _opReg->PortRegisters()[i];
-		printf("\n Setup Port: %d -> ", i);
+    auto protocol = PortProtocol(i+1);
+		printf("\n Setup Port: %d [%s] -> ", i, PortProtocolName(protocol));
     port.Print();
 		if(_capReg->IsPPC())
       port.PowerOn();
+    else
+    {
+      port.PowerOff();
+      port.PowerOn();
+    }
 
     if(!port.IsPowerOn())
     {
@@ -192,20 +264,27 @@ void XHCIController::Probe()
 
     if(!port.IsEnabled())
     {
-//      try
-//      {
-//        port.Reset();
-//        if(!port.IsEnabled())
-//        {
-          printf("\n Port %d is not enabled!", i);
-          continue;
-//        }
-//      }
-//      catch(const upan::exception& e)
-//      {
-//        printf("\n Reset failed: %s", e.Error().c_str());
-//        continue;
-//      }
+      if(protocol == USB_PROTOCOL::USB2)
+      {
+        try 
+        {
+          port.Reset();
+          if(!port.IsEnabled())
+          {
+            printf("\n Port still not enabled!");
+            continue;
+          }
+        }
+        catch(const upan::exception& ex)
+        {
+          printf("\n%s", ex.Error().c_str());
+        }
+      }
+      else
+      {
+        printf("\n Port %d is not enabled!", i);
+        continue;
+      }
     }
 
     if(port.IsDeviceConnected())

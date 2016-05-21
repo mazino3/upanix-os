@@ -45,6 +45,7 @@
 #include <MountManager.h>
 #include <UHCIController.h>
 #include <EHCIManager.h>
+#include <XHCIManager.h>
 #include <BTree.h>
 #include <TestSuite.h>
 #include <video.h>
@@ -102,6 +103,7 @@ static void ConsoleCommands_Export() ;
 static void ConsoleCommands_ProbeUHCIUSB() ;
 static void ConsoleCommands_PerformECHIHandoff() ;
 static void ConsoleCommands_ProbeEHCIUSB() ;
+static void ConsoleCommands_ProbeXHCIUSB() ;
 static void ConsoleCommands_ShowRawDiskList() ;
 static void ConsoleCommands_InitFloppyController() ;
 static void ConsoleCommands_InitATAController() ;
@@ -165,6 +167,7 @@ static const ConsoleCommand ConsoleCommands_CommandList[] = {
 	{ "usbprobe",	&ConsoleCommands_ProbeUHCIUSB },
 	{ "ehcihoff",	&ConsoleCommands_PerformECHIHandoff },
 	{ "eusbprobe",	&ConsoleCommands_ProbeEHCIUSB },
+	{ "xusbprobe",	&ConsoleCommands_ProbeXHCIUSB },
 	{ "showdisk",	&ConsoleCommands_ShowRawDiskList },
 	{ "initfdc",	&ConsoleCommands_InitFloppyController },
 	{ "initata",	&ConsoleCommands_InitATAController },
@@ -852,6 +855,11 @@ void ConsoleCommands_PerformECHIHandoff()
 void ConsoleCommands_ProbeEHCIUSB()
 {
 	EHCIManager::Instance().ProbeDevice() ;
+}
+
+void ConsoleCommands_ProbeXHCIUSB()
+{
+	XHCIManager::Instance().ProbeDevice() ;
 }
 
 void ConsoleCommands_ShowRawDiskList()

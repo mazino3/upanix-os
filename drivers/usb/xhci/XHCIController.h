@@ -31,13 +31,18 @@ class XHCIController
     void Probe();
 
   private:
-    void PerformBiosToOSHandoff(unsigned base);
+    void LoadXCaps(unsigned base);
+    void PerformBiosToOSHandoff();
+    USB_PROTOCOL PortProtocol(unsigned portId) const;
+    const char* PortProtocolName(USB_PROTOCOL) const;
 
     static unsigned  _memMapBaseAddress;
     PCIEntry*        _pPCIEntry;
     XHCICapRegister* _capReg;
     XHCIOpRegister*  _opReg;
     CommandManager*  _cmdManager;
+    LegSupXCap*      _legSupXCap;
+    upan::list<SupProtocolXCap*> _supProtoXCaps;
 
     friend class XHCIManager;
 };
