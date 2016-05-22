@@ -173,6 +173,7 @@ class XHCIPortRegister
         case 1: return DEVICE_SPEED::FULL_SPEED;
         case 2: return DEVICE_SPEED::LOW_SPEED;
         case 3: return DEVICE_SPEED::HIGH_SPEED;
+        case 4: return DEVICE_SPEED::SUPER_SPEED;
         default: return DEVICE_SPEED::UNDEFINED;
       }
     }
@@ -360,6 +361,13 @@ class TRB
       type &= 0x3F;
       _b4 = (_b4 & ~(0x3F << 10)) | (type << 10);
     }
+    void SetCycleBit(bool val) { _b4 = Bit::Set(_b4, 0x1, val); }
+    bool IsCycleBitSet() const { return Bit::IsSet(_b4, 0x1); }
+    void Print()
+    {
+      printf("\n TRB0: %x, TRB1: %x, TRB2: %x, TRB3: %x", _b1, _b2, _b3, _b4);
+    }
+
     unsigned _b1;
     unsigned _b2;
     unsigned _b3;
@@ -401,9 +409,6 @@ class LinkTRB
       return (_trb._b3 >> 22) & 0x3FF;
     }
 
-    void SetCycleBit(bool val) { _trb._b4 = Bit::Set(_trb._b4, 0x1, val); }
-    bool IsCycleBitSet() const { return Bit::IsSet(_trb._b4, 0x1); }
-
     void SetToggleBit(bool val) { _trb._b4 = Bit::Set(_trb._b4, 0x2, val); }
     bool IsToggleBitSet() const { return Bit::IsSet(_trb._b4, 0x2); }
 
@@ -413,6 +418,22 @@ class LinkTRB
     void SetIOC(bool val) { _trb._b4 = Bit::Set(_trb._b4, 0x20, val); }
     bool IsIOC() const { return Bit::IsSet(_trb._b4, 0x20); }
 
+  private:
+    TRB& _trb;
+};
+
+class EnableSlotTRB
+{
+  public:
+    EnableSlotTRB(TRB& trb, unsigned slotType) : _trb(trb)
+    {
+      _trb.Clear();
+      _trb.SetType(9);
+
+      const unsigned mask = 0x1F << 16;
+      slotType <<= 16;
+      _trb._b4 = (_trb._b4 & ~mask) | (slotType & mask);
+    }
   private:
     TRB& _trb;
 };
@@ -452,6 +473,11 @@ class SupProtocolXCap
       return portId >= startPortNo && portId < endPortNo;
     }
 
+    unsigned SlotType() const
+    {
+      return _slotType & 0x1F;
+    }
+
     void Print() const
     {
       printf("\n B1: %x, B2: %x, B3: %x", _revision, _name, _portDetails);
@@ -460,6 +486,7 @@ class SupProtocolXCap
     unsigned _revision;
     unsigned _name;
     unsigned _portDetails;
+    unsigned _slotType;
 
 } PACKED;
 

@@ -27,7 +27,7 @@ unsigned XHCIController::_memMapBaseAddress = XHCI_MMIO_BASE_ADDR;
 
 XHCIController::XHCIController(PCIEntry* pPCIEntry)
   : _pPCIEntry(pPCIEntry), _capReg(nullptr), _opReg(nullptr),
-    _legSupXCap(nullptr)
+    _legSupXCap(nullptr), _doorBellRegs(nullptr)
 {
 //	if(!pPCIEntry->BusEntity.NonBridge.bInterruptLine)
   //  throw upan::exception(XLOC, "XHCI device with no IRQ. Check BIOS/PCI settings!");
@@ -128,11 +128,14 @@ XHCIController::XHCIController(PCIEntry* pPCIEntry)
   memset((void*)(deviceContextTable - GLOBAL_DATA_SEGMENT_BASE), 0, PAGE_SIZE);
   _opReg->SetDCBaap(deviceContextTable);
 
-  //Setup Command Ring
-  _cmdManager = new CommandManager(*_capReg, *_opReg);
+  //Door Bell array
+  _doorBellRegs = (unsigned*)(uiMappedIOAddr + _capReg->DoorBellOffset());
 
   //Setup Event Ring
   _eventManager = new EventManager(*_capReg, *_opReg);
+
+  //Setup Command Ring
+  _cmdManager = new CommandManager(*_capReg, *_opReg, *_eventManager);
 
   //Start HC
   _opReg->DisableHCInterrupt();
@@ -142,6 +145,7 @@ XHCIController::XHCIController(PCIEntry* pPCIEntry)
     throw upan::exception(XLOC, "Failed to start XHCI HC");
   _opReg->Print();
   Probe();
+  KBDriver::Instance().Getch();
 }
 
 void XHCIController::LoadXCaps(unsigned base)
@@ -200,14 +204,14 @@ void XHCIController::PerformBiosToOSHandoff()
   _legSupXCap->BiosToOSHandoff();
 }
 
-USB_PROTOCOL XHCIController::PortProtocol(unsigned portId) const
+SupProtocolXCap* XHCIController::GetSupportedProtocol(unsigned portId) const
 {
   for(auto i : _supProtoXCaps)
   {
     if(i->HasPort(portId))
-      return i->Protocol();
+      return i;
   }
-  return USB_PROTOCOL::UNKNOWN;
+  return nullptr;
 }
 
 const char* XHCIController::PortProtocolName(USB_PROTOCOL protocol) const
@@ -228,6 +232,7 @@ const char* XHCIController::PortSpeedName(DEVICE_SPEED speed) const
     case DEVICE_SPEED::FULL_SPEED: return "full speed";
     case DEVICE_SPEED::LOW_SPEED: return "low speed";
     case DEVICE_SPEED::HIGH_SPEED: return "high speed";
+    case DEVICE_SPEED::SUPER_SPEED: return "super speed";
     default: return "undefined";
   }
 }
@@ -244,7 +249,13 @@ void XHCIController::Probe()
 	for(unsigned i = 0; i < uiNoOfPorts; i++)
 	{
     auto& port = _opReg->PortRegisters()[i];
-    auto protocol = PortProtocol(i+1);
+    auto supProtocol = GetSupportedProtocol(i+1);
+    if(!supProtocol)
+    {
+      printf("\n There is Extended Supported Protocol Cap for Port: %d !", i);
+      continue;
+    }
+    auto protocol = supProtocol->Protocol();
 		printf("\n Setup Port: %d [%s] -> ", i, PortProtocolName(protocol));
     port.Print();
 		if(_capReg->IsPPC())
@@ -256,9 +267,7 @@ void XHCIController::Probe()
       continue;
     }
 
-    if(port.IsDeviceConnected())
-      printf("\n Device connected to Port %d", i);
-    else
+    if(!port.IsDeviceConnected())
     {
       printf("\n No Device connected to Port %d", i);
       continue;
@@ -269,10 +278,12 @@ void XHCIController::Probe()
       try 
       {
         if(protocol == USB_PROTOCOL::USB2)
+        {
           port.Reset();
+          _eventManager->DebugPrint();
+        }
         else
           port.WarmReset();
-        _eventManager->DebugPrint();
         if(!port.IsEnabled())
         {
           printf("\n Port still not enabled! ");
@@ -287,49 +298,89 @@ void XHCIController::Probe()
       }
     }
 
-    printf("\n Connected Device Speed: %s", PortSpeedName(port.PortSpeedID()));
+    port.Print();
+    printf("\n %s [%s] device connected to port %d", PortProtocolName(protocol), PortSpeedName(port.PortSpeedID()), i);
+    InitializeDevice(port, supProtocol->SlotType());
+    KBDriver::Instance().Getch();
 	}
 }
 
-CommandManager::CommandManager(XHCICapRegister& creg, XHCIOpRegister& oreg)
-  : _pcs(true), _ring(nullptr), _capReg(creg), _opReg(oreg)
+void XHCIController::RingDoorBell(unsigned index, unsigned value)
+{
+  _doorBellRegs[index] = value;
+}
+
+void XHCIController::InitializeDevice(XHCIPortRegister& port, unsigned slotType)
+{
+  _cmdManager->EnableSlot(slotType);
+  printf("\n Before HCC");
+  _cmdManager->DebugPrint();
+  _opReg->Print();
+  RingDoorBell(0, 0);
+  ProcessManager::Instance().Sleep(2000);
+  printf("\n After HCC");
+  _cmdManager->DebugPrint();
+  _eventManager->DebugPrint();
+
+  _opReg->Print();
+}
+
+CommandManager::CommandManager(XHCICapRegister& creg, 
+  XHCIOpRegister& oreg,
+  EventManager& eventManager)
+  : _pcs(true), _ring(nullptr), _capReg(creg), _opReg(oreg), _eventManager(eventManager)
 {
   _ring = new ((void*)DMM_AllocateAlignForKernel(sizeof(Ring), 64))Ring();
+  uint64_t ringAddr = (unsigned)_ring - GLOBAL_DATA_SEGMENT_BASE;
 
   LinkTRB link(_ring->_link, true);
-  link.SetLinkAddr((uint64_t)&_ring->_cmd);
+  link.SetLinkAddr(ringAddr);
   link.SetToggleBit(true);
 
-  uint64_t ringAddr = (unsigned)_ring - GLOBAL_DATA_SEGMENT_BASE;
   _opReg.SetCommandRingPointer(ringAddr);
 }
 
-EventManager::EventManager(XHCICapRegister& creg, XHCIOpRegister& oreg)
-  : _ring(nullptr), _capReg(creg), _opReg(oreg)
+void CommandManager::DebugPrint()
 {
-  _ring = new ((void*)DMM_AllocateAlignForKernel(sizeof(Ring), 64))Ring();
+  printf("\n Command Ring - ");
+  _ring->_cmd.Print();
+  _ring->_link.Print();
+}
 
-  LinkTRB link(_ring->_link, true);
-  link.SetLinkAddr((uint64_t)&_ring->_events[0]);
-  link.SetToggleBit(true);
+void CommandManager::EnableSlot(unsigned slotType)
+{
+  EnableSlotTRB eslot(_ring->_cmd, slotType);
+  _ring->_cmd.SetCycleBit(_pcs);
+  _ring->_link.SetCycleBit(_pcs);
+  _pcs = !_pcs;
+}
 
-  uint64_t ringAddr = (unsigned)_ring - GLOBAL_DATA_SEGMENT_BASE;
+EventManager::EventManager(XHCICapRegister& creg, XHCIOpRegister& oreg)
+  : _capReg(creg), _opReg(oreg)
+{
+  const int ERST_SIZE = sizeof(ERST)/sizeof(ERSTEntry);
+  _erst = new ((void*)DMM_AllocateAlignForKernel(sizeof(ERST), 64))ERST();
+  _ers0 = new((void*)DMM_AllocateAlignForKernel(sizeof(ERS), 64))ERS();
 
+  _erst->_e0._lowerAddr = (unsigned)_ers0 - GLOBAL_DATA_SEGMENT_BASE;
+  _erst->_e0._size = ERS_SIZE;
+  
   unsigned eventRingRegBase = ((unsigned)&creg) + _capReg.RTSOffset() + 32 * _capReg.MaxIntrs();
 
   //TODO: For now, set only 1 Event Ring Segment
   unsigned& ERSTZ = *(unsigned*)(eventRingRegBase + 0x28);
-  ERSTZ = (ERSTZ & 0xFFFF0000) | 0x1;
+  ERSTZ = (ERSTZ & 0xFFFF0000) | ERST_SIZE;
 
   uint64_t& ERSTBA = *(uint64_t*)(eventRingRegBase + 0x30);
-  ERSTBA = (ERSTBA & (uint64_t)(0x3F)) | ringAddr;
+  ERSTBA = (ERSTBA & (uint64_t)(0x3F)) | ((uint64_t)_erst - GLOBAL_DATA_SEGMENT_BASE);
 
-  uint64_t& ERDP = *(uint64_t*)(eventRingRegBase + 0x38);
-  ERDP = (uint64_t)ringAddr;
+  _ERDP = (uint64_t*)(eventRingRegBase + 0x38);
+  (*_ERDP) = 0;//(uint64_t)ringAddr;
 }
 
 void EventManager::DebugPrint() const
 {
-  const TRB& eventTRB = _ring->_events[0];
-  printf("\n DW1: %x, DW2: %x, DW3: %x, DW4: %x", eventTRB._b1, eventTRB._b2, eventTRB._b3, eventTRB._b4);
+  printf("\n Event Ring - ");
+  _ers0->_events[0].Print();
+  _ers0->_events[1].Print();
 }

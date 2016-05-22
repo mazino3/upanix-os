@@ -24,6 +24,7 @@
 
 class CommandManager;
 class EventManager;
+class SupProtocolXCap;
 
 class XHCIController
 {
@@ -34,7 +35,10 @@ class XHCIController
   private:
     void LoadXCaps(unsigned base);
     void PerformBiosToOSHandoff();
-    USB_PROTOCOL PortProtocol(unsigned portId) const;
+    void RingDoorBell(unsigned index, unsigned value);
+    void InitializeDevice(XHCIPortRegister& port, unsigned slotType);
+
+    SupProtocolXCap* GetSupportedProtocol(unsigned portId) const;
     const char* PortProtocolName(USB_PROTOCOL) const;
     const char* PortSpeedName(DEVICE_SPEED speed) const;
 
@@ -45,6 +49,7 @@ class XHCIController
     CommandManager*  _cmdManager;
     EventManager*    _eventManager;
     LegSupXCap*      _legSupXCap;
+    unsigned*        _doorBellRegs;
     upan::list<SupProtocolXCap*> _supProtoXCaps;
 
     friend class XHCIManager;
@@ -53,7 +58,9 @@ class XHCIController
 class CommandManager
 {
   private:
-    CommandManager(XHCICapRegister&, XHCIOpRegister&);
+    CommandManager(XHCICapRegister&, XHCIOpRegister&, EventManager& eventManager);
+    void EnableSlot(unsigned slotType);
+    void DebugPrint();
 
   private:
     struct Ring
@@ -66,23 +73,45 @@ class CommandManager
     Ring*            _ring;
     XHCICapRegister& _capReg;
     XHCIOpRegister&  _opReg;
+    EventManager&    _eventManager;
   friend class XHCIController;
 };
 
 class EventManager
 {
-  private:
-    EventManager(XHCICapRegister&, XHCIOpRegister&);
+  public:
     void DebugPrint() const;
 
   private:
-    struct Ring
+    EventManager(XHCICapRegister&, XHCIOpRegister&);
+
+  private:
+    static const int ERS_SIZE = 64;
+    //Event Ring Segment
+    struct ERS
     {
-      TRB _events[64];
-      TRB _link;
+      TRB _events[ERS_SIZE];
     } PACKED;
 
-    Ring* _ring;
+    //Event Ring Segment Table
+    struct ERSTEntry
+    {
+      ERSTEntry() : _lowerAddr(0), _higherAddr(0), _size(0), _reserved(0) {}
+      unsigned _lowerAddr;
+      unsigned _higherAddr;
+      unsigned _size;
+      unsigned _reserved;
+    } PACKED;
+
+    struct ERST
+    {
+      ERSTEntry _e0;
+    } PACKED;
+
+    ERS* _ers0;
+    ERST* _erst;
+    //Event Ring Dequeue Pointer
+    uint64_t* _ERDP;
     XHCICapRegister& _capReg;
     XHCIOpRegister& _opReg;
   friend class XHCIController;
