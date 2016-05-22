@@ -15,6 +15,7 @@
 #	 along with this program.  If not, see <http://www.gnu.org/licenses/
 . setup.sh
 
+DRIVE=$1
 echo rahasya | sudo -S mount floppy/GrubFloppy_ext.img floppy/MntFloppy -o loop 
 
 if [ $? -ne 0 ]
@@ -26,13 +27,18 @@ echo rahasya | sudo -S cp -f bin/upanix.elf floppy/MntFloppy/boot
 
 echo rahasya | sudo -S umount floppy/MntFloppy 
 
-echo rahasya | sudo -S kpartx -d /dev/sdb
-echo rahasya | sudo -S kpartx -av /dev/sdb
-echo rahasya | sudo -S mount /dev/mapper/sdb1 usb_boot/MntUSB 
+if [ "$DRIVE" = "" ]
+then
+  DEV="USBImage/300MUSB.img"
+  MOUNTP="loop0p1"
+else
+  DEV="/dev/$DRIVE"
+  MOUNTP="${DRIVE}1"
+fi
 
-#echo rahasya | sudo -S kpartx -d USBImage/300MUSB.img
-#echo rahasya | sudo -S kpartx -av USBImage/300MUSB.img
-#echo rahasya | sudo -S mount /dev/mapper/loop0p1 usb_boot/MntUSB 
+echo rahasya | sudo -S kpartx -d "$DEV"
+echo rahasya | sudo -S kpartx -av "$DEV"
+echo rahasya | sudo -S mount /dev/mapper/$MOUNTP usb_boot/MntUSB 
 
 if [ $? -ne 0 ]
 then

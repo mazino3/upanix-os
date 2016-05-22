@@ -85,6 +85,7 @@ EHCIController::EHCIController(PCIEntry* pPCIEntry, int iMemMapIndex)
 
 	printf("\n HCSPARAMS: %x, HCCPARAMS: %x, CAPLen: %x, CFBit: %d", uiHCSParams, uiHCCParams, bCapLen, uiConfigFlag) ;
 	printf(", Bus: %d, Dev: %d, Func: %d", pPCIEntry->uiBusNumber, pPCIEntry->uiDeviceNumber, pPCIEntry->uiFunction) ;
+
 	/* Enable busmaster */
 	unsigned short usCommand ;
 	pPCIEntry->ReadPCIConfig(PCI_COMMAND, 2, &usCommand);

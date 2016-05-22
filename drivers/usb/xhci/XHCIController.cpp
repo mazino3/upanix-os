@@ -74,14 +74,6 @@ XHCIController::XHCIController(PCIEntry* pPCIEntry)
 
   _capReg->Print();
 
-	/* Enable busmaster */
-	unsigned short usCommand;
-	pPCIEntry->ReadPCIConfig(PCI_COMMAND, 2, &usCommand);
-	printf("\n CurVal of PCI_COMMAND: %x", usCommand);
-	pPCIEntry->WritePCIConfig(PCI_COMMAND, 2, usCommand | PCI_COMMAND_MMIO | PCI_COMMAND_MASTER | PCI_COMMAND_IO);
-	pPCIEntry->ReadPCIConfig(PCI_COMMAND, 2, &usCommand);
-	printf(" -> After Bus Master Enable, PCI_COMMAND: %x", usCommand);
-
   //Enable Ports for Intel PanthorPoint XHCI
   if(pPCIEntry->usVendorID == 0x8086
     && pPCIEntry->usDeviceID == 0x1E31)
@@ -95,7 +87,7 @@ XHCIController::XHCIController(PCIEntry* pPCIEntry)
      */
     pPCIEntry->WritePCIConfig(0xD8, 4, portsAvailable);
     pPCIEntry->ReadPCIConfig(0xD8, 4, &portsAvailable);
-    printf("\n USB 3.0 ports that are now enabled: %d", portsAvailable);
+    printf("\n USB 3.0 ports that are now enabled: %x", portsAvailable);
 
     /* Write XUSB2PR, the xHC USB 2.0 Port Routing Register, to
      * switch the USB 2.0 power and data lines over to the xHCI
@@ -104,8 +96,16 @@ XHCIController::XHCIController(PCIEntry* pPCIEntry)
     portsAvailable = 0xFFFFFFFF;
     pPCIEntry->WritePCIConfig(0xD0, 4, portsAvailable);
     pPCIEntry->ReadPCIConfig(0xD0, 4, &portsAvailable);
-    printf("\n USB 2.0 ports that are now enabled: %d", portsAvailable);
+    printf("\n USB 2.0 ports that are now enabled: %x", portsAvailable);
   }
+
+	/* Enable busmaster */
+	unsigned short usCommand;
+	pPCIEntry->ReadPCIConfig(PCI_COMMAND, 2, &usCommand);
+	printf("\n CurVal of PCI_COMMAND: %x", usCommand);
+	pPCIEntry->WritePCIConfig(PCI_COMMAND, 2, usCommand | PCI_COMMAND_MMIO | PCI_COMMAND_MASTER);
+	pPCIEntry->ReadPCIConfig(PCI_COMMAND, 2, &usCommand);
+	printf(" -> After Bus Master Enable, PCI_COMMAND: %x", usCommand);
 
   if(!_opReg->IsHCReady())
     throw upan::exception(XLOC, "HC is not ready yet!");
@@ -131,6 +131,9 @@ XHCIController::XHCIController(PCIEntry* pPCIEntry)
   //Setup Command Ring
   _cmdManager = new CommandManager(*_capReg, *_opReg);
 
+  //Setup Event Ring
+  _eventManager = new EventManager(*_capReg, *_opReg);
+
   //Start HC
   _opReg->DisableHCInterrupt();
   _opReg->Run();
@@ -138,7 +141,6 @@ XHCIController::XHCIController(PCIEntry* pPCIEntry)
   if(!_opReg->IsHCRunning() || _opReg->IsHCHalted())
     throw upan::exception(XLOC, "Failed to start XHCI HC");
   _opReg->Print();
-  KBDriver::Instance().Getch();
   Probe();
 }
 
@@ -215,22 +217,19 @@ const char* XHCIController::PortProtocolName(USB_PROTOCOL protocol) const
     case USB_PROTOCOL::USB3: return "usb3";
     case USB_PROTOCOL::USB2: return "usb2";
     case USB_PROTOCOL::USB1: return "usb1";
-    default:
-      return "unknown";
+    default: return "unknown";
   }
 }
 
-CommandManager::CommandManager(XHCICapRegister& creg, XHCIOpRegister& oreg)
-  : _pcs(true), _ring(nullptr), _capReg(creg), _opReg(oreg)
+const char* XHCIController::PortSpeedName(DEVICE_SPEED speed) const
 {
-  _ring = new ((void*)DMM_AllocateAlignForKernel(sizeof(Ring), 64))Ring();
-
-  LinkTRB link(_ring->_link, true);
-  link.SetLinkAddr((uint64_t)&_ring->_cmd);
-  link.SetToggleBit(true);
-
-  uint64_t ringAddr = (unsigned)_ring - GLOBAL_DATA_SEGMENT_BASE;
-  _opReg.SetCommandRingPointer(ringAddr);
+  switch(speed)
+  {
+    case DEVICE_SPEED::FULL_SPEED: return "full speed";
+    case DEVICE_SPEED::LOW_SPEED: return "low speed";
+    case DEVICE_SPEED::HIGH_SPEED: return "high speed";
+    default: return "undefined";
+  }
 }
 
 void XHCIController::Probe()
@@ -250,11 +249,6 @@ void XHCIController::Probe()
     port.Print();
 		if(_capReg->IsPPC())
       port.PowerOn();
-    else
-    {
-      port.PowerOff();
-      port.PowerOn();
-    }
 
     if(!port.IsPowerOn())
     {
@@ -262,44 +256,80 @@ void XHCIController::Probe()
       continue;
     }
 
-    if(!port.IsEnabled())
-    {
-      if(protocol == USB_PROTOCOL::USB2)
-      {
-        try 
-        {
-          port.Reset();
-          if(!port.IsEnabled())
-          {
-            printf("\n Port still not enabled!");
-            continue;
-          }
-        }
-        catch(const upan::exception& ex)
-        {
-          printf("\n%s", ex.Error().c_str());
-        }
-      }
-      else
-      {
-        printf("\n Port %d is not enabled!", i);
-        continue;
-      }
-    }
-
     if(port.IsDeviceConnected())
       printf("\n Device connected to Port %d", i);
     else
+    {
       printf("\n No Device connected to Port %d", i);
+      continue;
+    }
 
-//		if((*pPort & 0x1))
-//			printf("-> High Speed Dev Cncted") ;
-//		printf("-> New value: %x", i, *pPort) ;
-//
-//    auto driver = USBController::Instance().FindDriver(new EHCIDevice(*this));
-//    if(driver)
-//      printf("\n'%s' driver found for the USB Device", driver->Name().c_str());
-//    else
-//      printf("\nNo Driver found for this USB device") ;
+    if(!port.IsEnabled())
+    {
+      try 
+      {
+        if(protocol == USB_PROTOCOL::USB2)
+          port.Reset();
+        else
+          port.WarmReset();
+        _eventManager->DebugPrint();
+        if(!port.IsEnabled())
+        {
+          printf("\n Port still not enabled! ");
+          port.Print();
+          _opReg->Print();
+          continue;
+        }
+      }
+      catch(const upan::exception& ex)
+      {
+        printf("\n%s", ex.Error().c_str());
+      }
+    }
+
+    printf("\n Connected Device Speed: %s", PortSpeedName(port.PortSpeedID()));
 	}
+}
+
+CommandManager::CommandManager(XHCICapRegister& creg, XHCIOpRegister& oreg)
+  : _pcs(true), _ring(nullptr), _capReg(creg), _opReg(oreg)
+{
+  _ring = new ((void*)DMM_AllocateAlignForKernel(sizeof(Ring), 64))Ring();
+
+  LinkTRB link(_ring->_link, true);
+  link.SetLinkAddr((uint64_t)&_ring->_cmd);
+  link.SetToggleBit(true);
+
+  uint64_t ringAddr = (unsigned)_ring - GLOBAL_DATA_SEGMENT_BASE;
+  _opReg.SetCommandRingPointer(ringAddr);
+}
+
+EventManager::EventManager(XHCICapRegister& creg, XHCIOpRegister& oreg)
+  : _ring(nullptr), _capReg(creg), _opReg(oreg)
+{
+  _ring = new ((void*)DMM_AllocateAlignForKernel(sizeof(Ring), 64))Ring();
+
+  LinkTRB link(_ring->_link, true);
+  link.SetLinkAddr((uint64_t)&_ring->_events[0]);
+  link.SetToggleBit(true);
+
+  uint64_t ringAddr = (unsigned)_ring - GLOBAL_DATA_SEGMENT_BASE;
+
+  unsigned eventRingRegBase = ((unsigned)&creg) + _capReg.RTSOffset() + 32 * _capReg.MaxIntrs();
+
+  //TODO: For now, set only 1 Event Ring Segment
+  unsigned& ERSTZ = *(unsigned*)(eventRingRegBase + 0x28);
+  ERSTZ = (ERSTZ & 0xFFFF0000) | 0x1;
+
+  uint64_t& ERSTBA = *(uint64_t*)(eventRingRegBase + 0x30);
+  ERSTBA = (ERSTBA & (uint64_t)(0x3F)) | ringAddr;
+
+  uint64_t& ERDP = *(uint64_t*)(eventRingRegBase + 0x38);
+  ERDP = (uint64_t)ringAddr;
+}
+
+void EventManager::DebugPrint() const
+{
+  const TRB& eventTRB = _ring->_events[0];
+  printf("\n DW1: %x, DW2: %x, DW3: %x, DW4: %x", eventTRB._b1, eventTRB._b2, eventTRB._b3, eventTRB._b4);
 }

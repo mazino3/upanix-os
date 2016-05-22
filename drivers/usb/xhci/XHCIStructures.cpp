@@ -187,15 +187,11 @@ void XHCIPortRegister::Reset()
   if(_sc & 0x10)
     throw upan::exception(XLOC, "Cannot reset while reset is in-progress");
 
-  //Clear port reset change bit
-  _sc |= 0x200000;
+  ClearPRC();
   _sc |= 0x10;
 
   if(!ProcessManager::Instance().ConditionalWait(&_sc, 21, true))
     throw upan::exception(XLOC, "Failed to complete reset - timedout (SC = %x)", _sc);
-
-  //Clear port reset change bit
-  _sc |= 0x200000;
 }
 
 void XHCIPortRegister::WarmReset()
@@ -209,9 +205,6 @@ void XHCIPortRegister::WarmReset()
 
   if(!ProcessManager::Instance().ConditionalWait(&_sc, 19, true))
     throw upan::exception(XLOC, "Failed to complete reset - timedout");
-
-  //Clear port reset change bit
-  _sc |= 0x80000;
 }
 
 void XHCIPortRegister::PowerOn()
@@ -245,5 +238,5 @@ void LegSupXCap::BiosToOSHandoff()
   if(!ProcessManager::Instance().ConditionalWait(&_usbLegSup, 16, false))
     throw upan::exception(XLOC, "BIOS to OS Handoff failed - Bios Owned bit is still set");
 
-  printf("\n XHCI Bios to OS Handoff completed");
+  printf("\n XHCI Bios to OS Handoff completed - LEGSUP: %x", _usbLegSup);
 }

@@ -24,10 +24,19 @@
 
 enum USB_PROTOCOL
 {
+  UNKNOWN,
   USB1,
   USB2,
-  USB3,
-  UNKNOWN
+  USB3
+};
+
+enum DEVICE_SPEED
+{
+  UNDEFINED, 
+  FULL_SPEED, // 12 MB/s
+  LOW_SPEED, // 1.5 Mb/s
+  HIGH_SPEED, // 480 Mb/s
+  SUPER_SPEED // 5 Gb/s
 };
 
 class XHCICapRegister
@@ -40,7 +49,7 @@ class XHCICapRegister
     
     //HCSPARAMS1
     unsigned MaxSlots() const { return _hcsParams1 & 0xFF; }
-    unsigned MaxIntrs() const { return (_hcsParams1 >> 8) & 0x3FF; }
+    unsigned MaxIntrs() const { return (_hcsParams1 >> 8) & 0x7FF; }
     unsigned MaxPorts() const { return (_hcsParams1 >> 24) & 0xFF; }
 
     //HCSPARAMS2
@@ -151,7 +160,22 @@ class XHCIPortRegister
     {
       _sc = Bit::Set(_sc, 0x4000000, enable);
     }
+    void ClearPRC()
+    {
+      _sc |= 0x200000;
+    }
     bool IsRemovableDevice() const { return Bit::IsSet(_sc, 0x40000000); }
+    DEVICE_SPEED PortSpeedID() const
+    {
+      unsigned psi = (_sc >> 10) & 0xFF;
+      switch(psi)
+      {
+        case 1: return DEVICE_SPEED::FULL_SPEED;
+        case 2: return DEVICE_SPEED::LOW_SPEED;
+        case 3: return DEVICE_SPEED::HIGH_SPEED;
+        default: return DEVICE_SPEED::UNDEFINED;
+      }
+    }
     void Print();
   private:
     unsigned _sc;

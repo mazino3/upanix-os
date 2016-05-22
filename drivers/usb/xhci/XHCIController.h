@@ -23,6 +23,7 @@
 #include <XHCIStructures.h>
 
 class CommandManager;
+class EventManager;
 
 class XHCIController
 {
@@ -35,12 +36,14 @@ class XHCIController
     void PerformBiosToOSHandoff();
     USB_PROTOCOL PortProtocol(unsigned portId) const;
     const char* PortProtocolName(USB_PROTOCOL) const;
+    const char* PortSpeedName(DEVICE_SPEED speed) const;
 
     static unsigned  _memMapBaseAddress;
     PCIEntry*        _pPCIEntry;
     XHCICapRegister* _capReg;
     XHCIOpRegister*  _opReg;
     CommandManager*  _cmdManager;
+    EventManager*    _eventManager;
     LegSupXCap*      _legSupXCap;
     upan::list<SupProtocolXCap*> _supProtoXCaps;
 
@@ -63,6 +66,25 @@ class CommandManager
     Ring*            _ring;
     XHCICapRegister& _capReg;
     XHCIOpRegister&  _opReg;
+  friend class XHCIController;
+};
+
+class EventManager
+{
+  private:
+    EventManager(XHCICapRegister&, XHCIOpRegister&);
+    void DebugPrint() const;
+
+  private:
+    struct Ring
+    {
+      TRB _events[64];
+      TRB _link;
+    } PACKED;
+
+    Ring* _ring;
+    XHCICapRegister& _capReg;
+    XHCIOpRegister& _opReg;
   friend class XHCIController;
 };
 
