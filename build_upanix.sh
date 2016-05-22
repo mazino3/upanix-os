@@ -28,7 +28,7 @@ if [ -z "$cmd" ]
 then
 	make elf
 	exitcode=$?
-	cmd="elf1"
+	cmd="elf"
 else
 	make $cmd
 	exitcode=$?

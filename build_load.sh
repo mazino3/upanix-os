@@ -15,7 +15,6 @@
 #	 along with this program.  If not, see <http://www.gnu.org/licenses/
 . setup.sh
 
-DRIVE=$1
 echo rahasya | sudo -S mount floppy/GrubFloppy_ext.img floppy/MntFloppy -o loop 
 
 if [ $? -ne 0 ]
