@@ -36,6 +36,11 @@ void* operator new(size_t uiSize, void* buffer)
 	return buffer ;
 }
 
+void* operator new[](size_t uiSize, void* buffer)
+{
+	return buffer;
+}
+
 void operator delete(void* p)
 {
 	iNewCount-- ;

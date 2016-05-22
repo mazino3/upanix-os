@@ -23,6 +23,7 @@
 void* operator new(size_t);
 void* operator new[](size_t);
 void* operator new(size_t, void* buffer);
+void* operator new[](size_t, void* buffer);
 void operator delete(void* p);
 void operator delete[](void* p);
 void operator delete(void*, void*);
