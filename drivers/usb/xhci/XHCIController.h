@@ -86,32 +86,36 @@ class EventManager
     EventManager(XHCICapRegister&, XHCIOpRegister&);
 
   private:
-    static const int ERS_SIZE = 64;
-    //Event Ring Segment
-    struct ERS
-    {
-      TRB _events[ERS_SIZE];
-    } PACKED;
-
     //Event Ring Segment Table
     struct ERSTEntry
     {
-      ERSTEntry() : _lowerAddr(0), _higherAddr(0), _size(0), _reserved(0) {}
-      unsigned _lowerAddr;
-      unsigned _higherAddr;
+      ERSTEntry();
+      uint64_t _ersAddr;
       unsigned _size;
       unsigned _reserved;
     } PACKED;
 
-    struct ERST
+    struct InterrupterRegister
     {
-      ERSTEntry _e0;
+      InterrupterRegister();
+
+      TRB* ERSegment(unsigned index)
+      {
+        if(index >= _erstSize)
+          throw upan::exception(XLOC, "\n Invalid ERST index %d - ERST Size is %d", index, _erstSize);
+        ERSTEntry* erst = (ERSTEntry*)KERNEL_VIRTUAL_ADDRESS(_erstBA);
+        return (TRB*)KERNEL_VIRTUAL_ADDRESS(erst[index]._ersAddr);
+      }
+
+      unsigned _iman;
+      unsigned _imod;
+      unsigned _erstSize;
+      unsigned _reserved;
+      uint64_t _erstBA;
+      uint64_t _erdqPtr;
     } PACKED;
 
-    ERS* _ers0;
-    ERST* _erst;
-    //Event Ring Dequeue Pointer
-    uint64_t* _ERDP;
+    InterrupterRegister* _iregs;
     XHCICapRegister& _capReg;
     XHCIOpRegister& _opReg;
   friend class XHCIController;

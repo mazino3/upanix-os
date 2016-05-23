@@ -47,15 +47,15 @@ XHCIController::XHCIController(PCIEntry* pPCIEntry)
   if(ioSize % PAGE_SIZE)
     ++pagesToMap;
 	unsigned uiPDEAddress = MEM_PDBR ;
-  const unsigned uiMappedIOAddr = _memMapBaseAddress + (uiIOAddr % PAGE_SIZE) - GLOBAL_DATA_SEGMENT_BASE;
+  const unsigned uiMappedIOAddr = KERNEL_VIRTUAL_ADDRESS(_memMapBaseAddress + (uiIOAddr % PAGE_SIZE));
   printf("\n Total pages to Map: %d", pagesToMap);
   for(unsigned i = 0; i < pagesToMap; ++i)
   {
   	unsigned uiPDEIndex = ((_memMapBaseAddress >> 22) & 0x3FF) ;
 	  unsigned uiPTEIndex = ((_memMapBaseAddress >> 12) & 0x3FF) ;
-	  unsigned uiPTEAddress = (((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPDEIndex]) & 0xFFFFF000 ;
+	  unsigned uiPTEAddress = (((unsigned*)(KERNEL_VIRTUAL_ADDRESS(uiPDEAddress)))[uiPDEIndex]) & 0xFFFFF000 ;
     // This page is a Read Only area for user process. 0x5 => 101 => User Domain, Read Only, Present Bit
-    ((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPTEIndex] = (uiIOAddr & 0xFFFFF000) | 0x5 ;
+    ((unsigned*)(KERNEL_VIRTUAL_ADDRESS(uiPTEAddress)))[uiPTEIndex] = (uiIOAddr & 0xFFFFF000) | 0x5 ;
     if(MemManager::Instance().MarkPageAsAllocated(uiIOAddr / PAGE_SIZE) != Success)
     {
     }
@@ -125,7 +125,7 @@ XHCIController::XHCIController(PCIEntry* pPCIEntry)
 
   //program device context base address pointer
   unsigned deviceContextTable = MemManager::Instance().AllocatePhysicalPage() * PAGE_SIZE;
-  memset((void*)(deviceContextTable - GLOBAL_DATA_SEGMENT_BASE), 0, PAGE_SIZE);
+  memset((void*)(KERNEL_VIRTUAL_ADDRESS(deviceContextTable)), 0, PAGE_SIZE);
   _opReg->SetDCBaap(deviceContextTable);
 
   //Door Bell array
@@ -313,11 +313,14 @@ void XHCIController::RingDoorBell(unsigned index, unsigned value)
 void XHCIController::InitializeDevice(XHCIPortRegister& port, unsigned slotType)
 {
   _cmdManager->EnableSlot(slotType);
+ 
   printf("\n Before HCC");
   _cmdManager->DebugPrint();
   _opReg->Print();
+  
   RingDoorBell(0, 0);
   ProcessManager::Instance().Sleep(2000);
+
   printf("\n After HCC");
   _cmdManager->DebugPrint();
   _eventManager->DebugPrint();
@@ -331,7 +334,7 @@ CommandManager::CommandManager(XHCICapRegister& creg,
   : _pcs(true), _ring(nullptr), _capReg(creg), _opReg(oreg), _eventManager(eventManager)
 {
   _ring = new ((void*)DMM_AllocateAlignForKernel(sizeof(Ring), 64))Ring();
-  uint64_t ringAddr = (unsigned)_ring - GLOBAL_DATA_SEGMENT_BASE;
+  uint64_t ringAddr = KERNEL_REAL_ADDRESS(_ring);
 
   LinkTRB link(_ring->_link, true);
   link.SetLinkAddr(ringAddr);
@@ -350,37 +353,41 @@ void CommandManager::DebugPrint()
 void CommandManager::EnableSlot(unsigned slotType)
 {
   EnableSlotTRB eslot(_ring->_cmd, slotType);
-  _ring->_cmd.SetCycleBit(_pcs);
-  _ring->_link.SetCycleBit(_pcs);
+//  _ring->_cmd.SetCycleBit(_pcs);
+//  _ring->_link.SetCycleBit(_pcs);
   _pcs = !_pcs;
+}
+
+EventManager::InterrupterRegister::InterrupterRegister() 
+  : _iman(0), _imod(0), _erstSize(0), _reserved(0),
+    _erstBA(0), _erdqPtr(0)
+{
+  //Interrupter is disabled by default
+  const int ERST_SIZE = 1;
+  _erstSize = (_erstSize & 0xFFFF0000) | ERST_SIZE;
+
+  ERSTEntry* erst = new ((void*)DMM_AllocateAlignForKernel(sizeof(ERSTEntry) * ERST_SIZE, 64))ERSTEntry[ERST_SIZE];
+  _erstBA = (uint64_t)KERNEL_REAL_ADDRESS(erst);
+
+  _erdqPtr = 0;
+}
+
+EventManager::ERSTEntry::ERSTEntry() : _size(64)
+{
+  TRB* events = new ((void*)DMM_AllocateAlignForKernel(sizeof(TRB) * _size, 64))TRB[_size];
+  _ersAddr = (uint64_t)KERNEL_REAL_ADDRESS(events);
 }
 
 EventManager::EventManager(XHCICapRegister& creg, XHCIOpRegister& oreg)
   : _capReg(creg), _opReg(oreg)
 {
-  const int ERST_SIZE = sizeof(ERST)/sizeof(ERSTEntry);
-  _erst = new ((void*)DMM_AllocateAlignForKernel(sizeof(ERST), 64))ERST();
-  _ers0 = new((void*)DMM_AllocateAlignForKernel(sizeof(ERS), 64))ERS();
-
-  _erst->_e0._lowerAddr = (unsigned)_ers0 - GLOBAL_DATA_SEGMENT_BASE;
-  _erst->_e0._size = ERS_SIZE;
-  
-  unsigned eventRingRegBase = ((unsigned)&creg) + _capReg.RTSOffset() + 32 * _capReg.MaxIntrs();
-
-  //TODO: For now, set only 1 Event Ring Segment
-  unsigned& ERSTZ = *(unsigned*)(eventRingRegBase + 0x28);
-  ERSTZ = (ERSTZ & 0xFFFF0000) | ERST_SIZE;
-
-  uint64_t& ERSTBA = *(uint64_t*)(eventRingRegBase + 0x30);
-  ERSTBA = (ERSTBA & (uint64_t)(0x3F)) | ((uint64_t)_erst - GLOBAL_DATA_SEGMENT_BASE);
-
-  _ERDP = (uint64_t*)(eventRingRegBase + 0x38);
-  (*_ERDP) = 0;//(uint64_t)ringAddr;
+  _iregs = (InterrupterRegister*)((unsigned)&_capReg + _capReg.RTSOffset() + 0x20);
+  for(unsigned i = 0; i < _capReg.MaxIntrs(); ++i)
+    new ((void*)&_iregs[i])InterrupterRegister();
 }
 
 void EventManager::DebugPrint() const
 {
   printf("\n Event Ring - ");
-  _ers0->_events[0].Print();
-  _ers0->_events[1].Print();
+  _iregs[0].ERSegment(0)[0].Print();
 }
