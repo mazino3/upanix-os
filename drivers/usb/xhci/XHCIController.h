@@ -60,7 +60,9 @@ class CommandManager
 {
   private:
     CommandManager(XHCICapRegister&, XHCIOpRegister&, EventManager& eventManager);
+    void Apply();
     void EnableSlot(unsigned slotType);
+    void DisableSlot(unsigned slotType);
     void DebugPrint();
 
   private:
@@ -107,6 +109,8 @@ class EventManager
         ERSTEntry* erst = (ERSTEntry*)KERNEL_VIRTUAL_ADDRESS(_erstBA);
         return (TRB*)KERNEL_VIRTUAL_ADDRESS(erst[index]._ersAddr);
       }
+
+      void DebugPrint();
 
       unsigned _iman;
       unsigned _imod;

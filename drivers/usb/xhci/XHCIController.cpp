@@ -315,6 +315,9 @@ void XHCIController::InitializeDevice(XHCIPortRegister& port, unsigned slotType)
   _cmdManager->EnableSlot(slotType);
   RingDoorBell(0, 0);
   ProcessManager::Instance().Sleep(2000);
+  _cmdManager->DisableSlot(1);
+  RingDoorBell(0, 0);
+  ProcessManager::Instance().Sleep(2000);
   _eventManager->DebugPrint();
   _opReg->Print();
 }
@@ -333,6 +336,13 @@ CommandManager::CommandManager(XHCICapRegister& creg,
   _opReg.SetCommandRingPointer(ringAddr);
 }
 
+void CommandManager::Apply()
+{
+  _ring->_cmd.SetCycleBit(_pcs);
+  _ring->_link.SetCycleBit(_pcs);
+  _pcs = !_pcs;
+}
+
 void CommandManager::DebugPrint()
 {
   printf("\n Command Ring - ");
@@ -343,15 +353,19 @@ void CommandManager::DebugPrint()
 void CommandManager::EnableSlot(unsigned slotType)
 {
   _ring->_cmd = EnableSlotTRB(slotType);
-  _ring->_cmd.SetCycleBit(_pcs);
-//  _ring->_link.SetCycleBit(_pcs);
-  _pcs = !_pcs;
+  Apply();
+}
+
+void CommandManager::DisableSlot(unsigned slotId)
+{
+  _ring->_cmd = DisableSlotTRB(slotId);
+  Apply();
 }
 
 EventManager::InterrupterRegister::InterrupterRegister() 
-  : _iman(0), _imod(0), _erstSize(0), _reserved(0),
-    _erstBA(0), _erdqPtr(0)
 {
+  _iman = 0;
+  _imod = 0;
   //Interrupter is disabled by default
   const int ERST_SIZE = 1;
   _erstSize = (_erstSize & 0xFFFF0000) | ERST_SIZE;
@@ -362,7 +376,7 @@ EventManager::InterrupterRegister::InterrupterRegister()
   _erdqPtr = erst[0]._ersAddr;
 }
 
-EventManager::ERSTEntry::ERSTEntry() : _size(64)
+EventManager::ERSTEntry::ERSTEntry() : _size(16)
 {
   TRB* events = new ((void*)DMM_AllocateAlignForKernel(sizeof(TRB) * _size, 64))TRB[_size];
   _ersAddr = (uint64_t)KERNEL_REAL_ADDRESS(events);
@@ -379,9 +393,21 @@ EventManager::EventManager(XHCICapRegister& creg, XHCIOpRegister& oreg)
 void EventManager::DebugPrint() const
 {
   printf("\n Event Ring - ");
-  _iregs[0].ERSegment(0)[0].Print();
-  _iregs[0].ERSegment(0)[1].Print();
-  _iregs[0].ERSegment(0)[2].Print();
-  _iregs[0].ERSegment(0)[3].Print();
-  _iregs[0].ERSegment(0)[0].Clear();
+  _iregs[0].DebugPrint();
+}
+
+void EventManager::InterrupterRegister::DebugPrint()
+{
+  printf("\n IMAN: %x, IMON: %x, DQPTR: %x", _iman, _imod, (unsigned)_erdqPtr);
+//  _erdqPtr = _erdqPtr | 0x8;
+//  _iman = _iman | 0x1;
+  for(int i = 0; i < 16; ++i)
+  {
+    ERSegment(0)[i].Print();
+    if(ERSegment(0)[13].Type() != 0)
+    {
+      _erdqPtr = KERNEL_REAL_ADDRESS(&ERSegment(0)[3]);
+    }
+    ERSegment(0)[i].Clear();
+  }
 }

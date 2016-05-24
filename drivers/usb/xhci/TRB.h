@@ -106,10 +106,17 @@ class EnableSlotTRB : public TRB
     EnableSlotTRB(unsigned slotType)
     {
       Type(9);
+      _b4 = _b4 | (slotType << 16);
+    }
+} PACKED;
 
-      const unsigned mask = 0x1F << 16;
-      slotType <<= 16;
-      _b4 = (_b4 & ~mask) | (slotType & mask);
+class DisableSlotTRB : public TRB
+{
+  public:
+    DisableSlotTRB(unsigned slotId)
+    {
+      Type(10);
+      _b4 = _b4 | (slotId << 24);
     }
 } PACKED;
 
