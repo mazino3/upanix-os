@@ -21,6 +21,7 @@
 #include <USBController.h>
 #include <PCIBusHandler.h>
 #include <XHCIStructures.h>
+#include <TRB.h>
 
 class CommandManager;
 class EventManager;
@@ -65,8 +66,8 @@ class CommandManager
   private:
     struct Ring
     {
-      TRB _cmd;
-      TRB _link;
+      TRB     _cmd;
+      LinkTRB _link;
     } PACKED;
 
     bool             _pcs;

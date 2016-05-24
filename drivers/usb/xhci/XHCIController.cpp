@@ -313,18 +313,9 @@ void XHCIController::RingDoorBell(unsigned index, unsigned value)
 void XHCIController::InitializeDevice(XHCIPortRegister& port, unsigned slotType)
 {
   _cmdManager->EnableSlot(slotType);
- 
-  printf("\n Before HCC");
-  _cmdManager->DebugPrint();
-  _opReg->Print();
-  
   RingDoorBell(0, 0);
   ProcessManager::Instance().Sleep(2000);
-
-  printf("\n After HCC");
-  _cmdManager->DebugPrint();
   _eventManager->DebugPrint();
-
   _opReg->Print();
 }
 
@@ -336,9 +327,8 @@ CommandManager::CommandManager(XHCICapRegister& creg,
   _ring = new ((void*)DMM_AllocateAlignForKernel(sizeof(Ring), 64))Ring();
   uint64_t ringAddr = KERNEL_REAL_ADDRESS(_ring);
 
-  LinkTRB link(_ring->_link, true);
-  link.SetLinkAddr(ringAddr);
-  link.SetToggleBit(true);
+  _ring->_link.SetLinkAddr(ringAddr);
+  _ring->_link.SetToggleBit(true);
 
   _opReg.SetCommandRingPointer(ringAddr);
 }
@@ -352,8 +342,8 @@ void CommandManager::DebugPrint()
 
 void CommandManager::EnableSlot(unsigned slotType)
 {
-  EnableSlotTRB eslot(_ring->_cmd, slotType);
-//  _ring->_cmd.SetCycleBit(_pcs);
+  _ring->_cmd = EnableSlotTRB(slotType);
+  _ring->_cmd.SetCycleBit(_pcs);
 //  _ring->_link.SetCycleBit(_pcs);
   _pcs = !_pcs;
 }
@@ -369,7 +359,7 @@ EventManager::InterrupterRegister::InterrupterRegister()
   ERSTEntry* erst = new ((void*)DMM_AllocateAlignForKernel(sizeof(ERSTEntry) * ERST_SIZE, 64))ERSTEntry[ERST_SIZE];
   _erstBA = (uint64_t)KERNEL_REAL_ADDRESS(erst);
 
-  _erdqPtr = 0;
+  _erdqPtr = erst[0]._ersAddr;
 }
 
 EventManager::ERSTEntry::ERSTEntry() : _size(64)
@@ -390,4 +380,8 @@ void EventManager::DebugPrint() const
 {
   printf("\n Event Ring - ");
   _iregs[0].ERSegment(0)[0].Print();
+  _iregs[0].ERSegment(0)[1].Print();
+  _iregs[0].ERSegment(0)[2].Print();
+  _iregs[0].ERSegment(0)[3].Print();
+  _iregs[0].ERSegment(0)[0].Clear();
 }
