@@ -120,4 +120,29 @@ class DisableSlotTRB : public TRB
     }
 } PACKED;
 
+class EventTRB : public TRB
+{
+  public:
+    uint64_t CommandPointer() const
+    {
+      uint64_t addr = _b2;
+      return (addr << 32 | (uint64_t)_b1);
+    }
+
+    unsigned CompletionCode() const
+    {
+      return _b3 >> 24;
+    }
+
+    bool IsCommandSuccess() const
+    {
+      return CompletionCode() == 1;
+    }
+
+    unsigned SlotID() const
+    {
+      return _b4 >> 24;
+    }
+} PACKED;
+
 #endif

@@ -37,6 +37,7 @@ class XHCIController
     void LoadXCaps(unsigned base);
     void PerformBiosToOSHandoff();
     void RingDoorBell(unsigned index, unsigned value);
+    unsigned EnableSlot(unsigned slotType);
     void InitializeDevice(XHCIPortRegister& port, unsigned slotType);
 
     SupProtocolXCap* GetSupportedProtocol(unsigned portId) const;
@@ -84,11 +85,13 @@ class EventManager
 {
   public:
     void DebugPrint() const;
+    bool WaitForEvent(EventTRB& result);
 
   private:
     EventManager(XHCICapRegister&, XHCIOpRegister&);
 
   private:
+    static const int ERST_SIZE;
     //Event Ring Segment Table
     struct ERSTEntry
     {
@@ -102,15 +105,50 @@ class EventManager
     {
       InterrupterRegister();
 
-      TRB* ERSegment(unsigned index)
+      ERSTEntry& ERST(unsigned index)
       {
         if(index >= _erstSize)
           throw upan::exception(XLOC, "\n Invalid ERST index %d - ERST Size is %d", index, _erstSize);
-        ERSTEntry* erst = (ERSTEntry*)KERNEL_VIRTUAL_ADDRESS(_erstBA);
-        return (TRB*)KERNEL_VIRTUAL_ADDRESS(erst[index]._ersAddr);
+        auto erst = (ERSTEntry*)KERNEL_VIRTUAL_ADDRESS(_erstBA);
+        return erst[index];
+      }
+
+      EventTRB* ERSegment(unsigned index)
+      {
+        return (EventTRB*)KERNEL_VIRTUAL_ADDRESS(ERST(index)._ersAddr);
+      }
+
+      bool IsLastDQPtr()
+      {
+        EventTRB* lastTRB = &ERSegment(0)[ERST_SIZE];
+        EventTRB* curTRB = DQEvent();
+        return curTRB == lastTRB;
+      }
+
+      void IncrementDQPtr()
+      {
+        if(IsLastDQPtr())
+          DQPtr(ERST(0)._ersAddr);
+        else
+          _erdqPtr += sizeof(EventTRB);
+      }
+
+      EventTRB* DQEvent()
+      {
+        return (EventTRB*)DQPtr();
+      }
+
+      bool EventCycleBitSet()
+      {
+        EventTRB* event = (EventTRB*)DQPtr();
+        return event->IsCycleBitSet();
       }
 
       void DebugPrint();
+
+    private:
+      unsigned DQPtr() { return KERNEL_VIRTUAL_ADDRESS(_erdqPtr) & ~(0xF); }
+      void DQPtr(uint64_t addr) { _erdqPtr = (_erdqPtr & (uint64_t)0xF) | addr; }
 
       unsigned _iman;
       unsigned _imod;
@@ -120,6 +158,7 @@ class EventManager
       uint64_t _erdqPtr;
     } PACKED;
 
+    bool     _eventCycleBit;
     InterrupterRegister* _iregs;
     XHCICapRegister& _capReg;
     XHCIOpRegister& _opReg;

@@ -312,14 +312,27 @@ void XHCIController::RingDoorBell(unsigned index, unsigned value)
 
 void XHCIController::InitializeDevice(XHCIPortRegister& port, unsigned slotType)
 {
+  unsigned slotId = EnableSlot(slotType);
+  if(!slotId)
+    throw upan::exception(XLOC, "Failed to get SlotID");
+}
+
+unsigned XHCIController::EnableSlot(unsigned slotType)
+{
   _cmdManager->EnableSlot(slotType);
   RingDoorBell(0, 0);
-  ProcessManager::Instance().Sleep(2000);
-  _cmdManager->DisableSlot(1);
-  RingDoorBell(0, 0);
-  ProcessManager::Instance().Sleep(2000);
-  _eventManager->DebugPrint();
-  _opReg->Print();
+
+  EventTRB result;
+  if(!_eventManager->WaitForEvent(result))
+    throw upan::exception(XLOC, "Timedout while waiting for EnableSlot Command Completion");
+
+  if(result.Type() != 33)
+    throw upan::exception(XLOC, "Got invalid Event TRD: %d", result.Type());
+
+  if(!result.IsCommandSuccess())
+    throw upan::exception(XLOC, "EnableSlot command did not complete successfully");
+
+  return result.SlotID();
 }
 
 CommandManager::CommandManager(XHCICapRegister& creg, 
@@ -376,14 +389,25 @@ EventManager::InterrupterRegister::InterrupterRegister()
   _erdqPtr = erst[0]._ersAddr;
 }
 
-EventManager::ERSTEntry::ERSTEntry() : _size(16)
+void EventManager::InterrupterRegister::DebugPrint()
 {
-  TRB* events = new ((void*)DMM_AllocateAlignForKernel(sizeof(TRB) * _size, 64))TRB[_size];
+  printf("\n IMAN: %x, IMON: %x, DQPTR: %x", _iman, _imod, (unsigned)DQPtr());
+//  _erdqPtr = _erdqPtr | 0x8;
+//  _iman = _iman | 0x1;
+  for(int i = 0; i < 16; ++i)
+    ERSegment(0)[i].Print();
+}
+
+const int EventManager::ERST_SIZE = 256;
+EventManager::ERSTEntry::ERSTEntry() : _size(ERST_SIZE)
+{
+  unsigned eventSegmentTable = MemManager::Instance().AllocatePhysicalPage() * PAGE_SIZE;
+  EventTRB* events = new ((void*)KERNEL_VIRTUAL_ADDRESS(eventSegmentTable))EventTRB[_size];
   _ersAddr = (uint64_t)KERNEL_REAL_ADDRESS(events);
 }
 
 EventManager::EventManager(XHCICapRegister& creg, XHCIOpRegister& oreg)
-  : _capReg(creg), _opReg(oreg)
+  : _eventCycleBit(true), _capReg(creg), _opReg(oreg)
 {
   _iregs = (InterrupterRegister*)((unsigned)&_capReg + _capReg.RTSOffset() + 0x20);
   for(unsigned i = 0; i < _capReg.MaxIntrs(); ++i)
@@ -396,18 +420,21 @@ void EventManager::DebugPrint() const
   _iregs[0].DebugPrint();
 }
 
-void EventManager::InterrupterRegister::DebugPrint()
+bool EventManager::WaitForEvent(EventTRB& result)
 {
-  printf("\n IMAN: %x, IMON: %x, DQPTR: %x", _iman, _imod, (unsigned)_erdqPtr);
-//  _erdqPtr = _erdqPtr | 0x8;
-//  _iman = _iman | 0x1;
-  for(int i = 0; i < 16; ++i)
+  int timeout = 2000;//2 seconds
+  while(timeout > 10)
   {
-    ERSegment(0)[i].Print();
-    if(ERSegment(0)[13].Type() != 0)
+    if(_iregs[0].EventCycleBitSet() == _eventCycleBit)
     {
-      _erdqPtr = KERNEL_REAL_ADDRESS(&ERSegment(0)[3]);
+      if(_iregs[0].IsLastDQPtr())
+        _eventCycleBit = !_eventCycleBit;
+      result = *_iregs[0].DQEvent();
+      _iregs[0].IncrementDQPtr();
+      return true;
     }
-    ERSegment(0)[i].Clear();
+    ProcessManager::Instance().Sleep(10);
+    timeout -= 10;
   }
+  return false;
 }
