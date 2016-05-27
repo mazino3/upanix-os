@@ -26,6 +26,7 @@
 # include <stdlib.h>
 # include <KernelComponents.h>
 # include <ReturnHandler.h>
+# include <MemConstants.h>
 
 typedef unsigned long long	DDWORD ;
 typedef unsigned			DWORD ;

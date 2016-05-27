@@ -18,6 +18,11 @@
 #ifndef _XHCI_TRB_H_
 #define _XHCI_TRB_H_
 
+#include <Global.h>
+#include <stdio.h>
+#include <exception.h>
+#include <Bit.h>
+
 class TRB
 {
   public:
@@ -144,5 +149,18 @@ class EventTRB : public TRB
       return _b4 >> 24;
     }
 } PACKED;
+
+class TransferTRB : public TRB
+{
+} PACKED;
+
+class TransferRing
+{
+  public:
+    TransferRing(unsigned size);
+  private:
+    uint32_t _size;
+    TRB*     _trbs;
+};
 
 #endif
