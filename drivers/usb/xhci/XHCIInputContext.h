@@ -65,43 +65,29 @@ class InputControlContext
 class InputSlotContext
 {
   public:
-    InputSlotContext() 
+    InputSlotContext() : _context1(0), _context2(0), _context3(0), _context4(0),
+      _reserved1(0), _reserved2(0), _reserved3(0), _reserved4(0)
     {
-      memset((void*)this, 0, sizeof(InputSlotContext));
     }
 
-    void Init(uint32_t portId, char routeString)
+    void Init(uint32_t portId, uint32_t routeString)
     {
-      _rootHubPortNo = portId;
-      _routeString = routeString;
-      _contextEntries = 1;
+      _context1 = (_context1 & ~(0xFFFFF)) | routeString;
+      //context entries
+      _context1 = (_context1 & ~(0x1F000000)) | (1 << 27);
+      //root hub port number
+      _context2 = (_context2 & ~(0x00FF0000)) | (portId << 16);
     }
   private:
-    uint32_t _routeString    : 20;
-    uint32_t _speed          : 4;
-    uint32_t _reserved1      : 1;
-    uint32_t _mtt            : 1;
-    uint32_t _hub            : 1;
-    uint32_t _contextEntries : 5;
+    uint32_t _context1;
+    uint32_t _context2;
+    uint32_t _context3;
+    uint32_t _context4;
 
-    uint16_t _maxExitLatency;
-    uint8_t  _rootHubPortNo;
-    uint8_t  _noOfPorts;
-
-    uint8_t  _ttHubSlotID;
-    uint8_t  _ttPortNo;
-    uint32_t _ttThinkTime : 2;
-    uint32_t _reserved2   : 4;
-    uint32_t _intTarget   : 10;
-
-    uint8_t  _usbDevAddr;
-    uint32_t _reserved3  : 19;
-    uint32_t _slotState  : 5;
-
+    uint32_t _reserved1;
+    uint32_t _reserved2;
+    uint32_t _reserved3;
     uint32_t _reserved4;
-    uint32_t _reserved5;
-    uint32_t _reserved6;
-    uint32_t _reserved7;
 } PACKED;
 
 class EndPointContext
@@ -111,8 +97,7 @@ class EndPointContext
       _trDQPtr(0), _context3(0), _reserved1(0),
       _reserved2(0), _reserved3(0)
     {
-    }
-
+    } 
   private:
 
     uint32_t _context1;
