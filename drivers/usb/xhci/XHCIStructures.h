@@ -85,7 +85,7 @@ class XHCICapRegister
     //Bandwidth negotiation capability
     bool IsBNC() const { return Bit::IsSet(_hccParams1, 0x2); }
     //64 or 32 byte context data structure size
-    unsigned ContextSize() const { return Bit::IsSet(_hccParams1, 0x4) ? 64 : 32; }
+    unsigned IsContextSize64() const { return Bit::IsSet(_hccParams1, 0x4); }
     //Supports Port Power Control
     bool IsPPC() const { return Bit::IsSet(_hccParams1, 0x8); }
     //Supports Port Indicator

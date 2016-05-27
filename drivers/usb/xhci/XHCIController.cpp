@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <KBDriver.h>
 #include <XHCIController.h>
+#include <XHCIInputContext.h>
 
 unsigned XHCIController::_memMapBaseAddress = XHCI_MMIO_BASE_ADDR;
 
@@ -300,7 +301,7 @@ void XHCIController::Probe()
 
     port.Print();
     printf("\n %s [%s] device connected to port %d", PortProtocolName(protocol), PortSpeedName(port.PortSpeedID()), i);
-    InitializeDevice(port, supProtocol->SlotType());
+    InitializeDevice(port, i+1, supProtocol->SlotType());
     KBDriver::Instance().Getch();
 	}
 }
@@ -310,11 +311,16 @@ void XHCIController::RingDoorBell(unsigned index, unsigned value)
   _doorBellRegs[index] = value;
 }
 
-void XHCIController::InitializeDevice(XHCIPortRegister& port, unsigned slotType)
+void XHCIController::InitializeDevice(XHCIPortRegister& port, unsigned portId, unsigned slotType)
 {
-  unsigned slotId = EnableSlot(slotType);
-  if(!slotId)
+  unsigned slotID = EnableSlot(slotType);
+  if(!slotID)
     throw upan::exception(XLOC, "Failed to get SlotID");
+
+  InputContext* inputContext = new InputContext(_capReg->IsContextSize64());
+  //set A0 and A1 -> Slot and EP0 are affected by command
+  inputContext->Control().SetAddContextFlag(0x3);
+  inputContext->Slot().Init(portId, 0);
 }
 
 unsigned XHCIController::EnableSlot(unsigned slotType)
@@ -327,7 +333,7 @@ unsigned XHCIController::EnableSlot(unsigned slotType)
     throw upan::exception(XLOC, "Timedout while waiting for EnableSlot Command Completion");
 
   if(result.Type() != 33)
-    throw upan::exception(XLOC, "Got invalid Event TRD: %d", result.Type());
+    throw upan::exception(XLOC, "Got invalid Event TRB: %d", result.Type());
 
   if(!result.IsCommandSuccess())
     throw upan::exception(XLOC, "EnableSlot command did not complete successfully");

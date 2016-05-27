@@ -38,7 +38,7 @@ class XHCIController
     void PerformBiosToOSHandoff();
     void RingDoorBell(unsigned index, unsigned value);
     unsigned EnableSlot(unsigned slotType);
-    void InitializeDevice(XHCIPortRegister& port, unsigned slotType);
+    void InitializeDevice(XHCIPortRegister& port, unsigned portId, unsigned slotType);
 
     SupProtocolXCap* GetSupportedProtocol(unsigned portId) const;
     const char* PortProtocolName(USB_PROTOCOL) const;
