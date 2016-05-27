@@ -45,37 +45,37 @@ class XHCICapRegister
     enum ISTFrameTypes { Microframes, Frames };
 
     void Print() const;
-    byte CapLength() const { return _capLength; }
+    uint8_t CapLength() const { return _capLength; }
     
     //HCSPARAMS1
-    unsigned MaxSlots() const { return _hcsParams1 & 0xFF; }
-    unsigned MaxIntrs() const { return (_hcsParams1 >> 8) & 0x7FF; }
-    unsigned MaxPorts() const { return (_hcsParams1 >> 24) & 0xFF; }
+    uint32_t MaxSlots() const { return _hcsParams1 & 0xFF; }
+    uint32_t MaxIntrs() const { return (_hcsParams1 >> 8) & 0x7FF; }
+    uint32_t MaxPorts() const { return (_hcsParams1 >> 24) & 0xFF; }
 
     //HCSPARAMS2
     ISTFrameTypes ISTFrameType() const { return _hcsParams2 & 0x8 ? Frames : Microframes; }
-    unsigned ISTValue() const { return _hcsParams2 & 0x7; }
-    unsigned ERSTMax() const { return (_hcsParams2 >> 4) & 0xF; }
+    uint32_t ISTValue() const { return _hcsParams2 & 0x7; }
+    uint32_t ERSTMax() const { return (_hcsParams2 >> 4) & 0xF; }
     //in terms of pages
-    unsigned MaxScratchpadBufSize() const
+    uint32_t MaxScratchpadBufSize() const
     {
-      unsigned hi = (_hcsParams2 >> 21) & 0x1F;
-      unsigned lo = (_hcsParams2 >> 27) & 0x1F;
+      uint32_t hi = (_hcsParams2 >> 21) & 0x1F;
+      uint32_t lo = (_hcsParams2 >> 27) & 0x1F;
       return (hi << 5) | lo;
     }
     bool ScatchpadRestore() const { return Bit::IsSet(_hcsParams2, 0x04000000); }
 
     //HCSPARAMS3
     //U1 -> U0 in micro seconds
-    unsigned U1ExitLatency() const
+    uint32_t U1ExitLatency() const
     {
-      unsigned l = _hcsParams3 & 0xF;
+      uint32_t l = _hcsParams3 & 0xF;
       return l > 10 ? 10 : l;
     }
     //U2 -> U0 in micro seconds
-    unsigned U2ExitLatency() const
+    uint32_t U2ExitLatency() const
     {
-      unsigned l = (_hcsParams3 >> 16);
+      uint32_t l = (_hcsParams3 >> 16);
       return l > 0x7FF ? 0x7FF : l;
     }
 
@@ -84,8 +84,8 @@ class XHCICapRegister
     bool IsAC64() const { return Bit::IsSet(_hccParams1, 0x1); }
     //Bandwidth negotiation capability
     bool IsBNC() const { return Bit::IsSet(_hccParams1, 0x2); }
-    //64 or 32 byte context data structure size
-    unsigned IsContextSize64() const { return Bit::IsSet(_hccParams1, 0x4); }
+    //64 or 32 uint8_t context data structure size
+    uint32_t IsContextSize64() const { return Bit::IsSet(_hccParams1, 0x4); }
     //Supports Port Power Control
     bool IsPPC() const { return Bit::IsSet(_hccParams1, 0x8); }
     //Supports Port Indicator
@@ -105,15 +105,15 @@ class XHCICapRegister
     //Capable of matching Frame IDs of consecutive Isoch TDs
     bool IsCFC() const { return Bit::IsSet(_hccParams1, 0x800); }
     //Max Primary Stream Array Size
-    unsigned MaxPSASize() const { return (_hccParams1 >> 12) & 0xF; }
+    uint32_t MaxPSASize() const { return (_hccParams1 >> 12) & 0xF; }
     //Extended capabilities pointer offset from Base
-    unsigned ECPOffset() const { return (_hccParams1 >> 14) & 0x3FFFC; }
+    uint32_t ECPOffset() const { return (_hccParams1 >> 14) & 0x3FFFC; }
 
     //DoorBell array base address from Base (cap base)
-    unsigned DoorBellOffset() const { return _doorBellOffset & ~(0x3); }
+    uint32_t DoorBellOffset() const { return _doorBellOffset & ~(0x3); }
 
     //Runtime registers offset from Base (cap base)
-    unsigned RTSOffset() const { return _rtsOffset & ~(0x1F); }
+    uint32_t RTSOffset() const { return _rtsOffset & ~(0x1F); }
 
     //HCCPARAMS2
     //U3 Entry Capability
@@ -130,16 +130,16 @@ class XHCICapRegister
     bool IsCIC() const { return Bit::IsSet(_hccParams2, 0x20); }
 
   private:
-    byte _capLength;
-    byte _reserved;
-    unsigned short _hciVersion;
-    unsigned _hcsParams1;
-    unsigned _hcsParams2;
-    unsigned _hcsParams3;
-    unsigned _hccParams1;
-    unsigned _doorBellOffset;
-    unsigned _rtsOffset;
-    unsigned _hccParams2;
+    uint8_t _capLength;
+    uint8_t _reserved;
+    uint16_t _hciVersion;
+    uint32_t _hcsParams1;
+    uint32_t _hcsParams2;
+    uint32_t _hcsParams3;
+    uint32_t _hccParams1;
+    uint32_t _doorBellOffset;
+    uint32_t _rtsOffset;
+    uint32_t _hccParams2;
 } PACKED;
 
 class XHCIPortRegister
@@ -167,7 +167,7 @@ class XHCIPortRegister
     bool IsRemovableDevice() const { return Bit::IsSet(_sc, 0x40000000); }
     DEVICE_SPEED PortSpeedID() const
     {
-      unsigned psi = (_sc >> 10) & 0xFF;
+      uint32_t psi = (_sc >> 10) & 0xFF;
       switch(psi)
       {
         case 1: return DEVICE_SPEED::FULL_SPEED;
@@ -179,10 +179,10 @@ class XHCIPortRegister
     }
     void Print();
   private:
-    unsigned _sc;
-    unsigned _pmsc;
-    unsigned _li;
-    unsigned _hlpmc;
+    uint32_t _sc;
+    uint32_t _pmsc;
+    uint32_t _li;
+    uint32_t _hlpmc;
 } PACKED;
 
 class XHCIOpRegister
@@ -269,7 +269,7 @@ class XHCIOpRegister
         _usbCmd = Bit::Set(_usbCmd, 0x2000, false);
     }
 
-    void SetDNCTRL(unsigned val) { _dnCtrl |= val; }
+    void SetDNCTRL(uint32_t val) { _dnCtrl |= val; }
     //Status 
     //Host System Error
     bool IsHSError() const { return Bit::IsSet(_usbStatus, 0x4); }
@@ -290,7 +290,7 @@ class XHCIOpRegister
     bool IsHCError() const { return Bit::IsSet(_usbStatus, 0x1000); }
 
     //in KB
-    unsigned SupportedPageSize() const;
+    uint32_t SupportedPageSize() const;
 
     bool IsCommandRingRunning() const { return Bit::IsSet(_crcr, 0x8); }
     //crcr is 64 bit
@@ -306,12 +306,12 @@ class XHCIOpRegister
     {
       //require LSB 6 bits to be zero
       if(ptr & 0x3F)
-        throw upan::exception(XLOC, "invalid DC_BAAP '%llx' not aligned to 64 byte", ptr);
+        throw upan::exception(XLOC, "invalid DC_BAAP '%llx' not aligned to 64 uint8_t", ptr);
       _dcBaap = ptr;
     }
 
-    unsigned MaxSlotsEnabled() const { return _config & 0xFF; }
-    void MaxSlotsEnabled(unsigned val);
+    uint32_t MaxSlotsEnabled() const { return _config & 0xFF; }
+    void MaxSlotsEnabled(uint32_t val);
 
     bool IsU3EntryEnabled() const { return Bit::IsSet(_config, 0x100); }
     void EnableU3Entry()
@@ -329,17 +329,17 @@ class XHCIOpRegister
     //So, it's address is same as address of _portRegs;
     XHCIPortRegister* PortRegisters() { return &_portRegs; }
   private:
-    unsigned _usbCmd;
-    unsigned _usbStatus;
-    unsigned _pageSize;
+    uint32_t _usbCmd;
+    uint32_t _usbStatus;
+    uint32_t _pageSize;
     uint64_t _reserved1;
-    unsigned _dnCtrl; //Device Notification Control
+    uint32_t _dnCtrl; //Device Notification Control
     uint64_t _crcr; //Command Ring Control
     uint64_t _reserved2;
     uint64_t _reserved3;
     uint64_t _dcBaap; //Device Context Base Address Array Pointer
-    unsigned _config;
-    byte     _reserved4[964];
+    uint32_t _config;
+    uint8_t     _reserved4[964];
     XHCIPortRegister _portRegs;
 } PACKED;
 
@@ -350,15 +350,15 @@ class LegSupXCap
     bool IsOSOwned() const { return Bit::IsSet(_usbLegSup, 0x1000000); }
     void BiosToOSHandoff();
   private:
-    unsigned _usbLegSup;
-    unsigned _usbLegCtlSts; 
+    uint32_t _usbLegSup;
+    uint32_t _usbLegCtlSts; 
 } PACKED;
 
 class SupProtocolXCap
 {
   public:
-    unsigned MajorVersion() const { return (_revision >> 24) & 0xFF; }
-    unsigned MinorVersion() const { return (_revision >> 16) & 0xFF; }
+    uint32_t MajorVersion() const { return (_revision >> 24) & 0xFF; }
+    uint32_t MinorVersion() const { return (_revision >> 16) & 0xFF; }
     
     USB_PROTOCOL Protocol() const
     {
@@ -371,14 +371,14 @@ class SupProtocolXCap
       return USB_PROTOCOL::UNKNOWN;
     }
 
-    bool HasPort(unsigned portId) const
+    bool HasPort(uint32_t portId) const
     {
-      unsigned startPortNo = _portDetails & 0xFF;
-      unsigned endPortNo = startPortNo + ((_portDetails >> 8) & 0xFF);
+      uint32_t startPortNo = _portDetails & 0xFF;
+      uint32_t endPortNo = startPortNo + ((_portDetails >> 8) & 0xFF);
       return portId >= startPortNo && portId < endPortNo;
     }
 
-    unsigned SlotType() const
+    uint32_t SlotType() const
     {
       return _slotType & 0x1F;
     }
@@ -388,10 +388,10 @@ class SupProtocolXCap
       printf("\n B1: %x, B2: %x, B3: %x", _revision, _name, _portDetails);
     }
   private:
-    unsigned _revision;
-    unsigned _name;
-    unsigned _portDetails;
-    unsigned _slotType;
+    uint32_t _revision;
+    uint32_t _name;
+    uint32_t _portDetails;
+    uint32_t _slotType;
 
 } PACKED;
 
