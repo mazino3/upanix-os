@@ -105,7 +105,16 @@ class LinkTRB : public TRB
     bool IsIOC() const { return Bit::IsSet(_b4, 0x20); }
 } PACKED;
 
-class EnableSlotTRB : public TRB
+class CommandTRB : public TRB
+{
+  public:
+    void SlotID(unsigned slotID)
+    {
+      _b4 = _b4 | (slotID << 24);
+    }
+} PACKED;
+
+class EnableSlotTRB : public CommandTRB
 {
   public:
     EnableSlotTRB(unsigned slotType)
@@ -115,13 +124,26 @@ class EnableSlotTRB : public TRB
     }
 } PACKED;
 
-class DisableSlotTRB : public TRB
+class DisableSlotTRB : public CommandTRB
 {
   public:
-    DisableSlotTRB(unsigned slotId)
+    DisableSlotTRB(unsigned slotID)
     {
       Type(10);
-      _b4 = _b4 | (slotId << 24);
+      SlotID(slotID);
+    }
+} PACKED;
+
+class AddressDeviceCommandTRB : public CommandTRB
+{
+  public:
+    AddressDeviceCommandTRB(unsigned inputContextPtr, unsigned slotID)
+    {
+      if(inputContextPtr & 0xF)
+        throw upan::exception(XLOC, "InputContext Address must be 8 byte aligned");
+      _b1 = inputContextPtr;
+      Type(11);
+      SlotID(slotID);
     }
 } PACKED;
 
@@ -158,8 +180,10 @@ class TransferRing
 {
   public:
     TransferRing(unsigned size);
+    ~TransferRing();
   private:
     uint32_t _size;
+    bool     _cycleState;
     TRB*     _trbs;
 };
 

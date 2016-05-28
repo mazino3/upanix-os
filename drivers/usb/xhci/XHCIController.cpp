@@ -22,7 +22,7 @@
 #include <stdio.h>
 #include <KBDriver.h>
 #include <XHCIController.h>
-#include <XHCIInputContext.h>
+#include <XHCIContext.h>
 
 unsigned XHCIController::_memMapBaseAddress = XHCI_MMIO_BASE_ADDR;
 
@@ -126,7 +126,8 @@ XHCIController::XHCIController(PCIEntry* pPCIEntry)
 
   //program device context base address pointer
   unsigned deviceContextTable = MemManager::Instance().AllocatePhysicalPage() * PAGE_SIZE;
-  memset((void*)(KERNEL_VIRTUAL_ADDRESS(deviceContextTable)), 0, PAGE_SIZE);
+  _deviceContextAddrArray = (uint64_t*)KERNEL_VIRTUAL_ADDRESS(deviceContextTable);
+  memset((void*)_deviceContextAddrArray, 0, PAGE_SIZE);
   _opReg->SetDCBaap(deviceContextTable);
 
   //Door Bell array
@@ -226,18 +227,6 @@ const char* XHCIController::PortProtocolName(USB_PROTOCOL protocol) const
   }
 }
 
-const char* XHCIController::PortSpeedName(DEVICE_SPEED speed) const
-{
-  switch(speed)
-  {
-    case DEVICE_SPEED::FULL_SPEED: return "full speed";
-    case DEVICE_SPEED::LOW_SPEED: return "low speed";
-    case DEVICE_SPEED::HIGH_SPEED: return "high speed";
-    case DEVICE_SPEED::SUPER_SPEED: return "super speed";
-    default: return "undefined";
-  }
-}
-
 void XHCIController::Probe()
 {
 	printf("\n Setup Ports") ;
@@ -300,7 +289,8 @@ void XHCIController::Probe()
     }
 
     port.Print();
-    printf("\n %s [%s] device connected to port %d", PortProtocolName(protocol), PortSpeedName(port.PortSpeedID()), i);
+    PortSpeed ps = supProtocol->PortSpeedInfo(port.PortSpeedID());
+    printf("\n %s [%u %s] device connected to port %d", PortProtocolName(protocol), ps.Mantissa(), ps.BitRateS(), i);
     InitializeDevice(port, i+1, supProtocol->SlotType());
     KBDriver::Instance().Getch();
 	}
@@ -321,6 +311,22 @@ void XHCIController::InitializeDevice(XHCIPortRegister& port, unsigned portId, u
   //set A0 and A1 -> Slot and EP0 are affected by command
   inputContext->Control().SetAddContextFlag(0x3);
   inputContext->Slot().Init(portId, 0);
+  
+  TransferRing* tRing = new TransferRing(64);
+  inputContext->EP0().EP0Init(KERNEL_REAL_ADDRESS(tRing));
+  
+  DeviceContext* devContext = new DeviceContext(_capReg->IsContextSize64());
+  _deviceContextAddrArray[slotID] = (uint64_t)KERNEL_REAL_ADDRESS(&devContext->Slot());
+
+  AddressDevice((unsigned)&inputContext->Control(), slotID);
+
+  if(devContext->EP0().EPState() != EndPointContext::Running)
+    throw upan::exception(XLOC, "After AddressDevice, EndPoint0 is in %d state", devContext->EP0().EPState());
+
+  if(devContext->Slot().SlotState() != SlotContext::Addressed)
+    throw upan::exception(XLOC, "Adter AddressDevice, Slot is in %d state", devContext->Slot().SlotState());
+
+  printf("\n USB Device Address: %x", devContext->Slot().DevAddress());
 }
 
 unsigned XHCIController::EnableSlot(unsigned slotType)
@@ -329,6 +335,21 @@ unsigned XHCIController::EnableSlot(unsigned slotType)
   RingDoorBell(0, 0);
 
   EventTRB result;
+  WaitForCmdCompletion(result);
+  return result.SlotID();
+}
+
+void XHCIController::AddressDevice(unsigned icptr, unsigned slotID)
+{
+  _cmdManager->AddressDevice(icptr, slotID);
+  RingDoorBell(0, 0);
+
+  EventTRB result;
+  WaitForCmdCompletion(result);
+}
+
+void XHCIController::WaitForCmdCompletion(EventTRB& result)
+{
   if(!_eventManager->WaitForEvent(result))
     throw upan::exception(XLOC, "Timedout while waiting for EnableSlot Command Completion");
 
@@ -337,8 +358,6 @@ unsigned XHCIController::EnableSlot(unsigned slotType)
 
   if(!result.IsCommandSuccess())
     throw upan::exception(XLOC, "EnableSlot command did not complete successfully");
-
-  return result.SlotID();
 }
 
 CommandManager::CommandManager(XHCICapRegister& creg, 
@@ -375,9 +394,15 @@ void CommandManager::EnableSlot(unsigned slotType)
   Apply();
 }
 
-void CommandManager::DisableSlot(unsigned slotId)
+void CommandManager::DisableSlot(unsigned slotID)
 {
-  _ring->_cmd = DisableSlotTRB(slotId);
+  _ring->_cmd = DisableSlotTRB(slotID);
+  Apply();
+}
+
+void CommandManager::AddressDevice(unsigned icptr, unsigned slotID)
+{
+  _ring->_cmd = AddressDeviceCommandTRB(icptr, slotID);
   Apply();
 }
 

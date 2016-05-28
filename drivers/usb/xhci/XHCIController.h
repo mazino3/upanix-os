@@ -38,6 +38,8 @@ class XHCIController
     void PerformBiosToOSHandoff();
     void RingDoorBell(unsigned index, unsigned value);
     unsigned EnableSlot(unsigned slotType);
+    void AddressDevice(unsigned inputContextPtr, unsigned slotID);
+    void WaitForCmdCompletion(EventTRB& result);
     void InitializeDevice(XHCIPortRegister& port, unsigned portId, unsigned slotType);
 
     SupProtocolXCap* GetSupportedProtocol(unsigned portId) const;
@@ -46,6 +48,7 @@ class XHCIController
 
     static unsigned  _memMapBaseAddress;
     PCIEntry*        _pPCIEntry;
+    uint64_t*        _deviceContextAddrArray;
     XHCICapRegister* _capReg;
     XHCIOpRegister*  _opReg;
     CommandManager*  _cmdManager;
@@ -64,13 +67,14 @@ class CommandManager
     void Apply();
     void EnableSlot(unsigned slotType);
     void DisableSlot(unsigned slotType);
+    void AddressDevice(unsigned inputContextPtr, unsigned slotID);
     void DebugPrint();
 
   private:
     struct Ring
     {
-      TRB     _cmd;
-      LinkTRB _link;
+      CommandTRB _cmd;
+      LinkTRB    _link;
     } PACKED;
 
     bool             _pcs;

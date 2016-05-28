@@ -15,8 +15,8 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
-#ifndef _XHCI_INPUT_CONTEXT_H_
-#define _XHCI_INPUT_CONTEXT_H_
+#ifndef _XHCI_CONTEXT_H_
+#define _XHCI_CONTEXT_H_
 
 #include <exception.h>
 
@@ -62,10 +62,12 @@ class InputControlContext
     uint32_t _context;
 } PACKED;
 
-class InputSlotContext
+class SlotContext
 {
   public:
-    InputSlotContext() : _context1(0), _context2(0), _context3(0), _context4(0),
+    enum State { Disabled_Enabled, Default, Addressed, Configured, Undefined };
+
+    SlotContext() : _context1(0), _context2(0), _context3(0), _context4(0),
       _reserved1(0), _reserved2(0), _reserved3(0), _reserved4(0)
     {
     }
@@ -78,6 +80,26 @@ class InputSlotContext
       //root hub port number
       _context2 = (_context2 & ~(0x00FF0000)) | (portId << 16);
     }
+
+    State SlotState() const
+    {
+      unsigned state = _context4 >> 27;
+      switch(state)
+      {
+        case 0:
+        case 1:
+        case 2:
+        case 3:
+          return static_cast<State>(state);
+      }
+      return State::Undefined;
+    }
+  
+    unsigned DevAddress()
+    {
+      return _context4 & 0xFF;
+    }
+
   private:
     uint32_t _context1;
     uint32_t _context2;
@@ -93,11 +115,55 @@ class InputSlotContext
 class EndPointContext
 {
   public:
+    enum State { Disables, Running, Halted, Stopped, Error, Undefined };
+
     EndPointContext() : _context1(0), _context2(0),
       _trDQPtr(0), _context3(0), _reserved1(0),
       _reserved2(0), _reserved3(0)
     {
     } 
+
+    void EP0Init(unsigned dqPtr)
+    {
+      //Control EP
+      EPType(4);
+      //Hard coding max packet size to 1KB - How to calculate as a function of port speed ?
+      _context2 = (_context2 & ~(0xFFFF << 16)) | (1024 << 16);
+      //Max Burst Size = 0
+      _context2 = _context2 & ~(0xFF << 8);
+      //TR DQ Ptr + DCS = 1
+      _trDQPtr = (uint64_t)(dqPtr | 0x1);
+      //Interval = 0, MaxPStreams = 0, Mult = 0
+      _context1 &= 0xFF008000;
+      //Error count = 3
+      _context2 = (_context2 & ~(0x7)) | 0x6;
+    }
+
+    State EPState() const
+    {
+      unsigned state =_context1 & 0x7;
+      switch(state)
+      {
+        case 0:
+        case 1:
+        case 2:
+        case 3:
+        case 4: 
+          return static_cast<State>(state);
+      }
+      return State::Undefined;
+    }
+
+    void EPType(unsigned value)
+    {
+      _context2 = (_context2 & ~(0x7 << 3)) | ((value & 0x7) << 3);
+    }
+
+    unsigned EPType() const
+    {
+      return (_context2 >> 3) & 0x7;
+    }
+
   private:
 
     uint32_t _context1;
@@ -115,26 +181,65 @@ class EndPointContext64 : public EndPointContext
     ReservedPadding _reserved;
 } PACKED;
 
+class DeviceContext32
+{
+  private:
+    SlotContext     _slotContext;
+    EndPointContext _epContext0;
+    EndPointContext _epContexts[30];
+  friend class DeviceContext;
+} PACKED;
+
 class InputContext32
 {
   private:
     InputControlContext _controlContext;
-    InputSlotContext    _slotContext;
-    EndPointContext     _epContext0;
-    EndPointContext     _epContexts[30];
+    DeviceContext32     _deviceContext;
   friend class InputContext;
-};
+} PACKED;
+
+class DeviceContext64
+{
+  private:
+    SlotContext       _slotContext;
+    ReservedPadding   _reserved2;
+    EndPointContext64 _epContext0;
+    EndPointContext64 _epContexts[30];
+  friend class DeviceContext;
+} PACKED;
 
 class InputContext64
 {
   private:
     InputControlContext   _controlContext;
     ReservedPadding       _reserved1;
-    InputSlotContext      _slotContext;
-    ReservedPadding       _reserved2;
-    EndPointContext64     _epContext0;
-    EndPointContext64     _epContexts[30];
+    DeviceContext64       _deviceContext;
   friend class InputContext;
+} PACKED;
+
+class DeviceContext
+{
+  public:
+    DeviceContext(bool use64);
+    DeviceContext(DeviceContext32& dc32);
+    DeviceContext(DeviceContext64& dc64);
+    ~DeviceContext();
+    SlotContext& Slot() { return *_slot; }
+    EndPointContext& EP0() { return *_ep0; }
+    EndPointContext& EP(uint32_t index)
+    { 
+      if(index >= 30)
+        throw upan::exception(XLOC, "Invalid EndPointContext Index: %u", index);
+      return _eps[index]; 
+    }
+
+  private:
+    template <typename DC> void Init(DC& dc);
+
+    bool             _allocated;
+    SlotContext*     _slot;
+    EndPointContext* _ep0;
+    EndPointContext* _eps;
 };
 
 class InputContext
@@ -142,24 +247,14 @@ class InputContext
   public:
     InputContext(bool use64);
     ~InputContext();
-
     InputControlContext& Control() { return *_control; }
-    InputSlotContext& Slot() { return *_slot; }
-    EndPointContext& EP0() { return *_ep0; }
-    EndPointContext& EP(uint32_t index) 
-    { 
-      if(index >= 30)
-        throw upan::exception(XLOC, "Invalid EndPointContext Index: %u", index);
-      return _eps[index]; 
-    }
-  private:
-    InputContext32* _context32;
-    InputContext64* _context64;
+    SlotContext& Slot() { return _devContext->Slot(); }
+    EndPointContext& EP0() { return _devContext->EP0(); }
+    EndPointContext& EP(uint32_t index) { return _devContext->EP(index); }
 
+  private:
     InputControlContext* _control;
-    InputSlotContext*    _slot;
-    EndPointContext*     _ep0;
-    EndPointContext*     _eps;
+    DeviceContext*       _devContext;
 };
 
 #endif

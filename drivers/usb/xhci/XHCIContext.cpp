@@ -18,31 +18,64 @@
 
 #include <MemManager.h>
 #include <Alloc.h>
-#include <XHCIInputContext.h>
+#include <XHCIContext.h>
 
-InputContext::InputContext(bool use64) : _context32(nullptr), _context64(nullptr)
+InputContext::InputContext(bool use64)
 {
   unsigned addr = KERNEL_VIRTUAL_ADDRESS(MemManager::Instance().AllocatePhysicalPage() * PAGE_SIZE);
   if(use64)
   {
-    _context64 = new ((void*)addr)InputContext64();
-    _control = &_context64->_controlContext;
-    _slot = &_context64->_slotContext;
-    _ep0 = &_context64->_epContext0;
-    _eps = _context64->_epContexts;
+    auto context64 = new ((void*)addr)InputContext64();
+    _control = &context64->_controlContext;
+    _devContext = new DeviceContext(context64->_deviceContext);
   }
   else
   {
-    _context32 = new ((void*)addr)InputContext32();
-    _control = &_context32->_controlContext;
-    _slot = &_context32->_slotContext;
-    _ep0 = &_context32->_epContext0;
-    _eps = _context32->_epContexts;
+    auto context32 = new ((void*)addr)InputContext32();
+    _control = &context32->_controlContext;
+    _devContext = new DeviceContext(context32->_deviceContext);
   }
 }
 
 InputContext::~InputContext()
 {
-  unsigned addr = KERNEL_REAL_ADDRESS(_context32 ? (unsigned)_context32 : (unsigned)_context64);
+  unsigned addr = KERNEL_REAL_ADDRESS(_control);
   MemManager::Instance().DeAllocatePhysicalPage(addr / PAGE_SIZE);
+  delete _devContext;
+}
+
+DeviceContext::DeviceContext(bool use64) : _allocated(true)
+{
+  unsigned addr = KERNEL_VIRTUAL_ADDRESS(MemManager::Instance().AllocatePhysicalPage() * PAGE_SIZE);
+  if(use64)
+    Init(*new ((void*)addr)DeviceContext64());
+  else
+    Init(*new ((void*)addr)DeviceContext32());
+}
+
+DeviceContext::DeviceContext(DeviceContext32& dc32) : _allocated(false)
+{
+  Init(dc32);
+}
+
+DeviceContext::DeviceContext(DeviceContext64& dc64) : _allocated(false)
+{
+  Init(dc64);
+}
+
+template <typename DC>
+void DeviceContext::Init(DC& dc)
+{
+  _slot = &dc._slotContext;
+  _ep0 = &dc._epContext0;
+  _eps = dc._epContexts;
+}
+
+DeviceContext::~DeviceContext()
+{
+  if(_allocated)
+  {
+    unsigned addr = KERNEL_REAL_ADDRESS(_slot);
+    MemManager::Instance().DeAllocatePhysicalPage(addr / PAGE_SIZE);
+  }
 }

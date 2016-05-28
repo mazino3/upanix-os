@@ -165,17 +165,9 @@ class XHCIPortRegister
       _sc |= 0x200000;
     }
     bool IsRemovableDevice() const { return Bit::IsSet(_sc, 0x40000000); }
-    DEVICE_SPEED PortSpeedID() const
+    uint32_t PortSpeedID() const
     {
-      uint32_t psi = (_sc >> 10) & 0xFF;
-      switch(psi)
-      {
-        case 1: return DEVICE_SPEED::FULL_SPEED;
-        case 2: return DEVICE_SPEED::LOW_SPEED;
-        case 3: return DEVICE_SPEED::HIGH_SPEED;
-        case 4: return DEVICE_SPEED::SUPER_SPEED;
-        default: return DEVICE_SPEED::UNDEFINED;
-      }
+      return (_sc >> 10) & 0xF;
     }
     void Print();
   private:
@@ -354,6 +346,30 @@ class LegSupXCap
     uint32_t _usbLegCtlSts; 
 } PACKED;
 
+class PortSpeed
+{
+  public:
+    enum PSI_RATE { BITS_PER_SECOND, Kb_PER_SECOND, Mb_PER_SECOND, Gb_PER_SECOND, UNKNOWN };
+    PortSpeed() : _mantissa(0), _psiRate(PSI_RATE::UNKNOWN) {}
+    PortSpeed(unsigned m, PSI_RATE r) : _mantissa(m), _psiRate(r) {}
+    unsigned Mantissa() const { return _mantissa; }
+    PSI_RATE BitRate() const { return _psiRate; }
+    const char* BitRateS() const
+    {
+      switch(_psiRate)
+      {
+        case PSI_RATE::BITS_PER_SECOND: return "b/s";
+        case PSI_RATE::Kb_PER_SECOND: return "Kb/s";
+        case PSI_RATE::Mb_PER_SECOND: return "Mb/s";
+        case PSI_RATE::Gb_PER_SECOND: return "Gb/s";
+        default: return "unknown";
+      }
+    }
+  private:
+    unsigned _mantissa;
+    PSI_RATE _psiRate;
+};
+
 class SupProtocolXCap
 {
   public:
@@ -383,6 +399,32 @@ class SupProtocolXCap
       return _slotType & 0x1F;
     }
 
+    PortSpeed PortSpeedInfo(unsigned psiv) const
+    {
+      unsigned psiCount = (_portDetails >> 28) & 0xF;
+      printf("\n PSIC: %d", psiCount);
+      unsigned* psi = (unsigned*)((unsigned)this + sizeof(SupProtocolXCap));
+      for(unsigned i = 0; i < psiCount; ++i)
+      {
+        if(psiv != (psi[i] & 0xF))
+          continue;
+        return PortSpeed(psi[i] >> 16, (PortSpeed::PSI_RATE)((psi[i] >> 4) & 0x3));
+      }
+      //use default speed id mapping
+      switch(psiv)
+      {
+        //Full speed
+        case 1: return PortSpeed(96, PortSpeed::Mb_PER_SECOND);
+        //Low speed
+        case 2: return PortSpeed(1.5, PortSpeed::Mb_PER_SECOND);
+        //High speed
+        case 3: return PortSpeed(480, PortSpeed::Mb_PER_SECOND);
+        //Super speed
+        case 4: return PortSpeed(5, PortSpeed::Gb_PER_SECOND);
+      }
+      return PortSpeed();
+    }
+
     void Print() const
     {
       printf("\n B1: %x, B2: %x, B3: %x", _revision, _name, _portDetails);
@@ -392,7 +434,6 @@ class SupProtocolXCap
     uint32_t _name;
     uint32_t _portDetails;
     uint32_t _slotType;
-
 } PACKED;
 
 #endif
