@@ -125,6 +125,8 @@ UPANIX_OBJS = \
 	./drivers/usb/ehci/EHCIManager.o \
 	./drivers/usb/ehci/EHCIController.o \
 	./drivers/usb/ehci/EHCIDataHandler.o \
+	./drivers/usb/xhci/TRB.o \
+	./drivers/usb/xhci/XHCIContext.o \
 	./drivers/usb/xhci/XHCIStructures.o \
 	./drivers/usb/xhci/XHCIManager.o \
 	./drivers/usb/xhci/XHCIController.o \
