@@ -15,16 +15,16 @@
 #	 along with this program.  If not, see <http://www.gnu.org/licenses/
 . setup.sh
 
-echo rahasya | sudo -S mount floppy/GrubFloppy_ext.img floppy/MntFloppy -o loop 
+echo $SUDO_PW | sudo -S mount floppy/GrubFloppy_ext.img floppy/MntFloppy -o loop 
 
 if [ $? -ne 0 ]
 then
 exit 100
 fi
 
-echo rahasya | sudo -S cp -f bin/upanix.elf floppy/MntFloppy/boot
+echo $SUDO_PW | sudo -S cp -f bin/upanix.elf floppy/MntFloppy/boot
 
-echo rahasya | sudo -S umount floppy/MntFloppy 
+echo $SUDO_PW | sudo -S umount floppy/MntFloppy 
 
 if [ "$DRIVE" = "" ]
 then
@@ -35,17 +35,17 @@ else
   MOUNTP="${DRIVE}1"
 fi
 
-echo rahasya | sudo -S kpartx -d "$DEV"
-echo rahasya | sudo -S kpartx -av "$DEV"
-echo rahasya | sudo -S mount /dev/mapper/$MOUNTP usb_boot/MntUSB 
+echo $SUDO_PW | sudo -S kpartx -d "$DEV"
+echo $SUDO_PW | sudo -S kpartx -av "$DEV"
+echo $SUDO_PW | sudo -S mount /dev/mapper/$MOUNTP usb_boot/MntUSB 
 
 if [ $? -ne 0 ]
 then
   exit 100
 fi
 
-echo rahasya | sudo -S cp -f bin/upanix.elf usb_boot/MntUSB/efi/boot/
+echo $SUDO_PW | sudo -S cp -f bin/upanix.elf usb_boot/MntUSB/efi/boot/
 
-echo rahasya | sudo -S umount usb_boot/MntUSB
+echo $SUDO_PW | sudo -S umount usb_boot/MntUSB
 
 echo "installed..."
