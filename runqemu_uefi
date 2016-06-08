@@ -16,25 +16,16 @@
 #!/bin/bash
 
 #Customized Qemu Run Script -- Self Written
-
 clear
-
-UPANIX_HOME=`pwd`
-export UPANIX_HOME
 
 OVMF_VERSION=$1
 
-SUDO=""
-if [ "$2" = "sudo" ]
-then
-	SUDO=sudo
-fi
-
-if [ -z "$3" ]
+if [ -z "$2" ]
 then
   BOOT_DRIVE="$UPANIX_HOME/USBImage/300MUSB.img"
 else
   BOOT_DRIVE="/dev/$3"
+	SUDO=sudo
 fi
 
 echo "\n\n*****************************************************************************\n\n"

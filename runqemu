@@ -16,11 +16,7 @@
 #!/bin/bash
 
 #Customized Qemu Run Script -- Self Written
-
 clear
-
-UPANIX_HOME=`pwd`
-export UPANIX_HOME
 
 BootFileType=$1
 

@@ -15,5 +15,14 @@
 #	 along with this program.  If not, see <http://www.gnu.org/licenses/
 . setup.sh
 
+SUDO_PW=""
+if [ -f .sudopw ]
+then
+  SUDO_PW=`cat .sudopw`
+else
+  echo "Don't find .sudopw file. Create a (secure) file .sudopw containing sudo password"
+  exit 1
+fi
+
 echo $SUDO_PW | sudo -S umount floppy/MntFloppy 
 
