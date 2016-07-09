@@ -49,7 +49,11 @@ class InputControlContext
     }
     void SetAddContextFlag(uint32_t val)
     {
-      _addContextFlags |= val;
+      _addContextFlags = val;
+    }
+    void DebugPrint()
+    {
+      printf("\n ICC DC: %x, AC: %x, C: %x", _dropContextFlags, _addContextFlags, _context);
     }
   private:
     uint32_t _dropContextFlags;
@@ -72,9 +76,10 @@ class SlotContext
     {
     }
 
-    void Init(uint32_t portId, uint32_t routeString)
+    void Init(uint32_t portId, uint32_t routeString, uint32_t speed)
     {
       _context1 = (_context1 & ~(0xFFFFF)) | routeString;
+      _context1 = (_context1 & ~(0x00F00000)) | (speed << 20);
       //context entries
       _context1 = (_context1 & ~(0x1F000000)) | (1 << 27);
       //root hub port number
@@ -100,6 +105,10 @@ class SlotContext
       return _context4 & 0xFF;
     }
 
+    void DebugPrint()
+    {
+      printf("\n Slot C1: %x, C2: %x, C3: %x, C4: %x", _context1, _context2, _context3, _context4);
+    }
   private:
     uint32_t _context1;
     uint32_t _context2;
@@ -123,12 +132,12 @@ class EndPointContext
     {
     } 
 
-    void EP0Init(unsigned dqPtr)
+    void EP0Init(unsigned dqPtr, uint32_t maxPacketSize)
     {
       //Control EP
       EPType(4);
-      //Hard coding max packet size to 1KB - How to calculate as a function of port speed ?
-      _context2 = (_context2 & ~(0xFFFF << 16)) | (1024 << 16);
+      //Max packet size
+      _context2 = (_context2 & ~(0xFFFF << 16)) | (maxPacketSize << 16);
       //Max Burst Size = 0
       _context2 = _context2 & ~(0xFF << 8);
       //TR DQ Ptr + DCS = 1
@@ -137,6 +146,8 @@ class EndPointContext
       _context1 &= 0xFF008000;
       //Error count = 3
       _context2 = (_context2 & ~(0x7)) | 0x6;
+      //Average TRB Len
+      _context3 = 8;
     }
 
     State EPState() const
@@ -164,6 +175,10 @@ class EndPointContext
       return (_context2 >> 3) & 0x7;
     }
 
+    void DebugPrint()
+    {
+      printf("\n EP C1: %x, C2: %x, TDQPTR: %x, C3: %x", _context1, _context2, (unsigned)_trDQPtr, _context3);
+    }
   private:
 
     uint32_t _context1;

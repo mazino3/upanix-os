@@ -39,6 +39,7 @@ class XHCIController
     void RingDoorBell(unsigned index, unsigned value);
     unsigned EnableSlot(unsigned slotType);
     void AddressDevice(unsigned inputContextPtr, unsigned slotID);
+    void ConfigureEndPoint(unsigned icptr, unsigned slotID);
     void WaitForCmdCompletion(EventTRB& result);
     void InitializeDevice(XHCIPortRegister& port, unsigned portId, unsigned slotType);
 
@@ -68,6 +69,7 @@ class CommandManager
     void EnableSlot(unsigned slotType);
     void DisableSlot(unsigned slotType);
     void AddressDevice(unsigned inputContextPtr, unsigned slotID);
+    void ConfigureEndPoint(unsigned icptr, unsigned slotID);
     void DebugPrint();
 
   private:

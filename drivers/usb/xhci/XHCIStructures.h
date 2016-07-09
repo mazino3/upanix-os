@@ -169,6 +169,20 @@ class XHCIPortRegister
     {
       return (_sc >> 10) & 0xF;
     }
+    uint32_t MaxPacketSize() const
+    {
+      switch(PortSpeedID())
+      {
+        //Low speed
+        case LOW_SPEED: return 8;
+        //High speed, Full speed
+        case HIGH_SPEED:
+        case FULL_SPEED: return 64;
+        //Super speed
+        case SUPER_SPEED: return 512;
+      }
+      return 8;
+    }
     void Print();
   private:
     uint32_t _sc;
@@ -414,13 +428,13 @@ class SupProtocolXCap
       switch(psiv)
       {
         //Full speed
-        case 1: return PortSpeed(96, PortSpeed::Mb_PER_SECOND);
+        case FULL_SPEED: return PortSpeed(96, PortSpeed::Mb_PER_SECOND);
         //Low speed
-        case 2: return PortSpeed(1.5, PortSpeed::Mb_PER_SECOND);
+        case LOW_SPEED: return PortSpeed(1.5, PortSpeed::Mb_PER_SECOND);
         //High speed
-        case 3: return PortSpeed(480, PortSpeed::Mb_PER_SECOND);
+        case HIGH_SPEED: return PortSpeed(480, PortSpeed::Mb_PER_SECOND);
         //Super speed
-        case 4: return PortSpeed(5, PortSpeed::Gb_PER_SECOND);
+        case SUPER_SPEED: return PortSpeed(5, PortSpeed::Gb_PER_SECOND);
       }
       return PortSpeed();
     }

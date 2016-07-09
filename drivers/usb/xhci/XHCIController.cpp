@@ -310,23 +310,39 @@ void XHCIController::InitializeDevice(XHCIPortRegister& port, unsigned portId, u
   InputContext* inputContext = new InputContext(_capReg->IsContextSize64());
   //set A0 and A1 -> Slot and EP0 are affected by command
   inputContext->Control().SetAddContextFlag(0x3);
-  inputContext->Slot().Init(portId, 0);
+  inputContext->Slot().Init(portId, 0, port.PortSpeedID());
   
   TransferRing* tRing = new TransferRing(64);
-  inputContext->EP0().EP0Init(KERNEL_REAL_ADDRESS(tRing));
+  inputContext->EP0().EP0Init(KERNEL_REAL_ADDRESS(tRing), port.MaxPacketSize());
   
   DeviceContext* devContext = new DeviceContext(_capReg->IsContextSize64());
   _deviceContextAddrArray[slotID] = (uint64_t)KERNEL_REAL_ADDRESS(&devContext->Slot());
 
+//TODO: to deal with older devices - you may have to send 2 AddressDevice twice
+//first, with block bit set and then with block bit cleared
+//With first request, address should be set and slot stat is default (1)
+//With second request, slot state should change to Addressed (2)
   AddressDevice((unsigned)&inputContext->Control(), slotID);
 
   if(devContext->EP0().EPState() != EndPointContext::Running)
     throw upan::exception(XLOC, "After AddressDevice, EndPoint0 is in %d state", devContext->EP0().EPState());
 
   if(devContext->Slot().SlotState() != SlotContext::Addressed)
-    throw upan::exception(XLOC, "Adter AddressDevice, Slot is in %d state", devContext->Slot().SlotState());
+    throw upan::exception(XLOC, "After AddressDevice, Slot is in %d state", devContext->Slot().SlotState());
 
   printf("\n USB Device Address: %x", devContext->Slot().DevAddress());
+  inputContext->Control().DebugPrint();
+  inputContext->Slot().DebugPrint();
+
+  inputContext->Control().SetAddContextFlag(0x1);
+  ConfigureEndPoint((unsigned)&inputContext->Control(), slotID);
+
+  inputContext->Control().DebugPrint();
+  inputContext->Slot().DebugPrint();
+
+  devContext->EP0().DebugPrint();
+  for(int i = 0; i < 20; ++i)
+    devContext->EP(i).DebugPrint();
 }
 
 unsigned XHCIController::EnableSlot(unsigned slotType)
@@ -348,10 +364,19 @@ void XHCIController::AddressDevice(unsigned icptr, unsigned slotID)
   WaitForCmdCompletion(result);
 }
 
+void XHCIController::ConfigureEndPoint(unsigned icptr, unsigned slotID)
+{
+  _cmdManager->ConfigureEndPoint(icptr, slotID);
+  RingDoorBell(0, 0);
+
+  EventTRB result;
+  WaitForCmdCompletion(result);
+}
+
 void XHCIController::WaitForCmdCompletion(EventTRB& result)
 {
   if(!_eventManager->WaitForEvent(result))
-    throw upan::exception(XLOC, "Timedout while waiting for EnableSlot Command Completion");
+    throw upan::exception(XLOC, "Timedout while waiting for Command Completion");
 
   if(result.Type() != 33)
     throw upan::exception(XLOC, "Got invalid Event TRB: %d", result.Type());
@@ -402,7 +427,13 @@ void CommandManager::DisableSlot(unsigned slotID)
 
 void CommandManager::AddressDevice(unsigned icptr, unsigned slotID)
 {
-  _ring->_cmd = AddressDeviceCommandTRB(icptr, slotID);
+  _ring->_cmd = AddressDeviceTRB(icptr, slotID);
+  Apply();
+}
+
+void CommandManager::ConfigureEndPoint(unsigned icptr, unsigned slotID)
+{
+  _ring->_cmd = ConfigureEndPointTRB(icptr, slotID);
   Apply();
 }
 

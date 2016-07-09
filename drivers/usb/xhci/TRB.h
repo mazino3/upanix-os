@@ -134,10 +134,10 @@ class DisableSlotTRB : public CommandTRB
     }
 } PACKED;
 
-class AddressDeviceCommandTRB : public CommandTRB
+class AddressDeviceTRB : public CommandTRB
 {
   public:
-    AddressDeviceCommandTRB(unsigned inputContextPtr, unsigned slotID)
+    AddressDeviceTRB(unsigned inputContextPtr, unsigned slotID)
     {
       if(inputContextPtr & 0xF)
         throw upan::exception(XLOC, "InputContext Address must be 8 byte aligned");
@@ -146,6 +146,19 @@ class AddressDeviceCommandTRB : public CommandTRB
       SlotID(slotID);
     }
 } PACKED;
+
+class ConfigureEndPointTRB : public CommandTRB
+{
+  public:
+    ConfigureEndPointTRB(unsigned inputContextPtr, unsigned slotID)
+    {
+      if(inputContextPtr & 0xF)
+        throw upan::exception(XLOC, "InputContext Address must be 8 byte aligned");
+      _b1 = inputContextPtr;
+      Type(12);
+      SlotID(slotID);
+    }
+};
 
 class EventTRB : public TRB
 {
