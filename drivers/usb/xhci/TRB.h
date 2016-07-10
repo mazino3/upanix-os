@@ -23,6 +23,9 @@
 #include <exception.h>
 #include <Bit.h>
 
+enum TransferType { NO_DATA_STAGE, RESERVED, OUT_DATA_STAGE, IN_DATA_STAGE };
+enum DataDirection { OUT, IN };
+
 class TRB
 {
   public:
@@ -62,6 +65,8 @@ class TRB
     unsigned _b2;
     unsigned _b3;
     unsigned _b4;
+
+    friend class TransferRing;
 } PACKED;
 
 class LinkTRB : public TRB
@@ -163,7 +168,7 @@ class ConfigureEndPointTRB : public CommandTRB
 class EventTRB : public TRB
 {
   public:
-    uint64_t CommandPointer() const
+    uint64_t TRBPointer() const
     {
       uint64_t addr = _b2;
       return (addr << 32 | (uint64_t)_b1);
@@ -183,10 +188,17 @@ class EventTRB : public TRB
     {
       return _b4 >> 24;
     }
-} PACKED;
 
-class TransferTRB : public TRB
-{
+    bool IsEventDataTRB() const
+    {
+      return (_b4 & 0x4) != 0;
+    }
+
+    uint32_t TransferLength() const
+    {
+      return _b3 & 0xFFFFFF;
+    }
+
 } PACKED;
 
 class TransferRing
@@ -194,10 +206,18 @@ class TransferRing
   public:
     TransferRing(unsigned size);
     ~TransferRing();
+    void AddSetupStageTRB(uint32_t bmRequestType, uint32_t bmRequest, uint32_t wValue, uint32_t wIndex, uint32_t wLength, TransferType trt);
+    void AddDataStageTRB(uint32_t dataBufferAddr, uint32_t len, DataDirection dir, int32_t maxPacketSize);
+    void AddStatusStageTRB();
+    void AddEventDataTRB(uint32_t statusAddr, bool ioc);
+    TRB* RingBase() { return _trbs; }
   private:
-    uint32_t _size;
-    bool     _cycleState;
-    TRB*     _trbs;
+    void NextTRB();
+
+    uint32_t  _size;
+    bool      _cycleState;
+    TRB*      _trbs;
+    uint32_t  _nextTRBIndex;
 };
 
 #endif

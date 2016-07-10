@@ -22,29 +22,6 @@
 
 /***********************************************************************************************/
 
-void USBDataHandler_DisplayDevDesc(const USBStandardDeviceDesc* pDevDesc)
-{
-	printf("\n Len=%d,DType=%d,bcd=%d", 
-    pDevDesc->bLength, 
-    pDevDesc->bDescType, 
-    pDevDesc->bcdUSB);
-
-	printf(",Dev C=%d,SubC=%d,Proto=%d,MaxPkSize=%d", 
-    pDevDesc->bDeviceClass, 
-    pDevDesc->bDeviceSubClass, 
-    pDevDesc->bDeviceProtocol, 
-    pDevDesc->bMaxPacketSize0);
-
-	printf(",VenID=%d,ProdID=%d,bcdDev=%d,iManufac=%d,iProd=%d,iSlNo=%d,nConfigs=%d", 
-    pDevDesc->sVendorID,
-    pDevDesc->sProductID,
-    pDevDesc->bcdDevice,
-    pDevDesc->indexManufacturer,
-    pDevDesc->indexProduct,
-    pDevDesc->indexSerialNum,
-    pDevDesc->bNumConfigs);
-}
-
 void USBDataHandler_InitDevDesc(USBStandardDeviceDesc* pDesc)
 {
 	pDesc->bLength = 0 ;

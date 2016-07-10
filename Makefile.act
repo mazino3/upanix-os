@@ -116,6 +116,7 @@ UPANIX_OBJS = \
 	./drivers/mouse/MouseDriver.o \
 	./drivers/bus/PCIBusHandler.o \
 	./drivers/bus/SCSIHandler.o \
+	./drivers/usb/USBStructures.o \
 	./drivers/usb/USBDataHandler.o \
 	./drivers/usb/USBController.o \
 	./drivers/usb/uhci/UHCIDataHandler.o \

@@ -169,7 +169,7 @@ class XHCIPortRegister
     {
       return (_sc >> 10) & 0xF;
     }
-    uint32_t MaxPacketSize() const
+    int32_t MaxPacketSize() const
     {
       switch(PortSpeedID())
       {

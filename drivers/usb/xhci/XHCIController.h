@@ -41,6 +41,7 @@ class XHCIController
     void AddressDevice(unsigned inputContextPtr, unsigned slotID);
     void ConfigureEndPoint(unsigned icptr, unsigned slotID);
     void WaitForCmdCompletion(EventTRB& result);
+    void WaitForTransferCompletion(EventTRB& result);
     void InitializeDevice(XHCIPortRegister& port, unsigned portId, unsigned slotType);
 
     SupProtocolXCap* GetSupportedProtocol(unsigned portId) const;
@@ -136,7 +137,7 @@ class EventManager
         if(IsLastDQPtr())
           DQPtr(ERST(0)._ersAddr);
         else
-          _erdqPtr += sizeof(EventTRB);
+          DQPtr(_erdqPtr + sizeof(EventTRB));
       }
 
       EventTRB* DQEvent()
@@ -154,7 +155,7 @@ class EventManager
 
     private:
       unsigned DQPtr() { return KERNEL_VIRTUAL_ADDRESS(_erdqPtr) & ~(0xF); }
-      void DQPtr(uint64_t addr) { _erdqPtr = (_erdqPtr & (uint64_t)0xF) | addr; }
+      void DQPtr(uint64_t addr) { _erdqPtr = (addr & ~(0xF)) | (1 << 3); }
 
       unsigned _iman;
       unsigned _imod;

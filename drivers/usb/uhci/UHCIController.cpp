@@ -1489,7 +1489,7 @@ UHCIDevice::UHCIDevice() : _bFirstBulkRead(true), _bFirstBulkWrite(true)
 
 	USBStandardDeviceDesc devDesc ;
 	UHCIController_GetDeviceDescriptor(uiIOBase, _devAddr, &devDesc) ;
-	USBDataHandler_DisplayDevDesc(&devDesc) ;
+  devDesc.DebugPrint();
 
 	char bConfigValue = 0;
 	UHCIController_GetConfiguration(uiIOBase, _devAddr, &bConfigValue) ;

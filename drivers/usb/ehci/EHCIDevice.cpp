@@ -34,7 +34,7 @@ EHCIDevice::EHCIDevice(EHCIController& controller)
 	USBStandardDeviceDesc devDesc;
   if(!GetDeviceDescriptor(&devDesc))
     throw upan::exception(XLOC, "GetDevDesc Failed");
-	USBDataHandler_DisplayDevDesc(&devDesc) ;
+  devDesc.DebugPrint();
 
 	char bConfigValue = 0;
   if(!GetConfigValue(bConfigValue))

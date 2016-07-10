@@ -19,8 +19,9 @@
 #include <MemManager.h>
 #include <Alloc.h>
 #include <XHCIContext.h>
+#include <XHCIStructures.h>
 
-InputContext::InputContext(bool use64)
+InputContext::InputContext(bool use64, const XHCIPortRegister& port, uint32_t portId, uint32_t routeString, uint32_t trRingPtr)
 {
   unsigned addr = KERNEL_VIRTUAL_ADDRESS(MemManager::Instance().AllocatePhysicalPage() * PAGE_SIZE);
   if(use64)
@@ -35,6 +36,8 @@ InputContext::InputContext(bool use64)
     _control = &context32->_controlContext;
     _devContext = new DeviceContext(context32->_deviceContext);
   }
+  Slot().Init(portId, routeString, port.PortSpeedID());
+  EP0().EP0Init(trRingPtr, port.MaxPacketSize());
 }
 
 InputContext::~InputContext()

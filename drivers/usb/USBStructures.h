@@ -38,8 +38,11 @@ typedef struct
 	unsigned short usWLength ;
 } PACKED USBDevRequest ;
 
-typedef struct
+class USBStandardDeviceDesc
 {
+  public:
+  void DebugPrint() const;
+
 	byte bLength ;
 	byte bDescType ;
 	unsigned short bcdUSB ;
@@ -55,8 +58,7 @@ typedef struct
 	char indexProduct ;
 	char indexSerialNum ;
 	char bNumConfigs ;
-		
-} PACKED USBStandardDeviceDesc ;
+} PACKED;
 
 typedef struct
 {

@@ -20,6 +20,8 @@
 
 #include <exception.h>
 
+class XHCIPortRegister;
+
 class ReservedPadding
 {
   public:
@@ -132,22 +134,27 @@ class EndPointContext
     {
     } 
 
-    void EP0Init(unsigned dqPtr, uint32_t maxPacketSize)
+    void EP0Init(unsigned dqPtr, int32_t maxPacketSize)
     {
       //Control EP
       EPType(4);
+      //Interval = 0, MaxPStreams = 0, Mult = 0
+      _context1 &= 0xFF008000;
       //Max packet size
       _context2 = (_context2 & ~(0xFFFF << 16)) | (maxPacketSize << 16);
       //Max Burst Size = 0
       _context2 = _context2 & ~(0xFF << 8);
-      //TR DQ Ptr + DCS = 1
-      _trDQPtr = (uint64_t)(dqPtr | 0x1);
-      //Interval = 0, MaxPStreams = 0, Mult = 0
-      _context1 &= 0xFF008000;
       //Error count = 3
       _context2 = (_context2 & ~(0x7)) | 0x6;
       //Average TRB Len
       _context3 = 8;
+      //TR DQ Ptr + DCS = 1
+      _trDQPtr = (uint64_t)(dqPtr | 0x1);
+    }
+
+    uint32_t MaxPacketSize() const
+    {
+      return (_context2 >> 16) & 0xFFFF;
     }
 
     State EPState() const
@@ -260,7 +267,7 @@ class DeviceContext
 class InputContext
 {
   public:
-    InputContext(bool use64);
+    InputContext(bool use64, const XHCIPortRegister& port, uint32_t portId, uint32_t routeString, uint32_t trRingPtr);
     ~InputContext();
     InputControlContext& Control() { return *_control; }
     SlotContext& Slot() { return _devContext->Slot(); }

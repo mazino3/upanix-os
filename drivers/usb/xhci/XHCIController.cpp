@@ -23,6 +23,7 @@
 #include <KBDriver.h>
 #include <XHCIController.h>
 #include <XHCIContext.h>
+#include <USBDataHandler.h>
 
 unsigned XHCIController::_memMapBaseAddress = XHCI_MMIO_BASE_ADDR;
 
@@ -307,15 +308,12 @@ void XHCIController::InitializeDevice(XHCIPortRegister& port, unsigned portId, u
   if(!slotID)
     throw upan::exception(XLOC, "Failed to get SlotID");
 
-  InputContext* inputContext = new InputContext(_capReg->IsContextSize64());
+  TransferRing* tRing = new TransferRing(64);
+  uint32_t trRingPtr = KERNEL_REAL_ADDRESS(tRing->RingBase());
+  InputContext* inputContext = new InputContext(_capReg->IsContextSize64(), port, portId, 0, trRingPtr);
+  DeviceContext* devContext = new DeviceContext(_capReg->IsContextSize64());
   //set A0 and A1 -> Slot and EP0 are affected by command
   inputContext->Control().SetAddContextFlag(0x3);
-  inputContext->Slot().Init(portId, 0, port.PortSpeedID());
-  
-  TransferRing* tRing = new TransferRing(64);
-  inputContext->EP0().EP0Init(KERNEL_REAL_ADDRESS(tRing), port.MaxPacketSize());
-  
-  DeviceContext* devContext = new DeviceContext(_capReg->IsContextSize64());
   _deviceContextAddrArray[slotID] = (uint64_t)KERNEL_REAL_ADDRESS(&devContext->Slot());
 
 //TODO: to deal with older devices - you may have to send 2 AddressDevice twice
@@ -330,19 +328,30 @@ void XHCIController::InitializeDevice(XHCIPortRegister& port, unsigned portId, u
   if(devContext->Slot().SlotState() != SlotContext::Addressed)
     throw upan::exception(XLOC, "After AddressDevice, Slot is in %d state", devContext->Slot().SlotState());
 
-  printf("\n USB Device Address: %x", devContext->Slot().DevAddress());
-  inputContext->Control().DebugPrint();
-  inputContext->Slot().DebugPrint();
+  printf("\n USB Device Address: %x, PortMaxPkSz: %u, ControlEP MaxPktSz: %u", 
+    devContext->Slot().DevAddress(),
+    port.MaxPacketSize(),
+    devContext->EP0().MaxPacketSize());
 
-  inputContext->Control().SetAddContextFlag(0x1);
-  ConfigureEndPoint((unsigned)&inputContext->Control(), slotID);
+  //** Get device descriptor **
+  USBStandardDeviceDesc deviceDesc;
+  memset((void*)&deviceDesc, 0, sizeof(USBStandardDeviceDesc));
+  uint32_t len = sizeof(USBStandardDeviceDesc);
+  //Setup stage
+  tRing->AddSetupStageTRB(0x80, 6, 0x100, 0, len, TransferType::IN_DATA_STAGE);
+  //Data stage
+  tRing->AddDataStageTRB(KERNEL_REAL_ADDRESS(&deviceDesc), len, DataDirection::IN, port.MaxPacketSize());
+  //Status Stage
+  tRing->AddStatusStageTRB();
+  //Doorbell
+  RingDoorBell(slotID, 1);
+  //Wait for Interrupt
+  EventTRB result;
+  WaitForTransferCompletion(result);
+  deviceDesc.DebugPrint();
 
-  inputContext->Control().DebugPrint();
-  inputContext->Slot().DebugPrint();
-
-  devContext->EP0().DebugPrint();
-  for(int i = 0; i < 20; ++i)
-    devContext->EP(i).DebugPrint();
+//  inputContext->Control().SetAddContextFlag(0x1);
+//  ConfigureEndPoint((unsigned)&inputContext->Control(), slotID);
 }
 
 unsigned XHCIController::EnableSlot(unsigned slotType)
@@ -383,6 +392,21 @@ void XHCIController::WaitForCmdCompletion(EventTRB& result)
 
   if(!result.IsCommandSuccess())
     throw upan::exception(XLOC, "EnableSlot command did not complete successfully");
+}
+
+void XHCIController::WaitForTransferCompletion(EventTRB& result)
+{
+  if(!_eventManager->WaitForEvent(result))
+    throw upan::exception(XLOC, "Timedout while waiting for Transfer Completion");
+
+  if(result.Type() != 32)
+    throw upan::exception(XLOC, "Got invalid Event TRB: %d", result.Type());
+
+  if(!result.IsCommandSuccess())
+    throw upan::exception(XLOC, "Transfer command did not complete successfully");
+
+//  if(!result.IsEventDataTRB())
+  //  throw upan::exception(XLOC, "Transfer event is not Event Data TRB");
 }
 
 CommandManager::CommandManager(XHCICapRegister& creg, 
