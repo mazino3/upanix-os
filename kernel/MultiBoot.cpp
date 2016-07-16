@@ -57,6 +57,21 @@ const framebuffer_info_t* MultiBoot::VideoFrameBufferInfo() const
   return nullptr;
 }
 
+const memory_map_t* MultiBoot::GetMemMapArea(int type) const
+{
+  if((_pInfo->flags) & (1 << 6))
+  {
+    memory_map_t* mmap = (memory_map_t*)(_pInfo->mmap_addr);
+    while((unsigned)mmap < _pInfo->mmap_addr + _pInfo->mmap_length)
+    {
+      if(mmap->type == type)
+        return mmap;
+      mmap = (memory_map_t*)((unsigned)mmap + mmap->size + sizeof(uint32_t));
+    }
+  }
+  return nullptr;
+}
+
 void MultiBoot::Print()
 {
   char buffer[100];

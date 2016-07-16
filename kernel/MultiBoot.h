@@ -162,6 +162,7 @@ class MultiBoot
 		byte GetBootDeviceID();
 		byte GetBootPartitionID();
     const framebuffer_info_t* VideoFrameBufferInfo() const;
+    const memory_map_t* GetMemMapArea(int type) const;
     void Print();
 	private:
 		multiboot_info_t* _pInfo;

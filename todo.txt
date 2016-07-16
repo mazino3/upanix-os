@@ -1,3 +1,9 @@
+Date 4 July 2016
+- Support APIC
+- Support PCI MSI
+- Support Interrupters in XHCI
+- Then Support XHCI Mass storage USB device
+
 Date 25 Feb 2016
 - support for new type Global Partition Tables (GPTs)
 

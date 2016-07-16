@@ -48,6 +48,7 @@ UPANIX_OBJS = \
 	./kernel/KernelService.o \
 	./kernel/video.o \
 	./kernel/VM86.o \
+	./kernel/Acpi.o \
  \
 	./display/Display.o \
  \

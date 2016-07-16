@@ -38,9 +38,9 @@ echo $SUDO_PW | sudo -S umount floppy/MntFloppy
 if [ "$DRIVE" = "" ]
 then
   DEV="USBImage/300MUSB.img"
-  if [ "LOOP" = "" ]
+  if [ "$LOOP" = "" ]
   then
-    MOUNTP="loop1p1"
+    MOUNTP="loop0p1"
   else
     MOUNTP="${LOOP}p1"
   fi
