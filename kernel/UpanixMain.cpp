@@ -139,6 +139,7 @@ void Initialize()
 
   PIC::Instance();
 	MultiBoot::Instance();
+  Acpi::Instance();
 	Display::Create();
 	KC::MDisplay().Message("\n****    Welcome To Upanix   ****\n", Display::Attribute(' ')) ;
 	ProcFileManager_InitForKernel();
