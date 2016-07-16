@@ -47,6 +47,7 @@
 # include <GraphicsVideo.h>
 # include <KBDriver.h>
 # include <GenericUtil.h>
+# include <Acpi.h>
 
 /**** Global Variable declaration/definition *****/
 byte KERNEL_MODE ;
