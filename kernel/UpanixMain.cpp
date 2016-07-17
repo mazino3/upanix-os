@@ -48,6 +48,7 @@
 # include <KBDriver.h>
 # include <GenericUtil.h>
 # include <Acpi.h>
+# include <Cpu.h>
 
 /**** Global Variable declaration/definition *****/
 byte KERNEL_MODE ;
@@ -150,6 +151,7 @@ void Initialize()
 //	TestException(); while(1);
   try
   {
+    Cpu::Instance();
     Acpi::Instance();
     IDT::Instance();
     DMA_Initialize();

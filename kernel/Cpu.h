@@ -83,7 +83,7 @@ class Cpu
     Cpu(const Cpu&);
 
   public:
-    Cpu& Instance()
+    static Cpu& Instance()
     {
       static Cpu cpu;
       return cpu;

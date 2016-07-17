@@ -17,6 +17,7 @@
  */
 
 #include <Cpu.h>
+#include <stdio.h>
 
 Cpu::Cpu()
 {
@@ -33,6 +34,8 @@ Cpu::Cpu()
                     "sub %%ecx, %%eax\n"
                     "mov %%eax, %0\n" : "=r"(result) : : "ecx", "eax");
   _cpuIdAvailable = (result == 0);
+  if(_cpuIdAvailable)
+    printf("\n CPUID is available");
 }
 
 bool Cpu::HasSupport(CPU_FEATURE feature)
