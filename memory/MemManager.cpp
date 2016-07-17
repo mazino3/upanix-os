@@ -202,7 +202,6 @@ bool MemManager::BuildPageTable()
 	
 	if((uiNoOfPDEEntries * 4) > (MEM_PDE_END - MEM_PDE_START))
 	{
-
 		KC::MDisplay().Message("\n PDE Size InSufficient\n", 'A') ;
 		return false ;
 	}
@@ -328,6 +327,68 @@ void MemManager::DeAllocatePhysicalPage(const unsigned uiPageNumber)
 	
 	m_uiPageMap[uiPageMapPosition] = m_uiPageMap[uiPageMapPosition] & ~(0x1 << uiPageOffset) ;
 }
+
+//uint32_t MemManager::AllocatePhysicalPage(const uint32_t noOfPages)
+//{	
+//	ProcessSwitchLock lock;
+//  if(noOfPages == 0)
+//    throw upan::exception(XLOC, "NoOfPages to allocate must be > 0");
+//  struct { 
+//    uint32_t index;
+//    uint32_t offset;
+//  } startPage, endPage;
+//  auto finishAllocation = [this, &startPage, &endPage]() {
+//      for(uint32_t mapIndex = startPage.index; mapIndex <= endPage.index; ++mapIndex)
+//      {
+//        const uint32_t sOffset = mapIndex == startPage.index ? startPage.offset : 0;
+//        const uint32_t eOffset = mapIndex == endPage.index ? endPage.offset : 32;
+//        for(uint32_t offset = sOffset; offset <= eOffset; ++offset)
+//          m_uiPageMap[mapIndex] |= (1 << offset);
+//      }
+//  };
+//  uint32_t count = noOfPages;
+//	for(uint32_t uiPageMapPosition = m_uiResvSize; uiPageMapPosition < m_uiPageMapSize; uiPageMapPosition++)
+//	{
+//	  uint32_t uiPageMapEntry = m_uiPageMap[uiPageMapPosition];
+//		if((uiPageMapEntry & 0xFFFFFFFF) != 0xFFFFFFFF)
+//		{
+//			for(uint32_t uiPageOffset = 0; uiPageOffset < 32; uiPageOffset++)
+//			{
+//				if((uiPageMapEntry & 0x1) == 0x0)
+//				{
+//          if(count == noOfPages)
+//          {
+//            startPage.index = uiPageMapPosition;
+//            startPage.offset = uiPageOffset;
+//          }
+//          --count;
+//          if(count == 0)
+//          {
+//            endPage.index = uiPageMapPosition;
+//            endPage.offset = uiPageOffset;
+//            finishAllocation();
+//            return (startPage.index * 4 * 8) + startPage.offset;
+//          }
+//				}
+//        else
+//          count = noOfPages;
+//				uiPageMapEntry >>= 1;
+//			}
+//		}
+//	}
+//  throw upan::exception(XLOC, "Out of memory pages!");
+//}
+//
+//void MemManager::DeAllocatePhysicalPage(uint32_t pageNo, const uint32_t noOfPages)
+//{
+//  ProcessSwitchLock pLock;
+//  for(uint32_t count = 0; count < noOfPages; ++count, ++pageNo)
+//  {
+//    const uint32_t index = pageNo / (8 * 4);
+//    const uint32_t offset = pageNo % (8 * 4);
+//    m_uiPageMap[index] = m_uiPageMap[index] & ~(0x1 << offset) ;
+//  }
+//}
 
 extern __volatile__ int SYS_CALL_ID;
 extern __volatile__ int KERNEL_DMM_ON;
