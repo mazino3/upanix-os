@@ -57,7 +57,7 @@ const framebuffer_info_t* MultiBoot::VideoFrameBufferInfo() const
   return nullptr;
 }
 
-const memory_map_t* MultiBoot::GetMemMapArea(int type) const
+const memory_map_t* MultiBoot::GetMemMapArea(uint32_t type) const
 {
   if((_pInfo->flags) & (1 << 6))
   {

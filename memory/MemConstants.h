@@ -133,6 +133,8 @@ extern unsigned RAM_SIZE ;
 #define EHCI_MMIO_BASE_ADDR_END	0x873000 // 48 pages
 #define XHCI_MMIO_BASE_ADDR		0x873000 // 8 MB + 268 KB + 48 pages
 #define XHCI_MMIO_BASE_ADDR_END	0x8B3000 // 64 pages
+#define ACPI_MMAP_AREA_START 0x8B3000 // 8 MB + 179 pages
+#define ACPI_MMAP_AREA_END 0x8BB000 // + 8 pages
 
 /********** There is unused space between 8 MB + 241 KB + 6 * PAGE_SIZE to 9 MB. Can be used as required */
 
