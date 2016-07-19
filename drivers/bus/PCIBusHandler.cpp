@@ -330,7 +330,27 @@ Result PCIEntry::ReadNonBridgePCIHeader()
 
 	RETURN_X_IF_NOT(ReadPCIConfig(PCI_MAX_LATENCY, 1, &BusEntity.NonBridge.bMaxDMALatency), Success, Failure);
 
+  if(usStatus & PCI_STS_CAPABILITIESLIST)
+  {
+    uint8_t capBase = 0;
+  	RETURN_X_IF_NOT(ReadPCIConfig(PCI_CAPLIST, 1, &capBase), Success, Failure);
+    while(capBase)
+    {
+      uint8_t capId = 0;
+  	  RETURN_X_IF_NOT(ReadPCIConfig(capBase, 1, &capId), Success, Failure);
+      _extendCapabilities.push_back(ExtendedCapability(capBase, capId));
+  	  RETURN_X_IF_NOT(ReadPCIConfig(capBase + 1, 1, &capBase), Success, Failure);
+    }
+  }
 	return Success;
+}
+
+const PCIEntry::ExtendedCapability* PCIEntry::GetExtendedCapability(uint32_t capId) const
+{
+  for(const auto& i : _extendCapabilities)
+    if(i.CapId() == capId)
+      return &i;
+  return nullptr;
 }
 
 Result PCIEntry::ReadBridgePCIHeader()

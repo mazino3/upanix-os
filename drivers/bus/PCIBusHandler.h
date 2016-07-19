@@ -42,11 +42,13 @@ typedef enum {
 #define PCI_LATENCY			0x0D
 #define PCI_HEADER_TYPE		0x0E
 #define PCI_BASE_REGISTERS	0x10
-#define PCI_POWER           0x34
+#define PCI_CAPLIST         0x34
 #define PCI_INTERRUPT_LINE	0x3C
 #define PCI_INTERRUPT_PIN	0x3D
 #define PCI_MIN_GRANT		0x3E
 #define PCI_MAX_LATENCY		0x3F
+
+#define PCI_STS_CAPABILITIESLIST 0x10
 
 #define PCI_COMMAND_IO		0x001
 #define PCI_COMMAND_MMIO	0x002
@@ -213,10 +215,23 @@ class PCIEntry
 
   PCIEntry(unsigned uiBusNumber, unsigned uiDeviceNumber, unsigned uiFunction, byte bHeaderType);
 
+  class ExtendedCapability
+  {
+    public:
+      ExtendedCapability(uint8_t capBase, uint8_t capId) : _capBase(capBase), _capId(capId) {}
+      uint8_t CapBase() const { return _capBase; }
+      uint8_t CapId() const { return _capId; }
+
+    private:
+      uint8_t _capBase;
+      uint8_t _capId;
+  };
+  const ExtendedCapability* GetExtendedCapability(uint32_t capId) const;
+
   private:
     Result ReadNonBridgePCIHeader();
     Result ReadBridgePCIHeader();
-
+    upan::list<ExtendedCapability> _extendCapabilities;
 }; 
 
 class PCIBusHandler
