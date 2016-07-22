@@ -65,6 +65,7 @@ class PIC
 
 		unsigned short m_IRQMask;
 
+    void DisableForAPIC();
 		void EnableAllInterrupts();
 		void DisableAllInterrupts();
 		void SendEOI(const IRQ& irq);
@@ -84,6 +85,8 @@ class PIC
 	private:
 		static const unsigned short MASTER_PORTA = 0x20;
 		static const unsigned short MASTER_PORTB = 0x21;
+		static const unsigned short MASTER_PORTC = 0x22;
+		static const unsigned short MASTER_PORTD = 0x23;
 		static const unsigned short SLAVE_PORTA = 0xA0;
 		static const unsigned short SLAVE_PORTB = 0xA1;
 
@@ -102,17 +105,24 @@ class PICGuard
     }
     PICGuard() : _irq(nullptr)
     {
-      PIC::Instance().DisableAllInterrupts();
+      __asm__ __volatile__("pushf");
+      __asm__ __volatile__("popl %0" : "=m"(_allIntSyncFlag) : );
+      if(_allIntSyncFlag & 0x0200)
+        PIC::Instance().DisableAllInterrupts();
     }
     ~PICGuard()
     {
       if(_irq)
         PIC::Instance().EnableInterrupt(*_irq);
       else
-        PIC::Instance().EnableAllInterrupts();
+      {
+        if(_allIntSyncFlag & 0x0200)
+          PIC::Instance().EnableAllInterrupts();
+      }
     }
   private:
     const IRQ* _irq;
+    __volatile__ uint32_t _allIntSyncFlag;
 };
 
 #endif

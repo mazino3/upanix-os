@@ -113,6 +113,7 @@ static void ConsoleCommands_Testv() ;
 static void ConsoleCommands_TestNet() ;
 static void ConsoleCommands_TestCPP() ;
 static void ConsoleCommands_Beep();
+static void ConsoleCommands_Sleep();
 
 /*****************************************/
 
@@ -177,6 +178,7 @@ static const ConsoleCommand ConsoleCommands_CommandList[] = {
 	{ "testn",		&ConsoleCommands_TestNet },
 	{ "testcpp", &ConsoleCommands_TestCPP },
 	{ "beep", &ConsoleCommands_Beep },
+	{ "sleep", &ConsoleCommands_Sleep },
 	{ "\0",			NULL }
 } ;
 
@@ -1121,4 +1123,10 @@ Global x;
 void ConsoleCommands_Beep()
 {
   PCSound::Instance().Beep();
+}
+
+void ConsoleCommands_Sleep()
+{
+  uint32_t t = atoi(CommandLineParser_GetParameterAt(0));
+  ProcessManager::Instance().Sleep(t * 1000);
 }

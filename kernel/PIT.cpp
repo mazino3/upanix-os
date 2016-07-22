@@ -27,8 +27,7 @@
 #include <MemConstants.h>
 #include <MemUtil.h>
 #include <Atomic.h>
-
-#define INT_PER_SEC 100
+#include <Apic.h>
 
 static unsigned PIT_ClockCountForSleep ;
 static unsigned char Process_bContextSwitch ;
@@ -36,26 +35,25 @@ static int Process_iTaskSwitch ;
 
 void PIT_Initialize()
 {
-	byte bStatus = SUCCESS ;
+  Result status = Success;
 	PIT_ClockCountForSleep = 0 ;
 	Process_bContextSwitch = false ;
 	Process_iTaskSwitch = true ;
 
-	__volatile__ unsigned uiIntFlag ;
-	SAFE_INT_DISABLE(uiIntFlag) ;
+  PICGuard picGuard;
+  if(!Apic::Instance().IsApicAvailable())
+  {
+  	unsigned uiTimerRate = TIMECOUNTER_i8254_FREQU / INT_PER_SEC ;
+
+	  PortCom_SendByte(PIT_MODE_PORT, 0x34) ;				// Set Timer to Mode 2 -- Free Running LSB/MSB
+  	PortCom_SendByte(PIT_COUNTER_0_PORT, uiTimerRate & 0xFF) ;			// Clock Divisor LSB
+	  PortCom_SendByte(PIT_COUNTER_0_PORT, (uiTimerRate >> 8) & 0xFF) ;	// Clock Divisor MSB
+  }
+
+	if(!PIC::Instance().RegisterIRQ(PIC::Instance().TIMER_IRQ, (unsigned)&PIT_Handler))
+    status = Failure;
 	
-	unsigned uiTimerRate = CLOCK_TICK_RATE / INT_PER_SEC ;
-
-	PortCom_SendByte(PIT_MODE_PORT, 0x34) ;				// Set Timer to Mode 2 -- Free Running LSB/MSB
-	PortCom_SendByte(PIT_COUNTER_0_PORT, uiTimerRate & 0xFF) ;			// Clock Divisor LSB
-	PortCom_SendByte(PIT_COUNTER_0_PORT, (uiTimerRate >> 8) & 0xFF) ;	// Clock Divisor MSB
-
-	if(!PIC::Instance().RegisterIRQ(PIC::Instance().TIMER_IRQ, (unsigned)&PIT_Handler) )
-		bStatus = FAILURE ;
-	
-	SAFE_INT_ENABLE(uiIntFlag) ;	
-
-	KC::MDisplay().LoadMessage("Timer Initialization", bStatus ? Success : Failure);
+	KC::MDisplay().LoadMessage("Timer Initialization", status);
 }
 
 unsigned PIT_GetClockCount() { return PIT_ClockCountForSleep ; }

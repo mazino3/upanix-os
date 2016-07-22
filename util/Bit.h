@@ -32,6 +32,17 @@ class Bit
     {
       return enable ? dword | bitPos : dword & ~(bitPos);
     }
+
+    static inline uint8_t Byte1(uint32_t val) { return Byte(val, 0); }
+    static inline uint8_t Byte2(uint32_t val) { return Byte(val, 1); }
+    static inline uint8_t Byte3(uint32_t val) { return Byte(val, 2); }
+    static inline uint8_t Byte4(uint32_t val) { return Byte(val, 3); }
+
+  private:
+    static inline uint8_t Byte(uint32_t val, uint32_t id)
+    {
+      return (val >> (id * 8)) & 0xFF;
+    }
 };
 
 #endif

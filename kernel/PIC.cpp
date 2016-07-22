@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <Alloc.h>
 #include <Atomic.h>
+#include <Apic.h>
 
 void IRQ::Signal() const
 {
@@ -78,6 +79,14 @@ PIC::PIC() : NO_IRQ(999),
 	m_IRQMask = 0xFFFF ;
 }
 
+void PIC::DisableForAPIC()
+{
+	PortCom_SendByte(SLAVE_PORTB, 0xFF); 
+	PortCom_SendByte(MASTER_PORTB, 0xFF);
+	PortCom_SendByte(MASTER_PORTC, 0x70);
+	PortCom_SendByte(MASTER_PORTD, 0x01);
+}
+
 void PIC::EnableAllInterrupts()
 {
 	__asm__ __volatile__("sti") ;
@@ -97,8 +106,7 @@ void PIC::SendEOI(const IRQ& irq)
 
 void PIC::EnableInterrupt(const IRQ& irq)
 {
-	__volatile__ unsigned uiIntFlag ;
-	SAFE_INT_DISABLE(uiIntFlag) ;
+  PICGuard picGuard;
 
 	int iIRQNo = irq.GetIRQNo();
 	m_IRQMask &= ~(1 << iIRQNo) ;
@@ -107,14 +115,11 @@ void PIC::EnableInterrupt(const IRQ& irq)
 	
 	PortCom_SendByte(MASTER_PORTB, (m_IRQMask & 0xFF)) ;
 	PortCom_SendByte(SLAVE_PORTB, ((m_IRQMask >> 8) & 0xFF)) ;
-
-	SAFE_INT_ENABLE(uiIntFlag) ;
 }
 
 void PIC::DisableInterrupt(const IRQ& irq)
 {
-	__volatile__ unsigned uiIntFlag ;
-	SAFE_INT_DISABLE(uiIntFlag) ;
+  PICGuard picGuard;
 
 	int iIRQNo = irq.GetIRQNo();
 	m_IRQMask |= (1 << iIRQNo) ;
@@ -123,8 +128,6 @@ void PIC::DisableInterrupt(const IRQ& irq)
 
 	PortCom_SendByte(MASTER_PORTB, (m_IRQMask & 0xFF)) ;
 	PortCom_SendByte(SLAVE_PORTB, ((m_IRQMask >> 8) & 0xFF)) ;
-
-	SAFE_INT_ENABLE(uiIntFlag) ;
 }
 
 const IRQ* PIC::RegisterIRQ(const int& iIRQNo, unsigned pHandler)

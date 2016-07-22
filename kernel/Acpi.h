@@ -16,6 +16,9 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
 
+#ifndef _ACPI_H_
+#define _ACPI_H_
+
 #include <stdlib.h>
 #include <list.h>
 
@@ -37,7 +40,6 @@ class Acpi
       static Acpi acpi;
       return acpi;
     }
-    bool IsAvailable() const { return _isAvailable; }
 
     class Madt
     {
@@ -167,6 +169,8 @@ class Acpi
         LocalApicNmis      _localApicNmis;
         friend class Acpi;
     };
+    bool IsAvailable() const { return _isAvailable; }
+    const Madt& GetMadt() const { return _madt; }
 
   private:
     static const int OEMID_LEN = 6;
@@ -316,5 +320,6 @@ class Acpi
   private:
     bool _isAvailable;
     Madt _madt;
-
 };
+
+#endif

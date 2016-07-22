@@ -38,7 +38,6 @@ Acpi::Acpi() : _isAvailable(false)
   for(auto headerAddress : headerAddresses)
     ReadHeader(headerAddress);
   _isAvailable = true;
-  while(1);
 }
 
 void Acpi::ReadRootTable(const Acpi::Rsdp& rsdp, upan::list<uint32_t>& headerAddresses)
@@ -231,6 +230,4 @@ void Acpi::Madt::DebugPrint() const
   printf("\n Local APIC NMIs:");
   for(const auto& i : _localApicNmis)
     printf("\n\tProcessorId: %d, Flags: %x, LINT Pin: %d", i.ProcessorId(), i.Flags(), i.LintPin());
-  
-  while(10);
 }

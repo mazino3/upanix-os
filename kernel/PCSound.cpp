@@ -29,7 +29,7 @@ PCSound::PCSound()
 void PCSound::Play(unsigned freq)
 {
   //Set the PIT to the desired frequency
-  unsigned div = CLOCK_TICK_RATE / freq;
+  unsigned div = TIMECOUNTER_i8254_FREQU / freq;
   PortCom_SendByte(PIT_MODE_PORT, 0xb6);
   PortCom_SendByte(PIT_COUNTER_2_PORT, (byte)div);
   PortCom_SendByte(PIT_COUNTER_2_PORT, (byte)(div >> 8));

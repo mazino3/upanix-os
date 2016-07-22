@@ -49,6 +49,7 @@
 # include <GenericUtil.h>
 # include <Acpi.h>
 # include <Cpu.h>
+# include <Apic.h>
 
 /**** Global Variable declaration/definition *****/
 byte KERNEL_MODE ;
@@ -155,19 +156,20 @@ void Initialize()
     Acpi::Instance();
     IDT::Instance();
     DMA_Initialize();
-    PIT_Initialize();
 
     ProcessManager::Instance();
     SysCall_Initialize() ;
 
     KC::MKernelService() ;
 
-    PIC::Instance().EnableInterrupt(PIC::Instance().TIMER_IRQ) ;
-
   /* Start - Peripheral Device Initialization */
   //TODO: An Abstract Bus Handler which should internally take care of different
   //types of bus like ISA, PCI etc... 
     PCIBusHandler::Instance().Initialize();
+
+    Apic::Instance();
+    PIT_Initialize();
+    //PIC::Instance().EnableInterrupt(PIC::Instance().TIMER_IRQ) ;
 
     DiskDriveManager::Instance();
 
@@ -184,10 +186,10 @@ void Initialize()
     
     //USB
     USBController::Instance();
-    UHCIManager::Instance();
-    EHCIManager::Instance();
-    XHCIManager::Instance();
-    USBMassBulkStorageDisk_Initialize() ;
+    //UHCIManager::Instance();
+    //EHCIManager::Instance();
+    //XHCIManager::Instance();
+    //USBMassBulkStorageDisk_Initialize() ;
 
     SessionManager_Initialize() ;
 

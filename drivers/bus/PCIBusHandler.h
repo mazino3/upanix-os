@@ -47,6 +47,10 @@ typedef enum {
 #define PCI_INTERRUPT_PIN	0x3D
 #define PCI_MIN_GRANT		0x3E
 #define PCI_MAX_LATENCY		0x3F
+#define PCI_IRQ_ABCD    0x60
+#define PCI_IRQ_EFGH    0x68
+
+#define PCI_STS_CAPABILITIESLIST 0x10
 
 #define PCI_STS_CAPABILITIESLIST 0x10
 
@@ -73,6 +77,8 @@ typedef enum {
 
 #define PCI_SERIAL_BUS		0x0C
 #define PCI_USB				0x03
+
+#define MSI_CAP_ID 5
 
 class PCIEntry
 {
@@ -250,6 +256,8 @@ class PCIBusHandler
     Result WritePCIConfig(unsigned uiBusNumber, unsigned uiDeviceNumber, unsigned uiFunction, 
             unsigned uiPCIEntryOffset, unsigned uiPCIEntrySize, unsigned uiValue);
     const upan::list<PCIEntry*>& PCIEntries() const { return _pciEntries; }
+    const upan::list<uint8_t>& IrqABCD() const { return _irqABCD; }
+    const upan::list<uint8_t>& IrqEFGH() const { return _irqEFGH; }
   private:
     Result Find();
     Result ScanBus(unsigned uiBusNumber);
@@ -257,6 +265,8 @@ class PCIBusHandler
     PCI_TYPE _type;
     unsigned _uiNoOfPCIBuses;
     upan::list<PCIEntry*> _pciEntries;
+    upan::list<uint8_t>   _irqABCD;
+    upan::list<uint8_t>   _irqEFGH;
 };
 
 #endif

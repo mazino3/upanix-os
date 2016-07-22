@@ -15,11 +15,12 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
-# include <PCIBusHandler.h>
-# include <PortCom.h>
-# include <Display.h>
-# include <DMM.h>
-# include <KernelService.h>
+#include <PCIBusHandler.h>
+#include <PortCom.h>
+#include <Display.h>
+#include <DMM.h>
+#include <KernelService.h>
+#include <Bit.h>
 
 PCIBusHandler::PCIBusHandler() : _type(PCI_TYPE_ONE), _uiNoOfPCIBuses(0)
 {
@@ -133,6 +134,31 @@ Result PCIBusHandler::ScanBus(unsigned uiBusNumber)
 
 					RETURN_X_IF_NOT(WritePCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, PCI_COMMAND, 2, (usCommand | PCI_COMMAND_IO | PCI_COMMAND_MMIO)), Success, Failure) ;
 				}
+        else
+        {
+          byte bInterface, bClassCode, bSubClass;
+          RETURN_X_IF_NOT(ReadPCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, PCI_INTERFACE, 1, &bInterface), Success, Failure);
+          RETURN_X_IF_NOT(ReadPCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, PCI_CLASS_CODE, 1, &bClassCode), Success, Failure);
+          RETURN_X_IF_NOT(ReadPCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, PCI_SUB_CLASS, 1, &bSubClass), Success, Failure);
+          
+          if(bClassCode == 0x06 && (bSubClass == 0x01 || bSubClass == 0x02) && bInterface == 0x00)
+          {
+            uint32_t irqABCD;
+        	  RETURN_X_IF_NOT(ReadPCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, PCI_IRQ_ABCD, 4, &irqABCD), Success, Failure);
+
+            _irqABCD.push_back(Bit::Byte1(irqABCD));
+            _irqABCD.push_back(Bit::Byte2(irqABCD));
+            _irqABCD.push_back(Bit::Byte3(irqABCD));
+            _irqABCD.push_back(Bit::Byte4(irqABCD));
+
+            uint32_t irqEFGH;
+          	RETURN_X_IF_NOT(ReadPCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, PCI_IRQ_EFGH, 4, &irqEFGH), Success, Failure);
+            _irqEFGH.push_back(Bit::Byte1(irqEFGH));
+            _irqEFGH.push_back(Bit::Byte2(irqEFGH));
+            _irqEFGH.push_back(Bit::Byte3(irqEFGH));
+            _irqEFGH.push_back(Bit::Byte4(irqEFGH));
+          }
+        }
 
         if(_pciEntries.size() < MAX_PCI_DEVICES)
           _pciEntries.push_back(new PCIEntry(uiBusNumber, uiDeviceNumber, uiFunction, bHeaderType));
@@ -276,6 +302,7 @@ PCIEntry::PCIEntry(unsigned uiBusNo, unsigned uiDeviceNo, unsigned uiFunc, byte 
     r = ReadBridgePCIHeader();
   else
     r = ReadNonBridgePCIHeader();
+
   if(r != Success)
     throw upan::exception(XLOC, "failed to read PCI configuration for Bus:%u, Device:%u, Function:%u, HeaderType:%u", uiBusNumber, uiDeviceNumber, uiFunction, bHeaderType);
 }
