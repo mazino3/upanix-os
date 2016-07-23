@@ -33,8 +33,8 @@
 
 // IO APIC
 /* Offset der memory-mapped Register */
-#define IOAPIC_IOREGSEL      0x00
-#define IOAPIC_IOWIN         0x10
+#define IOAPIC_IOREGSEL      0
+#define IOAPIC_IOWIN         4
 
 #define IOAPIC_ID            0x00
 #define IOAPIC_VERSION       0x01
@@ -186,21 +186,22 @@ uint32_t* Apic::MmapBase(uint32_t vAddr, uint32_t pAddr)
   // This page is a Read Only area for user process. 0x5 => 101 => User Domain, Read Only, Present Bit
   ((unsigned*)(KERNEL_VIRTUAL_ADDRESS(uiPTEAddress)))[uiPTEIndex] = (pAddr & 0xFFFFF000) | 0x5 ;
   if(MemManager::Instance().MarkPageAsAllocated(pAddr / PAGE_SIZE) != Success) {}
+	Mem_FlushTLB();
   return (uint32_t*)KERNEL_VIRTUAL_ADDRESS(vAddr + (pAddr % PAGE_SIZE));
 }
 
 // read IO APIC register
 uint32_t Apic::IoApicRead(uint8_t index)
 {
-  *(_ioApicBase + IOAPIC_IOREGSEL) = index;
-  return *(volatile uint32_t*)(_ioApicBase + IOAPIC_IOWIN);
+  _ioApicBase[IOAPIC_IOREGSEL] = index;
+  return _ioApicBase[IOAPIC_IOWIN];
 }
 
 // write IO APIC register
 void Apic::IoApicWrite(uint8_t index, uint32_t val)
 {
-  *(_ioApicBase + IOAPIC_IOREGSEL) = index;
-  *(volatile uint32_t*)(_ioApicBase + IOAPIC_IOWIN) = val;
+  _ioApicBase[IOAPIC_IOREGSEL] = index;
+  _ioApicBase[IOAPIC_IOWIN] = val;
 }
 
 void Apic::RemapVector(uint8_t vector, uint32_t mapped, bool level /*f:edge t:level*/, bool low /*f:high t:low*/, bool disabled)
