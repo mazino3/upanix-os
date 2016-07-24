@@ -50,7 +50,6 @@ static const uint32_t APIC_EXT_INT = (1U << 8) | (1U << 9) | (1U << 10);
 
 Apic::Apic() : _apicBase(nullptr), _ioApicBase(nullptr), _apicAvailable(false)
 {
-  PICGuard picGuard;
   if (Cpu::Instance().HasSupport(CF_MSR) && Cpu::Instance().HasSupport(CF_APIC)) // We need MSR (to initialize APIC) and (obviously) APIC
   {
     // Ensure that I/O-APIC is available - this is the case if its address was found in the ACPI tables
@@ -68,6 +67,8 @@ Apic::Apic() : _apicBase(nullptr), _ioApicBase(nullptr), _apicAvailable(false)
 
   uint32_t phyIoApicBase = (*Acpi::Instance().GetMadt().GetIoApics().begin()).Address();
   _ioApicBase = MmapBase(MMAP_IOAPIC_BASE, phyIoApicBase);
+
+  PICGuard picGuard;
 
   uint8_t ioApicMaxIndexRedirTab = Bit::Byte3(IoApicRead(IOAPIC_VERSION)); // bit16-23 // Maximum Redirection Entry  ReadOnly
 
