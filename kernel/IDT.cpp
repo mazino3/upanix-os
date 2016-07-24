@@ -244,10 +244,7 @@ void IDT::LoadDefaultHadlers()
 	LoadEntry(0xF, (unsigned)&DefaultHandlerF, SYS_CODE_SELECTOR, 0x8E) ;
 	LoadEntry(0x10, (unsigned)&DefaultHandler10, SYS_CODE_SELECTOR, 0x8E) ;
 
-	//TODO: Interrupt 0x27 is Raised While doing Keyboard Handler Operation
-	// Don't know WHY?. 0x27 -> IRQ 7 (Parallel Port) which is disabled
-	// So,its not IRQ 7 Raising But Exception 0x27 Raising.
-	// As a tempopary Solution, a dummy Exception Handler is provided
+	//Spurious IRQ
 	LoadEntry(0x27, (unsigned)&DefaultHandlerForException0x27, SYS_CODE_SELECTOR, 0x8E) ;
 }
 
