@@ -70,8 +70,8 @@ class Apic
     void RemapVector(uint8_t vector, uint32_t mapped, bool level /*f:edge t:level*/, bool low /*f:high t:low*/, bool disabled);
 
   private:
-    uint32_t* _apicBase;
-    uint32_t* _ioApicBase;
+    __volatile__ uint32_t* _apicBase;
+    __volatile__ uint32_t* _ioApicBase;
     bool      _apicAvailable;
 };
 
