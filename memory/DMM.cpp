@@ -382,7 +382,7 @@ unsigned DMM_AllocateForKernel(unsigned uiSizeInBytes)
 
 unsigned DMM_AllocateAlignForKernel(unsigned uiSizeInBytes, unsigned uiAlignNumber)
 {
-  PICGuard g;
+  IrqGuard g;
 	unsigned uiAddr = DMM_AllocateAlignForKernel_Act1(uiSizeInBytes, uiAlignNumber);
 	return uiAddr;
 }
@@ -442,7 +442,7 @@ byte DMM_GetAllocSize(ProcessAddressSpace* processAddressSpace, unsigned uiAddre
 
 byte DMM_GetAllocSizeForKernel(unsigned uiAddress, int* iSize)
 {
-  PICGuard g;
+  IrqGuard g;
 	unsigned& uiAUTAddress = MemManager::Instance().GetKernelAUTAddress();
 
 	AllocationUnitTracker* curAUT = (AllocationUnitTracker*)(uiAUTAddress);
@@ -463,7 +463,7 @@ byte DMM_GetAllocSizeForKernel(unsigned uiAddress, int* iSize)
 
 byte DMM_DeAllocateForKernel(unsigned uiAddress)
 {
-  PICGuard g;
+  IrqGuard g;
 	unsigned bStatus = DMM_DeAllocateForKernel_Act1(uiAddress) ;
 	return bStatus ;
 }

@@ -66,8 +66,8 @@ bool RTC::Initialize()
 	PortCom_SendByte(RTC_COMMAND_PORT, RTC_RGSTR_STATUSC) ;
 	PortCom_SendByte(RTC_DATA_PORT, bStatusC) ;
 
-  return PIC::Instance().RegisterIRQ(PIC::Instance().RTC_IRQ, (unsigned)&RTC_Handler);
-//	PIC::Instance().EnableInterrupt(PIC::Instance().RTC_IRQ) ;
+  return IrqManager::Instance().RegisterIRQ(IrqManager::Instance().RTC_IRQ, (unsigned)&RTC_Handler);
+//	IrqManager::Instance().EnableIRQ(IrqManager::Instance().RTC_IRQ) ;
 }
 
 void RTC::GetDateTime(RTCDateTime& rRTCDateTime)
@@ -109,7 +109,7 @@ void RTC_Handler()
 	PortCom_SendByte(RTC_COMMAND_PORT, RTC_RGSTR_STATUSC) ;
 	PortCom_ReceiveByte(RTC_DATA_PORT) ;
 	
-	PIC::Instance().SendEOI(PIC::Instance().RTC_IRQ);
+	IrqManager::Instance().SendEOI(IrqManager::Instance().RTC_IRQ);
 
 	AsmUtil_REVOKE_KERNEL_DATA_SEGMENTS
 	AsmUtil_RESTORE_GPR(GPRStack) ;

@@ -49,7 +49,7 @@
 # include <GenericUtil.h>
 # include <Acpi.h>
 # include <Cpu.h>
-# include <Apic.h>
+# include <IrqManager.h>
 
 /**** Global Variable declaration/definition *****/
 byte KERNEL_MODE ;
@@ -115,7 +115,6 @@ void TestThrowObj()
 	throw Exception("Exception Class");
 }
 
-
 void TestException()
 {
 	try { TestThrowStr(); } catch(const char* ex) { printf("\nCaught Exception: %s", ex); }
@@ -139,7 +138,6 @@ void Initialize()
 	KERNEL_MODE = true ;
 	SPECIAL_TASK = false ;
 
-  PIC::Instance();
 	MultiBoot::Instance();
 	Display::Create();
 	KC::MDisplay().Message("\n****    Welcome To Upanix   ****\n", Display::Attribute(' ')) ;
@@ -167,9 +165,9 @@ void Initialize()
   //types of bus like ISA, PCI etc... 
     PCIBusHandler::Instance().Initialize();
 
-    Apic::Instance();
+    IrqManager::Instance();
     PIT_Initialize();
-    //PIC::Instance().EnableInterrupt(PIC::Instance().TIMER_IRQ) ;
+    IrqManager::Instance().EnableIRQ(IrqManager::Instance().TIMER_IRQ) ;
 
     DiskDriveManager::Instance();
 
@@ -186,10 +184,10 @@ void Initialize()
     
     //USB
     USBController::Instance();
-    //UHCIManager::Instance();
-    //EHCIManager::Instance();
+    UHCIManager::Instance();
+    EHCIManager::Instance();
     //XHCIManager::Instance();
-    //USBMassBulkStorageDisk_Initialize() ;
+    USBMassBulkStorageDisk_Initialize() ;
 
     SessionManager_Initialize() ;
 

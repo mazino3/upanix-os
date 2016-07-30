@@ -103,7 +103,7 @@ static void ATADeviceController_PrimaryIRQHandler()
 
   HD_PRIMARY_IRQ->Signal();
 
-	PIC::Instance().SendEOI(*HD_PRIMARY_IRQ) ;
+	IrqManager::Instance().SendEOI(*HD_PRIMARY_IRQ) ;
 	
 	AsmUtil_REVOKE_KERNEL_DATA_SEGMENTS
 	AsmUtil_RESTORE_GPR(GPRStack) ;
@@ -120,7 +120,7 @@ static void ATADeviceController_SecondaryIRQHandler()
 
   HD_SECONDARY_IRQ->Signal();
 	
-	PIC::Instance().SendEOI(*HD_SECONDARY_IRQ) ;
+	IrqManager::Instance().SendEOI(*HD_SECONDARY_IRQ) ;
 
 	AsmUtil_REVOKE_KERNEL_DATA_SEGMENTS
 	AsmUtil_RESTORE_GPR(GPRStack) ;
@@ -387,23 +387,23 @@ static byte ATADeviceController_CheckControllerMode(const PCIEntry* pPCIEntry,
 
 	if(bDMAPossible)
 	{
-		HD_PRIMARY_IRQ = PIC::Instance().RegisterIRQ(bPrimaryIRQ, (unsigned)&ATADeviceController_PrimaryIRQHandler) ;
+		HD_PRIMARY_IRQ = IrqManager::Instance().RegisterIRQ(bPrimaryIRQ, (unsigned)&ATADeviceController_PrimaryIRQHandler) ;
 		if(!HD_PRIMARY_IRQ)
 		{
 			printf("\n Failed to register HD Primary IRQ %d", bPrimaryIRQ) ;
 			return ATADeviceController_FAILURE ;
 		}
-		PIC::Instance().EnableInterrupt(*HD_PRIMARY_IRQ);
+		IrqManager::Instance().EnableIRQ(*HD_PRIMARY_IRQ);
 
 		if(bPrimaryIRQ != bSecondaryIRQ)
 		{
-			HD_SECONDARY_IRQ = PIC::Instance().RegisterIRQ(bSecondaryIRQ, (unsigned)&ATADeviceController_SecondaryIRQHandler) ;
+			HD_SECONDARY_IRQ = IrqManager::Instance().RegisterIRQ(bSecondaryIRQ, (unsigned)&ATADeviceController_SecondaryIRQHandler) ;
 			if(!HD_SECONDARY_IRQ)
 			{
 				printf("\n Failed to register HD Secondary IRQ %d", bSecondaryIRQ) ;
 				return ATADeviceController_FAILURE ;
 			}
-			PIC::Instance().EnableInterrupt(*HD_SECONDARY_IRQ);
+			IrqManager::Instance().EnableIRQ(*HD_SECONDARY_IRQ);
 		}
 	}
 

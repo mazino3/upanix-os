@@ -29,9 +29,9 @@
 #include <Atomic.h>
 #include <Apic.h>
 
-static unsigned PIT_ClockCountForSleep ;
-static unsigned char Process_bContextSwitch ;
-static int Process_iTaskSwitch ;
+static __volatile__ unsigned PIT_ClockCountForSleep ;
+static __volatile__ unsigned char Process_bContextSwitch ;
+static __volatile__ int Process_iTaskSwitch ;
 
 void PIT_Initialize()
 {
@@ -40,8 +40,8 @@ void PIT_Initialize()
 	Process_bContextSwitch = false ;
 	Process_iTaskSwitch = true ;
 
-  PICGuard picGuard;
-  if(!Apic::Instance().IsApicAvailable())
+  IrqGuard g;
+  if(!IrqManager::Instance().IsApic())
   {
   	unsigned uiTimerRate = TIMECOUNTER_i8254_FREQU / INT_PER_SEC ;
 
@@ -50,7 +50,7 @@ void PIT_Initialize()
 	  PortCom_SendByte(PIT_COUNTER_0_PORT, (uiTimerRate >> 8) & 0xFF) ;	// Clock Divisor MSB
   }
 
-	if(!PIC::Instance().RegisterIRQ(PIC::Instance().TIMER_IRQ, (unsigned)&PIT_Handler))
+	if(!IrqManager::Instance().RegisterIRQ(IrqManager::Instance().TIMER_IRQ, (unsigned)&PIT_Handler))
     status = Failure;
 	
 	KC::MDisplay().LoadMessage("Timer Initialization", status);
@@ -104,7 +104,7 @@ void PIT_Handler()
 			__asm__ __volatile__("pushl %eax") ;
 			__asm__ __volatile__("popf") ;
 			
-			PIC::Instance().SendEOI(PIC::Instance().TIMER_IRQ);
+			IrqManager::Instance().SendEOI(IrqManager::Instance().TIMER_IRQ);
 
 			__asm__ __volatile__("IRET") ;
 		
@@ -133,7 +133,7 @@ void PIT_Handler()
 	__asm__ __volatile__("movw %%ss:%0, %%fs" :: "m"(usFS) ) ;
 	__asm__ __volatile__("movw %%ss:%0, %%gs" :: "m"(usGS) ) ;
 
-	PIC::Instance().SendEOI(PIC::Instance().TIMER_IRQ);
+	IrqManager::Instance().SendEOI(IrqManager::Instance().TIMER_IRQ);
 
 	AsmUtil_RESTORE_GPR(GPRStack) ;
 

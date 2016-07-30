@@ -40,7 +40,7 @@
 #define IOAPIC_VERSION       0x01
 #define IOAPIC_ARBITRATIONID 0x02
 
-static const uint32_t APIC_INTERRUPTDISABLED = (1U << 16);
+static const uint32_t APIC_INTERRUPTDISABLED = 0x10000;
 static const uint32_t APIC_LEVEL = (1U << 13);
 static const uint32_t APIC_LOW = (1U << 15);
 static const uint32_t TMR_PERIODIC = (1U << 17);
@@ -48,18 +48,22 @@ static const uint32_t APIC_SW_ENABLE = (1U << 8);
 static const uint32_t APIC_NMI = (1U << 10);
 static const uint32_t APIC_EXT_INT = (1U << 8) | (1U << 9) | (1U << 10);
 
-Apic::Apic() : _apicBase(nullptr), _ioApicBase(nullptr), _apicAvailable(false)
+bool Apic::IsAvailable()
 {
-  if (Cpu::Instance().HasSupport(CF_MSR) && Cpu::Instance().HasSupport(CF_APIC)) // We need MSR (to initialize APIC) and (obviously) APIC
+  if(Cpu::Instance().HasSupport(CF_MSR) && Cpu::Instance().HasSupport(CF_APIC)) // We need MSR (to initialize APIC) and (obviously) APIC
   {
     // Ensure that I/O-APIC is available - this is the case if its address was found in the ACPI tables
-    _apicAvailable = Acpi::Instance().GetMadt().GetIoApics().size() > 0;
+    return Acpi::Instance().GetMadt().GetIoApics().size() > 0;
   }
-  if(!_apicAvailable)
-    return;
+  return false;
+}
 
-  PIC::Instance().DisableForAPIC();
+Apic::Apic() : _apicBase(nullptr), _ioApicBase(nullptr)
+{
+}
 
+void Apic::Initialize()
+{
   // Local APIC, cf. Intel manual 3A, chapter 10
   uint32_t phyApicBase = (uint32_t)(Cpu::Instance().MSRread(IA32_APIC_BASE_MSR) & ~0xFFFU); // read APIC base address (ignore bit0-11)
   Cpu::Instance().MSRwrite(IA32_APIC_BASE_MSR, ((phyApicBase & ~0xFFFU) | IA32_APIC_BASE_BSP | IA32_APIC_BASE_MSR_ENABLE)); // enable APIC, Bootstrap Processor
@@ -68,14 +72,14 @@ Apic::Apic() : _apicBase(nullptr), _ioApicBase(nullptr), _apicAvailable(false)
   uint32_t phyIoApicBase = (*Acpi::Instance().GetMadt().GetIoApics().begin()).Address();
   _ioApicBase = MmapBase(MMAP_IOAPIC_BASE, phyIoApicBase);
 
-  PICGuard picGuard;
+  IrqGuard g;
 
   uint8_t ioApicMaxIndexRedirTab = Bit::Byte3(IoApicRead(IOAPIC_VERSION)); // bit16-23 // Maximum Redirection Entry  ReadOnly
 
   for(int i = 0; i < 16; i++)
   {
     // Remap ISA IRQs (edge/hi)
-    RemapVector(i, i + 32, false /*edge*/, false /*high*/, i == 2/*enabled, except #2*/);
+    RemapVector(i, i + IRQ_BASE, false /*edge*/, false /*high*/, true/*enabled, except #2*/);
   }
 
   auto& irqABCD = PCIBusHandler::Instance().IrqABCD();
@@ -87,15 +91,16 @@ Apic::Apic() : _apicBase(nullptr), _ioApicBase(nullptr), _apicAvailable(false)
       const auto& irq = *mappedIrq;
       // 0x80 is default value in P2I bridge device; 0, 1, 2, 13 are not allowed.
       bool disabled = (irq == 0x80 || irq == 0 || irq == 1 || irq == 2 || irq == 13);
+      disabled = true;
 
       /// TODO: what is correct? level/low or edge/high
       /*
       // Remap PCI lines A#, B#, C#, D# (level/low)
-      ioapic_remapVector(i, mapped + 32, true, true, disabled); // bochs: PIRQA# set to 0x0b, PIRQC# set to 0x0b
+      ioapic_remapVector(i, mapped + IRQ_BASE, true, true, disabled); // bochs: PIRQA# set to 0x0b, PIRQC# set to 0x0b
       */
 
       // Remap PCI lines A#, B#, C#, D# (edge/high)
-      RemapVector(i, irq + 32, false, false, disabled); // bochs: PIRQA# set to 0x0b, PIRQC# set to 0x0b
+      RemapVector(i, irq + IRQ_BASE, false, false, disabled); // bochs: PIRQA# set to 0x0b, PIRQC# set to 0x0b
     }
   }
 
@@ -110,10 +115,11 @@ Apic::Apic() : _apicBase(nullptr), _ioApicBase(nullptr), _apicAvailable(false)
       // Could also be E#, F#, G#, H# from PCI
       // 0x80 is default value in P2I bridge device; 0, 1, 2, 13 are not allowed.
       bool disabled = (irq == 0x80 || irq == 0 || irq == 1 || irq == 2 || irq == 13);
+      disabled = true;
 
       /// TODO: what is correct? level/low or edge/high
       // Remap PCI lines E#, F#, G#, H# (level/low)
-      RemapVector(i, irq + 32, true, true, disabled);
+      RemapVector(i, irq + IRQ_BASE, true, true, disabled);
     }
   }
 
@@ -136,10 +142,10 @@ Apic::Apic() : _apicBase(nullptr), _ioApicBase(nullptr), _apicAvailable(false)
 
   // Local APIC timer
   _apicBase[APIC_TIMER_DIVIDECONFIG] = 0x03; // Set up divide value to 16
-  _apicBase[APIC_TIMER] = TMR_PERIODIC | (32 + PIC::Instance().TIMER_IRQ.GetIRQNo()); // Enable timer interrupts, 32, IRQ0
+  _apicBase[APIC_TIMER] = TMR_PERIODIC | (IRQ_BASE + TIMER_IRQ.GetIRQNo()); // Enable timer interrupts, 32, IRQ0
   _apicBase[APIC_TIMER_INITCOUNT] = 0xFFFFFFFF; // Set initial counter -> starts timer
 
-  _apicBase[APIC_SPURIOUSINTERRUPT] = APIC_SW_ENABLE | (32 + 7); // Enable APIC. Spurious: 39, IRQ7 (bit0-7)
+  _apicBase[APIC_SPURIOUSINTERRUPT] = APIC_SW_ENABLE | (IRQ_BASE + 7); // Enable APIC. Spurious: 39, IRQ7 (bit0-7)
 
   // repeat
   _apicBase[APIC_LINT0] = APIC_EXT_INT | (1U << 15); // Enable normal external Interrupts // binär 1000 0111 0000 0000
@@ -167,12 +173,11 @@ Apic::Apic() : _apicBase(nullptr), _ioApicBase(nullptr), _apicAvailable(false)
   _apicBase[APIC_TIMER] = APIC_INTERRUPTDISABLED; // if yes, stop APIC timer
 
   // calculate value for APIC timer
-//  val = (((0xFFFFFFFF - _apicBase[APIC_TIMER_CURRENTCOUNT]) + 1) / INT_PER_SEC) * partOfSecond;
-  val = (((0xFFFFFFFF - _apicBase[APIC_TIMER_CURRENTCOUNT]) + 1) / 250) * partOfSecond;
+  val = (((0xFFFFFFFF - _apicBase[APIC_TIMER_CURRENTCOUNT]) + 1) / INT_PER_SEC) * partOfSecond;
 
   // setting divide value register again and set timer
   _apicBase[APIC_TIMER_DIVIDECONFIG] = 0x03;
-  _apicBase[APIC_TIMER] = TMR_PERIODIC | (32 + PIC::Instance().TIMER_IRQ.GetIRQNo());
+  _apicBase[APIC_TIMER] = TMR_PERIODIC | (IRQ_BASE + TIMER_IRQ.GetIRQNo());
 
   // set APIC timer init value
   _apicBase[APIC_TIMER_INITCOUNT] = (val < 16 ? 16 : val);
@@ -247,8 +252,25 @@ uint8_t Apic::GetIOApicID()
   return ((IoApicRead(IOAPIC_ID) >> 24) & 0xF);
 }
 
-void Apic::SendEOI()
+void Apic::SendEOI(const IRQ&)
 {
   _apicBase[APIC_EOI] = 0;
 }
 
+void Apic::EnableIRQ(const IRQ& irq)
+{
+  IrqGuard g;
+  uint32_t entry = 0x10 + irq.GetIRQNo() * 2;
+  uint32_t ivalue = IoApicRead(entry);
+  ivalue &= ~(APIC_INTERRUPTDISABLED);
+  IoApicWrite(entry, ivalue);
+}
+
+void Apic::DisableIRQ(const IRQ& irq)
+{
+  IrqGuard g;
+  uint32_t entry = 0x10 + irq.GetIRQNo() * 2;
+  uint32_t ivalue = IoApicRead(entry);
+  ivalue |= APIC_INTERRUPTDISABLED;
+  IoApicWrite(entry, ivalue);
+}

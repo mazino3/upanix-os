@@ -24,7 +24,7 @@ void KernelUtil::Wait(__volatile__ unsigned uiTimeInMilliSec)
 	uiTimeInMilliSec = PIT_RoundSleepTime(uiTimeInMilliSec) ;
 	__volatile__ unsigned uiStartTime = PIT_GetClockCount() ;
 
-	PIC::Instance().EnableInterrupt(PIC::Instance().TIMER_IRQ) ;
+	IrqManager::Instance().EnableIRQ(IrqManager::Instance().TIMER_IRQ) ;
 	while((PIT_GetClockCount() - uiStartTime) < uiTimeInMilliSec)
 	{
 		__asm__ __volatile__("nop") ;

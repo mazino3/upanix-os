@@ -1190,7 +1190,7 @@ static byte UHCIController_Alloc(PCIEntry* pPCIEntry, unsigned uiIOBase, unsigne
 	KC::MDisplay().Number("\n USB UHCI at I/O: ", uiIOBase) ;
 	KC::MDisplay().Number(", IRQ: ", iIRQ) ;
 
-	UHCI_USB_IRQ = PIC::Instance().RegisterIRQ(iIRQ, (unsigned)&UHCIController_IRQHandler) ;
+	UHCI_USB_IRQ = IrqManager::Instance().RegisterIRQ(iIRQ, (unsigned)&UHCIController_IRQHandler) ;
 	if(!UHCI_USB_IRQ)
 		return UHCIController_FAILURE ;
 	
@@ -1369,7 +1369,7 @@ static void UHCIController_IRQHandler()
 	KC::MDisplay().Message("\n USB IRQ \n", ' ') ;
 	//ProcessManager_SignalInterruptOccured(HD_PRIMARY_IRQ) ;
 
-	PIC::Instance().SendEOI(*UHCI_USB_IRQ) ;
+	IrqManager::Instance().SendEOI(*UHCI_USB_IRQ) ;
 	
 	AsmUtil_REVOKE_KERNEL_DATA_SEGMENTS
 	AsmUtil_RESTORE_GPR(GPRStack) ;

@@ -20,6 +20,7 @@
 #define _APIC_H_
 
 #include <stdlib.h>
+#include <IrqManager.h>
 
 // APIC registers (as indices of uint32_t*)
 enum APIC_REG_INDEX {
@@ -46,20 +47,16 @@ enum APIC_REG_INDEX {
   APIC_TIMER_DIVIDECONFIG = 0x3E0 / 4,
 };
 
-class Apic
+class Apic : public IrqManager
 {
   private:
     Apic();
     Apic(const Apic&);
+    void Initialize();
+    static void Instance();
 
   public:
-    static Apic& Instance()
-    {
-      static Apic apic;
-      return apic;
-    }
-    bool IsApicAvailable() const { return _apicAvailable; }
-    void SendEOI();
+    static bool IsAvailable();
     uint8_t GetLocalApicID();
     uint8_t GetIOApicID();
 
@@ -69,10 +66,15 @@ class Apic
     void IoApicWrite(uint8_t index, uint32_t val);
     void RemapVector(uint8_t vector, uint32_t mapped, bool level /*f:edge t:level*/, bool low /*f:high t:low*/, bool disabled);
 
+    void SendEOI(const IRQ&);
+    void EnableIRQ(const IRQ&);
+    void DisableIRQ(const IRQ&);
+
   private:
     __volatile__ uint32_t* _apicBase;
     __volatile__ uint32_t* _ioApicBase;
-    bool      _apicAvailable;
+
+    friend class IrqManager;
 };
 
 //#define APIC_SW_ENABLE              BIT(8)

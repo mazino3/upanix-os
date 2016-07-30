@@ -53,7 +53,7 @@ class IDT
 							 present:1;	 1 bit		*/
 			unsigned short int upperOffset ;
 		} PACKED IDTEntry ;
-	friend class PIC ;
+	friend class IrqManager;
 };
 
 #endif

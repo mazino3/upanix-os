@@ -1081,7 +1081,7 @@ void ConsoleCommands_Testv()
 
 void ConsoleCommands_TestNet()
 {
-	PIC::Instance().DisplayIRQList() ;
+	IrqManager::Instance().DisplayIRQList() ;
 	//KC::MNetworkManager() ;
 }
 

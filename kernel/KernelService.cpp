@@ -220,7 +220,6 @@ void KernelService::Server(KernelService* pService)
 	while(true)
 	{
 		Request* pRequest = pService->GetRequest() ;
-
 		if(!pRequest)
 		{
 			ProcessManager::Instance().Sleep(10) ;

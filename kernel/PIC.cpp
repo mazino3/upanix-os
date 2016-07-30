@@ -18,43 +18,8 @@
 
 #include <PIC.h>
 #include <PortCom.h>
-#include <Display.h>
-#include <AsmUtil.h>
-#include <IDT.h>
-#include <MemConstants.h>
-#include <stdio.h>
-#include <Alloc.h>
-#include <Atomic.h>
-#include <Apic.h>
 
-void IRQ::Signal() const
-{
-	Atomic::Swap(_interruptOn, 1);
-  if(_qInterrupt.size() < MAX_PROC_ON_INT_QUEUE)
-    _qInterrupt.push_back(1);
-}
-
-int IRQ::InterruptOn() const
-{
-	return Atomic::Swap(_interruptOn, 0);
-}
-
-bool IRQ::Consume() const
-{
-  PICGuard g(*this);
-  InterruptOn();
-  if(_qInterrupt.empty())
-    return false;
-  _qInterrupt.pop_front();
-  return true;
-}
-
-PIC::PIC() : NO_IRQ(999),
-	TIMER_IRQ(0),
-	KEYBOARD_IRQ(1),
-	FLOPPY_IRQ(6),
-	RTC_IRQ(PIC::SLAVE_IRQNO_START),
-	MOUSE_IRQ(12)
+PIC::PIC()
 {
 	// Sending ICW1 to master and slave PIC 
 	PortCom_SendByte(MASTER_PORTA, 0x11) ;
@@ -87,26 +52,16 @@ void PIC::DisableForAPIC()
 	PortCom_SendByte(MASTER_PORTD, 0x01);
 }
 
-void PIC::EnableAllInterrupts()
-{
-	__asm__ __volatile__("sti") ;
-}
-
-void PIC::DisableAllInterrupts()
-{
-	__asm__ __volatile__("cli") ;
-}
-
 void PIC::SendEOI(const IRQ& irq)
 {
-	PortCom_SendByte(MASTER_PORTA, 0x20) ;
-	if(irq.GetIRQNo() >= SLAVE_IRQNO_START)
-		PortCom_SendByte(SLAVE_PORTA, 0x20) ;
+  PortCom_SendByte(MASTER_PORTA, 0x20) ;
+  if(irq.GetIRQNo() >= SLAVE_IRQNO_START)
+    PortCom_SendByte(SLAVE_PORTA, 0x20) ;
 }
 
-void PIC::EnableInterrupt(const IRQ& irq)
+void PIC::EnableIRQ(const IRQ& irq)
 {
-  PICGuard picGuard;
+  IrqGuard g;
 
 	int iIRQNo = irq.GetIRQNo();
 	m_IRQMask &= ~(1 << iIRQNo) ;
@@ -117,9 +72,9 @@ void PIC::EnableInterrupt(const IRQ& irq)
 	PortCom_SendByte(SLAVE_PORTB, ((m_IRQMask >> 8) & 0xFF)) ;
 }
 
-void PIC::DisableInterrupt(const IRQ& irq)
+void PIC::DisableIRQ(const IRQ& irq)
 {
-  PICGuard picGuard;
+  IrqGuard g;
 
 	int iIRQNo = irq.GetIRQNo();
 	m_IRQMask |= (1 << iIRQNo) ;
@@ -128,58 +83,4 @@ void PIC::DisableInterrupt(const IRQ& irq)
 
 	PortCom_SendByte(MASTER_PORTB, (m_IRQMask & 0xFF)) ;
 	PortCom_SendByte(SLAVE_PORTB, ((m_IRQMask >> 8) & 0xFF)) ;
-}
-
-const IRQ* PIC::RegisterIRQ(const int& iIRQNo, unsigned pHandler)
-{
-	if(iIRQNo < 0 && iIRQNo >= MAX_INTERRUPT)
-		return NULL;
-
-	IRQ* pIRQ = new IRQ(iIRQNo);
-	if(!RegisterIRQ(*pIRQ, pHandler))
-	{
-		delete pIRQ;
-		pIRQ = NULL;
-	}
-	return pIRQ;
-}
-
-bool PIC::RegisterIRQ(const IRQ& irq, unsigned pHandler)
-{
-	if(GetIRQ(irq))
-	{
-		printf("\nIRQ '%d' is already registered!", irq.GetIRQNo());
-		return false;
-	}
-
-	_irqs.push_back(&irq);
-
-	int iIRQNo = irq.GetIRQNo();
-	unsigned uiIRQBase = MASTER_IRQ_BASE + iIRQNo ;
-
-	if(iIRQNo >= SLAVE_IRQNO_START)
-		uiIRQBase = SLAVE_IRQ_BASE + iIRQNo - SLAVE_IRQNO_START ;
-
-	IDT::Instance().LoadEntry(uiIRQBase, pHandler, SYS_CODE_SELECTOR, 0x8E) ;
-
-	return true;
-}
-
-const IRQ* PIC::GetIRQ(const IRQ& irq)
-{
-	return GetIRQ(irq.GetIRQNo());
-}
-
-const IRQ* PIC::GetIRQ(const int& iIRQNo)
-{
-	for(auto i : _irqs)
-    if(i->GetIRQNo() == iIRQNo)
-      return i;
-  return NULL;
-}
-
-void PIC::DisplayIRQList()
-{
-	for(auto i : _irqs)
-		printf("\n IRQ = %d", i->GetIRQNo()) ;
 }

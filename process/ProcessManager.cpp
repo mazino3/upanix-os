@@ -21,7 +21,7 @@
 #include <MemManager.h>
 #include <FileSystem.h>
 #include <Directory.h>
-#include <PIC.h>
+#include <IrqManager.h>
 #include <PIT.h>
 #include <AsmUtil.h>
 #include <ProcessLoader.h>
@@ -523,7 +523,7 @@ void ProcessManager::DoContextSwitch(int iProcessID)
 		Destroy(iProcessID) ;
 
 	if(debug_point) TRACE_LINE ;
-	//PIC::Instance().EnableInterrupt(TIMER_IRQ) ;
+	//IrqManager::Instance().EnableIRQ(TIMER_IRQ) ;
 	PIT_SetTaskSwitch(true) ;
 	if(debug_point) TRACE_LINE ;
 }
@@ -713,7 +713,7 @@ byte ProcessManager::CreateKernelImage(const unsigned uiTaskAddress, int iParent
 	ProcessStateInfo* pStateInfo = (ProcessStateInfo*)DMM_AllocateForKernel(sizeof(ProcessStateInfo)) ;
 	
 	pStateInfo->uiSleepTime = 0 ;
-	pStateInfo->pIRQ = &PIC::Instance().NO_IRQ ;
+	pStateInfo->pIRQ = &IrqManager::Instance().NO_IRQ ;
 	pStateInfo->iWaitChildProcId = NO_PROCESS_ID ;
 	pStateInfo->uiWaitResourceId = RESOURCE_NIL ;
 
@@ -817,7 +817,7 @@ byte ProcessManager::Create(const char* szProcessName, int iParentProcessID, byt
 	ProcessStateInfo* pStateInfo = (ProcessStateInfo*)DMM_AllocateForKernel(sizeof(ProcessStateInfo)) ;
 	
 	pStateInfo->uiSleepTime = 0 ;
-	pStateInfo->pIRQ = &PIC::Instance().NO_IRQ ;
+	pStateInfo->pIRQ = &IrqManager::Instance().NO_IRQ ;
 	pStateInfo->iWaitChildProcId = NO_PROCESS_ID ;
 	pStateInfo->uiWaitResourceId = RESOURCE_NIL ;
 
@@ -982,10 +982,10 @@ bool ProcessManager::WakeupProcessOnInterrupt(__volatile__ int iProcessID)
 	__volatile__ ProcessAddressSpace* p = &GetAddressSpace(iProcessID) ;
 	const IRQ& irq = *p->pProcessStateInfo->pIRQ ;
 
-	if(irq == PIC::Instance().NO_IRQ)
+	if(irq == IrqManager::Instance().NO_IRQ)
 		return true ;
 
-	if(irq == PIC::Instance().KEYBOARD_IRQ)
+	if(irq == IrqManager::Instance().KEYBOARD_IRQ)
 	{
     if(!(p->_processGroup->IsFGProcess(iProcessID) && p->_processGroup->IsFGProcessGroup()))
 			return false;

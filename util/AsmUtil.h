@@ -85,10 +85,10 @@ __asm__ __volatile__("movw %ss:(6), %es") ; \
 #define SAFE_INT_DISABLE(SYNC_FLAG) \
 __asm__ __volatile__("pushf") ; \
 __asm__ __volatile__("popl %0" : "=m"(SYNC_FLAG) : ) ; \
-if((SYNC_FLAG & 0x0200)) PIC::Instance().DisableAllInterrupts() ; 
+if((SYNC_FLAG & 0x0200)) IrqManager::Instance().DisableAllInterrupts() ; 
 
 #define SAFE_INT_ENABLE(SYNC_FLAG) \
-if((SYNC_FLAG & 0x0200)) PIC::Instance().EnableAllInterrupts() ;
+if((SYNC_FLAG & 0x0200)) IrqManager::Instance().EnableAllInterrupts() ;
 
 #define AsmUtil_DECLARE_KERNEL_DS_BACK_VAR \
 __volatile__ unsigned short AsmUtil_usDS = MemUtil_GetDS() ; \

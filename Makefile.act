@@ -37,7 +37,6 @@ UPANIX_OBJS = \
 	./kernel/UpanixMain.o \
 	./kernel/RTC.o \
 	./kernel/PortCom.o \
-	./kernel/PIC.o \
 	./kernel/MountManager.o \
 	./kernel/PIT.o \
 	./kernel/PCSound.o \
@@ -50,7 +49,9 @@ UPANIX_OBJS = \
 	./kernel/VM86.o \
 	./kernel/Acpi.o \
 	./kernel/Cpu.o \
+	./kernel/PIC.o \
 	./kernel/Apic.o \
+	./kernel/IrqManager.o \
  \
 	./display/Display.o \
  \
