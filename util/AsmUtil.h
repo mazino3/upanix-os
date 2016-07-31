@@ -50,45 +50,13 @@ __asm__ __volatile__("movl %%ss:%0, %%edi" : : "m"(BufferStack[5])) ;
 //__asm__ __volatile__("movl %%ss:%0, %%ebp" : : "m"(BufferStack[6])) ; 
 //__asm__ __volatile__("movl %%ss:%0, %%esp" : : "m"(BufferStack[7])) 
 
-#define AsmUtil_LOAD_KERNEL_SEGS() \
-{ \
-__volatile__ unsigned uiIntFlag ; \
-SAFE_INT_DISABLE(uiIntFlag) ; \
-__asm__ __volatile__("movw %ds, %ss:(0)") ; \
-__asm__ __volatile__("movw %fs, %ss:(2)") ; \
-__asm__ __volatile__("movw %gs, %ss:(4)") ; \
-__asm__ __volatile__("movw %es, %ss:(6)") ; \
-\
-__asm__ __volatile__("pushw %0" : : "i"(SYS_DATA_SELECTOR_DEFINED)) ; \
-__asm__ __volatile__("pushw %0" : : "i"(SYS_DATA_SELECTOR_DEFINED)) ; \
-__asm__ __volatile__("pushw %0" : : "i"(SYS_DATA_SELECTOR_DEFINED)) ; \
-__asm__ __volatile__("popw %ds") ; \
-__asm__ __volatile__("popw %fs") ; \
-__asm__ __volatile__("popw %gs") ; \
-\
-__asm__ __volatile__("pushw %0" : : "i"(SYS_DATA_SELECTOR_DEFINED)) ; \
-__asm__ __volatile__("popw %es") ; \
-SAFE_INT_ENABLE(uiIntFlag) ; \
-}
-
 #define AsmUtil_UNLOAD_KERNEL_SEGS() \
 { \
-/*__volatile__ unsigned uiIntFlag ;*/ \
-/*SAFE_INT_DISABLE(uiIntFlag) ; */\
 __asm__ __volatile__("movw %ss:(0), %ds") ; \
 __asm__ __volatile__("movw %ss:(2), %fs") ; \
 __asm__ __volatile__("movw %ss:(4), %gs") ; \
 __asm__ __volatile__("movw %ss:(6), %es") ; \
-/*SAFE_INT_ENABLE(uiIntFlag) ; */\
 }
-
-#define SAFE_INT_DISABLE(SYNC_FLAG) \
-__asm__ __volatile__("pushf") ; \
-__asm__ __volatile__("popl %0" : "=m"(SYNC_FLAG) : ) ; \
-if((SYNC_FLAG & 0x0200)) IrqManager::Instance().DisableAllInterrupts() ; 
-
-#define SAFE_INT_ENABLE(SYNC_FLAG) \
-if((SYNC_FLAG & 0x0200)) IrqManager::Instance().EnableAllInterrupts() ;
 
 #define AsmUtil_DECLARE_KERNEL_DS_BACK_VAR \
 __volatile__ unsigned short AsmUtil_usDS = MemUtil_GetDS() ; \
@@ -126,35 +94,3 @@ MemUtil_SetDS(AsmUtil_usDS) ;
 	MemUtil_SetES(__uiES) ;
 
 #endif
-	
-#define AsmUtil_UNLOAD_KERNEL_SEGS_ON_STACK() \
-{ \
-__volatile__ unsigned uiIntFlag ; \
-SAFE_INT_DISABLE(uiIntFlag) ; \
-__asm__ __volatile__("popw %es") ; \
-__asm__ __volatile__("popw %gs") ; \
-__asm__ __volatile__("popw %fs") ; \
-__asm__ __volatile__("popw %ds") ; \
-SAFE_INT_ENABLE(uiIntFlag) ; \
-}
-
-#define AsmUtil_LOAD_KERNEL_SEGS_ON_STACK() \
-{ \
-__volatile__ unsigned uiIntFlag ; \
-SAFE_INT_DISABLE(uiIntFlag) ; \
-__asm__ __volatile__("pushw %ds") ; \
-__asm__ __volatile__("pushw %fs") ; \
-__asm__ __volatile__("pushw %gs") ; \
-__asm__ __volatile__("pushw %es") ; \
-\
-__asm__ __volatile__("pushw %0" : : "i"(SYS_DATA_SELECTOR_DEFINED)) ; \
-__asm__ __volatile__("pushw %0" : : "i"(SYS_DATA_SELECTOR_DEFINED)) ; \
-__asm__ __volatile__("pushw %0" : : "i"(SYS_DATA_SELECTOR_DEFINED)) ; \
-__asm__ __volatile__("popw %ds") ; \
-__asm__ __volatile__("popw %fs") ; \
-__asm__ __volatile__("popw %gs") ; \
-\
-__asm__ __volatile__("pushw %0" : : "i"(SYS_DATA_SELECTOR_DEFINED)) ; \
-__asm__ __volatile__("popw %es") ; \
-SAFE_INT_ENABLE(uiIntFlag) ; \
-}

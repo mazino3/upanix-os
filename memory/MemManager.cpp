@@ -35,10 +35,6 @@ extern "C" {
 
 void MemManager::PageFaultHandlerTaskGate()
 {
-//	__asm__ __volatile__("pusha") ;
-//	__asm__ __volatile__("pushf") ;
-//	AsmUtil_LOAD_KERNEL_SEGS_ON_STACK() ;
-
 	__volatile__ unsigned GPRStack[NO_OF_GPR] ;
 	AsmUtil_STORE_GPR(GPRStack) ;
 	
