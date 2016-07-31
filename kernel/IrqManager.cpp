@@ -82,16 +82,6 @@ IrqManager::IrqManager() : NO_IRQ(999),
 {
 }
 
-void IrqManager::EnableAllInterrupts()
-{
-	__asm__ __volatile__("sti") ;
-}
-
-void IrqManager::DisableAllInterrupts()
-{
-	__asm__ __volatile__("cli") ;
-}
-
 const IRQ* IrqManager::RegisterIRQ(const int& iIRQNo, unsigned pHandler)
 {
 	if(iIRQNo < 0 && iIRQNo >= MAX_INTERRUPT)

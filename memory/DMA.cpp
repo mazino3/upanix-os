@@ -22,6 +22,7 @@
 #include <Display.h>
 #include <MemConstants.h>
 #include <AsmUtil.h>
+#include <IrqManager.h>
 
 #define DMA_CMD_REG_W 0x08
 #define DMA_STATUS_REG_R 0x08
@@ -130,8 +131,7 @@ DMA_RequestChannel(DMA_Request* DMARequest)
 			(DMARequest->uiPhysicalAddress + DMARequest->uiWordCount) > MEM_DMA_END)
 		return DMA_ERR_INVALID_MEM_ADDRESS ;
 
-	unsigned __volatile__ uiIntFlag ;
-	SAFE_INT_DISABLE(uiIntFlag) ;
+  IrqGuard g;
 
 	DMA_channelAvailabilityList [ DMARequest->DMAChannelNo ].bLock = 1 ;
 	DMA_channelAvailabilityList [ DMARequest->DMAChannelNo ].bDeviceID = DMARequest->bDeviceID ;
@@ -146,20 +146,14 @@ DMA_RequestChannel(DMA_Request* DMARequest)
 
 	DMA_EnableChannel(DMARequest->DMAChannelNo) ;
 	
-	SAFE_INT_ENABLE(uiIntFlag) ;
-
 	return DMA_SUCCESS ;
 }
 
 void
 DMA_ReleaseChannel(const DMA_CHANNEL DMAChannelNo)
 { 
-	unsigned __volatile__ uiIntFlag ;
-	SAFE_INT_DISABLE(uiIntFlag) ;
-
+  IrqGuard g;
 	DMA_channelAvailabilityList [ DMAChannelNo ].bLock = 0 ;
 	DMA_channelAvailabilityList [ DMAChannelNo ].bDeviceID = 0 ;
-	
-	SAFE_INT_ENABLE(uiIntFlag) ;
 }
 

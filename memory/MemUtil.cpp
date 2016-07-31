@@ -99,8 +99,7 @@ void MemUtil_CopyMemory(__volatile__ unsigned short usSrcSelector, unsigned uiSr
 	if(uiNoOfBytes == 0)
 		return ;
 
-	unsigned __volatile__ uiIntFlag ;
-	SAFE_INT_DISABLE(uiIntFlag) ;
+  IrqGuard g;
 
 	__volatile__ unsigned usDS = MemUtil_GetDS() ;
 	__volatile__ unsigned usES = MemUtil_GetES() ;
@@ -122,7 +121,6 @@ void MemUtil_CopyMemory(__volatile__ unsigned short usSrcSelector, unsigned uiSr
 
 	__asm__ __volatile__("movw %%ss:%0, %%ds" :: "m"(usDS) ) ;
 	__asm__ __volatile__("movw %%ss:%0, %%es" :: "m"(usES) ) ;
-	SAFE_INT_ENABLE(uiIntFlag) ;
 }
 
 void
@@ -133,8 +131,7 @@ MemUtil_CopyMemoryBack(__volatile__ unsigned short usSrcSelector, unsigned uiSrc
 	if(uiNoOfBytes == 0)
 		return ;
 
-	unsigned __volatile__ uiIntFlag ;
-	SAFE_INT_DISABLE(uiIntFlag) ;
+  IrqGuard g;
 
 	__volatile__ unsigned usDS = MemUtil_GetDS() ;
 	__volatile__ unsigned usES = MemUtil_GetES() ;
@@ -157,7 +154,6 @@ MemUtil_CopyMemoryBack(__volatile__ unsigned short usSrcSelector, unsigned uiSrc
 
 	__asm__ __volatile__("movw %%ss:%0, %%ds" :: "m"(usDS) ) ;
 	__asm__ __volatile__("movw %%ss:%0, %%es" :: "m"(usES) ) ;
-	SAFE_INT_ENABLE(uiIntFlag) ;
 }
 
 unsigned

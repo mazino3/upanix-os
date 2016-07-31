@@ -58,7 +58,6 @@ class IrqManager
   public:
     static IrqManager& Instance();
     static void Initialize();
-    static bool Exists() { return _instance != nullptr; }
 
     bool IsApic() const { return _isApic; }
 
@@ -70,8 +69,6 @@ class IrqManager
 		const IRQ RTC_IRQ;
 		const IRQ MOUSE_IRQ;
 
-		void EnableAllInterrupts();
-		void DisableAllInterrupts();
 		const IRQ* RegisterIRQ(const int& iIRQNo, unsigned pHandler);
 		bool RegisterIRQ(const IRQ& irq, unsigned pHandler);
 		const IRQ* GetIRQ(const IRQ& irq);
@@ -96,23 +93,19 @@ class IrqGuard
     }
     IrqGuard() : _irq(nullptr)
     {
-      if(!IrqManager::Exists())
-        return;
 //      __asm__ __volatile__("pushf");
   //    __asm__ __volatile__("popl %0" : "=m"(_allIntSyncFlag) : );
     //  if(_allIntSyncFlag & 0x0200)
-        IrqManager::Instance().DisableAllInterrupts();
+	        __asm__ __volatile__("cli");
     }
     ~IrqGuard()
     {
-      if(!IrqManager::Exists())
-        return;
       if(_irq)
         IrqManager::Instance().EnableIRQ(*_irq);
       else
       {
 //        if(_allIntSyncFlag & 0x0200)
-          IrqManager::Instance().EnableAllInterrupts();
+	          __asm__ __volatile__("sti");
       }
     }
   private:
