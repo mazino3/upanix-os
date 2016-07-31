@@ -14,11 +14,14 @@
  *                                                                          
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
- */
+*/
+
 #ifndef _UHCI_HANDLER_H_
 #define _UHCI_HANDLER_H_
 
 #include <Global.h>
+#include <queue.h>
+#include <Atomic.h>
 #include <UHCIStructures.h>
 #include <USBController.h>
 #include <USBMassBulkStorageDisk.h>
@@ -38,45 +41,35 @@
 #define MAX_UHCI_PCI_ENTRIES 32
 #define MAX_UHCI_TD_PER_BULK_RW 8
 
-class UHCIDevice final : public USBDevice
+class PCIEntry;
+
+class UHCIController
 {
   public:
-    UHCIDevice();
-
-    bool GetMaxLun(byte* bLUN);
-    bool CommandReset();
-    bool ClearHaltEndPoint(USBulkDisk* pDisk, bool bIn);
-    bool BulkRead(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen);
-    bool BulkWrite(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen);
-
+    UHCIController(PCIEntry*, unsigned uiIOBase, unsigned uiIOSize);
+    bool Probe();
   private:
-    void GetDeviceStringDesc(upan::string& desc, int descIndex);
+    void StartFrameCleaner();
+    bool GetNextFrameToClean(unsigned& uiFrameNumber);
+    bool CleanFrame(unsigned uiFrameNumber);
+    bool FrameCleaner();
+    void CreateFrameList();
+    unsigned GetFrameListEntry(unsigned uiFrameNumber);
+    void SetFrameListEntry(unsigned uiFrameNumber, unsigned uiValue, bool bCleanBuffer, bool bCleanDescs);
+    unsigned GetNextFreeFrame();
+    void BuildFrameEntryForDeAlloc(unsigned uiFrameNumber, unsigned uiDescAddress, bool bCleanBuffer, bool bCleanDescs);
+    void ReleaseFrameResource(unsigned uiFrameNumber);
+    unsigned IOBase() const { return _uiIOBase; }
+    
+    PCIEntry* _pPCIEntry;
+    unsigned  _uiIOBase;
+    unsigned  _uiIOSize;
+    upan::queue<unsigned> _frameQueue;
+    unsigned* _pFrameList;
+    upan::list<unsigned>* _pLocalFrameList;
+	  Mutex _m;
 
-    unsigned uiIOBase ;
-    unsigned uiIOSize ;
-    int iIRQ ;
-    int iNumPorts ;
-
-    UHCITransferDesc* _ppBulkReadTDs[ MAX_UHCI_TD_PER_BULK_RW ] ;
-    UHCITransferDesc* _ppBulkWriteTDs[ MAX_UHCI_TD_PER_BULK_RW ] ;
-    bool _bFirstBulkRead ;
-    bool _bFirstBulkWrite ;
-};
-
-class UHCIManager
-{
-  private:
-    UHCIManager();
-  public:
-    static UHCIManager& Instance()
-    {
-      static UHCIManager instance;
-      return instance;
-    }
-    byte ProbeDevice() ;
-    bool PollWait(unsigned* pPoleAddr, unsigned uiValue) ; 
-  private:
-    upan::list<PCIEntry*> _uhciEntries;
+    friend class UHCIDevice;
 };
 
 #endif

@@ -21,20 +21,6 @@
 #include <Global.h>
 #include <USBConstants.h>
 
-typedef struct
-{
-	unsigned uiLinkPointer ;
-	unsigned uiControlnStatus ;
-	unsigned uiToken ;
-	unsigned uiBufferPointer ;
-} PACKED UHCITransferDesc ;
-
-typedef struct
-{
-	unsigned uiHeadLinkPointer ;
-	unsigned uiElementLinkPointer ;
-} PACKED UHCIQueueHead ;
-
 // UHCI IO Registers
 // Command Register
 #define USBCMD_REG		0
@@ -131,5 +117,105 @@ typedef struct
 #define TD_DEV_ADDR_POS		8
 #define TD_DEV_ADDR_MASK	0x7F
 #define TD_PID_MASK			0xFF
+
+#define UHCI_DESC_ADDR(addr) ( addr & ~(0xF) )
+
+enum UHCIDescAttrType
+{
+	// QH Link Pointer
+	UHCI_ATTR_QH_TO_TD_HEAD_LINK,
+	UHCI_ATTR_QH_TO_QH_HEAD_LINK,
+	UHCI_ATTR_QH_TO_TD_ELEM_LINK,
+	UHCI_ATTR_QH_TO_QH_ELEM_LINK,
+	UHCI_ATTR_QH_HEAD_LINK_TERMINATE,
+	UHCI_ATTR_QH_ELEM_LINK_TERMINATE,
+
+	// TD Link Pointer
+	UHCI_ATTR_TD_VERTICAL_LINK,
+	UHCI_ATTR_TD_HORIZONTAL_LINK,
+	UHCI_ATTR_TD_QH_LINK,
+	UHCI_ATTR_TD_TERMINATE,
+
+	// TD Control And Status
+	UHCI_ATTR_TD_CONTROL_SPD,
+	UHCI_ATTR_TD_CONTROL_ERR_LEVEL,
+	UHCI_ATTR_TD_CONTROL_LSD,
+	UHCI_ATTR_TD_CONTROL_IOS,
+	UHCI_ATTR_TD_CONTROL_IOC,
+	UHCI_ATTR_TD_STATUS_ACTIVE,
+	UHCI_ATTR_TD_RESET_LEN,
+	UHCI_ATTR_TD_ACT_LEN,
+
+	// TD Token - Address
+	UHCI_ATTR_TD_MAXLEN,
+	UHCI_ATTR_TD_DATA_TOGGLE,
+	UHCI_ATTR_TD_ENDPT_ADDR,
+	UHCI_ATTR_TD_DEVICE_ADDR,
+	UHCI_ATTR_TD_PID,
+
+	UHCI_ATTR_CTLSTAT_FULL,
+	UHCI_ATTR_BUF_PTR,
+
+};
+
+class UHCITransferDesc
+{
+  private:
+    UHCITransferDesc();
+  public:
+    static UHCITransferDesc* Create();
+    void Clear();
+    void SetTDLink(unsigned uiNextD, byte bHorizontal);
+    void SetTDLinkToQueueHead(unsigned uiNextQH);
+    void ControlnStatus(unsigned uiValue) { _uiControlnStatus = uiValue; }
+    void ControlnStatus(unsigned uiValue, bool bSet);
+    void Token(unsigned uiValue, bool bSet);
+    void SetTDAttribute(UHCIDescAttrType bAttrType, unsigned uiValue);
+    unsigned GetTDAttribute(UHCIDescAttrType bAttrType);
+    void SetTDControl(byte bShortPacket, byte bErrLevel, 
+                      byte bLowSpeed, byte bIOS, byte bIOC, 
+                      byte bActive, byte bResetActLen);
+    void SetTDToken(unsigned short usMaxLen, byte bSetToggle, 
+                    byte bEndPt, byte bDeviceAddr, byte bPID);
+    bool IsTDLinkTerminated();
+    void GetTDLink(UHCIDescAttrType& bAttrType, unsigned& uiValue);
+    unsigned LinkPointer() const { return _uiLinkPointer; }
+    unsigned BufferPointer() const { return _uiBufferPointer; }
+    unsigned ControlnStatus() const { return _uiControlnStatus; }
+    unsigned Token() const { return _uiToken; }
+  private:
+    bool IsControlnStatusSet(unsigned tag) 
+    {
+    	return (_uiControlnStatus & tag) ? true : false;
+    }
+
+    unsigned _uiLinkPointer;
+    unsigned _uiControlnStatus;
+    unsigned _uiToken;
+    unsigned _uiBufferPointer;
+} PACKED;
+
+class UHCIQueueHead
+{
+  private:
+    UHCIQueueHead();
+  public:
+    static UHCIQueueHead* Create();
+    bool PollWait();
+    void SetQHAttribute(UHCIDescAttrType bAttrType, unsigned uiValue);
+    bool IsQHHeadLinkTerminated();
+    bool IsQHElemLinkTerminated();
+    void GetQHHeadLink(UHCIDescAttrType& bAttrType, unsigned& uiValue);
+    void GetQHElemLink(UHCIDescAttrType& bAttrType, unsigned& uiValue);
+    void GetTDLink(UHCIDescAttrType& bAttrType, unsigned& uiValue);
+    unsigned HeadLinkPointer() const { return _uiHeadLinkPointer; }
+    unsigned ElementLinkPointer() const { return _uiElementLinkPointer; }
+  private:
+    void SetElementLink(unsigned uiNextD);
+    void SetHeadLink(unsigned uiNextD, bool isQueueHead);
+
+    unsigned _uiHeadLinkPointer;
+    unsigned _uiElementLinkPointer;
+} PACKED;
 
 #endif

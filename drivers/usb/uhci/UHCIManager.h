@@ -14,23 +14,28 @@
  *                                                                          
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
- */
-#ifndef _KERNEL_UTIL_H_
-#define _KERNEL_UTIL_H_
+*/
+#ifndef _UHCI_MANAGER_H_
+#define _UHCI_MANAGER_H_
 
-class IRQ;
-class KernelUtil
+#include <list.h>
+
+class UHCIController;
+
+class UHCIManager
 {
-	typedef int KernelUtilTimerFunc() ;
-
-	public:
-		static void Wait(unsigned uiTimeInMilliSec) ;
-		static void WaitOnInterrupt(const IRQ&);
-		static void ScheduleTimedTask(const char* szName, unsigned uiTimeInMilliSec, unsigned CallBackFunction) ;
-		static void TightLoopWait(unsigned loop) ;
-
-	private:
-		static void SystemTimer(unsigned uiTimeInMilliSec, KernelUtilTimerFunc* CallBackFunction) ;
-} ;
+  private:
+    UHCIManager();
+  public:
+    static UHCIManager& Instance()
+    {
+      static UHCIManager instance;
+      return instance;
+    }
+    void Probe();
+    bool PollWait(unsigned* pPoleAddr, unsigned uiValue) ; 
+  private:
+    upan::list<UHCIController*> _uhciControllers;
+};
 
 #endif

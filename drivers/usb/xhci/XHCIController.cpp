@@ -31,9 +31,6 @@ XHCIController::XHCIController(PCIEntry* pPCIEntry)
   : _pPCIEntry(pPCIEntry), _capReg(nullptr), _opReg(nullptr),
     _legSupXCap(nullptr), _doorBellRegs(nullptr)
 {
-//	if(!pPCIEntry->BusEntity.NonBridge.bInterruptLine)
-  //  throw upan::exception(XLOC, "XHCI device with no IRQ. Check BIOS/PCI settings!");
-
 	unsigned uiIOAddr = pPCIEntry->BusEntity.NonBridge.uiBaseAddress0;
 	printf("\n PCI BaseAddr: %x", uiIOAddr);
 
@@ -109,6 +106,8 @@ XHCIController::XHCIController(PCIEntry* pPCIEntry)
 	pPCIEntry->ReadPCIConfig(PCI_COMMAND, 2, &usCommand);
 	printf(" -> After Bus Master Enable, PCI_COMMAND: %x", usCommand);
 
+  InitInterruptHandler();
+
   if(!_opReg->IsHCReady())
     throw upan::exception(XLOC, "HC is not ready yet!");
 
@@ -149,6 +148,46 @@ XHCIController::XHCIController(PCIEntry* pPCIEntry)
   _opReg->Print();
   Probe();
   KBDriver::Instance().Getch();
+}
+
+static const IRQ* XHCI_IRQ = nullptr;
+
+static void XHCIController_IRQHandler()
+{
+	unsigned GPRStack[NO_OF_GPR] ;
+	AsmUtil_STORE_GPR(GPRStack) ;
+	AsmUtil_SET_KERNEL_DATA_SEGMENTS
+
+  printf("\n XHCI IRQ");
+	//ProcessManager_SignalInterruptOccured(HD_PRIMARY_IRQ) ;
+
+	IrqManager::Instance().SendEOI(*XHCI_IRQ);
+	
+	AsmUtil_REVOKE_KERNEL_DATA_SEGMENTS
+	AsmUtil_RESTORE_GPR(GPRStack) ;
+	
+	asm("leave") ;
+	asm("IRET") ;
+}
+
+void XHCIController::InitInterruptHandler()
+{
+  int irq = _pPCIEntry->BusEntity.NonBridge.bInterruptLine;
+  if(irq != 0 && irq != 0xFF)
+  {
+    XHCI_IRQ = IrqManager::Instance().RegisterIRQ(irq, (unsigned)&XHCIController_IRQHandler);
+    if(!XHCI_IRQ)
+      throw upan::exception(XLOC, "Failed to register handler for XHCI IRQ No: %d", irq);
+  }
+  else
+  {
+    auto exCap = _pPCIEntry->GetExtendedCapability(MSI_CAP_ID);
+    if(!exCap)
+      throw upan::exception(XLOC, "Neither IRQ-Line nor MSI is available!");
+
+    uint8_t MESSAGECONTROL = exCap->CapBase() + 2; // Message Control (bit0: MSI on/off, bit7: 0: 32-bit-, 1: 64-bit-addresses)
+    uint32_t msgControl = 0;
+  }
 }
 
 void XHCIController::LoadXCaps(unsigned base)

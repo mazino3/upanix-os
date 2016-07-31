@@ -119,7 +119,9 @@ __volatile__ unsigned uiP9)
 		{
       try
       {
+        printf("\n SysCall: %d", uiSysCallID);
   			SysCall_Handlers[i].pFuncHandle(&iRetVal, uiSysCallID, true, uiP1, uiP2, uiP3, uiP4, uiP5, uiP6, uiP7, uiP8, uiP9) ;
+        printf("\n SysCall: %d - DONE", uiSysCallID);
       }
       catch(const upan::exception& ex)
       {

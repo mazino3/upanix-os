@@ -43,7 +43,7 @@
 #include <MultiBoot.h>
 #include <SystemUtil.h>
 #include <MountManager.h>
-#include <UHCIController.h>
+#include <UHCIManager.h>
 #include <EHCIManager.h>
 #include <XHCIManager.h>
 #include <BTree.h>
@@ -837,7 +837,7 @@ void ConsoleCommands_ProbeUHCIUSB()
 {
 	RTCDateTime rtcStartTime, rtcStopTime ;
 	RTC::GetDateTime(rtcStartTime) ;
-  UHCIManager::Instance().ProbeDevice();
+  UHCIManager::Instance().Probe();
 	RTC::GetDateTime(rtcStopTime) ;
 
 	printf("\n %d/%d/%d - %d:%d:%d", rtcStartTime.bDayOfMonth, rtcStartTime.bMonth, 

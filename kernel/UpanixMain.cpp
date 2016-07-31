@@ -40,9 +40,11 @@
 # include <MultiBoot.h>
 # include <MountManager.h>
 # include <Display.h>
-# include <UHCIController.h>
+# include <USBController.h>
+# include <UHCIManager.h>
 # include <EHCIManager.h>
 # include <XHCIManager.h>
+# include <USBMassBulkStorageDisk.h>
 # include <exception.h>
 # include <GraphicsVideo.h>
 # include <KBDriver.h>
@@ -165,7 +167,7 @@ void Initialize()
   //types of bus like ISA, PCI etc... 
     PCIBusHandler::Instance().Initialize();
 
-    IrqManager::Instance();
+    IrqManager::Initialize();
     PIT_Initialize();
     IrqManager::Instance().EnableIRQ(IrqManager::Instance().TIMER_IRQ) ;
 

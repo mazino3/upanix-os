@@ -34,7 +34,7 @@ void ATACommandManager_ExecuteATACommand(ATACommand* pCommand)
 	ATAPort* pPort = pCommand->pPort ;
 
 	byte bCommand ;
-	byte bControl ;
+	UNUSED byte bControl ;
 	byte bStatus ;
 	int iRetry ;
 
@@ -220,7 +220,7 @@ void ATACommandManager_ExecuteATAPICommand(ATACommand* pCommand)
 
 	unsigned short* pCmd = (unsigned short*)&(pCommand->bCommand[0]) ;
 
-	byte bControl ;
+	UNUSED byte bControl ;
 	byte bStatus ;
 	int iRetry ;
 	unsigned i ;

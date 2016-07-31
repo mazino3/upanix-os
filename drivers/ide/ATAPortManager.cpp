@@ -340,7 +340,7 @@ byte ATAPortManager_IOWaitAlt(ATAPort* pPort, unsigned uiMask, unsigned uiValue)
 byte ATAPortManager_IORead(ATAPort* pPort, void* pBuffer, unsigned uiLength)
 {
 	byte bStatus = 0 ;
-	byte bError = 0 ;
+	UNUSED byte bError = 0 ;
 	unsigned uiTransfered = 0 ;
 
 	byte to ;
@@ -399,7 +399,7 @@ byte ATAPortManager_IORead(ATAPort* pPort, void* pBuffer, unsigned uiLength)
 byte ATAPortManager_IOWrite(ATAPort* pPort, void* pBuffer, unsigned uiLength)
 {
 	byte bStatus = 0 ;
-	byte bError = 0 ;
+	UNUSED byte bError = 0 ;
 	unsigned uiTransfered = 0 ;
 	unsigned i ;
 	byte* bData = (byte*)pBuffer ;

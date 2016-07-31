@@ -15,9 +15,10 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
-#include <KernelUtil.h>
 #include <PIT.h>
+#include <IrqManager.h>
 #include <ProcessManager.h>
+#include <KernelUtil.h>
 
 void KernelUtil::Wait(__volatile__ unsigned uiTimeInMilliSec)
 {
@@ -42,12 +43,6 @@ void KernelUtil::WaitOnInterrupt(const IRQ& irq)
   irq.Consume();
 }
 
-void KernelUtil::ScheduleTimedTask(const char* szName, unsigned uiTimeInMilliSec, unsigned CallBackFunction)
-{
-	int pid ;
-	ProcessManager::Instance().CreateKernelImage((unsigned)&SystemTimer, NO_PROCESS_ID, false, uiTimeInMilliSec, CallBackFunction, &pid, szName) ;
-}
-
 void KernelUtil::TightLoopWait(unsigned loop)
 {
 	unsigned i ;
@@ -60,6 +55,12 @@ void KernelUtil::TightLoopWait(unsigned loop)
 		__asm__ __volatile__("nop") ;
 		__asm__ __volatile__("nop") ;
 	}
+}
+
+void KernelUtil::ScheduleTimedTask(const char* szName, unsigned uiTimeInMilliSec, unsigned CallBackFunction)
+{
+	int pid ;
+	ProcessManager::Instance().CreateKernelImage((unsigned)&SystemTimer, NO_PROCESS_ID, false, uiTimeInMilliSec, CallBackFunction, &pid, szName) ;
 }
 
 void KernelUtil::SystemTimer(unsigned uiTimeInMilliSec, KernelUtilTimerFunc* CallBackFunction)

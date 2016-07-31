@@ -18,6 +18,7 @@
 #ifndef _XHCI_CONTROLLER_H_
 #define _XHCI_CONTROLLER_H_
 
+#include <AsmUtil.h>
 #include <USBController.h>
 #include <PCIBusHandler.h>
 #include <XHCIStructures.h>
@@ -34,6 +35,7 @@ class XHCIController
     void Probe();
 
   private:
+    void InitInterruptHandler();
     void LoadXCaps(unsigned base);
     void PerformBiosToOSHandoff();
     void RingDoorBell(unsigned index, unsigned value);

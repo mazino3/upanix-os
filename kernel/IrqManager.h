@@ -58,6 +58,7 @@ class IrqManager
   public:
     static IrqManager& Instance();
     static void Initialize();
+    static bool Exists() { return _instance != nullptr; }
 
     bool IsApic() const { return _isApic; }
 
@@ -95,6 +96,8 @@ class IrqGuard
     }
     IrqGuard() : _irq(nullptr)
     {
+      if(!IrqManager::Exists())
+        return;
 //      __asm__ __volatile__("pushf");
   //    __asm__ __volatile__("popl %0" : "=m"(_allIntSyncFlag) : );
     //  if(_allIntSyncFlag & 0x0200)
@@ -102,6 +105,8 @@ class IrqGuard
     }
     ~IrqGuard()
     {
+      if(!IrqManager::Exists())
+        return;
       if(_irq)
         IrqManager::Instance().EnableIRQ(*_irq);
       else

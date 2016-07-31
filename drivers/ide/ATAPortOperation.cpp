@@ -72,7 +72,7 @@ byte ATAPortOperation_PreparePortDMATable(ATAPort* pPort, unsigned uiLength)
 
 void ATAPortOperation_PortSelect(ATAPort* pPort, byte bAddress)
 {
-	byte bControl ;
+	UNUSED byte bControl ;
 	
 	if(pPort->uiPort == 0)
 	{
