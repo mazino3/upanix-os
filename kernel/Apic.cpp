@@ -16,6 +16,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
 
+#include <Atomic.h>
 #include <Apic.h>
 #include <Cpu.h>
 #include <Acpi.h>
@@ -254,7 +255,8 @@ uint8_t Apic::GetIOApicID()
 
 void Apic::SendEOI(const IRQ&)
 {
-  _apicBase[APIC_EOI] = 0;
+//  _apicBase[APIC_EOI] = 0;
+	Atomic::Swap(_apicBase[APIC_EOI], 0);
 }
 
 void Apic::EnableIRQ(const IRQ& irq)

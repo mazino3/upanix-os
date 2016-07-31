@@ -31,14 +31,14 @@
 
 static __volatile__ unsigned PIT_ClockCountForSleep ;
 static __volatile__ unsigned char Process_bContextSwitch ;
-static __volatile__ int Process_iTaskSwitch ;
+static __volatile__ uint32_t Process_iTaskSwitch ;
 
 void PIT_Initialize()
 {
   Result status = Success;
 	PIT_ClockCountForSleep = 0 ;
 	Process_bContextSwitch = false ;
-	Process_iTaskSwitch = true ;
+	Process_iTaskSwitch = 1;
 
   IrqGuard g;
   if(!IrqManager::Instance().IsApic())
@@ -61,7 +61,7 @@ unsigned PIT_GetClockCount() { return PIT_ClockCountForSleep ; }
 unsigned char PIT_IsContextSwitch() { return Process_bContextSwitch ; }
 void PIT_SetContextSwitch(bool flag) { Process_bContextSwitch = flag ; }
 
-unsigned char PIT_IsTaskSwitch() { return Process_iTaskSwitch ; }
+uint32_t PIT_IsTaskSwitch() { return Process_iTaskSwitch ; }
 void PIT_SetTaskSwitch(bool flag) { Atomic::Swap(Process_iTaskSwitch, flag) ; }
 
 void PIT_Handler()
@@ -87,7 +87,7 @@ void PIT_Handler()
 	// 1 Int --> 10ms
 	PIT_ClockCountForSleep++ ;
 
-	if(Process_iTaskSwitch == true)
+	if(Process_iTaskSwitch == 1)
 	{
 		__volatile__ unsigned uiTaskReg = 0;
 		__asm__ __volatile__("STR %ax") ;

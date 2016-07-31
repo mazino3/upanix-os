@@ -20,7 +20,7 @@
 #include <Atomic.h>
 #include <ProcessManager.h>
 
-int Atomic::Swap(__volatile__ int& iLock, int val)
+uint32_t Atomic::Swap(__volatile__ uint32_t& iLock, uint32_t val)
 {
 	__asm__ __volatile__ ("lock xchgl %0, %1"
 		: "=r" ( val )

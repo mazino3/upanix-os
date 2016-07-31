@@ -335,7 +335,7 @@ void ProcessManager::Destroy(int iDeleteProcessID)
 	// Release process
 	ProcessAddressSpace& pas = GetAddressSpace(iDeleteProcessID);
 
-	Atomic::Swap((__volatile__ int&)(pas.status), static_cast<int>(TERMINATED)) ;
+	Atomic::Swap((__volatile__ uint32_t&)(pas.status), static_cast<int>(TERMINATED)) ;
 
 	//MemManager::Instance().DisplayNoOfFreePages();
 	//MemManager::Instance().DisplayNoOfAllocPages(0,0);
@@ -937,7 +937,7 @@ int ProcessManager::GetCurProcId()
 void ProcessManager::Kill(int iProcessID)
 {
 	ProcessAddressSpace* pPAS = &GetAddressSpace(iProcessID) ;
-	Atomic::Swap((__volatile__ int&)(pPAS->status), static_cast<int>(TERMINATED)) ;
+	Atomic::Swap((__volatile__ uint32_t&)(pPAS->status), static_cast<int>(TERMINATED)) ;
 }
 
 void ProcessManager::WakeUpFromKSWait(int iProcessID)

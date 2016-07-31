@@ -23,7 +23,7 @@
 class Mutex
 {
 	private:
-		__volatile__ int m_iLock ;
+		__volatile__ uint32_t m_iLock ;
 		__volatile__ int m_iID ;
 		
 		static const int FREE_MUTEX = -999 ;
@@ -46,7 +46,7 @@ class Mutex
 class Atomic
 {
 	public:
-		static int Swap(__volatile__ int& iLock, int val) ;
+		static uint32_t Swap(__volatile__ uint32_t& iLock, uint32_t val) ;
 } ;
 
 class MutexGuard

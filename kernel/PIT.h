@@ -63,7 +63,7 @@ unsigned PIT_GetClockCount() ;
 unsigned char PIT_IsContextSwitch() ;
 void PIT_SetContextSwitch(bool flag) ;
 
-unsigned char PIT_IsTaskSwitch() ;
+uint32_t PIT_IsTaskSwitch() ;
 void PIT_SetTaskSwitch(bool flag) ;
 
 unsigned PIT_RoundSleepTime(__volatile__ unsigned uiSleepTime) ;

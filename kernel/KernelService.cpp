@@ -226,7 +226,7 @@ void KernelService::Server(KernelService* pService)
 		pPAS->_processGroup = ProcessManager::Instance().GetAddressSpace( pRequest->GetRequestProcessID() )._processGroup;
 		pRequest->Process() ;
 		pPAS->_processGroup = ksProcessGroupID ;
-
+    
 		ProcessManager::Instance().WakeUpFromKSWait(pRequest->GetRequestProcessID()) ;
 	}
 }
