@@ -192,16 +192,13 @@ int KernelService::RequestProcessExec(const char* szFile, int iNoOfArgs, const c
 
 void KernelService::AddRequest(Request* pRequest)
 {
-	m_mutexQRequest.Lock() ;
-
+  MutexGuard g(m_mutexQRequest);
 	m_qRequest.push_back(pRequest) ;
-
-	m_mutexQRequest.UnLock() ;
 }
 
 KernelService::Request* KernelService::GetRequest()
 {
-	m_mutexQRequest.Lock() ;
+  MutexGuard g(m_mutexQRequest);
 
 	Request* pRequest = NULL;
   if(!m_qRequest.empty())
@@ -209,8 +206,6 @@ KernelService::Request* KernelService::GetRequest()
     pRequest = m_qRequest.front();
     m_qRequest.pop_front();
   }
-
-	m_mutexQRequest.UnLock() ;
 
 	return pRequest ;
 }
@@ -238,7 +233,7 @@ void KernelService::Server(KernelService* pService)
 
 int KernelService::Spawn()
 {
-	m_mutexServer.Lock() ;
+  MutexGuard g(m_mutexServer);
 
 	static const char* szKS = "kers-" ;
 	static int iID = 0 ;
@@ -251,32 +246,27 @@ int KernelService::Spawn()
 	if(ProcessManager::Instance().CreateKernelImage((unsigned)&(KernelService::Server), ProcessManager::GetCurrentProcessID(), false, (unsigned)this, NULL, &pid, szName.c_str()) !=
 			ProcessManager_SUCCESS)
 	{
-		m_mutexServer.UnLock() ;
 		printf("\n Failed to create Kernel Service Process %s", szName.c_str()) ;
 		return -1 ;
 	}
 
 	m_lServerList.push_back(pid) ;
 
-	m_mutexServer.UnLock() ;
-
 	return pid ;
 }
 
 bool KernelService::Stop(int iServerProcessID)
 {
-	m_mutexServer.Lock() ;
+  MutexGuard g(m_mutexServer);
 
 	if(!m_lServerList.erase(iServerProcessID))
 	{
 		printf("\n Invalid KernelService ProcessID %d", iServerProcessID) ;
-		m_mutexServer.UnLock() ;
 		return false ;
 	}
 
 	ProcessManager::Instance().Kill(iServerProcessID) ;
 
-	m_mutexServer.UnLock() ;
 	return true;
 }
 
