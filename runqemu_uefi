@@ -24,7 +24,7 @@ if [ -z "$2" ]
 then
   BOOT_DRIVE="$UPANIX_HOME/USBImage/300MUSB.img"
 else
-  BOOT_DRIVE="/dev/$3"
+  BOOT_DRIVE="/dev/$2"
 	SUDO=sudo
 fi
 
@@ -42,6 +42,7 @@ sleep 1
 #-drive if=none,id=usbdrive,file=$UPANIX_HOME/USBImage/300MUSB.img \
 
 QEMU_PATH=
+#$SUDO ~/opt/bin/qemu-system-x86_64 \
 $SUDO qemu-system-x86_64 \
 -serial file:serial_debug.log \
 -L $UPANIX_HOME/ovmf.$OVMF_VERSION \
