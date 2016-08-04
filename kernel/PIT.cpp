@@ -85,7 +85,7 @@ void PIT_Handler()
 	__asm__ __volatile__("popw %es") ; 
 
 	// 1 Int --> 10ms
-	PIT_ClockCountForSleep++ ;
+	++PIT_ClockCountForSleep;
 
 	if(Process_iTaskSwitch == 1)
 	{

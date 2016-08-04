@@ -85,17 +85,14 @@ static byte ProcessAllocator_AllocatePTE(unsigned* uiPDEAddress, unsigned* uiSta
 
 static void ProcessAllocator_InitializeProcessSpaceForOS(unsigned* uiPDEAddress)
 {
-	unsigned i, j ;
-	unsigned uiPTEAddress ;
-	unsigned uiPageCount = 0 ;
-	
-	for(i = 0; i < PROCESS_SPACE_FOR_OS; i++)
+	for(unsigned i = 0; i < PROCESS_SPACE_FOR_OS; ++i)
 	{
-		uiPTEAddress = (((unsigned*)(*uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[i]) & 0xFFFFF000 ;
-		for(j = 0; j < PAGE_TABLE_ENTRIES; j++)
+    unsigned kernelPTEAddress = (((unsigned*)(MEM_PDBR - GLOBAL_DATA_SEGMENT_BASE))[i]) & 0xFFFFF000;
+		unsigned uiPTEAddress = (((unsigned*)(*uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[i]) & 0xFFFFF000 ;
+		for(unsigned j = 0; j < PAGE_TABLE_ENTRIES; ++j)
 		{
-			((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[j] = ((uiPageCount * PAGE_SIZE) & 0xFFFFF000) | 0x3 ;
-			uiPageCount++ ;
+      unsigned kernelPageMapValue = ((unsigned*)(kernelPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[j];
+			((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[j] = (kernelPageMapValue & 0xFFFFF000) | 0x3;
 		}
 	}
 
@@ -220,6 +217,7 @@ ProcessAllocator_AllocateAddressSpaceForKernel(ProcessAddressSpace* processAddre
     uiFreePageNo = MemManager::Instance().AllocatePhysicalPage();
 		MemManager::Instance().GetKernelProcessStackPTEBase()[iStackBlockID * PROCESS_KERNEL_STACK_PAGES + i] = ((uiFreePageNo * PAGE_SIZE) & 0xFFFFF000) | 0x3 ;
 	}
+  Mem_FlushTLB();
 
 	return ProcessAllocator_SUCCESS ;
 }
@@ -235,6 +233,7 @@ ProcessAllocator_DeAllocateAddressSpaceForKernel(ProcessAddressSpace* processAdd
 		MemManager::Instance().DeAllocatePhysicalPage(
 		(MemManager::Instance().GetKernelProcessStackPTEBase()[iStackBlockID * PROCESS_KERNEL_STACK_PAGES + i] & 0xFFFFF000) / PAGE_SIZE) ;
 	}
+  Mem_FlushTLB();
 
 	MemManager::Instance().FreeKernelProcessStackBlock(iStackBlockID) ;
 }

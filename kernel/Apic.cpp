@@ -73,6 +73,8 @@ void Apic::Initialize()
   uint32_t phyIoApicBase = (*Acpi::Instance().GetMadt().GetIoApics().begin()).Address();
   _ioApicBase = MmapBase(MMAP_IOAPIC_BASE, phyIoApicBase);
 
+  printf("\n APIC Base: %x, IO APIC Base: %x", phyApicBase, phyIoApicBase);
+
   IrqGuard g;
 
   uint8_t ioApicMaxIndexRedirTab = Bit::Byte3(IoApicRead(IOAPIC_VERSION)); // bit16-23 // Maximum Redirection Entry  ReadOnly
