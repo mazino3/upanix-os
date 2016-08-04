@@ -54,6 +54,8 @@
 #include <exception.h>
 #include <stdio.h>
 #include <PCSound.h>
+#include <Apic.h>
+#include <typeinfo.h>
 
 /**** Command Fucntion Declarations  *****/
 static void ConsoleCommands_ChangeDrive() ;
@@ -762,6 +764,8 @@ void ConsoleCommands_Date()
 void ConsoleCommands_MultiBootHeader()
 {
   MultiBoot::Instance().Print();
+  if(typeid(IrqManager::Instance()) == typeid(Apic))
+    printf("\n Using APIC...");
 }
 
 void ConsoleCommands_ListCommands()
