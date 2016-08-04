@@ -59,7 +59,9 @@ export INCLUDE="-I./ \
 -I${UPANIX_HOME}/libmcpp/infra \
 -I${UPANIX_HOME}/libmcpp/ds \
 -I${UPANIX_HOME}/libmcpp/mem \
--I${UPANIX_HOME}/libmcpp/cal"
+-I${UPANIX_HOME}/libmcpp/cal \
+\
+-I${UPANIX_HOME}/libcxxrt"
 
 export GLOBAL_HEADERS="$UPANIX_HOME/util/Global.h $UPANIX_HOME/util/AsmUtil.h"
 
