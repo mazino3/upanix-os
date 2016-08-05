@@ -92,11 +92,11 @@ static void ProcessAllocator_InitializeProcessSpaceForOS(unsigned* uiPDEAddress)
 		for(unsigned j = 0; j < PAGE_TABLE_ENTRIES; ++j)
 		{
       unsigned kernelPageMapValue = ((unsigned*)(kernelPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[j];
-			((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[j] = (kernelPageMapValue & 0xFFFFF000) | 0x3;
+			((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[j] = (kernelPageMapValue & 0xFFFFF000) | 0x5;
 		}
 	}
 
-  MemManager::Instance().MemMapGraphicsLFB(*uiPDEAddress);
+//  MemManager::Instance().MemMapGraphicsLFB(*uiPDEAddress);
 
 //	unsigned uiKernelHeapPageCount ;
 //	unsigned uiPageAddress = MemManager_uiKernelHeapStartAddress ;	
