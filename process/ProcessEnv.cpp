@@ -68,8 +68,7 @@ byte ProcessEnv_Initialize(__volatile__ unsigned uiPDEAddress, __volatile__ int 
 
 void ProcessEnv_InitializeForKernelProcess()
 {
-	unsigned i ;
-	for(i = 0; i < PAGE_SIZE; i += ENV_VAR_LENGTH)
+	for(unsigned i = 0; i < NO_OF_ENVS; ++i)
 		PROCESS_ENV_LIST[i].Val[0] = '\0' ;
 
 	//TODO: To be set to Home Directory Env Var
