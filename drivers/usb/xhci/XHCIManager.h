@@ -21,6 +21,8 @@
 # include <Global.h>
 # include <list.h>
 
+#define XHCI_IRQ_NO 3
+
 class XHCIController;
 
 class XHCIManager
@@ -34,6 +36,7 @@ class XHCIManager
       return instance;
     }
     void ProbeDevice();
+    const upan::list<XHCIController*>& Controllers() { return _controllers; }
   private:
     upan::list<XHCIController*> _controllers;    
 };

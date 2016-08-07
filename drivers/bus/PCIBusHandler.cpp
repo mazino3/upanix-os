@@ -21,6 +21,8 @@
 #include <DMM.h>
 #include <KernelService.h>
 #include <Bit.h>
+#include <IrqManager.h>
+#include <Apic.h>
 
 PCIBusHandler::PCIBusHandler() : _type(PCI_TYPE_ONE), _uiNoOfPCIBuses(0)
 {
@@ -465,3 +467,80 @@ void PCIEntry::EnableBusMaster() const
 	printf("\nPCI: Setting latency timer of device: %x to %u", uiDeviceNumber, bLat);
 	WritePCIConfig(PCI_LATENCY, 1, bLat);
 }
+
+bool PCIEntry::SetupMsiInterrupt(int irqNo)
+{
+  if(!IrqManager::Instance().IsApic())
+    return false;
+
+  Apic& apic = dynamic_cast<Apic&>(IrqManager::Instance());
+
+  auto msiCap = GetExtendedCapability(MSI_CAP_ID);
+  if(!msiCap)
+  {
+    printf("\n MSI Capability not found");
+    return false;
+  }
+  const uint32_t msiBase = msiCap->CapBase();
+
+  uint8_t MESSAGEADDRLO;
+  uint8_t MESSAGEADDRHI;
+  uint8_t MESSAGEDATA;
+  uint8_t MESSAGECONTROL;
+  MESSAGECONTROL = msiBase + 2; // Message Control (bit0: MSI on/off, bit7: 0: 32-bit-, 1: 64-bit-addresses)
+  MESSAGEADDRLO = msiBase + 4;  // Message Address
+
+  uint16_t msiMessageControl;
+  ReadPCIConfig(MESSAGECONTROL, 2, &msiMessageControl); // xHCI spec, Figure 49 (5.2.6.1 MSI configuration)
+
+  if (msiMessageControl & MSI_64BITADDR)
+  {
+    MESSAGEADDRHI = msiBase + 8; // Message Upper Address
+    MESSAGEDATA = msiBase + 12;  // Message Data
+  }
+  else
+  {
+    MESSAGEADDRHI = 0;     // Does not exist
+    MESSAGEDATA = msiBase + 8; // Message Data
+  }
+
+  uint16_t data;
+  ReadPCIConfig(MESSAGEDATA, 2, &data);
+  data = (data & 0x3800) | (irqNo + IrqManager::IRQ_BASE);// "Reserved fields are not assumed to be any value. Software must preserve their contents on writes."
+
+  /* Intel 3A, 10.11.1 Message Address Register Format:
+     Bits 31-20 <97> These bits contain a fixed value for interrupt messages (0FEEH).
+     This value locates interrupts at the 1-MByte area with a base address of 4G <96> 18M.
+     All accesses to this region are directed as interrupt messages.
+     Care must to be taken to ensure that no other device claims the region as I/O space. */
+  const uint32_t address = 0xFEE00000 | apic.GetLocalApicID() << 12;
+
+  WritePCIConfig(MESSAGEADDRLO, 4, address);
+  if(MESSAGEADDRHI)
+    WritePCIConfig(MESSAGEADDRHI, 4, 0);
+
+  WritePCIConfig(MESSAGEDATA, 2, data);
+  return true;
+}
+
+void PCIEntry::SwitchToMsi()
+{
+  // Get PCI capability for MSI
+  auto msiCap = GetExtendedCapability(MSI_CAP_ID);
+  if(!msiCap)
+    throw upan::exception(XLOC, "MSI extended capability not found!");
+  const uint32_t msiBase = msiCap->CapBase();
+
+  // Disable legacy interrupt
+  uint16_t cmd;
+  ReadPCIConfig(PCI_COMMAND, 2, &cmd);
+  WritePCIConfig(PCI_COMMAND, 2, cmd | PCI_INTERRUPTDISABLE);
+
+  uint8_t MESSAGECONTROL = msiBase + 2;
+
+  // Enable the MSI interrupt mechanism by setting the MSI Enable flag in the MSI Capability Structure Message Control register
+  uint16_t control;
+  ReadPCIConfig(MESSAGECONTROL, 2, &control);
+  WritePCIConfig(MESSAGECONTROL, 2, control | MSI_ENABLED);
+}
+

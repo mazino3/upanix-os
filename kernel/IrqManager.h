@@ -52,10 +52,11 @@ class IrqManager
 
   protected:
     IrqManager();
+
+  public:
     static const int IRQ_BASE = 32;
 		static const int MAX_INTERRUPT = 24;
 
-  public:
     static IrqManager& Instance();
     static void Initialize();
 

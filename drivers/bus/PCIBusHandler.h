@@ -78,7 +78,11 @@ typedef enum {
 #define PCI_SERIAL_BUS		0x0C
 #define PCI_USB				0x03
 
+// MSI
 #define MSI_CAP_ID 5
+#define MSI_ENABLED 1
+#define MSI_64BITADDR 0x80
+#define PCI_INTERRUPTDISABLE 0x400
 
 class PCIEntry
 {
@@ -218,6 +222,8 @@ class PCIEntry
   unsigned GetPCIMemSize(int iAddressIndex) const;
   unsigned PCISize(unsigned uiBase, unsigned uiMask) const;
   void EnableBusMaster() const;
+  bool SetupMsiInterrupt(int irqNo);
+  void SwitchToMsi();
 
   PCIEntry(unsigned uiBusNumber, unsigned uiDeviceNumber, unsigned uiFunction, byte bHeaderType);
 

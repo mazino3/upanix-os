@@ -27,12 +27,14 @@
 class CommandManager;
 class EventManager;
 class SupProtocolXCap;
+class IRQ;
 
 class XHCIController
 {
   public:
     XHCIController(PCIEntry*);
     void Probe();
+    void NotifyEvent();
 
   private:
     void InitInterruptHandler();
@@ -151,6 +153,22 @@ class EventManager
       {
         EventTRB* event = (EventTRB*)DQPtr();
         return event->IsCycleBitSet();
+      }
+       
+      void EnableInterrupt()
+      {
+        _iman |= 0x2;
+      }
+
+      void DisableInterrupt()
+      {
+        _iman &= ~((uint32_t)(0x2));
+      }
+
+      //For manual Interrupt handling/PCI Pin interrupt handling
+      void ClearIPBit()
+      {
+        _iman |= 0x1;
       }
 
       void DebugPrint();

@@ -20,30 +20,64 @@
 #include <MemConstants.h>
 #include <XHCIController.h>
 #include <XHCIManager.h>
+#include <IrqManager.h>
+#include <KBDriver.h>
+
+static const IRQ* XHCI_IRQ = nullptr;
+
+static void XHCI_IRQHandler()
+{
+	unsigned GPRStack[NO_OF_GPR] ;
+	AsmUtil_STORE_GPR(GPRStack) ;
+	AsmUtil_SET_KERNEL_DATA_SEGMENTS
+
+  printf("\n XHCI IRQ");
+	//ProcessManager_SignalInterruptOccured(HD_PRIMARY_IRQ) ;
+  for(auto c : XHCIManager::Instance().Controllers())
+    c->NotifyEvent();
+
+	IrqManager::Instance().SendEOI(*XHCI_IRQ);
+	
+	AsmUtil_REVOKE_KERNEL_DATA_SEGMENTS
+	AsmUtil_RESTORE_GPR(GPRStack) ;
+	
+	asm("leave") ;
+	asm("IRET") ;
+}
 
 XHCIManager::XHCIManager()
 {
-	for(auto pPCIEntry : PCIBusHandler::Instance().PCIEntries())
-	{
-		if(pPCIEntry->bHeaderType & PCI_HEADER_BRIDGE)
-			continue ;
+  XHCI_IRQ = IrqManager::Instance().RegisterIRQ(XHCI_IRQ_NO, (unsigned)XHCI_IRQHandler);
+  if(XHCI_IRQ)
+  {
+    IrqManager::Instance().DisableIRQ(*XHCI_IRQ);
 
-		if(pPCIEntry->bInterface == 48 && 
-			pPCIEntry->bClassCode == PCI_SERIAL_BUS && 
-			pPCIEntry->bSubClass == PCI_USB)
-		{
-      printf("\n Interface = %u, Class = %u, SubClass = %u", pPCIEntry->bInterface, pPCIEntry->bClassCode, pPCIEntry->bSubClass);
-      try
+    for(auto pPCIEntry : PCIBusHandler::Instance().PCIEntries())
+    {
+      if(pPCIEntry->bHeaderType & PCI_HEADER_BRIDGE)
+        continue ;
+
+      if(pPCIEntry->bInterface == 48 && 
+        pPCIEntry->bClassCode == PCI_SERIAL_BUS && 
+        pPCIEntry->bSubClass == PCI_USB)
       {
-        _controllers.push_back(new XHCIController(pPCIEntry));
+        printf("\n Interface = %u, Class = %u, SubClass = %u", pPCIEntry->bInterface, pPCIEntry->bClassCode, pPCIEntry->bSubClass);
+        try
+        {
+          _controllers.push_back(new XHCIController(pPCIEntry));
+        }
+        catch(const upan::exception& ex)
+        {
+          printf("\n Failed to add XHCI controller - Reason: %s", ex.Error().c_str());
+        }
       }
-      catch(const upan::exception& ex)
-      {
-        printf("\n Failed to add XHCI controller - Reason: %s", ex.Error().c_str());
-      }
-		}
-	}
-	
+    }
+
+    IrqManager::Instance().EnableIRQ(*XHCI_IRQ);
+  }
+  else
+    printf("Failed to register XHCI IRQ: %d", XHCI_IRQ_NO);
+
 	if(_controllers.size())
 		KC::MDisplay().LoadMessage("USB XHCI Controller Found", Success) ;
 	else

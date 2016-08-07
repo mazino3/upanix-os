@@ -23,6 +23,7 @@
 #include <KBDriver.h>
 #include <XHCIController.h>
 #include <XHCIContext.h>
+#include <XHCIManager.h>
 #include <USBDataHandler.h>
 
 unsigned XHCIController::_memMapBaseAddress = XHCI_MMIO_BASE_ADDR;
@@ -106,8 +107,6 @@ XHCIController::XHCIController(PCIEntry* pPCIEntry)
 	pPCIEntry->ReadPCIConfig(PCI_COMMAND, 2, &usCommand);
 	printf(" -> After Bus Master Enable, PCI_COMMAND: %x", usCommand);
 
-  InitInterruptHandler();
-
   if(!_opReg->IsHCReady())
     throw upan::exception(XLOC, "HC is not ready yet!");
 
@@ -133,6 +132,8 @@ XHCIController::XHCIController(PCIEntry* pPCIEntry)
   //Door Bell array
   _doorBellRegs = (unsigned*)(uiMappedIOAddr + _capReg->DoorBellOffset());
 
+  InitInterruptHandler();
+
   //Setup Event Ring
   _eventManager = new EventManager(*_capReg, *_opReg);
 
@@ -140,54 +141,24 @@ XHCIController::XHCIController(PCIEntry* pPCIEntry)
   _cmdManager = new CommandManager(*_capReg, *_opReg, *_eventManager);
 
   //Start HC
-  _opReg->DisableHCInterrupt();
+  _opReg->EnableHCInterrupt();
   _opReg->Run();
   ProcessManager::Instance().Sleep(100);
   if(!_opReg->IsHCRunning() || _opReg->IsHCHalted())
     throw upan::exception(XLOC, "Failed to start XHCI HC");
   _opReg->Print();
-  Probe();
-  KBDriver::Instance().Getch();
 }
 
-static const IRQ* XHCI_IRQ = nullptr;
-
-static void XHCIController_IRQHandler()
+void XHCIController::NotifyEvent()
 {
-	unsigned GPRStack[NO_OF_GPR] ;
-	AsmUtil_STORE_GPR(GPRStack) ;
-	AsmUtil_SET_KERNEL_DATA_SEGMENTS
-
-  printf("\n XHCI IRQ");
-	//ProcessManager_SignalInterruptOccured(HD_PRIMARY_IRQ) ;
-
-	IrqManager::Instance().SendEOI(*XHCI_IRQ);
-	
-	AsmUtil_REVOKE_KERNEL_DATA_SEGMENTS
-	AsmUtil_RESTORE_GPR(GPRStack) ;
-	
-	asm("leave") ;
-	asm("IRET") ;
 }
 
 void XHCIController::InitInterruptHandler()
 {
-  int irq = _pPCIEntry->BusEntity.NonBridge.bInterruptLine;
-  if(irq != 0 && irq != 0xFF)
-  {
-    XHCI_IRQ = IrqManager::Instance().RegisterIRQ(irq, (unsigned)&XHCIController_IRQHandler);
-    if(!XHCI_IRQ)
-      throw upan::exception(XLOC, "Failed to register handler for XHCI IRQ No: %d", irq);
-  }
-  else
-  {
-    auto exCap = _pPCIEntry->GetExtendedCapability(MSI_CAP_ID);
-    if(!exCap)
-      throw upan::exception(XLOC, "Neither IRQ-Line nor MSI is available!");
-
-    uint8_t MESSAGECONTROL = exCap->CapBase() + 2; // Message Control (bit0: MSI on/off, bit7: 0: 32-bit-, 1: 64-bit-addresses)
-    uint32_t msgControl = 0;
-  }
+  //Can only support MSI capable XHCI
+  if(!_pPCIEntry->SetupMsiInterrupt(XHCI_IRQ_NO))
+    throw upan::exception(XLOC, "XHCI is not capable of MSI interrupts!");
+  _pPCIEntry->SwitchToMsi();
 }
 
 void XHCIController::LoadXCaps(unsigned base)
@@ -332,7 +303,6 @@ void XHCIController::Probe()
     PortSpeed ps = supProtocol->PortSpeedInfo(port.PortSpeedID());
     printf("\n %s [%u %s] device connected to port %d", PortProtocolName(protocol), ps.Mantissa(), ps.BitRateS(), i);
     InitializeDevice(port, i+1, supProtocol->SlotType());
-    KBDriver::Instance().Getch();
 	}
 }
 
@@ -502,9 +472,8 @@ void CommandManager::ConfigureEndPoint(unsigned icptr, unsigned slotID)
 
 EventManager::InterrupterRegister::InterrupterRegister() 
 {
-  _iman = 0;
-  _imod = 0;
-  //Interrupter is disabled by default
+  _iman = 0; //Interrupter is disabled by default
+  _imod = 4000; //15:0 = 4000 --> 1ms, 31:16 = 0 --> initial count
   const int ERST_SIZE = 1;
   _erstSize = (_erstSize & 0xFFFF0000) | ERST_SIZE;
 
@@ -537,6 +506,7 @@ EventManager::EventManager(XHCICapRegister& creg, XHCIOpRegister& oreg)
   _iregs = (InterrupterRegister*)((unsigned)&_capReg + _capReg.RTSOffset() + 0x20);
   for(unsigned i = 0; i < _capReg.MaxIntrs(); ++i)
     new ((void*)&_iregs[i])InterrupterRegister();
+  _iregs[0].EnableInterrupt();
 }
 
 void EventManager::DebugPrint() const
