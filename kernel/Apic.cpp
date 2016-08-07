@@ -66,14 +66,14 @@ Apic::Apic() : _apicBase(nullptr), _ioApicBase(nullptr)
 void Apic::Initialize()
 {
   // Local APIC, cf. Intel manual 3A, chapter 10
-  uint32_t phyApicBase = (uint32_t)(Cpu::Instance().MSRread(IA32_APIC_BASE_MSR) & ~0xFFFU); // read APIC base address (ignore bit0-11)
-  Cpu::Instance().MSRwrite(IA32_APIC_BASE_MSR, ((phyApicBase & ~0xFFFU) | IA32_APIC_BASE_BSP | IA32_APIC_BASE_MSR_ENABLE)); // enable APIC, Bootstrap Processor
-  _apicBase = MmapBase(MMAP_APIC_BASE, phyApicBase);
+  _phyApicBase = (uint32_t)(Cpu::Instance().MSRread(IA32_APIC_BASE_MSR) & ~0xFFFU); // read APIC base address (ignore bit0-11)
+  Cpu::Instance().MSRwrite(IA32_APIC_BASE_MSR, ((_phyApicBase & ~0xFFFU) | IA32_APIC_BASE_BSP | IA32_APIC_BASE_MSR_ENABLE)); // enable APIC, Bootstrap Processor
+  _apicBase = MmapBase(MMAP_APIC_BASE, _phyApicBase);
 
   uint32_t phyIoApicBase = (*Acpi::Instance().GetMadt().GetIoApics().begin()).Address();
   _ioApicBase = MmapBase(MMAP_IOAPIC_BASE, phyIoApicBase);
 
-  printf("\n APIC Base: %x, IO APIC Base: %x", phyApicBase, phyIoApicBase);
+  printf("\n APIC Base: %x, IO APIC Base: %x", _phyApicBase, phyIoApicBase);
 
   IrqGuard g;
 
@@ -245,7 +245,7 @@ void Apic::RemapVector(uint8_t vector, uint32_t mapped, bool level /*f:edge t:le
   IoApicWrite(0x11 + vector * 2, _apicBase[APIC_APICID] << (56 - 32));
 }
 
-uint8_t Apic::GetLocalApicID()
+uint8_t Apic::GetLocalApicID() const
 {
   return _apicBase[APIC_APICID];
 }

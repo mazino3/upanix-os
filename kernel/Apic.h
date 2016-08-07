@@ -57,8 +57,9 @@ class Apic : public IrqManager
 
   public:
     static bool IsAvailable();
-    uint8_t GetLocalApicID();
+    uint8_t GetLocalApicID() const;
     uint8_t GetIOApicID();
+    uint32_t PhyApicBase() const { return _phyApicBase; }
 
   private:
     uint32_t* MmapBase(uint32_t vAddr, uint32_t pAddr);
@@ -71,6 +72,7 @@ class Apic : public IrqManager
     void DisableIRQ(const IRQ&);
 
   private:
+    uint32_t _phyApicBase;
     __volatile__ uint32_t* _apicBase;
     __volatile__ uint32_t* _ioApicBase;
 

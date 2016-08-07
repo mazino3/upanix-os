@@ -473,8 +473,6 @@ bool PCIEntry::SetupMsiInterrupt(int irqNo)
   if(!IrqManager::Instance().IsApic())
     return false;
 
-  Apic& apic = dynamic_cast<Apic&>(IrqManager::Instance());
-
   auto msiCap = GetExtendedCapability(MSI_CAP_ID);
   if(!msiCap)
   {
@@ -513,7 +511,8 @@ bool PCIEntry::SetupMsiInterrupt(int irqNo)
      This value locates interrupts at the 1-MByte area with a base address of 4G <96> 18M.
      All accesses to this region are directed as interrupt messages.
      Care must to be taken to ensure that no other device claims the region as I/O space. */
-  const uint32_t address = 0xFEE00000 | apic.GetLocalApicID() << 12;
+  const Apic& apic = dynamic_cast<const Apic&>(IrqManager::Instance());
+  const uint32_t address = apic.PhyApicBase() | apic.GetLocalApicID() << 12;
 
   WritePCIConfig(MESSAGEADDRLO, 4, address);
   if(MESSAGEADDRHI)
