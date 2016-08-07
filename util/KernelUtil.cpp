@@ -35,12 +35,11 @@ void KernelUtil::Wait(__volatile__ unsigned uiTimeInMilliSec)
 
 void KernelUtil::WaitOnInterrupt(const IRQ& irq)
 {
-	while(!irq.InterruptOn())
+	while(!irq.Consume())
 	{	
 		__asm__ __volatile__("nop") ;
 		__asm__ __volatile__("nop") ;
 	}
-  irq.Consume();
 }
 
 void KernelUtil::TightLoopWait(unsigned loop)

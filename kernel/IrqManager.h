@@ -20,6 +20,7 @@
 
 #include <Global.h>
 #include <list.h>
+#include <Atomic.h>
 
 class IrqManager;
 
@@ -30,16 +31,15 @@ class IRQ
 		bool operator==(const IRQ& r) const { return m_iIRQNo == r.GetIRQNo() ; }
     void Signal() const;
     bool Consume() const;
-    int InterruptOn() const;
 
 	private:
-		explicit IRQ(int iIRQNo) : m_iIRQNo(iIRQNo), _interruptOn(0) { }
+		explicit IRQ(int iIRQNo) : m_iIRQNo(iIRQNo), _interruptCount(0) { }
 
 	private:
     static const int MAX_PROC_ON_INT_QUEUE = 8 * 1024;
 		const int m_iIRQNo;
-    mutable uint32_t _interruptOn;
-    mutable upan::list<bool> _qInterrupt;
+    mutable uint32_t _interruptCount;
+    mutable Mutex _consumeMutex;
 
 	friend class IrqManager;
 };
@@ -93,10 +93,10 @@ class IrqGuard
     }
     IrqGuard() : _irq(nullptr)
     {
-//      __asm__ __volatile__("pushf");
-  //    __asm__ __volatile__("popl %0" : "=m"(_allIntSyncFlag) : );
-    //  if(_allIntSyncFlag & 0x0200)
-	        __asm__ __volatile__("cli");
+      __asm__ __volatile__("pushf");
+      __asm__ __volatile__("popl %0" : "=m"(_allIntSyncFlag) : );
+      if(_allIntSyncFlag & 0x0200)
+	      __asm__ __volatile__("cli");
     }
     ~IrqGuard()
     {
@@ -104,8 +104,8 @@ class IrqGuard
         IrqManager::Instance().EnableIRQ(*_irq);
       else
       {
-//        if(_allIntSyncFlag & 0x0200)
-	          __asm__ __volatile__("sti");
+        if(_allIntSyncFlag & 0x0200)
+	        __asm__ __volatile__("sti");
       }
     }
   private:

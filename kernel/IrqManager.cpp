@@ -27,24 +27,18 @@ IrqManager* IrqManager::_instance = nullptr;
 
 void IRQ::Signal() const
 {
-	Atomic::Swap(_interruptOn, 1);
-  if(_qInterrupt.size() < MAX_PROC_ON_INT_QUEUE)
-    _qInterrupt.push_back(1);
-}
-
-int IRQ::InterruptOn() const
-{
-	return Atomic::Swap(_interruptOn, 0);
+  Atomic::Swap(_interruptCount, _interruptCount + 1);
 }
 
 bool IRQ::Consume() const
 {
-  IrqGuard g(*this);
-  InterruptOn();
-  if(_qInterrupt.empty())
-    return false;
-  _qInterrupt.pop_front();
-  return true;
+  MutexGuard mg(_consumeMutex);
+  if(_interruptCount > 0)
+  {
+    Atomic::Swap(_interruptCount, _interruptCount - 1);
+    return true;
+  }
+  return false;
 }
 
 void IrqManager::Initialize()
