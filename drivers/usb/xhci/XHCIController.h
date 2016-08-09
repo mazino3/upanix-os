@@ -23,6 +23,8 @@
 #include <PCIBusHandler.h>
 #include <XHCIStructures.h>
 #include <TRB.h>
+#include <map.h>
+#include <ProcessManager.h>
 
 class CommandManager;
 class EventManager;
@@ -52,6 +54,23 @@ class XHCIController
     const char* PortProtocolName(USB_PROTOCOL) const;
     const char* PortSpeedName(DEVICE_SPEED speed) const;
 
+    class EventResult
+    {
+      public:
+        EventResult() : _pid(NO_PROCESS_ID) {}
+        EventResult(int pid) : _pid(pid) {}
+        int Pid() const { return _pid; }
+        const EventTRB& Result() const { return _result; }
+        void Result(const EventTRB& r) { _result = r; }
+      private:
+        int      _pid;
+        EventTRB _result;
+    };
+
+    void RegisterForEventResult(uint32_t trbId);
+    EventResult ConsumeEventResult(uint32_t trbId);
+    void PublishEventResult(const EventTRB& result);
+
     static unsigned  _memMapBaseAddress;
     PCIEntry*        _pPCIEntry;
     uint64_t*        _deviceContextAddrArray;
@@ -62,6 +81,7 @@ class XHCIController
     LegSupXCap*      _legSupXCap;
     unsigned*        _doorBellRegs;
     upan::list<SupProtocolXCap*> _supProtoXCaps;
+    upan::map<uint32_t, EventResult> _eventResults;
 
     friend class XHCIManager;
 };

@@ -19,6 +19,8 @@
 #include <TRB.h>
 #include <DMM.h>
 
+#define INTERRUPT_ON_COMPLETE (1 << 5)
+
 TransferRing::TransferRing(unsigned size) : _size(size), _cycleState(true), _nextTRBIndex(0)
 {
   _trbs = new ((void*)DMM_AllocateAlignForKernel(sizeof(TRB) * _size, 64))TRB[_size];
@@ -93,7 +95,7 @@ void TransferRing::AddStatusStageTRB()
   trb._b1 = 0;
   trb._b2 = 0;
   trb._b3 = 0;
-  trb._b4 = DataDirection::OUT << 16 | (1 << 5);
+  trb._b4 = DataDirection::OUT << 16 | INTERRUPT_ON_COMPLETE;
   trb.Type(4);
   trb.SetCycleBit(_cycleState);
   NextTRB();
@@ -105,7 +107,7 @@ void TransferRing::AddEventDataTRB(uint32_t statusAddr, bool ioc)
   trb._b1 = statusAddr;
   trb._b2 = 0;
   trb._b3 = 0;
-  trb._b4 = (ioc << 5);
+  trb._b4 = ioc ? INTERRUPT_ON_COMPLETE : 0;
   trb.Type(7);
   trb.SetCycleBit(_cycleState);
   NextTRB();

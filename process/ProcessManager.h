@@ -65,6 +65,7 @@ typedef enum
 	WAIT_CHILD,
 	WAIT_RESOURCE,
 	WAIT_KERNEL_SERVICE,
+  WAIT_EVENT,
 	TERMINATED,
 } PROCESS_STATUS ;
 
@@ -166,9 +167,11 @@ typedef struct
 
 	RESOURCE_KEYS uiWaitResourceId;
 
+  uint32_t _eventCompleted;
+
 	bool bKernelServiceComplete ;
 		
-} PACKED ProcessStateInfo ;
+} ProcessStateInfo ;
 
 typedef struct
 {
@@ -263,6 +266,8 @@ class ProcessManager
     bool IsKernelProcess(int iProcessID);
     void BuildCallGate(unsigned short usGateSelector, unsigned uiOffset, unsigned short usSelector, byte bParameterCount);
     bool ConditionalWait(const unsigned* registry, unsigned bitPos, bool waitfor);
+    void WaitForEvent();
+    void EventCompleted(int pid);
 
     static int GetCurrentProcessID() { return _iCurrentProcessID; }
     static void EnableTaskSwitch() ;
@@ -284,6 +289,7 @@ class ProcessManager
     void BuildTaskState(ProcessAddressSpace* pProcessAddressSpace, unsigned uiPDEAddress, unsigned uiEntryAdddress, unsigned uiProcessEntryStackSize);
     void BuildKernelTaskState(const unsigned uiTaskAddress, const int iProcessID, const unsigned uiStackTop, unsigned uiParam1, unsigned uiParam2);
     void BuildIntGate(unsigned short usGateSelector, unsigned uiOffset, unsigned short usSelector, byte bParameterCount);
+    bool IsEventCompleted(ProcessAddressSpace& pas);
 
     static int _iCurrentProcessID;
   

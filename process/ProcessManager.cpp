@@ -40,6 +40,7 @@
 #include <ProcessConstants.h>
 #include <KernelUtil.h>
 #include <exception.h>
+#include <Atomic.h>
 
 int ProcessManager::_iCurrentProcessID = NO_PROCESS_ID;
 static const char* DEF_KERNEL_PROC_NAME = "Kernel Proc" ;
@@ -403,8 +404,8 @@ void ProcessManager::Store(int iProcessID)
 
 void ProcessManager::DoContextSwitch(int iProcessID)
 {
-	__volatile__ ProcessAddressSpace* pPAS = &GetAddressSpace(iProcessID) ;
-	__volatile__ ProcessStateInfo* pStat = pPAS->pProcessStateInfo ;
+	ProcessAddressSpace* pPAS = &GetAddressSpace(iProcessID) ;
+	ProcessStateInfo* pStat = pPAS->pProcessStateInfo ;
 
 	if(pPAS->status == TERMINATED)
 	{
@@ -440,6 +441,13 @@ void ProcessManager::DoContextSwitch(int iProcessID)
 				return ;
 		}
 		break ;
+
+  case WAIT_EVENT:
+    {
+      if(!IsEventCompleted(*pPAS))
+        return;
+      pPAS->status = RUN;
+    }
 	
 	case WAIT_CHILD:
 		{
@@ -594,6 +602,25 @@ void ProcessManager::WaitOnInterrupt(const IRQ& irq)
 	ProcessManager_Yield();
 }
 
+void ProcessManager::WaitForEvent()
+{
+  auto& pas = GetCurrentPAS();
+  if(DoPollWait())
+  {
+    while(!IsEventCompleted(pas))
+    {
+      __asm__ __volatile__("nop") ;
+      __asm__ __volatile__("nop") ;
+    }
+    return;
+  }
+
+  ProcessManager::DisableTaskSwitch();
+  pas.status = WAIT_EVENT;
+
+  ProcessManager_Yield();
+}
+
 void ProcessManager::WaitOnChild(int iChildProcessID)
 {
 	if(GetCurProcId() < 0)
@@ -716,6 +743,7 @@ byte ProcessManager::CreateKernelImage(const unsigned uiTaskAddress, int iParent
 	pStateInfo->pIRQ = &IrqManager::Instance().NO_IRQ ;
 	pStateInfo->iWaitChildProcId = NO_PROCESS_ID ;
 	pStateInfo->uiWaitResourceId = RESOURCE_NIL ;
+  pStateInfo->_eventCompleted = 0;
 
 	newPAS.pProcessStateInfo = pStateInfo ;
 	newPAS.status = RUN ;
@@ -820,6 +848,7 @@ byte ProcessManager::Create(const char* szProcessName, int iParentProcessID, byt
 	pStateInfo->pIRQ = &IrqManager::Instance().NO_IRQ ;
 	pStateInfo->iWaitChildProcId = NO_PROCESS_ID ;
 	pStateInfo->uiWaitResourceId = RESOURCE_NIL ;
+  pStateInfo->_eventCompleted = 0;
 
 	newPAS.pProcessStateInfo = pStateInfo ;
 	newPAS.status = RUN ;
@@ -1091,3 +1120,17 @@ bool ProcessManager::ConditionalWait(const unsigned* registry, unsigned bitPos, 
 	return false ;
 }
 
+bool ProcessManager::IsEventCompleted(ProcessAddressSpace& pas)
+{
+  if(pas.pProcessStateInfo->_eventCompleted)
+  {
+    Atomic::Swap(pas.pProcessStateInfo->_eventCompleted, 0);
+    return true;
+  }
+  return false;
+}
+
+void ProcessManager::EventCompleted(int pid)
+{
+  Atomic::Swap(GetAddressSpace(pid).pProcessStateInfo->_eventCompleted, 1);
+}

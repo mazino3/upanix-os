@@ -533,3 +533,29 @@ bool EventManager::WaitForEvent(EventTRB& result)
   }
   return false;
 }
+
+void XHCIController::RegisterForEventResult(uint32_t trbId)
+{
+  //TODO: Find an efficient way w/o disabling interrupts
+  IrqGuard g;
+  _eventResults[trbId] = EventResult(ProcessManager::Instance().GetCurProcId());
+}
+
+XHCIController::EventResult XHCIController::ConsumeEventResult(uint32_t trbId)
+{
+  //TODO: Find an efficient way w/o disabling interrupts
+  IrqGuard g;
+  auto it = _eventResults.find(trbId);
+  if(it == _eventResults.end())
+    throw upan::exception(XLOC, "Can't find TRB ID: %x in EventResults", trbId);
+  auto result = it->second;
+  _eventResults.erase(it);
+  return result;
+}
+
+//This function is called from XHCI IRQ handler, hence doesn't need any
+//synchronization construct i.e. IrqGuard/ProcessSwitchLock/Mutex
+void XHCIController::PublishEventResult(const EventTRB& result)
+{
+  _eventResults[result.TRBPointer()].Result(result);
+}
