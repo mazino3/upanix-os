@@ -50,7 +50,7 @@ void PIT_Initialize()
 	  PortCom_SendByte(PIT_COUNTER_0_PORT, (uiTimerRate >> 8) & 0xFF) ;	// Clock Divisor MSB
   }
 
-	if(!IrqManager::Instance().RegisterIRQ(IrqManager::Instance().TIMER_IRQ, (unsigned)&PIT_Handler))
+	if(!IrqManager::Instance().RegisterIRQ(StdIRQ::Instance().TIMER_IRQ, (unsigned)&PIT_Handler))
     status = Failure;
 	
 	KC::MDisplay().LoadMessage("Timer Initialization", status);
@@ -104,7 +104,7 @@ void PIT_Handler()
 			__asm__ __volatile__("pushl %eax") ;
 			__asm__ __volatile__("popf") ;
 			
-			IrqManager::Instance().SendEOI(IrqManager::Instance().TIMER_IRQ);
+			IrqManager::Instance().SendEOI(StdIRQ::Instance().TIMER_IRQ);
 
 			__asm__ __volatile__("IRET") ;
 		
@@ -133,7 +133,7 @@ void PIT_Handler()
 	__asm__ __volatile__("movw %%ss:%0, %%fs" :: "m"(usFS) ) ;
 	__asm__ __volatile__("movw %%ss:%0, %%gs" :: "m"(usGS) ) ;
 
-	IrqManager::Instance().SendEOI(IrqManager::Instance().TIMER_IRQ);
+	IrqManager::Instance().SendEOI(StdIRQ::Instance().TIMER_IRQ);
 
 	AsmUtil_RESTORE_GPR(GPRStack) ;
 

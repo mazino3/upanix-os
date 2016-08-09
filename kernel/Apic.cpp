@@ -145,7 +145,7 @@ void Apic::Initialize()
 
   // Local APIC timer
   _apicBase[APIC_TIMER_DIVIDECONFIG] = 0x03; // Set up divide value to 16
-  _apicBase[APIC_TIMER] = TMR_PERIODIC | (IRQ_BASE + TIMER_IRQ.GetIRQNo()); // Enable timer interrupts, 32, IRQ0
+  _apicBase[APIC_TIMER] = TMR_PERIODIC | (IRQ_BASE + StdIRQ::Instance().TIMER_IRQ.GetIRQNo()); // Enable timer interrupts, 32, IRQ0
   _apicBase[APIC_TIMER_INITCOUNT] = 0xFFFFFFFF; // Set initial counter -> starts timer
 
   _apicBase[APIC_SPURIOUSINTERRUPT] = APIC_SW_ENABLE | (IRQ_BASE + 7); // Enable APIC. Spurious: 39, IRQ7 (bit0-7)
@@ -180,7 +180,7 @@ void Apic::Initialize()
 
   // setting divide value register again and set timer
   _apicBase[APIC_TIMER_DIVIDECONFIG] = 0x03;
-  _apicBase[APIC_TIMER] = TMR_PERIODIC | (IRQ_BASE + TIMER_IRQ.GetIRQNo());
+  _apicBase[APIC_TIMER] = TMR_PERIODIC | (IRQ_BASE + StdIRQ::Instance().TIMER_IRQ.GetIRQNo());
 
   // set APIC timer init value
   _apicBase[APIC_TIMER_INITCOUNT] = (val < 16 ? 16 : val);

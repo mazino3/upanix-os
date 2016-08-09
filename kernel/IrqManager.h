@@ -42,6 +42,25 @@ class IRQ
     mutable Mutex _consumeMutex;
 
 	friend class IrqManager;
+  friend class StdIRQ;
+};
+
+class StdIRQ
+{
+  private:
+    StdIRQ();
+    StdIRQ(const StdIRQ&);
+
+  public:
+    static StdIRQ& Instance();
+
+    //Some standard IRQs
+    const IRQ NO_IRQ;
+    const IRQ TIMER_IRQ;
+    const IRQ KEYBOARD_IRQ;
+    const IRQ FLOPPY_IRQ;
+    const IRQ RTC_IRQ;
+    const IRQ MOUSE_IRQ;
 };
 
 class IrqManager
@@ -61,14 +80,6 @@ class IrqManager
     static void Initialize();
 
     bool IsApic() const { return _isApic; }
-
-		//Some standard IRQs
-		const IRQ NO_IRQ;
-		const IRQ TIMER_IRQ;
-		const IRQ KEYBOARD_IRQ;
-		const IRQ FLOPPY_IRQ;
-		const IRQ RTC_IRQ;
-		const IRQ MOUSE_IRQ;
 
 		const IRQ* RegisterIRQ(const int& iIRQNo, unsigned pHandler);
 		bool RegisterIRQ(const IRQ& irq, unsigned pHandler);

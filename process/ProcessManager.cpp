@@ -444,7 +444,7 @@ void ProcessManager::DoContextSwitch(int iProcessID)
 
   case WAIT_EVENT:
     {
-      if(!IsEventCompleted(*pPAS))
+      if(!IsEventCompleted(iProcessID))
         return;
       pPAS->status = RUN;
     }
@@ -604,10 +604,9 @@ void ProcessManager::WaitOnInterrupt(const IRQ& irq)
 
 void ProcessManager::WaitForEvent()
 {
-  auto& pas = GetCurrentPAS();
   if(DoPollWait())
   {
-    while(!IsEventCompleted(pas))
+    while(!IsEventCompleted(GetCurProcId()))
     {
       __asm__ __volatile__("nop") ;
       __asm__ __volatile__("nop") ;
@@ -616,7 +615,7 @@ void ProcessManager::WaitForEvent()
   }
 
   ProcessManager::DisableTaskSwitch();
-  pas.status = WAIT_EVENT;
+  GetCurrentPAS().status = WAIT_EVENT;
 
   ProcessManager_Yield();
 }
@@ -737,15 +736,7 @@ byte ProcessManager::CreateKernelImage(const unsigned uiTaskAddress, int iParent
 	newPAS.pname = (char*)DMM_AllocateForKernel(strlen(szKernelProcName) + 1);
 	strcpy(newPAS.pname, szKernelProcName) ;
 
-	ProcessStateInfo* pStateInfo = (ProcessStateInfo*)DMM_AllocateForKernel(sizeof(ProcessStateInfo)) ;
-	
-	pStateInfo->uiSleepTime = 0 ;
-	pStateInfo->pIRQ = &IrqManager::Instance().NO_IRQ ;
-	pStateInfo->iWaitChildProcId = NO_PROCESS_ID ;
-	pStateInfo->uiWaitResourceId = RESOURCE_NIL ;
-  pStateInfo->_eventCompleted = 0;
-
-	newPAS.pProcessStateInfo = pStateInfo ;
+	newPAS.pProcessStateInfo = new ProcessStateInfo();
 	newPAS.status = RUN ;
 
 	AddToSchedulerList(iNewProcessID) ;
@@ -842,15 +833,7 @@ byte ProcessManager::Create(const char* szProcessName, int iParentProcessID, byt
 	strcpy(newPAS.pname, szProcessName) ;
 
 	// Init Process State Info
-	ProcessStateInfo* pStateInfo = (ProcessStateInfo*)DMM_AllocateForKernel(sizeof(ProcessStateInfo)) ;
-	
-	pStateInfo->uiSleepTime = 0 ;
-	pStateInfo->pIRQ = &IrqManager::Instance().NO_IRQ ;
-	pStateInfo->iWaitChildProcId = NO_PROCESS_ID ;
-	pStateInfo->uiWaitResourceId = RESOURCE_NIL ;
-  pStateInfo->_eventCompleted = 0;
-
-	newPAS.pProcessStateInfo = pStateInfo ;
+	newPAS.pProcessStateInfo = new ProcessStateInfo();
 	newPAS.status = RUN ;
 
 	AddToSchedulerList(iNewProcessID) ;
@@ -960,7 +943,7 @@ void ProcessManager::SetResourceBusy(RESOURCE_KEYS uiType, bool bVal)
 
 int ProcessManager::GetCurProcId()
 {
-	return KERNEL_MODE ? -1 : ProcessManager::GetCurrentProcessID();
+	return KERNEL_MODE ? NO_PROCESS_ID : ProcessManager::GetCurrentProcessID();
 }
 
 void ProcessManager::Kill(int iProcessID)
@@ -1011,10 +994,10 @@ bool ProcessManager::WakeupProcessOnInterrupt(__volatile__ int iProcessID)
 	__volatile__ ProcessAddressSpace* p = &GetAddressSpace(iProcessID) ;
 	const IRQ& irq = *p->pProcessStateInfo->pIRQ ;
 
-	if(irq == IrqManager::Instance().NO_IRQ)
+	if(irq == StdIRQ::Instance().NO_IRQ)
 		return true ;
 
-	if(irq == IrqManager::Instance().KEYBOARD_IRQ)
+	if(irq == StdIRQ::Instance().KEYBOARD_IRQ)
 	{
     if(!(p->_processGroup->IsFGProcess(iProcessID) && p->_processGroup->IsFGProcessGroup()))
 			return false;
@@ -1091,7 +1074,7 @@ void ProcessManager::Release(int iProcessID)
 	DeleteFromSchedulerList(iProcessID) ;
 	DMM_DeAllocateForKernel((unsigned)(pas.pname)) ;
 	if(pas.pProcessStateInfo)
-		DMM_DeAllocateForKernel((unsigned)(pas.pProcessStateInfo)) ;
+    delete pas.pProcessStateInfo;
 }
 
 bool ProcessManager::DoPollWait()
@@ -1120,11 +1103,12 @@ bool ProcessManager::ConditionalWait(const unsigned* registry, unsigned bitPos, 
 	return false ;
 }
 
-bool ProcessManager::IsEventCompleted(ProcessAddressSpace& pas)
+bool ProcessManager::IsEventCompleted(int pid)
 {
-  if(pas.pProcessStateInfo->_eventCompleted)
+  auto& info = GetProcessStateInfo(pid);
+  if(info._eventCompleted)
   {
-    Atomic::Swap(pas.pProcessStateInfo->_eventCompleted, 0);
+    Atomic::Swap(info._eventCompleted, 0);
     return true;
   }
   return false;
@@ -1132,5 +1116,21 @@ bool ProcessManager::IsEventCompleted(ProcessAddressSpace& pas)
 
 void ProcessManager::EventCompleted(int pid)
 {
-  Atomic::Swap(GetAddressSpace(pid).pProcessStateInfo->_eventCompleted, 1);
+  Atomic::Swap(GetProcessStateInfo(pid)._eventCompleted, 1);
+}
+
+ProcessStateInfo& ProcessManager::GetProcessStateInfo(int pid)
+{
+  if(pid == NO_PROCESS_ID)
+    return _kernelModeStateInfo;
+  return *GetAddressSpace(pid).pProcessStateInfo;
+}
+
+ProcessStateInfo::ProcessStateInfo() : 
+  uiSleepTime(0), 
+  pIRQ(&StdIRQ::Instance().NO_IRQ), 
+  iWaitChildProcId(NO_PROCESS_ID),
+  uiWaitResourceId(RESOURCE_NIL), 
+  _eventCompleted(0)
+{
 }

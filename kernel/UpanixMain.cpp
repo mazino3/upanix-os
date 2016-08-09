@@ -156,6 +156,7 @@ void Initialize()
     Acpi::Instance();
     IDT::Instance();
     DMA_Initialize();
+    StdIRQ::Instance();
 
     ProcessManager::Instance();
     SysCall_Initialize() ;
@@ -169,7 +170,7 @@ void Initialize()
 
     IrqManager::Initialize();
     PIT_Initialize();
-    IrqManager::Instance().EnableIRQ(IrqManager::Instance().TIMER_IRQ) ;
+    IrqManager::Instance().EnableIRQ(StdIRQ::Instance().TIMER_IRQ) ;
 
     DiskDriveManager::Instance();
 

@@ -277,7 +277,7 @@ Floppy_ReCaliberate(DRIVE_NO driveNo)
 	Floppy_SendControlCommand(FDD_RECALIBRATE_CMD) ;
 	Floppy_SendControlCommand(driveNo) ;
 
-	ProcessManager::Instance().WaitOnInterrupt(IrqManager::Instance().FLOPPY_IRQ);
+	ProcessManager::Instance().WaitOnInterrupt(StdIRQ::Instance().FLOPPY_IRQ);
 	Floppy_SenseInterruptStatus() ;
 
 	if (Floppy_ReplyBuffer[0] & 0x20)
@@ -296,7 +296,7 @@ Floppy_Seek(DRIVE_NO driveNo, Floppy_HEAD_NO headNo, unsigned uiSeekTrack)
 	Floppy_SendControlCommand((headNo << 2) | driveNo) ;
  	Floppy_SendControlCommand(uiSeekTrack) ;
 
-	ProcessManager::Instance().WaitOnInterrupt(IrqManager::Instance().FLOPPY_IRQ);
+	ProcessManager::Instance().WaitOnInterrupt(StdIRQ::Instance().FLOPPY_IRQ);
 	Floppy_SenseInterruptStatus() ;
 
 	if (Floppy_ReplyBuffer[0] & 0x20)
@@ -317,7 +317,7 @@ Floppy_FormatTrack(const DiskDrive* pDiskDrive, const Floppy_HEAD_NO headNo)
 					if(Floppy_SendControlCommand(GAP) == Floppy_SUCCESS)
 						if(Floppy_SendControlCommand(0x00) == Floppy_SUCCESS) // Data Field Filler Value	
 						{
-							ProcessManager::Instance().WaitOnInterrupt(IrqManager::Instance().FLOPPY_IRQ);
+							ProcessManager::Instance().WaitOnInterrupt(StdIRQ::Instance().FLOPPY_IRQ);
 								
 							if((bStatus = Floppy_CompleteResultPhase(MAX_RESULT_PHASE_REPLIES)) != Floppy_SUCCESS)
 								return bStatus ;
@@ -391,7 +391,7 @@ static byte Floppy_ReadWrite(const DiskDrive* pDiskDrive, unsigned uiStartSector
 										if(Floppy_SendControlCommand(GAP) == Floppy_SUCCESS)
 											if(Floppy_SendControlCommand(0xFF) == Floppy_SUCCESS) // DTL = 0xFF
 											{
-												ProcessManager::Instance().WaitOnInterrupt(IrqManager::Instance().FLOPPY_IRQ);
+												ProcessManager::Instance().WaitOnInterrupt(StdIRQ::Instance().FLOPPY_IRQ);
 
 												if((bStatus = Floppy_CompleteResultPhase1(MAX_RESULT_PHASE_REPLIES)) != Floppy_SUCCESS)
 													continue ;
@@ -508,9 +508,9 @@ void Floppy_Handler()
 	AsmUtil_STORE_GPR(GPRStack) ;
 	AsmUtil_SET_KERNEL_DATA_SEGMENTS
 
-	IrqManager::Instance().FLOPPY_IRQ.Signal();
+	StdIRQ::Instance().FLOPPY_IRQ.Signal();
 
-	IrqManager::Instance().SendEOI(IrqManager::Instance().FLOPPY_IRQ);
+	IrqManager::Instance().SendEOI(StdIRQ::Instance().FLOPPY_IRQ);
 
 	AsmUtil_REVOKE_KERNEL_DATA_SEGMENTS
 	AsmUtil_RESTORE_GPR(GPRStack) ;
@@ -525,13 +525,13 @@ void Floppy_Initialize()
 	Floppy_bInitStatus = false ;
 	Floppy_Reset() ;
 
-	if(IrqManager::Instance().RegisterIRQ(IrqManager::Instance().FLOPPY_IRQ, (unsigned)&Floppy_Handler))
+	if(IrqManager::Instance().RegisterIRQ(StdIRQ::Instance().FLOPPY_IRQ, (unsigned)&Floppy_Handler))
 	{
-		IrqManager::Instance().EnableIRQ(IrqManager::Instance().FLOPPY_IRQ) ;
+		IrqManager::Instance().EnableIRQ(StdIRQ::Instance().FLOPPY_IRQ) ;
 		
 		Floppy_SetDataRate(RATE) ;
 
-	//	ProcessManager_WaitOnInterrupt(IrqManager::Instance().FLOPPY_IRQ) ;
+	//	ProcessManager_WaitOnInterrupt(StdIRQ::Instance().FLOPPY_IRQ) ;
 		if(Floppy_WaitForInterrupt() == Floppy_SUCCESS)
 		{
 			bInitStatus = true ;
@@ -550,7 +550,7 @@ void Floppy_Initialize()
 	}
 	else
 	{
-		printf("\n Failed to register Floppy IRQ: %d", IrqManager::Instance().FLOPPY_IRQ.GetIRQNo());
+		printf("\n Failed to register Floppy IRQ: %d", StdIRQ::Instance().FLOPPY_IRQ.GetIRQNo());
 		bInitStatus = false ;
 	}
 

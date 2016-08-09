@@ -157,21 +157,17 @@ typedef struct
 	Descriptor CallGateStackDesc ;
 } PACKED ProcessLDT ;
 
-typedef struct
+class ProcessStateInfo
 {
+  public:
+    ProcessStateInfo();
 	unsigned uiSleepTime ;
-	
 	const IRQ* pIRQ ;
-
 	int iWaitChildProcId ;
-
 	RESOURCE_KEYS uiWaitResourceId;
-
   uint32_t _eventCompleted;
-
 	bool bKernelServiceComplete ;
-		
-} ProcessStateInfo ;
+};
 
 typedef struct
 {
@@ -289,7 +285,8 @@ class ProcessManager
     void BuildTaskState(ProcessAddressSpace* pProcessAddressSpace, unsigned uiPDEAddress, unsigned uiEntryAdddress, unsigned uiProcessEntryStackSize);
     void BuildKernelTaskState(const unsigned uiTaskAddress, const int iProcessID, const unsigned uiStackTop, unsigned uiParam1, unsigned uiParam2);
     void BuildIntGate(unsigned short usGateSelector, unsigned uiOffset, unsigned short usSelector, byte bParameterCount);
-    bool IsEventCompleted(ProcessAddressSpace& pas);
+    bool IsEventCompleted(int pid);
+    ProcessStateInfo& GetProcessStateInfo(int pid);
 
     static int _iCurrentProcessID;
   
@@ -297,6 +294,7 @@ class ProcessManager
     bool _resourceList[MAX_RESOURCE];
 
     unsigned _uiProcessCount;
+    ProcessStateInfo _kernelModeStateInfo;
     ProcessAddressSpace* _processAddressSpace;
 };
 

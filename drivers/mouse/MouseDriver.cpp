@@ -31,8 +31,8 @@ MouseDriver::MouseDriver()
 
 void MouseDriver::Initialize()
 {
-	IrqManager::Instance().DisableIRQ(IrqManager::Instance().MOUSE_IRQ) ;
-	IrqManager::Instance().RegisterIRQ(IrqManager::Instance().MOUSE_IRQ, (unsigned)&MouseDriver::Handler) ;
+	IrqManager::Instance().DisableIRQ(StdIRQ::Instance().MOUSE_IRQ) ;
+	IrqManager::Instance().RegisterIRQ(StdIRQ::Instance().MOUSE_IRQ, (unsigned)&MouseDriver::Handler) ;
 
 	bool bStatus = true ;
 	do
@@ -80,7 +80,7 @@ void MouseDriver::Initialize()
 //	if(ReceiveData(data))
 //		printf("\n Mouse ID: %u ", data) ;
 		
-	IrqManager::Instance().EnableIRQ(IrqManager::Instance().MOUSE_IRQ) ;
+	IrqManager::Instance().EnableIRQ(StdIRQ::Instance().MOUSE_IRQ) ;
 	KC::MDisplay().LoadMessage("Mouse Initialization", bStatus ? Success : Failure);
 }
 
@@ -98,7 +98,7 @@ void MouseDriver::Handler()
 	{
 		KC::MMouseDriver().Process(data) ;
 	}
-	IrqManager::Instance().SendEOI(IrqManager::Instance().MOUSE_IRQ);
+	IrqManager::Instance().SendEOI(StdIRQ::Instance().MOUSE_IRQ);
 
 	AsmUtil_REVOKE_KERNEL_DATA_SEGMENTS
 	AsmUtil_RESTORE_GPR(GPRStack) ;

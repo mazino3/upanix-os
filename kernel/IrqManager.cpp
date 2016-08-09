@@ -41,6 +41,21 @@ bool IRQ::Consume() const
   return false;
 }
 
+StdIRQ::StdIRQ() : NO_IRQ(999),
+	TIMER_IRQ(0),
+	KEYBOARD_IRQ(1),
+	FLOPPY_IRQ(6),
+	RTC_IRQ(8),
+	MOUSE_IRQ(12)
+{
+}
+
+StdIRQ& StdIRQ::Instance()
+{
+  static StdIRQ instance;
+  return instance;
+}
+
 void IrqManager::Initialize()
 {
   static PIC pic;
@@ -66,13 +81,7 @@ IrqManager& IrqManager::Instance()
   return *_instance;
 }
 
-IrqManager::IrqManager() : NO_IRQ(999),
-	TIMER_IRQ(0),
-	KEYBOARD_IRQ(1),
-	FLOPPY_IRQ(6),
-	RTC_IRQ(8),
-	MOUSE_IRQ(12),
-  _isApic(false)
+IrqManager::IrqManager() : _isApic(false)
 {
 }
 

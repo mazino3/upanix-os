@@ -46,11 +46,11 @@ static void KBDriver_Handler()
 		if(!KBInputHandler_Process(key))
 		{
 			KBDriver::Instance().PutToQueueBuffer((key & 0xFF)) ;
-      IrqManager::Instance().KEYBOARD_IRQ.Signal();
+      StdIRQ::Instance().KEYBOARD_IRQ.Signal();
 		}
 	}
 
-	IrqManager::Instance().SendEOI(IrqManager::Instance().KEYBOARD_IRQ);
+	IrqManager::Instance().SendEOI(StdIRQ::Instance().KEYBOARD_IRQ);
 
 	AsmUtil_REVOKE_KERNEL_DATA_SEGMENTS
 	AsmUtil_RESTORE_GPR(GPRStack) ;
@@ -61,9 +61,9 @@ static void KBDriver_Handler()
 
 KBDriver::KBDriver() : _qBuffer(1024)
 {
-	IrqManager::Instance().DisableIRQ(IrqManager::Instance().KEYBOARD_IRQ) ;
-	IrqManager::Instance().RegisterIRQ(IrqManager::Instance().KEYBOARD_IRQ, (unsigned)&KBDriver_Handler) ;
-	IrqManager::Instance().EnableIRQ(IrqManager::Instance().KEYBOARD_IRQ) ;
+	IrqManager::Instance().DisableIRQ(StdIRQ::Instance().KEYBOARD_IRQ) ;
+	IrqManager::Instance().RegisterIRQ(StdIRQ::Instance().KEYBOARD_IRQ, (unsigned)&KBDriver_Handler) ;
+	IrqManager::Instance().EnableIRQ(StdIRQ::Instance().KEYBOARD_IRQ) ;
 
 	PortCom_ReceiveByte(KB_DATA_PORT) ;	
 
@@ -73,7 +73,7 @@ KBDriver::KBDriver() : _qBuffer(1024)
 bool KBDriver::GetCharInBlockMode(byte *data)
 {		
 	while(!GetFromQueueBuffer(data))
-		ProcessManager::Instance().WaitOnInterrupt(IrqManager::Instance().KEYBOARD_IRQ);
+		ProcessManager::Instance().WaitOnInterrupt(StdIRQ::Instance().KEYBOARD_IRQ);
 	return true;
 }
 
