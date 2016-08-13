@@ -30,14 +30,22 @@ class XHCIManager
   private:
     XHCIManager();
   public:
+    enum EventMode { Poll, Interrupt };
+
     static XHCIManager& Instance()
     {
       static XHCIManager instance;
       return instance;
     }
+    void Initialize();
+    void SetEventMode(EventMode e) { _eventMode = e; }
+    EventMode GetEventMode() const { return _eventMode; }
+    bool Initialized() const { return _initialized; }
     void ProbeDevice();
     const upan::list<XHCIController*>& Controllers() { return _controllers; }
   private:
+    bool _initialized;
+    EventMode _eventMode;
     upan::list<XHCIController*> _controllers;    
 };
 

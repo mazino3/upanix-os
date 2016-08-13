@@ -32,9 +32,11 @@ static void XHCI_IRQHandler()
 	AsmUtil_SET_KERNEL_DATA_SEGMENTS
 
   printf("\n XHCI IRQ");
-	//ProcessManager_SignalInterruptOccured(HD_PRIMARY_IRQ) ;
-  for(auto c : XHCIManager::Instance().Controllers())
-    c->NotifyEvent();
+  if(XHCIManager::Instance().Initialized() && XHCIManager::Instance().GetEventMode() == XHCIManager::Interrupt)
+  {
+    for(auto c : XHCIManager::Instance().Controllers())
+      c->NotifyEvent();
+  }
 
 	IrqManager::Instance().SendEOI(*XHCI_IRQ);
 	
@@ -45,47 +47,62 @@ static void XHCI_IRQHandler()
 	asm("IRET") ;
 }
 
-XHCIManager::XHCIManager()
+XHCIManager::XHCIManager() : _initialized(false)
 {
   XHCI_IRQ = IrqManager::Instance().RegisterIRQ(XHCI_IRQ_NO, (unsigned)XHCI_IRQHandler);
   if(XHCI_IRQ)
   {
+    _eventMode = EventMode::Interrupt;
     IrqManager::Instance().DisableIRQ(*XHCI_IRQ);
-
-    for(auto pPCIEntry : PCIBusHandler::Instance().PCIEntries())
-    {
-      if(pPCIEntry->bHeaderType & PCI_HEADER_BRIDGE)
-        continue ;
-
-      if(pPCIEntry->bInterface == 48 && 
-        pPCIEntry->bClassCode == PCI_SERIAL_BUS && 
-        pPCIEntry->bSubClass == PCI_USB)
-      {
-        printf("\n Interface = %u, Class = %u, SubClass = %u", pPCIEntry->bInterface, pPCIEntry->bClassCode, pPCIEntry->bSubClass);
-        try
-        {
-          _controllers.push_back(new XHCIController(pPCIEntry));
-        }
-        catch(const upan::exception& ex)
-        {
-          printf("\n Failed to add XHCI controller - Reason: %s", ex.Error().c_str());
-        }
-      }
-    }
-
-    IrqManager::Instance().EnableIRQ(*XHCI_IRQ);
   }
   else
+  {
+    _eventMode = EventMode::Poll;
     printf("Failed to register XHCI IRQ: %d", XHCI_IRQ_NO);
+  }
+}
+
+void XHCIManager::Initialize()
+{
+  if(!XHCI_IRQ)
+    return;
+
+  for(auto pPCIEntry : PCIBusHandler::Instance().PCIEntries())
+  {
+    if(pPCIEntry->bHeaderType & PCI_HEADER_BRIDGE)
+      continue ;
+
+    if(pPCIEntry->bInterface == 48 && 
+      pPCIEntry->bClassCode == PCI_SERIAL_BUS && 
+      pPCIEntry->bSubClass == PCI_USB)
+    {
+      printf("\n Interface = %u, Class = %u, SubClass = %u", pPCIEntry->bInterface, pPCIEntry->bClassCode, pPCIEntry->bSubClass);
+      try
+      {
+        _controllers.push_back(new XHCIController(pPCIEntry));
+      }
+      catch(const upan::exception& ex)
+      {
+        printf("\n Failed to add XHCI controller - Reason: %s", ex.Error().c_str());
+      }
+    }
+  }
 
 	if(_controllers.size())
 		KC::MDisplay().LoadMessage("USB XHCI Controller Found", Success) ;
 	else
 		KC::MDisplay().LoadMessage("No USB XHCI Controller Found", Failure) ;
+
+  if(_eventMode == EventMode::Interrupt)
+    IrqManager::Instance().EnableIRQ(*XHCI_IRQ);
+  _initialized = true;
 }
 
 void XHCIManager::ProbeDevice()
 {
+  if(!_initialized)
+    throw upan::exception(XLOC, "XHCI is not initialized yet!");
+
   for(auto c : _controllers)
   {
     try

@@ -208,7 +208,7 @@ class TransferRing
     ~TransferRing();
     void AddSetupStageTRB(uint32_t bmRequestType, uint32_t bmRequest, uint32_t wValue, uint32_t wIndex, uint32_t wLength, TransferType trt);
     void AddDataStageTRB(uint32_t dataBufferAddr, uint32_t len, DataDirection dir, int32_t maxPacketSize);
-    void AddStatusStageTRB();
+    uint32_t AddStatusStageTRB();
     void AddEventDataTRB(uint32_t statusAddr, bool ioc);
     TRB* RingBase() { return _trbs; }
   private:

@@ -135,13 +135,13 @@ XHCIController::XHCIController(PCIEntry* pPCIEntry)
   InitInterruptHandler();
 
   //Setup Event Ring
-  _eventManager = new EventManager(*_capReg, *_opReg);
+  _eventManager = new EventManager(*this, *_capReg, *_opReg);
 
   //Setup Command Ring
   _cmdManager = new CommandManager(*_capReg, *_opReg, *_eventManager);
 
   //Start HC
-  _opReg->EnableHCInterrupt();
+  _opReg->DisableHCInterrupt();
   _opReg->Run();
   ProcessManager::Instance().Sleep(100);
   if(!_opReg->IsHCRunning() || _opReg->IsHCHalted())
@@ -149,8 +149,10 @@ XHCIController::XHCIController(PCIEntry* pPCIEntry)
   _opReg->Print();
 }
 
+//Should be called from IRQ handler - so no need for any synchronization constructs
 void XHCIController::NotifyEvent()
 {
+  _eventManager->NotifyEvents();
 }
 
 void XHCIController::InitInterruptHandler()
@@ -313,6 +315,7 @@ void XHCIController::RingDoorBell(unsigned index, unsigned value)
 
 void XHCIController::InitializeDevice(XHCIPortRegister& port, unsigned portId, unsigned slotType)
 {
+  _opReg->EnableHCInterrupt();
   unsigned slotID = EnableSlot(slotType);
   if(!slotID)
     throw upan::exception(XLOC, "Failed to get SlotID");
@@ -329,6 +332,7 @@ void XHCIController::InitializeDevice(XHCIPortRegister& port, unsigned portId, u
 //first, with block bit set and then with block bit cleared
 //With first request, address should be set and slot stat is default (1)
 //With second request, slot state should change to Addressed (2)
+  printf("\n Before Address Device");
   AddressDevice((unsigned)&inputContext->Control(), slotID);
 
   if(devContext->EP0().EPState() != EndPointContext::Running)
@@ -351,12 +355,13 @@ void XHCIController::InitializeDevice(XHCIPortRegister& port, unsigned portId, u
   //Data stage
   tRing->AddDataStageTRB(KERNEL_REAL_ADDRESS(&deviceDesc), len, DataDirection::IN, port.MaxPacketSize());
   //Status Stage
-  tRing->AddStatusStageTRB();
+  uint32_t trdId = tRing->AddStatusStageTRB();
+  RegisterForEventResult(trdId);
   //Doorbell
   RingDoorBell(slotID, 1);
   //Wait for Interrupt
   EventTRB result;
-  WaitForTransferCompletion(result);
+  WaitForTransferCompletion(trdId, result);
   deviceDesc.DebugPrint();
 
 //  inputContext->Control().SetAddContextFlag(0x1);
@@ -366,6 +371,7 @@ void XHCIController::InitializeDevice(XHCIPortRegister& port, unsigned portId, u
 unsigned XHCIController::EnableSlot(unsigned slotType)
 {
   _cmdManager->EnableSlot(slotType);
+  RegisterForEventResult(_cmdManager->CommandTRBAddress());
   RingDoorBell(0, 0);
 
   EventTRB result;
@@ -376,6 +382,7 @@ unsigned XHCIController::EnableSlot(unsigned slotType)
 void XHCIController::AddressDevice(unsigned icptr, unsigned slotID)
 {
   _cmdManager->AddressDevice(icptr, slotID);
+  RegisterForEventResult(_cmdManager->CommandTRBAddress());
   RingDoorBell(0, 0);
 
   EventTRB result;
@@ -385,6 +392,7 @@ void XHCIController::AddressDevice(unsigned icptr, unsigned slotID)
 void XHCIController::ConfigureEndPoint(unsigned icptr, unsigned slotID)
 {
   _cmdManager->ConfigureEndPoint(icptr, slotID);
+  RegisterForEventResult(_cmdManager->CommandTRBAddress());
   RingDoorBell(0, 0);
 
   EventTRB result;
@@ -393,9 +401,7 @@ void XHCIController::ConfigureEndPoint(unsigned icptr, unsigned slotID)
 
 void XHCIController::WaitForCmdCompletion(EventTRB& result)
 {
-  if(!_eventManager->WaitForEvent(result))
-    throw upan::exception(XLOC, "Timedout while waiting for Command Completion");
-
+  WaitForEvent(_cmdManager->CommandTRBAddress(), result);
   if(result.Type() != 33)
     throw upan::exception(XLOC, "Got invalid Event TRB: %d", result.Type());
 
@@ -403,11 +409,9 @@ void XHCIController::WaitForCmdCompletion(EventTRB& result)
     throw upan::exception(XLOC, "EnableSlot command did not complete successfully");
 }
 
-void XHCIController::WaitForTransferCompletion(EventTRB& result)
+void XHCIController::WaitForTransferCompletion(uint32_t trbId, EventTRB& result)
 {
-  if(!_eventManager->WaitForEvent(result))
-    throw upan::exception(XLOC, "Timedout while waiting for Transfer Completion");
-
+  WaitForEvent(trbId, result);
   if(result.Type() != 32)
     throw upan::exception(XLOC, "Got invalid Event TRB: %d", result.Type());
 
@@ -416,6 +420,54 @@ void XHCIController::WaitForTransferCompletion(EventTRB& result)
 
 //  if(!result.IsEventDataTRB())
   //  throw upan::exception(XLOC, "Transfer event is not Event Data TRB");
+}
+
+void XHCIController::WaitForEvent(uint32_t trbId, EventTRB& result)
+{
+  if(XHCIManager::Instance().GetEventMode() == XHCIManager::Poll)
+  {
+    if(!_eventManager->WaitForEvent(result))
+      throw upan::exception(XLOC, "Timedout while waiting for Command Completion");
+  }
+  else
+  {
+    ProcessManager::Instance().WaitForEvent();
+    result = ConsumeEventResult(trbId).Result();
+  }
+}
+
+void XHCIController::RegisterForEventResult(uint32_t trbId)
+{
+  //TODO: Find an efficient way w/o disabling interrupts
+  IrqGuard g;
+  _eventResults[trbId] = EventResult(ProcessManager::Instance().GetCurProcId());
+}
+
+XHCIController::EventResult XHCIController::ConsumeEventResult(uint32_t trbId)
+{
+  //TODO: Find an efficient way w/o disabling interrupts
+  IrqGuard g;
+  auto it = _eventResults.find(trbId);
+  if(it == _eventResults.end())
+    throw upan::exception(XLOC, "Can't find TRB ID: %x in EventResults", trbId);
+  auto result = it->second;
+  _eventResults.erase(it);
+  return result;
+}
+
+//This function is called from XHCI IRQ handler, hence doesn't need any
+//synchronization construct i.e. IrqGuard/ProcessSwitchLock/Mutex
+void XHCIController::PublishEventResult(const EventTRB& result)
+{
+  auto it = _eventResults.find(result.TRBPointer());
+  if(it == _eventResults.end())
+  {
+    printf("\n No entry found in EventResults for TRB Id: %x", result.TRBPointer());
+    return;
+  }
+  EventResult& r =  it->second;
+  r.Result(result);
+  ProcessManager::Instance().EventCompleted(r.Pid());
 }
 
 CommandManager::CommandManager(XHCICapRegister& creg, 
@@ -500,8 +552,8 @@ EventManager::ERSTEntry::ERSTEntry() : _size(ERST_SIZE)
   _ersAddr = (uint64_t)KERNEL_REAL_ADDRESS(events);
 }
 
-EventManager::EventManager(XHCICapRegister& creg, XHCIOpRegister& oreg)
-  : _eventCycleBit(true), _capReg(creg), _opReg(oreg)
+EventManager::EventManager(XHCIController& controller, XHCICapRegister& creg, XHCIOpRegister& oreg)
+  : _eventCycleBit(true), _capReg(creg), _opReg(oreg), _controller(controller)
 {
   _iregs = (InterrupterRegister*)((unsigned)&_capReg + _capReg.RTSOffset() + 0x20);
   for(unsigned i = 0; i < _capReg.MaxIntrs(); ++i)
@@ -534,28 +586,20 @@ bool EventManager::WaitForEvent(EventTRB& result)
   return false;
 }
 
-void XHCIController::RegisterForEventResult(uint32_t trbId)
+void EventManager::NotifyEvents()
 {
-  //TODO: Find an efficient way w/o disabling interrupts
-  IrqGuard g;
-  _eventResults[trbId] = EventResult(ProcessManager::Instance().GetCurProcId());
-}
+  unsigned count = 0;
+  while(_iregs[0].EventCycleBitSet() == _eventCycleBit)
+  {
+    if(_iregs[0].IsLastDQPtr())
+      _eventCycleBit = !_eventCycleBit;
 
-XHCIController::EventResult XHCIController::ConsumeEventResult(uint32_t trbId)
-{
-  //TODO: Find an efficient way w/o disabling interrupts
-  IrqGuard g;
-  auto it = _eventResults.find(trbId);
-  if(it == _eventResults.end())
-    throw upan::exception(XLOC, "Can't find TRB ID: %x in EventResults", trbId);
-  auto result = it->second;
-  _eventResults.erase(it);
-  return result;
-}
+    _controller.PublishEventResult(*_iregs[0].DQEvent());
 
-//This function is called from XHCI IRQ handler, hence doesn't need any
-//synchronization construct i.e. IrqGuard/ProcessSwitchLock/Mutex
-void XHCIController::PublishEventResult(const EventTRB& result)
-{
-  _eventResults[result.TRBPointer()].Result(result);
+    _iregs[0].IncrementDQPtr();
+
+    ++count;
+    if(count == ERST_SIZE)
+      break;
+  }
 }

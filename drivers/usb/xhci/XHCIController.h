@@ -47,8 +47,9 @@ class XHCIController
     void AddressDevice(unsigned inputContextPtr, unsigned slotID);
     void ConfigureEndPoint(unsigned icptr, unsigned slotID);
     void WaitForCmdCompletion(EventTRB& result);
-    void WaitForTransferCompletion(EventTRB& result);
+    void WaitForTransferCompletion(uint32_t trbId, EventTRB& result);
     void InitializeDevice(XHCIPortRegister& port, unsigned portId, unsigned slotType);
+    void WaitForEvent(uint32_t trbId, EventTRB& result);
 
     SupProtocolXCap* GetSupportedProtocol(unsigned portId) const;
     const char* PortProtocolName(USB_PROTOCOL) const;
@@ -84,6 +85,7 @@ class XHCIController
     upan::map<uint32_t, EventResult> _eventResults;
 
     friend class XHCIManager;
+    friend class EventManager;
 };
 
 class CommandManager
@@ -96,6 +98,10 @@ class CommandManager
     void AddressDevice(unsigned inputContextPtr, unsigned slotID);
     void ConfigureEndPoint(unsigned icptr, unsigned slotID);
     void DebugPrint();
+    uint32_t CommandTRBAddress() const
+    {
+      return (uint32_t)&_ring->_cmd;
+    }
 
   private:
     struct Ring
@@ -117,9 +123,10 @@ class EventManager
   public:
     void DebugPrint() const;
     bool WaitForEvent(EventTRB& result);
+    void NotifyEvents();
 
   private:
-    EventManager(XHCICapRegister&, XHCIOpRegister&);
+    EventManager(XHCIController& controller, XHCICapRegister&, XHCIOpRegister&);
 
   private:
     static const int ERST_SIZE;
@@ -132,8 +139,9 @@ class EventManager
       unsigned _reserved;
     } PACKED;
 
-    struct InterrupterRegister
+    class InterrupterRegister
     {
+      public:
       InterrupterRegister();
 
       ERSTEntry& ERST(unsigned index)
@@ -209,6 +217,7 @@ class EventManager
     InterrupterRegister* _iregs;
     XHCICapRegister& _capReg;
     XHCIOpRegister& _opReg;
+    XHCIController& _controller;
   friend class XHCIController;
 };
 

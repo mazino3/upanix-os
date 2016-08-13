@@ -74,6 +74,7 @@ void TransferRing::AddDataStageTRB(uint32_t dataBufferAddr, uint32_t len, DataDi
     trb._b2 = 0;
     trb._b3 = (remainingPackets << 17) | (transferLen < maxPacketSize ? transferLen : maxPacketSize);
     trb._b4 = (dir << 16) | ((remainingPackets != 0) << 4);
+//    trb._b4 = (dir << 16) | (1 << 4) | (remainingPackets == 0) << 1;
     trb.Type(trbType);
     trb.SetCycleBit(_cycleState);
 
@@ -87,9 +88,11 @@ void TransferRing::AddDataStageTRB(uint32_t dataBufferAddr, uint32_t len, DataDi
 
     NextTRB();
   }
+//  auto statusAddr = DMM_AllocateAlignForKernel(4, 16);
+//  AddEventDataTRB(statusAddr, true);
 }
 
-void TransferRing::AddStatusStageTRB()
+uint32_t TransferRing::AddStatusStageTRB()
 {
   TRB& trb = _trbs[_nextTRBIndex];
   trb._b1 = 0;
@@ -99,6 +102,7 @@ void TransferRing::AddStatusStageTRB()
   trb.Type(4);
   trb.SetCycleBit(_cycleState);
   NextTRB();
+  return (uint32_t)&trb;
 }
 
 void TransferRing::AddEventDataTRB(uint32_t statusAddr, bool ioc)

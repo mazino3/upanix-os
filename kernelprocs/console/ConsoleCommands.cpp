@@ -106,6 +106,7 @@ static void ConsoleCommands_ProbeUHCIUSB() ;
 static void ConsoleCommands_PerformECHIHandoff() ;
 static void ConsoleCommands_ProbeEHCIUSB() ;
 static void ConsoleCommands_ProbeXHCIUSB() ;
+static void ConsoleCommands_SetXHCIEventMode();
 static void ConsoleCommands_ShowRawDiskList() ;
 static void ConsoleCommands_InitFloppyController() ;
 static void ConsoleCommands_InitATAController() ;
@@ -171,6 +172,7 @@ static const ConsoleCommand ConsoleCommands_CommandList[] = {
 	{ "ehcihoff",	&ConsoleCommands_PerformECHIHandoff },
 	{ "eusbprobe",	&ConsoleCommands_ProbeEHCIUSB },
 	{ "xusbprobe",	&ConsoleCommands_ProbeXHCIUSB },
+  { "xhciemode", &ConsoleCommands_SetXHCIEventMode },
 	{ "showdisk",	&ConsoleCommands_ShowRawDiskList },
 	{ "initfdc",	&ConsoleCommands_InitFloppyController },
 	{ "initata",	&ConsoleCommands_InitATAController },
@@ -866,6 +868,20 @@ void ConsoleCommands_ProbeEHCIUSB()
 void ConsoleCommands_ProbeXHCIUSB()
 {
 	XHCIManager::Instance().ProbeDevice() ;
+}
+
+void ConsoleCommands_SetXHCIEventMode()
+{
+  if(CommandLineParser_GetNoOfParameters() < 1)
+      return ;
+
+  upan::string mode(CommandLineParser_GetParameterAt(0));
+  if(mode == "poll")
+    XHCIManager::Instance().SetEventMode(XHCIManager::Poll);
+  else if(mode == "int")
+    XHCIManager::Instance().SetEventMode(XHCIManager::Interrupt);
+  else
+    printf("\n Invalid EventMode");
 }
 
 void ConsoleCommands_ShowRawDiskList()
