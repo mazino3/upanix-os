@@ -152,7 +152,50 @@ XHCIController::XHCIController(PCIEntry* pPCIEntry)
 //Should be called from IRQ handler - so no need for any synchronization constructs
 void XHCIController::NotifyEvent()
 {
-  _eventManager->NotifyEvents();
+  if(!_opReg->StatusChanged())
+    return;
+
+  try
+  {
+    if(_opReg->IsHCHalted())
+    {
+      printf("\n XHCI host controller halted!!");
+    }
+    if(_opReg->IsHSError())
+    {
+      printf("\n XHCI host system error!!");
+    }
+    if(_opReg->IsAnyEventPending())
+    {
+      _eventManager->NotifyEvents();
+    }
+    if(_opReg->Saving())
+    {
+      printf("\n Saving XHCI internal state");
+    }
+    if(_opReg->Restoring())
+    {
+      printf("\n Restoring XHCI internal state");
+    }
+    if(_opReg->IsSRError())
+    {
+      printf("\n XHCI Save/Restore error!!");
+    }
+    if(_opReg->IsHCNotReady())
+    {
+      printf("\n XHCI host controller is not ready!!");
+    }
+    if(_opReg->IsHCError())
+    {
+      printf("\n XHCI host controller error!!");
+    }
+  }
+  catch(const upan::exception& e)
+  {
+    printf("\n Exception while handling XHCI event - %s", e.Error().c_str());
+  }
+
+  _opReg->Clear();
 }
 
 void XHCIController::InitInterruptHandler()
