@@ -200,6 +200,10 @@ class XHCIOpRegister
     void Run();
     void Stop();
 
+    bool StatusChanged() const { return _usbStatus & 0x41C ? true : false; }
+    //write 1 to a given bit to clear
+    void Clear() { _usbStatus = _usbStatus; }
+
     bool IsHCHalted() const { return Bit::IsSet(_usbStatus, 0x1); }
     void HCReset();
 
@@ -291,6 +295,7 @@ class XHCIOpRegister
     bool IsSRError() const { return Bit::IsSet(_usbStatus, 0x400); }
     void ClearSRError() { _usbStatus = Bit::Set(_usbStatus, 0x400, true); }
 
+    bool IsHCNotReady() const { return Bit::IsSet(_usbStatus, 0x800); }
     bool IsHCReady() const;
     //Host Controller Error
     bool IsHCError() const { return Bit::IsSet(_usbStatus, 0x1000); }
