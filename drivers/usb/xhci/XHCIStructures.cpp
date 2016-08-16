@@ -174,10 +174,10 @@ void XHCIOpRegister::MaxSlotsEnabled(unsigned val)
 
 bool XHCIOpRegister::IsHCReady() const 
 { 
-  if(Bit::IsSet(_usbStatus, 0x800))
+  if(IsHCNotReady())
   {
     ProcessManager::Instance().Sleep(100);
-    return !Bit::IsSet(_usbStatus, 0x800);
+    return !IsHCNotReady();
   }
   return true;
 }
