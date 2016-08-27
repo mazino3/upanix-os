@@ -130,16 +130,16 @@ class XHCICapRegister
     bool IsCIC() const { return Bit::IsSet(_hccParams2, 0x20); }
 
   private:
-    uint8_t _capLength;
-    uint8_t _reserved;
-    uint16_t _hciVersion;
-    uint32_t _hcsParams1;
-    uint32_t _hcsParams2;
-    uint32_t _hcsParams3;
-    uint32_t _hccParams1;
-    uint32_t _doorBellOffset;
-    uint32_t _rtsOffset;
-    uint32_t _hccParams2;
+    volatile uint8_t _capLength;
+    volatile uint8_t _reserved;
+    volatile uint16_t _hciVersion;
+    volatile uint32_t _hcsParams1;
+    volatile uint32_t _hcsParams2;
+    volatile uint32_t _hcsParams3;
+    volatile uint32_t _hccParams1;
+    volatile uint32_t _doorBellOffset;
+    volatile uint32_t _rtsOffset;
+    volatile uint32_t _hccParams2;
 } PACKED;
 
 class XHCIPortRegister
@@ -185,10 +185,10 @@ class XHCIPortRegister
     }
     void Print();
   private:
-    uint32_t _sc;
-    uint32_t _pmsc;
-    uint32_t _li;
-    uint32_t _hlpmc;
+    volatile uint32_t _sc;
+    volatile uint32_t _pmsc;
+    volatile uint32_t _li;
+    volatile uint32_t _hlpmc;
 } PACKED;
 
 class XHCIOpRegister
@@ -310,7 +310,8 @@ class XHCIOpRegister
 
     void SetCommandRingPointer(uint64_t ptr)
     {
-      _crcr = (_crcr & (uint64_t)0x3F) | (ptr & ~((uint64_t)0x3F));
+      //Set ring cycle state to 1 @ start up - as command ring pointer is set is only once
+      _crcr = (_crcr & (uint64_t)0x3F) | (ptr & ~((uint64_t)0x3F)) | 0x1;
     }
 
     void SetDCBaap(uint64_t ptr)
@@ -340,17 +341,17 @@ class XHCIOpRegister
     //So, it's address is same as address of _portRegs;
     XHCIPortRegister* PortRegisters() { return &_portRegs; }
   private:
-    uint32_t _usbCmd;
-    uint32_t _usbStatus;
-    uint32_t _pageSize;
-    uint64_t _reserved1;
-    uint32_t _dnCtrl; //Device Notification Control
-    uint64_t _crcr; //Command Ring Control
-    uint64_t _reserved2;
-    uint64_t _reserved3;
-    uint64_t _dcBaap; //Device Context Base Address Array Pointer
-    uint32_t _config;
-    uint8_t     _reserved4[964];
+    volatile uint32_t _usbCmd;
+    volatile uint32_t _usbStatus;
+    volatile uint32_t _pageSize;
+    volatile uint64_t _reserved1;
+    volatile uint32_t _dnCtrl; //Device Notification Control
+    volatile uint64_t _crcr; //Command Ring Control
+    volatile uint64_t _reserved2;
+    volatile uint64_t _reserved3;
+    volatile uint64_t _dcBaap; //Device Context Base Address Array Pointer
+    volatile uint32_t _config;
+    volatile uint8_t  _reserved4[964];
     XHCIPortRegister _portRegs;
 } PACKED;
 

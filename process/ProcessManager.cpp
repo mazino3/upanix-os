@@ -1082,7 +1082,7 @@ bool ProcessManager::DoPollWait()
 	return (KERNEL_MODE || !PIT_IsTaskSwitch()) ;
 }
 
-bool ProcessManager::ConditionalWait(const unsigned* registry, unsigned bitPos, bool waitfor)
+bool ProcessManager::ConditionalWait(const volatile unsigned* registry, unsigned bitPos, bool waitfor)
 {
 	if(bitPos > 31 || bitPos < 0)
 		return false ;

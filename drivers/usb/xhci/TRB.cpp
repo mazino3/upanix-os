@@ -23,7 +23,7 @@
 
 TransferRing::TransferRing(unsigned size) : _size(size), _cycleState(true), _nextTRBIndex(0)
 {
-  _trbs = new ((void*)DMM_AllocateAlignForKernel(sizeof(TRB) * _size, 64))TRB[_size];
+  _trbs = new ((void*)DMM_AllocateAlignForKernel(sizeof(TRB) * _size, 16))TRB[_size];
   LinkTRB& link = static_cast<LinkTRB&>(_trbs[_size - 1]);
   link.SetLinkAddr(KERNEL_REAL_ADDRESS(_trbs));
   link.SetToggleBit(true);

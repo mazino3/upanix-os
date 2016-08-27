@@ -79,8 +79,10 @@ class LinkTRB : public TRB
 
     void SetLinkAddr(uint64_t la)
     {
+      /*
       if(la & 0x3F)
         throw upan::exception(XLOC, "link address is not 64 byte aligned");
+      */
       _b1 = la & 0xFFFFFFFF;
       _b2 = (la >> 32);
     }

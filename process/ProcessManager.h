@@ -261,7 +261,7 @@ class ProcessManager
     void WaitOnKernelService();
     bool IsKernelProcess(int iProcessID);
     void BuildCallGate(unsigned short usGateSelector, unsigned uiOffset, unsigned short usSelector, byte bParameterCount);
-    bool ConditionalWait(const unsigned* registry, unsigned bitPos, bool waitfor);
+    bool ConditionalWait(const volatile unsigned* registry, unsigned bitPos, bool waitfor);
     void WaitForEvent();
     void EventCompleted(int pid);
 

@@ -139,14 +139,19 @@ XHCIController::XHCIController(PCIEntry* pPCIEntry)
 
   //Setup Command Ring
   _cmdManager = new CommandManager(*_capReg, *_opReg, *_eventManager);
+}
 
-  //Start HC
+void XHCIController::Start()
+{
+  if(_opReg->IsHCRunning())
+    return;
   _opReg->DisableHCInterrupt();
   _opReg->Run();
   ProcessManager::Instance().Sleep(100);
   if(!_opReg->IsHCRunning() || _opReg->IsHCHalted())
     throw upan::exception(XLOC, "Failed to start XHCI HC");
   _opReg->Print();
+  _opReg->EnableHCInterrupt();
 }
 
 //Should be called from IRQ handler - so no need for any synchronization constructs
@@ -285,6 +290,7 @@ const char* XHCIController::PortProtocolName(USB_PROTOCOL protocol) const
 
 void XHCIController::Probe()
 {
+  Start();
 	printf("\n Setup Ports") ;
   unsigned uiNoOfPorts = _capReg->MaxPorts();
 	printf("-> NumPorts = %d", uiNoOfPorts) ;
@@ -354,28 +360,29 @@ void XHCIController::Probe()
 void XHCIController::RingDoorBell(unsigned index, unsigned value)
 {
   _doorBellRegs[index] = value;
+//	Atomic::Swap(_doorBellRegs[index], value);
 }
 
 void XHCIController::InitializeDevice(XHCIPortRegister& port, unsigned portId, unsigned slotType)
 {
-  _opReg->EnableHCInterrupt();
   unsigned slotID = EnableSlot(slotType);
   if(!slotID)
     throw upan::exception(XLOC, "Failed to get SlotID");
 
   TransferRing* tRing = new TransferRing(64);
   uint32_t trRingPtr = KERNEL_REAL_ADDRESS(tRing->RingBase());
+
   InputContext* inputContext = new InputContext(_capReg->IsContextSize64(), port, portId, 0, trRingPtr);
   DeviceContext* devContext = new DeviceContext(_capReg->IsContextSize64());
   //set A0 and A1 -> Slot and EP0 are affected by command
   inputContext->Control().SetAddContextFlag(0x3);
+
   _deviceContextAddrArray[slotID] = (uint64_t)KERNEL_REAL_ADDRESS(&devContext->Slot());
 
 //TODO: to deal with older devices - you may have to send 2 AddressDevice twice
 //first, with block bit set and then with block bit cleared
 //With first request, address should be set and slot stat is default (1)
 //With second request, slot state should change to Addressed (2)
-  printf("\n Before Address Device");
   AddressDevice((unsigned)&inputContext->Control(), slotID);
 
   if(devContext->EP0().EPState() != EndPointContext::Running)
@@ -505,7 +512,7 @@ void XHCIController::PublishEventResult(const EventTRB& result)
   auto it = _eventResults.find(result.TRBPointer());
   if(it == _eventResults.end())
   {
-    printf("\n No entry found in EventResults for TRB Id: %x", result.TRBPointer());
+    printf("\n No entry found in EventResults for TRB Id: %x, Event Type: %d", (uint32_t)result.TRBPointer(), result.Type());
     return;
   }
   EventResult& r =  it->second;

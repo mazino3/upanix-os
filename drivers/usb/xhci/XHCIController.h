@@ -39,6 +39,7 @@ class XHCIController
     void NotifyEvent();
 
   private:
+    void Start();
     void InitInterruptHandler();
     void LoadXCaps(unsigned base);
     void PerformBiosToOSHandoff();
@@ -80,7 +81,7 @@ class XHCIController
     CommandManager*  _cmdManager;
     EventManager*    _eventManager;
     LegSupXCap*      _legSupXCap;
-    unsigned*        _doorBellRegs;
+    volatile unsigned* _doorBellRegs;
     upan::list<SupProtocolXCap*> _supProtoXCaps;
     upan::map<uint32_t, EventResult> _eventResults;
 
