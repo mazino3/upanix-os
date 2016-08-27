@@ -111,7 +111,7 @@ void XHCIManager::ProbeDevice()
     }
     catch(const upan::exception& ex)
     {
-      printf("\n Error probing - %s", ex.Error().c_str());
+      printf("\n Error probing XHCI controller ports - %s", ex.Error().c_str());
     }
   }
 }
