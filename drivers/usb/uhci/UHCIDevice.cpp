@@ -114,7 +114,7 @@ bool UHCIDevice::GetMaxLun(byte* bLUN)
 	pTD1->SetTDAttribute(UHCI_ATTR_TD_MAXLEN, 7);
 	pTD1->SetTDAttribute(UHCI_ATTR_TD_PID, TOKEN_PID_SETUP);
 	
-	USBDevRequest* pDevRequest = (USBDevRequest*)DMM_AllocateAlignForKernel(sizeof(USBDevRequest), 16);
+	USBDevRequest* pDevRequest = (USBDevRequest*)DMM_AllocateForKernel(sizeof(USBDevRequest), 16);
 	pDevRequest->bRequestType = USB_TYPE_CLASS | USB_RECIP_INTERFACE | USB_DIR_IN ;
 	pDevRequest->bRequest = 0xFE ;
 	pDevRequest->usWValue = 0 ;
@@ -128,7 +128,7 @@ bool UHCIDevice::GetMaxLun(byte* bLUN)
 	UHCITransferDesc* pTD2 = UHCITransferDesc::Create();
 	pTD1->SetTDAttribute(UHCI_ATTR_TD_VERTICAL_LINK, (unsigned)pTD2);
 	
-	byte* pBufPtr = (byte*)DMM_AllocateAlignForKernel(1, 16);
+	byte* pBufPtr = (byte*)DMM_AllocateForKernel(1, 16);
 
 	//pTD2->SetTDAttribute(UHCI_ATTR_TD_CONTROL_SPD, 1);
 	pTD2->SetTDAttribute(UHCI_ATTR_BUF_PTR, (unsigned)pBufPtr);
@@ -225,7 +225,7 @@ bool UHCIDevice::CommandReset()
 	pTD1->SetTDAttribute(UHCI_ATTR_TD_MAXLEN, 7);
 	pTD1->SetTDAttribute(UHCI_ATTR_TD_PID, TOKEN_PID_SETUP);
 	
-	USBDevRequest* pDevRequest = (USBDevRequest*)DMM_AllocateAlignForKernel(sizeof(USBDevRequest), 16);
+	USBDevRequest* pDevRequest = (USBDevRequest*)DMM_AllocateForKernel(sizeof(USBDevRequest), 16);
 	pDevRequest->bRequestType = USB_TYPE_CLASS | USB_RECIP_INTERFACE ;
 	pDevRequest->bRequest = 0xFF ;
 	pDevRequest->usWValue = 0 ;
@@ -322,7 +322,7 @@ bool UHCIDevice::ClearHaltEndPoint(USBulkDisk* pDisk, bool bIn)
 	pTD1->SetTDAttribute(UHCI_ATTR_TD_MAXLEN, 7);
 	pTD1->SetTDAttribute(UHCI_ATTR_TD_PID, TOKEN_PID_SETUP);
 	
-	USBDevRequest* pDevRequest = (USBDevRequest*)DMM_AllocateAlignForKernel(sizeof(USBDevRequest), 16);
+	USBDevRequest* pDevRequest = (USBDevRequest*)DMM_AllocateForKernel(sizeof(USBDevRequest), 16);
 	pDevRequest->bRequestType = USB_RECIP_ENDPOINT ;
 	pDevRequest->bRequest = 1 ;
 	pDevRequest->usWValue = 0 ;
@@ -615,7 +615,7 @@ void UHCIDevice::GetDescriptor(unsigned short usDescValue, unsigned short usInde
 	if(iLen < 0)
 		iLen = DEF_DESC_LEN ;
 
-	USBDevRequest* pDevRequest = (USBDevRequest*)DMM_AllocateAlignForKernel(sizeof(USBDevRequest), 16);
+	USBDevRequest* pDevRequest = (USBDevRequest*)DMM_AllocateForKernel(sizeof(USBDevRequest), 16);
 	pDevRequest->bRequestType = 0x80 ;
 	pDevRequest->bRequest = 6 ;
 	pDevRequest->usWValue = usDescValue ;
@@ -629,7 +629,7 @@ void UHCIDevice::GetDescriptor(unsigned short usDescValue, unsigned short usInde
 	UHCITransferDesc* pTD2 = UHCITransferDesc::Create();
 	pTD1->SetTDAttribute(UHCI_ATTR_TD_VERTICAL_LINK, (unsigned)pTD2);
 
-	unsigned uiBufPtr = DMM_AllocateAlignForKernel(iLen, 16);
+	unsigned uiBufPtr = DMM_AllocateForKernel(iLen, 16);
 
 	//pTD2->SetTDAttribute(UHCI_ATTR_TD_CONTROL_SPD, 1);
 	//pTD2->SetTDAttribute(UHCI_ATTR_TD_CONTROL_IOC, 1);
@@ -738,7 +738,7 @@ void UHCIDevice::SetAddress()
 	pTD1->SetTDAttribute(UHCI_ATTR_TD_MAXLEN, 7);
 	pTD1->SetTDAttribute(UHCI_ATTR_TD_PID, TOKEN_PID_SETUP);
 	
-	USBDevRequest* pDevRequest = (USBDevRequest*)DMM_AllocateAlignForKernel(sizeof(USBDevRequest), 16);
+	USBDevRequest* pDevRequest = (USBDevRequest*)DMM_AllocateForKernel(sizeof(USBDevRequest), 16);
 	pDevRequest->bRequestType = 0x00 ;
 	pDevRequest->bRequest = 5 ;
 	pDevRequest->usWValue = _devAddr ;
@@ -973,7 +973,7 @@ void UHCIDevice::GetConfiguration(char* bConfigValue)
 	pTD1->SetTDAttribute(UHCI_ATTR_TD_MAXLEN, 7);
 	pTD1->SetTDAttribute(UHCI_ATTR_TD_PID, TOKEN_PID_SETUP);
 	
-	USBDevRequest* pDevRequest = (USBDevRequest*)DMM_AllocateAlignForKernel(sizeof(USBDevRequest), 16);
+	USBDevRequest* pDevRequest = (USBDevRequest*)DMM_AllocateForKernel(sizeof(USBDevRequest), 16);
 	pDevRequest->bRequestType = 0x80 ;
 	pDevRequest->bRequest = 8 ;
 	pDevRequest->usWValue = 0 ;
@@ -987,7 +987,7 @@ void UHCIDevice::GetConfiguration(char* bConfigValue)
 	UHCITransferDesc* pTD2 = UHCITransferDesc::Create();
 	pTD1->SetTDAttribute(UHCI_ATTR_TD_VERTICAL_LINK, (unsigned)pTD2);
 
-	unsigned uiBufPtr = DMM_AllocateAlignForKernel(1, 16);
+	unsigned uiBufPtr = DMM_AllocateForKernel(1, 16);
 
 	//pTD2->SetTDAttribute(UHCI_ATTR_TD_CONTROL_SPD, 1);
 	//pTD2->SetTDAttribute(UHCI_ATTR_TD_CONTROL_IOC, 1);
@@ -1089,7 +1089,7 @@ void UHCIDevice::SetConfiguration(char bConfigValue)
 	pTD1->SetTDAttribute(UHCI_ATTR_TD_MAXLEN, 7);
 	pTD1->SetTDAttribute(UHCI_ATTR_TD_PID, TOKEN_PID_SETUP);
 	
-	USBDevRequest* pDevRequest = (USBDevRequest*)DMM_AllocateAlignForKernel(sizeof(USBDevRequest), 16);
+	USBDevRequest* pDevRequest = (USBDevRequest*)DMM_AllocateForKernel(sizeof(USBDevRequest), 16);
 	pDevRequest->bRequestType = 0x00 ;
 	pDevRequest->bRequest = 9 ;
 	pDevRequest->usWValue = bConfigValue ;

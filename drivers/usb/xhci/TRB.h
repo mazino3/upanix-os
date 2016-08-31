@@ -144,11 +144,12 @@ class DisableSlotTRB : public CommandTRB
 class AddressDeviceTRB : public CommandTRB
 {
   public:
-    AddressDeviceTRB(unsigned inputContextPtr, unsigned slotID)
+    AddressDeviceTRB(unsigned inputContextPtr, unsigned slotID, bool blockSetAddressReq)
     {
       if(inputContextPtr & 0xF)
         throw upan::exception(XLOC, "InputContext Address must be 8 byte aligned");
       _b1 = inputContextPtr;
+      _b4 = _b4 | (blockSetAddressReq << 9);
       Type(11);
       SlotID(slotID);
     }

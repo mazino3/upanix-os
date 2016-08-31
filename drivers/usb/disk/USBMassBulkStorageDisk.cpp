@@ -511,7 +511,7 @@ bool USBDiskDriver::DoAddDevice(USBDevice* pUSBDevice)
 		printf("\n Max Bulk Write Size: %d", pDisk->usOutMaxPacketSize) ;
 	}
 
-	pDisk->pRawAlignedBuffer = (byte*)DMM_AllocateAlignForKernel(US_BULK_MAX_TRANSFER_SIZE, 16) ;
+	pDisk->pRawAlignedBuffer = (byte*)DMM_AllocateForKernel(US_BULK_MAX_TRANSFER_SIZE, 16) ;
 
 	pDisk->pEndPointInt = pEndPointInt ;
 

@@ -158,8 +158,8 @@ static ATAPort* ATADeviceController_AllocatePort(ATAController* pController)
 	pPort->portOperation.StartDMA = ATAPortOperation_StartDMA ;
 	pPort->portOperation.FlushRegs = NULL ;
 
-	pPort->pPRDTable = (ATAPRD*)DMM_AllocateAlignForKernel(DMA_MEM_BLOCK_SIZE, 4) ;
-	pPort->pDMATransferAddr = DMM_AllocateAlignForKernel(HDD_DMA_BUFFER_SIZE, 4) ;
+	pPort->pPRDTable = (ATAPRD*)DMM_AllocateForKernel(DMA_MEM_BLOCK_SIZE, 4) ;
+	pPort->pDMATransferAddr = DMM_AllocateForKernel(HDD_DMA_BUFFER_SIZE, 4) ;
 
 	return pPort ;
 }

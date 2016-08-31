@@ -17,6 +17,7 @@
  */
 #include <Global.h>
 #include <DMM.h>
+#include <MemUtil.h>
 #include <USBDataHandler.h>
 #include <EHCIController.h>
 #include <EHCIDataHandler.h>

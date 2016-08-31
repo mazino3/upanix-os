@@ -22,6 +22,7 @@
 #include <Display.h>
 #include <DMM.h>
 #include <MemUtil.h>
+#include <ProcessManager.h>
 
 static const char SCSIHandler_commandSize[ 8 ] = {
 	6, 10, 10, 12,

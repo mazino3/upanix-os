@@ -17,6 +17,7 @@
  */
 #include <MemManager.h>
 #include <DMM.h>
+#include <ProcessManager.h>
 #include <EHCIController.h>
 #include <EHCIDataHandler.h>
 #include <EHCITransaction.h>

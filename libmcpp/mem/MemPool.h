@@ -23,9 +23,7 @@
 #include <Alloc.h>
 #include <Stack.h>
 #include <exception.h>
-
-extern unsigned DMM_AllocateForKernel(unsigned uiSizeInBytes) ;
-extern byte DMM_DeAllocateForKernel(unsigned uiAddress) ;
+#include <DMM.h>
 
 template <typename T>
 class MemPool

@@ -21,7 +21,6 @@
 #include <Global.h>
 #include <MemConstants.h>
 #include <Atomic.h>
-#include <ProcessManager.h>
 
 #define NULL 0x0
 
@@ -42,14 +41,13 @@ typedef struct
   };
 } PACKED AllocationUnitTracker ; // AUT
 
-unsigned DMM_Allocate(ProcessAddressSpace* processAddressSpace, unsigned uiSizeInBytes) ;
-unsigned DMM_AllocateAlign(ProcessAddressSpace* processAddressSpace, unsigned uiSizeInBytes, unsigned uiAlignNumber) ;
+class ProcessAddressSpace;
 
-unsigned DMM_AllocateForKernel(unsigned uiSizeInBytes) ;
-unsigned DMM_AllocateAlignForKernel(unsigned uiSizeInBytes, unsigned uiAlignNumber) ;
+unsigned DMM_Allocate(ProcessAddressSpace* processAddressSpace, unsigned uiSizeInBytes, unsigned uiAlignNumber = 0);
+unsigned DMM_AllocateForKernel(unsigned uiSizeInBytes, unsigned uiAlignNumber = 0);
 
-byte DMM_DeAllocate(ProcessAddressSpace* processAddressSpace, unsigned uiAddress) ;
-byte DMM_DeAllocateForKernel(unsigned uiAddress) ;
+byte DMM_DeAllocate(ProcessAddressSpace* processAddressSpace, unsigned uiAddress);
+byte DMM_DeAllocateForKernel(unsigned uiAddress);
 
 byte DMM_GetAllocSize(ProcessAddressSpace* processAddressSpace, unsigned uiAddress, int* iSize);
 byte DMM_GetAllocSizeForKernel(unsigned uiAddress, int* iSize);

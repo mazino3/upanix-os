@@ -169,8 +169,9 @@ class ProcessStateInfo
 	bool bKernelServiceComplete ;
 };
 
-typedef struct
+class ProcessAddressSpace
 {
+  public:
 	TaskState taskState ;
 	ProcessLDT processLDT ;
 	byte bFree ;
@@ -204,7 +205,7 @@ typedef struct
 	
 	unsigned uiPageFaultAddress ;
 	unsigned uiDMMFlag ;
-} PACKED ProcessAddressSpace ;
+} PACKED;
 
 extern unsigned ProcessManager_uiKernelAUTAddress ;
 

@@ -21,6 +21,7 @@
 # include <FSStructures.h>
 # include <MemUtil.h>
 # include <Display.h>
+# include <FileSystem.h>
 
 #define BLOCK_ID(SectorID) (SectorID / ENTRIES_PER_TABLE_SECTOR)
 #define BLOCK_OFFSET(SectorID) (SectorID % ENTRIES_PER_TABLE_SECTOR) 

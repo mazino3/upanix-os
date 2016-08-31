@@ -383,7 +383,7 @@ void XHCIController::InitializeDevice(XHCIPortRegister& port, unsigned portId, u
 //first, with block bit set and then with block bit cleared
 //With first request, address should be set and slot stat is default (1)
 //With second request, slot state should change to Addressed (2)
-  AddressDevice((unsigned)&inputContext->Control(), slotID);
+  AddressDevice((unsigned)&inputContext->Control(), slotID, false);
 
   if(devContext->EP0().EPState() != EndPointContext::Running)
     throw upan::exception(XLOC, "After AddressDevice, EndPoint0 is in %d state", devContext->EP0().EPState());
@@ -429,9 +429,9 @@ unsigned XHCIController::EnableSlot(unsigned slotType)
   return result.SlotID();
 }
 
-void XHCIController::AddressDevice(unsigned icptr, unsigned slotID)
+void XHCIController::AddressDevice(unsigned icptr, unsigned slotID, bool blockSetAddressReq)
 {
-  _cmdManager->AddressDevice(icptr, slotID);
+  _cmdManager->AddressDevice(icptr, slotID, blockSetAddressReq);
   RegisterForEventResult(_cmdManager->CommandTRBAddress());
   RingDoorBell(0, 0);
 
@@ -456,7 +456,7 @@ void XHCIController::WaitForCmdCompletion(EventTRB& result)
     throw upan::exception(XLOC, "Got invalid Event TRB: %d", result.Type());
 
   if(!result.IsCommandSuccess())
-    throw upan::exception(XLOC, "EnableSlot command did not complete successfully");
+    throw upan::exception(XLOC, "Command did not complete successfully");
 }
 
 void XHCIController::WaitForTransferCompletion(uint32_t trbId, EventTRB& result)
@@ -525,7 +525,7 @@ CommandManager::CommandManager(XHCICapRegister& creg,
   EventManager& eventManager)
   : _pcs(true), _ring(nullptr), _capReg(creg), _opReg(oreg), _eventManager(eventManager)
 {
-  _ring = new ((void*)DMM_AllocateAlignForKernel(sizeof(Ring), 64))Ring();
+  _ring = new ((void*)DMM_AllocateForKernel(sizeof(Ring), 64))Ring();
   uint64_t ringAddr = KERNEL_REAL_ADDRESS(_ring);
 
   _ring->_link.SetLinkAddr(ringAddr);
@@ -560,9 +560,9 @@ void CommandManager::DisableSlot(unsigned slotID)
   Apply();
 }
 
-void CommandManager::AddressDevice(unsigned icptr, unsigned slotID)
+void CommandManager::AddressDevice(unsigned icptr, unsigned slotID, bool blockSetAddressReq)
 {
-  _ring->_cmd = AddressDeviceTRB(icptr, slotID);
+  _ring->_cmd = AddressDeviceTRB(icptr, slotID, blockSetAddressReq);
   Apply();
 }
 
@@ -579,7 +579,7 @@ EventManager::InterrupterRegister::InterrupterRegister()
   const int ERST_SIZE = 1;
   _erstSize = (_erstSize & 0xFFFF0000) | ERST_SIZE;
 
-  ERSTEntry* erst = new ((void*)DMM_AllocateAlignForKernel(sizeof(ERSTEntry) * ERST_SIZE, 64))ERSTEntry[ERST_SIZE];
+  ERSTEntry* erst = new ((void*)DMM_AllocateForKernel(sizeof(ERSTEntry) * ERST_SIZE, 64))ERSTEntry[ERST_SIZE];
   _erstBA = (uint64_t)KERNEL_REAL_ADDRESS(erst);
 
   _erdqPtr = erst[0]._ersAddr;

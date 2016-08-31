@@ -37,7 +37,7 @@ void EHCIDataHandler_CleanAysncQueueHead(EHCIQueueHead*  pQH)
 
 EHCIQueueHead* EHCIDataHandler_CreateAsyncQueueHead()
 {
-	unsigned uiQHAddress = DMM_AllocateAlignForKernel(sizeof(EHCIQueueHead), 32) ;
+	unsigned uiQHAddress = DMM_AllocateForKernel(sizeof(EHCIQueueHead), 32) ;
 	
 	memset((void*)(uiQHAddress), 0, sizeof(EHCIQueueHead)) ;
 
@@ -46,7 +46,7 @@ EHCIQueueHead* EHCIDataHandler_CreateAsyncQueueHead()
 
 EHCIQTransferDesc* EHCIDataHandler_CreateAsyncQTransferDesc()
 {
-	unsigned uiTDAddress = DMM_AllocateAlignForKernel(sizeof(EHCIQTransferDesc), 32) ;
+	unsigned uiTDAddress = DMM_AllocateForKernel(sizeof(EHCIQTransferDesc), 32) ;
 
 	memset((void*)(uiTDAddress), 0, sizeof(EHCIQTransferDesc)) ;
 

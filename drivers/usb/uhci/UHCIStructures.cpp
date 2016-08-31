@@ -19,10 +19,11 @@
 #include <DMM.h>
 #include <UHCIStructures.h>
 #include <UHCIManager.h>
+#include <Alloc.h>
 
 UHCITransferDesc* UHCITransferDesc::Create()
 {
-  return new ((void*)DMM_AllocateAlignForKernel(sizeof(UHCITransferDesc), 16)) UHCITransferDesc();
+  return new ((void*)DMM_AllocateForKernel(sizeof(UHCITransferDesc), 16)) UHCITransferDesc();
 }
 
 UHCITransferDesc::UHCITransferDesc() : _uiLinkPointer(TD_LINK_TERMINATE),
@@ -257,7 +258,7 @@ void UHCITransferDesc::GetTDLink(UHCIDescAttrType& bAttrType, unsigned& uiValue)
 
 UHCIQueueHead* UHCIQueueHead::Create()
 {
-  return new ((void*)DMM_AllocateAlignForKernel(sizeof(UHCIQueueHead), 16)) UHCIQueueHead();
+  return new ((void*)DMM_AllocateForKernel(sizeof(UHCIQueueHead), 16)) UHCIQueueHead();
 }
 
 UHCIQueueHead::UHCIQueueHead() : _uiHeadLinkPointer(TD_LINK_TERMINATE), _uiElementLinkPointer(TD_LINK_TERMINATE)

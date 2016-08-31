@@ -26,6 +26,7 @@
 #include <cstring.h>
 #include <StringUtil.h>
 #include <KBDriver.h>
+#include <ProcessManager.h>
 
 #include <USBStructures.h>
 #include <USBDataHandler.h>
@@ -187,7 +188,7 @@ void EHCIController::SetupPeriodicFrameList()
 
 void EHCIController::SetupAsyncList()
 {
-	unsigned uiQHAddress = DMM_AllocateAlignForKernel(sizeof(EHCIQueueHead), 32);
+	unsigned uiQHAddress = DMM_AllocateForKernel(sizeof(EHCIQueueHead), 32);
 	memset((void*)(uiQHAddress), 0, sizeof(EHCIQueueHead));
 	_pOpRegs->uiAsyncListBase = KERNEL_REAL_ADDRESS(uiQHAddress);
 

@@ -23,6 +23,7 @@
 # include <dtime.h>
 # include <stdio.h>
 # include <mdate.h>
+# include <ProcessManager.h>
 # include <DiskCache.h>
 
 void SystemUtil_Reboot()

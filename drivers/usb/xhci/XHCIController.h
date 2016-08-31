@@ -45,7 +45,7 @@ class XHCIController
     void PerformBiosToOSHandoff();
     void RingDoorBell(unsigned index, unsigned value);
     unsigned EnableSlot(unsigned slotType);
-    void AddressDevice(unsigned inputContextPtr, unsigned slotID);
+    void AddressDevice(unsigned inputContextPtr, unsigned slotID, bool blockSetAddressReq);
     void ConfigureEndPoint(unsigned icptr, unsigned slotID);
     void WaitForCmdCompletion(EventTRB& result);
     void WaitForTransferCompletion(uint32_t trbId, EventTRB& result);
@@ -96,7 +96,7 @@ class CommandManager
     void Apply();
     void EnableSlot(unsigned slotType);
     void DisableSlot(unsigned slotType);
-    void AddressDevice(unsigned inputContextPtr, unsigned slotID);
+    void AddressDevice(unsigned inputContextPtr, unsigned slotID, bool blockSetAddressReq);
     void ConfigureEndPoint(unsigned icptr, unsigned slotID);
     void DebugPrint();
     uint32_t CommandTRBAddress() const

@@ -17,13 +17,14 @@
  */
 
 #include <TRB.h>
+#include <Alloc.h>
 #include <DMM.h>
 
 #define INTERRUPT_ON_COMPLETE (1 << 5)
 
 TransferRing::TransferRing(unsigned size) : _size(size), _cycleState(true), _nextTRBIndex(0)
 {
-  _trbs = new ((void*)DMM_AllocateAlignForKernel(sizeof(TRB) * _size, 16))TRB[_size];
+  _trbs = new ((void*)DMM_AllocateForKernel(sizeof(TRB) * _size, 16))TRB[_size];
   LinkTRB& link = static_cast<LinkTRB&>(_trbs[_size - 1]);
   link.SetLinkAddr(KERNEL_REAL_ADDRESS(_trbs));
   link.SetToggleBit(true);
@@ -88,7 +89,7 @@ void TransferRing::AddDataStageTRB(uint32_t dataBufferAddr, uint32_t len, DataDi
 
     NextTRB();
   }
-//  auto statusAddr = DMM_AllocateAlignForKernel(4, 16);
+//  auto statusAddr = DMM_AllocateForKernel(4, 16);
 //  AddEventDataTRB(statusAddr, true);
 }
 
