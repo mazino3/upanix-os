@@ -20,6 +20,7 @@
 #include <MemManager.h>
 #include <MemUtil.h>
 #include <stdio.h>
+#include <uniq_ptr.h>
 #include <KBDriver.h>
 #include <XHCIController.h>
 #include <XHCIContext.h>
@@ -397,13 +398,14 @@ void XHCIController::InitializeDevice(XHCIPortRegister& port, unsigned portId, u
     devContext->EP0().MaxPacketSize());
 
   //** Get device descriptor **
-  USBStandardDeviceDesc deviceDesc;
-  memset((void*)&deviceDesc, 0, sizeof(USBStandardDeviceDesc));
+  //the buffer has to be on kernel heap - a mem area that is 1-1 mapped b/w virtual (page) and physical
+  //as it's used by XHCI controller to transfer data
+  upan::uniq_ptr<USBStandardDeviceDesc> deviceDesc(new USBStandardDeviceDesc());
   uint32_t len = sizeof(USBStandardDeviceDesc);
   //Setup stage
   tRing->AddSetupStageTRB(0x80, 6, 0x100, 0, len, TransferType::IN_DATA_STAGE);
   //Data stage
-  tRing->AddDataStageTRB(KERNEL_REAL_ADDRESS(&deviceDesc), len, DataDirection::IN, port.MaxPacketSize());
+  tRing->AddDataStageTRB(KERNEL_REAL_ADDRESS(deviceDesc.get()), len, DataDirection::IN, port.MaxPacketSize());
   //Status Stage
   uint32_t trdId = tRing->AddStatusStageTRB();
   RegisterForEventResult(trdId);
@@ -412,7 +414,7 @@ void XHCIController::InitializeDevice(XHCIPortRegister& port, unsigned portId, u
   //Wait for Interrupt
   EventTRB result;
   WaitForTransferCompletion(trdId, result);
-  deviceDesc.DebugPrint();
+  deviceDesc->DebugPrint();
 
 //  inputContext->Control().SetAddContextFlag(0x1);
 //  ConfigureEndPoint((unsigned)&inputContext->Control(), slotID);

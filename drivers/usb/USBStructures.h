@@ -41,6 +41,7 @@ typedef struct
 class USBStandardDeviceDesc
 {
   public:
+  USBStandardDeviceDesc();
   void DebugPrint() const;
 
 	byte bLength ;

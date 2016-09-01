@@ -15,41 +15,42 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
-#include <DMM.h>
-#include <USBStructures.h>
+#ifndef _UPAN_UNIQ_PTR_H_
+#define _UPAN_UNIQ_PTR_H_
+
+#include <cstring.h>
+#include <StringUtil.h>
+#include <ctype.h>
+#include <stdarg.h>
 #include <stdio.h>
 
-/***********************************************************************************************/
+namespace upan {
 
-USBStandardDeviceDesc::USBStandardDeviceDesc() :
-  bLength(0), bDescType(0), bcdUSB(0),
-  bDeviceClass(0), bDeviceSubClass(0), bDeviceProtocol(0),
-  bMaxPacketSize0(0), sVendorID(0), sProductID(0),
-  bcdDevice(0), indexManufacturer(0), indexProduct(0),
-  indexSerialNum(0), bNumConfigs(0)
+template <typename T>
+class uniq_ptr
 {
-}
+  private:
+    uniq_ptr(const uniq_ptr&) = delete;
+    uniq_ptr& operator=(const uniq_ptr&) = delete;
+    
+  public:
+    uniq_ptr(T* ptr) : _ptr(ptr)
+    {
+    }
 
-void USBStandardDeviceDesc::DebugPrint() const
-{
-	printf("\n Len=%d,DType=%d,bcd=%d", 
-    (int)bLength, 
-    (int)bDescType, 
-    (int)bcdUSB);
+    ~uniq_ptr()
+    {
+      delete _ptr;
+    }
 
-	printf(",Dev C=%d,SubC=%d,Proto=%d,MaxPkSize=%d", 
-    (int)bDeviceClass, 
-    (int)bDeviceSubClass, 
-    (int)bDeviceProtocol, 
-    (int)bMaxPacketSize0);
+    T* get() { return _ptr; }
+    T* operator->() { return get(); }
+    T& operator*() { return *get(); }
 
-	printf(",VenID=%d,ProdID=%d,bcdDev=%d,iManufac=%d,iProd=%d,iSlNo=%d,nConfigs=%d", 
-    (int)sVendorID,
-    (int)sProductID,
-    (int)bcdDevice,
-    (int)indexManufacturer,
-    (int)indexProduct,
-    (int)indexSerialNum,
-    (int)bNumConfigs);
-}
+  private:
+    T* _ptr;
+};
 
+};
+
+#endif
