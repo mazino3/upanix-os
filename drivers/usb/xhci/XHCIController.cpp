@@ -26,6 +26,7 @@
 #include <XHCIContext.h>
 #include <XHCIManager.h>
 #include <USBDataHandler.h>
+#include <XHCIDevice.h>
 
 unsigned XHCIController::_memMapBaseAddress = XHCI_MMIO_BASE_ADDR;
 
@@ -301,28 +302,29 @@ void XHCIController::Probe()
 		printf("-> Hardware PortPowerCtrl") ;
 	for(unsigned i = 0; i < uiNoOfPorts; i++)
 	{
+    const uint32_t portId = i + 1;
     auto& port = _opReg->PortRegisters()[i];
-    auto supProtocol = GetSupportedProtocol(i+1);
+    auto supProtocol = GetSupportedProtocol(portId);
     if(!supProtocol)
     {
-      printf("\n There is Extended Supported Protocol Cap for Port: %d !", i);
+      printf("\n There is Extended Supported Protocol Cap for Port: %d !", portId);
       continue;
     }
     auto protocol = supProtocol->Protocol();
-		printf("\n Setup Port: %d [%s] -> ", i, PortProtocolName(protocol));
+		printf("\n Setup Port: %d [%s] -> ", portId, PortProtocolName(protocol));
     port.Print();
 		if(_capReg->IsPPC())
       port.PowerOn();
 
     if(!port.IsPowerOn())
     {
-      printf("\n Port %d is not Powered On!", i);
+      printf("\n Port %d is not Powered On!", portId);
       continue;
     }
 
     if(!port.IsDeviceConnected())
     {
-      printf("\n No Device connected to Port %d", i);
+      printf("\n No Device connected to Port %d", portId);
       continue;
     }
 
@@ -353,9 +355,14 @@ void XHCIController::Probe()
 
     port.Print();
     PortSpeed ps = supProtocol->PortSpeedInfo(port.PortSpeedID());
-    printf("\n %s [%u %s] device connected to port %d", PortProtocolName(protocol), ps.Mantissa(), ps.BitRateS(), i);
-    InitializeDevice(port, i+1, supProtocol->SlotType());
+    printf("\n %s [%u %s] device connected to port %d", PortProtocolName(protocol), ps.Mantissa(), ps.BitRateS(), portId);
+		_devices[portId] = new XHCIDevice(*this, port, portId, supProtocol->SlotType());
 	}
+}
+
+void XHCIController::SetDeviceContext(uint32_t slotID, SlotContext& slotContext)
+{
+  _deviceContextAddrArray[slotID] = (uint64_t)KERNEL_REAL_ADDRESS(&slotContext);
 }
 
 void XHCIController::RingDoorBell(unsigned index, unsigned value)
@@ -364,91 +371,42 @@ void XHCIController::RingDoorBell(unsigned index, unsigned value)
 //	Atomic::Swap(_doorBellRegs[index], value);
 }
 
-void XHCIController::InitializeDevice(XHCIPortRegister& port, unsigned portId, unsigned slotType)
+EventTRB XHCIController::InitiateCommand()
 {
-  unsigned slotID = EnableSlot(slotType);
-  if(!slotID)
-    throw upan::exception(XLOC, "Failed to get SlotID");
+  RegisterForEventResult(_cmdManager->CommandTRBAddress());
+  RingDoorBell(0, 0);
 
-  TransferRing* tRing = new TransferRing(64);
-  uint32_t trRingPtr = KERNEL_REAL_ADDRESS(tRing->RingBase());
-
-  InputContext* inputContext = new InputContext(_capReg->IsContextSize64(), port, portId, 0, trRingPtr);
-  DeviceContext* devContext = new DeviceContext(_capReg->IsContextSize64());
-  //set A0 and A1 -> Slot and EP0 are affected by command
-  inputContext->Control().SetAddContextFlag(0x3);
-
-  _deviceContextAddrArray[slotID] = (uint64_t)KERNEL_REAL_ADDRESS(&devContext->Slot());
-
-//TODO: to deal with older devices - you may have to send 2 AddressDevice twice
-//first, with block bit set and then with block bit cleared
-//With first request, address should be set and slot stat is default (1)
-//With second request, slot state should change to Addressed (2)
-  AddressDevice((unsigned)&inputContext->Control(), slotID, false);
-
-  if(devContext->EP0().EPState() != EndPointContext::Running)
-    throw upan::exception(XLOC, "After AddressDevice, EndPoint0 is in %d state", devContext->EP0().EPState());
-
-  if(devContext->Slot().SlotState() != SlotContext::Addressed)
-    throw upan::exception(XLOC, "After AddressDevice, Slot is in %d state", devContext->Slot().SlotState());
-
-  printf("\n USB Device Address: %x, PortMaxPkSz: %u, ControlEP MaxPktSz: %u", 
-    devContext->Slot().DevAddress(),
-    port.MaxPacketSize(),
-    devContext->EP0().MaxPacketSize());
-
-  //** Get device descriptor **
-  //the buffer has to be on kernel heap - a mem area that is 1-1 mapped b/w virtual (page) and physical
-  //as it's used by XHCI controller to transfer data
-  upan::uniq_ptr<USBStandardDeviceDesc> deviceDesc(new USBStandardDeviceDesc());
-  uint32_t len = sizeof(USBStandardDeviceDesc);
-  //Setup stage
-  tRing->AddSetupStageTRB(0x80, 6, 0x100, 0, len, TransferType::IN_DATA_STAGE);
-  //Data stage
-  tRing->AddDataStageTRB(KERNEL_REAL_ADDRESS(deviceDesc.get()), len, DataDirection::IN, port.MaxPacketSize());
-  //Status Stage
-  uint32_t trdId = tRing->AddStatusStageTRB();
-  RegisterForEventResult(trdId);
-  //Doorbell
-  RingDoorBell(slotID, 1);
-  //Wait for Interrupt
   EventTRB result;
-  WaitForTransferCompletion(trdId, result);
-  deviceDesc->DebugPrint();
+  WaitForCmdCompletion(result);
+  return result;
+}
 
-//  inputContext->Control().SetAddContextFlag(0x1);
-//  ConfigureEndPoint((unsigned)&inputContext->Control(), slotID);
+EventTRB XHCIController::InitiateTransfer(uint32_t trbId, uint32_t slotID, uint32_t ep)
+{
+  RegisterForEventResult(trbId);
+  RingDoorBell(slotID, ep);
+
+  EventTRB result;
+  WaitForTransferCompletion(trbId, result);
+  return result;
 }
 
 unsigned XHCIController::EnableSlot(unsigned slotType)
 {
   _cmdManager->EnableSlot(slotType);
-  RegisterForEventResult(_cmdManager->CommandTRBAddress());
-  RingDoorBell(0, 0);
-
-  EventTRB result;
-  WaitForCmdCompletion(result);
-  return result.SlotID();
+  return InitiateCommand().SlotID();
 }
 
 void XHCIController::AddressDevice(unsigned icptr, unsigned slotID, bool blockSetAddressReq)
 {
   _cmdManager->AddressDevice(icptr, slotID, blockSetAddressReq);
-  RegisterForEventResult(_cmdManager->CommandTRBAddress());
-  RingDoorBell(0, 0);
-
-  EventTRB result;
-  WaitForCmdCompletion(result);
+  InitiateCommand();
 }
 
 void XHCIController::ConfigureEndPoint(unsigned icptr, unsigned slotID)
 {
   _cmdManager->ConfigureEndPoint(icptr, slotID);
-  RegisterForEventResult(_cmdManager->CommandTRBAddress());
-  RingDoorBell(0, 0);
-
-  EventTRB result;
-  WaitForCmdCompletion(result);
+  InitiateCommand();
 }
 
 void XHCIController::WaitForCmdCompletion(EventTRB& result)

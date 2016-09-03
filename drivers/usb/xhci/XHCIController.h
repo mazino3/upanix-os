@@ -30,6 +30,8 @@ class CommandManager;
 class EventManager;
 class SupProtocolXCap;
 class IRQ;
+class XHCIDevice;
+class SlotContext;
 
 class XHCIController
 {
@@ -43,13 +45,16 @@ class XHCIController
     void InitInterruptHandler();
     void LoadXCaps(unsigned base);
     void PerformBiosToOSHandoff();
+    XHCICapRegister& CapReg() { return *_capReg; }
+    EventTRB InitiateCommand();
+    EventTRB InitiateTransfer(uint32_t trbId, uint32_t slotID, uint32_t ep);
+    void SetDeviceContext(uint32_t slotID, SlotContext& slotContext);
     void RingDoorBell(unsigned index, unsigned value);
     unsigned EnableSlot(unsigned slotType);
     void AddressDevice(unsigned inputContextPtr, unsigned slotID, bool blockSetAddressReq);
     void ConfigureEndPoint(unsigned icptr, unsigned slotID);
     void WaitForCmdCompletion(EventTRB& result);
     void WaitForTransferCompletion(uint32_t trbId, EventTRB& result);
-    void InitializeDevice(XHCIPortRegister& port, unsigned portId, unsigned slotType);
     void WaitForEvent(uint32_t trbId, EventTRB& result);
 
     SupProtocolXCap* GetSupportedProtocol(unsigned portId) const;
@@ -84,9 +89,11 @@ class XHCIController
     volatile unsigned* _doorBellRegs;
     upan::list<SupProtocolXCap*> _supProtoXCaps;
     upan::map<uint32_t, EventResult> _eventResults;
+		upan::map<uint32_t, XHCIDevice*> _devices;
 
     friend class XHCIManager;
     friend class EventManager;
+		friend class XHCIDevice;
 };
 
 class CommandManager
