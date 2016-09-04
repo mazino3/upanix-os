@@ -123,6 +123,7 @@ UPANIX_OBJS = \
 	./drivers/usb/USBStructures.o \
 	./drivers/usb/USBDataHandler.o \
 	./drivers/usb/USBController.o \
+	./drivers/usb/USBDevice.o \
 	./drivers/usb/uhci/UHCIController.o \
 	./drivers/usb/uhci/UHCIDevice.o \
 	./drivers/usb/uhci/UHCIManager.o \

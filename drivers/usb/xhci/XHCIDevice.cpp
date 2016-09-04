@@ -21,12 +21,13 @@
 #include <XHCIContext.h>
 #include <TRB.h>
 #include <USBStructures.h>
+#include <USBDataHandler.h>
 
 XHCIDevice::XHCIDevice(XHCIController& controller, 
                        XHCIPortRegister& port, 
                        unsigned portId, 
                        unsigned slotType) : _portId(portId), _port(port), _controller(controller),
-                       _tRing(nullptr), _inputContext(nullptr), _devContext(nullptr), _deviceDesc(nullptr)
+                       _tRing(nullptr), _inputContext(nullptr), _devContext(nullptr)
 {
   _slotID = _controller.EnableSlot(slotType);
   if(!_slotID)
@@ -59,32 +60,122 @@ XHCIDevice::XHCIDevice(XHCIController& controller,
     port.MaxPacketSize(),
     _devContext->EP0().MaxPacketSize());
 
-  GetDescriptor();
+  GetDeviceDescriptor();
+  GetStringDescriptorZero();
+	SetLangId();
+  GetDeviceStringDesc(_manufacturer, _deviceDesc.indexManufacturer);
+  GetDeviceStringDesc(_product, _deviceDesc.indexProduct);
+  GetDeviceStringDesc(_serialNum, _deviceDesc.indexSerialNum);
 
+  PrintDeviceStringDetails();
 //  inputContext->Control().SetAddContextFlag(0x1);
 //  ConfigureEndPoint((unsigned)&inputContext->Control(), slotID);
 }
 
 XHCIDevice::~XHCIDevice()
 {
-  delete _deviceDesc;
   delete _devContext;
   delete _inputContext;
   delete _tRing;
 }
 
-void XHCIDevice::GetDescriptor()
+void XHCIDevice::GetDeviceDescriptor()
 {
   //the buffer has to be on kernel heap - a mem area that is 1-1 mapped b/w virtual (page) and physical
   //as it's used by XHCI controller to transfer data
-  _deviceDesc = new USBStandardDeviceDesc();
-  uint32_t len = sizeof(USBStandardDeviceDesc);
+  GetDescriptor(0x100, 0, sizeof(USBStandardDeviceDesc), KERNEL_REAL_ADDRESS(&_deviceDesc));
+  _deviceDesc.DebugPrint();
+}
+
+void XHCIDevice::GetStringDescriptorZero()
+{
+	unsigned short usDescValue = (0x3 << 8) ;
+	byte* buffer = new byte[8];
+
+	GetDescriptor(usDescValue, 0, -1, KERNEL_REAL_ADDRESS(buffer));
+
+	int iLen = reinterpret_cast<USBStringDescZero*>(buffer)->bLength ;
+	printf("\n String Desc Zero Len: %d", iLen) ;
+
+  delete[] buffer;
+  buffer = new byte[iLen];
+
+  GetDescriptor(usDescValue, 0, iLen, KERNEL_REAL_ADDRESS(buffer));
+
+  _pStrDescZero = new USBStringDescZero();
+
+	USBDataHandler_CopyStrDescZero(_pStrDescZero, buffer);
+	USBDataHandler_DisplayStrDescZero(_pStrDescZero);
+
+  delete[] buffer;
+}
+
+void XHCIDevice::GetDeviceStringDesc(upan::string& desc, int descIndex)
+{
+  desc = "Unknown";
+	if(_usLangID == 0)
+    return;
+
+	unsigned short usDescValue = (0x3 << 8);
+	char* buffer = new char[8];
+
+  GetDescriptor(usDescValue | descIndex, _usLangID, -1, KERNEL_REAL_ADDRESS(buffer));
+
+	int iLen = reinterpret_cast<USBStringDescZero*>(buffer)->bLength ;
+  if(iLen == 0)
+    return;
+
+  delete buffer;
+  buffer = new char[iLen];
+  GetDescriptor(usDescValue | descIndex, _usLangID, iLen, KERNEL_REAL_ADDRESS(buffer));
+
+  int j, k;
+  for(j = 0, k = 0; j < (iLen - 2); k++, j += 2)
+  {
+    //TODO: Ignoring Unicode 2nd byte for the time.
+    buffer[k] = buffer[j + 2];
+  }
+  buffer[k] = '\0';
+
+  desc = buffer;
+  delete[] buffer;
+}
+
+void XHCIDevice::GetDescriptor(uint16_t descValue, uint16_t index, int len, uint32_t dataBuffer)
+{
+  if(len < 0)
+    len = DEF_DESC_LEN;
   //Setup stage
-  _tRing->AddSetupStageTRB(0x80, 6, 0x100, 0, len, TransferType::IN_DATA_STAGE);
+  _tRing->AddSetupStageTRB(0x80, 6, descValue, index, len, TransferType::IN_DATA_STAGE);
   //Data stage
-  _tRing->AddDataStageTRB(KERNEL_REAL_ADDRESS((uint32_t)_deviceDesc), len, DataDirection::IN, _port.MaxPacketSize());
+  _tRing->AddDataStageTRB(dataBuffer, len, DataDirection::IN, _port.MaxPacketSize());
   //Status Stage
   const uint32_t trbId = _tRing->AddStatusStageTRB();
   _controller.InitiateTransfer(trbId, _slotID, 1);
-  _deviceDesc->DebugPrint();
 }
+
+bool XHCIDevice::GetMaxLun(byte* bLUN)
+{
+  return false;
+}
+
+bool XHCIDevice::CommandReset()
+{
+  return false;
+}
+
+bool XHCIDevice::ClearHaltEndPoint(USBulkDisk* pDisk, bool bIn)
+{
+  return false;
+}
+
+bool XHCIDevice::BulkRead(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen)
+{
+  return false;
+}
+
+bool XHCIDevice::BulkWrite(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen)
+{
+  return false;
+}
+

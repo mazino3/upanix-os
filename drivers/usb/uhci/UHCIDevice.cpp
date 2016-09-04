@@ -62,7 +62,7 @@ UHCIDevice::UHCIDevice(UHCIController& c, unsigned portAddr)
   GetDeviceStringDesc(_manufacturer, _deviceDesc.indexManufacturer);
   GetDeviceStringDesc(_product, _deviceDesc.indexProduct);
   GetDeviceStringDesc(_serialNum, _deviceDesc.indexSerialNum);
-	USBDataHandler_DisplayDeviceStringDetails(this);
+  PrintDeviceStringDetails();
 }
 
 void UHCIDevice::GetDeviceStringDesc(upan::string& desc, int descIndex)

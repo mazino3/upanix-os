@@ -22,6 +22,7 @@
 #include <queue.h>
 #include <UHCIStructures.h>
 #include <USBController.h>
+#include <USBDevice.h>
 #include <USBMassBulkStorageDisk.h>
 
 class UHCIController;

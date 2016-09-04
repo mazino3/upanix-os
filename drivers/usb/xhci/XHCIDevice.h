@@ -19,22 +19,31 @@
 #define _XHCI_DEVICE_H_
 
 #include <Global.h>
+#include <USBDevice.h>
 
 class XHCIController;
 class XHCIPortRegister;
 class TransferRing;
 class InputContext;
 class DeviceContext;
-class USBStandardDeviceDesc;
 
-class XHCIDevice
+class XHCIDevice final : public USBDevice
 {
   public:
     XHCIDevice(XHCIController& controller, XHCIPortRegister& port, unsigned portId, unsigned slotType);
     ~XHCIDevice();
 
+    bool GetMaxLun(byte* bLUN);
+    bool CommandReset();
+    bool ClearHaltEndPoint(USBulkDisk* pDisk, bool bIn);
+    bool BulkRead(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen);
+    bool BulkWrite(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen);
+
   private:
-    void GetDescriptor();
+    void GetDeviceDescriptor();
+    void GetStringDescriptorZero();
+    void GetDeviceStringDesc(upan::string& desc, int descIndex);
+    void GetDescriptor(uint16_t descValue, uint16_t index, int len, uint32_t dataBuffer);
 
     uint32_t                _slotID;
     uint32_t                _portId;
@@ -43,7 +52,6 @@ class XHCIDevice
     TransferRing*           _tRing;
     InputContext*           _inputContext;
     DeviceContext*          _devContext;
-    USBStandardDeviceDesc*  _deviceDesc;
 };
 
 #endif

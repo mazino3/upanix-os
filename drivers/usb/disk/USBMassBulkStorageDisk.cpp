@@ -27,6 +27,7 @@
 #include <StringUtil.h>
 #include <USBController.h>
 #include <EHCIStructures.h>
+#include <USBDevice.h>
 
 static int USDDeviceId ;
 

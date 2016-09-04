@@ -108,43 +108,6 @@ typedef struct
 class USBDevice;
 typedef struct USBulkDisk USBulkDisk ;
 
-class USBDevice
-{
-  public:
-    USBDevice();
-    virtual ~USBDevice() {}
-
-    virtual bool GetMaxLun(byte* bLUN) = 0;
-    virtual bool CommandReset() = 0;
-    virtual bool ClearHaltEndPoint(USBulkDisk* pDisk, bool bIn) = 0;
-    virtual bool BulkRead(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen) = 0;
-    virtual bool BulkWrite(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen) = 0;
-
-  protected:
-    void SetLangId();
-
-  public:
-    char _devAddr;
-    int _iConfigIndex;
-    int _iInterfaceIndex;
-    char _bInterfaceNumber;
-
-    unsigned short _usLangID;
-    upan::string _manufacturer;
-    upan::string _product;
-    upan::string _serialNum;
-
-    // Single element
-    USBStandardDeviceDesc _deviceDesc;
-    // Array
-    USBStandardConfigDesc* _pArrConfigDesc;
-    USBStringDescZero* _pStrDescZero;
-      
-    USB_CONTROLLER_TYPE _eControllerType;
-
-    void* _pPrivate;
-};
-
 struct USBulkDisk
 {
 	USBDevice* pUSBDevice ;

@@ -31,7 +31,7 @@ static void XHCI_IRQHandler()
 	AsmUtil_STORE_GPR(GPRStack) ;
 	AsmUtil_SET_KERNEL_DATA_SEGMENTS
 
-  printf("\n XHCI IRQ");
+ // printf("\n XHCI IRQ");
   if(XHCIManager::Instance().Initialized() && XHCIManager::Instance().GetEventMode() == XHCIManager::Interrupt)
   {
     for(auto c : XHCIManager::Instance().Controllers())

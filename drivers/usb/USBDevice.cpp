@@ -15,40 +15,31 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
-#include <DMM.h>
-#include <USBStructures.h>
-#include <stdio.h>
+#include <USBDevice.h>
+#include <set.h>
 
-/***********************************************************************************************/
-
-USBStandardDeviceDesc::USBStandardDeviceDesc() :
-  bLength(0), bDescType(0), bcdUSB(0),
-  bDeviceClass(0), bDeviceSubClass(0), bDeviceProtocol(0),
-  bMaxPacketSize0(0), sVendorID(0), sProductID(0),
-  bcdDevice(0), indexManufacturer(0), indexProduct(0),
-  indexSerialNum(0), bNumConfigs(0)
+USBDevice::USBDevice() : _usLangID(0), _pArrConfigDesc(nullptr), _pStrDescZero(nullptr)
 {
 }
 
-void USBStandardDeviceDesc::DebugPrint() const
+void USBDevice::SetLangId()
 {
-	printf("\n Len=%d,DType=%d,bcd=%d", 
-    (int)bLength, 
-    (int)bDescType, 
-    (int)bcdUSB);
+  static upan::set<unsigned short> SUPPORTED_LAND_IDS;
+  if(SUPPORTED_LAND_IDS.empty())
+    SUPPORTED_LAND_IDS.insert(0x409);
 
-	printf(",Dev C=%d,SubC=%d,Proto=%d,MaxPkSize=%d", 
-    (int)bDeviceClass, 
-    (int)bDeviceSubClass, 
-    (int)bDeviceProtocol, 
-    (int)bMaxPacketSize0);
+	for(int i = 0; i < (_pStrDescZero->bLength - 2) / 2; ++i)
+	{
+		if(SUPPORTED_LAND_IDS.exists(_pStrDescZero->usLangID[i]))
+    {
+      _usLangID = _pStrDescZero->usLangID[i];
+      break;
+		}
+	}
+}
 
-	printf(",VenID=%d,ProdID=%d,bcdDev=%d,iManufac=%d,iProd=%d,iSlNo=%d,nConfigs=%d", 
-    (int)sVendorID,
-    (int)sProductID,
-    (int)bcdDevice,
-    (int)indexManufacturer,
-    (int)indexProduct,
-    (int)indexSerialNum,
-    (int)bNumConfigs);
+void USBDevice::PrintDeviceStringDetails() const
+{
+	printf("\n USBDevDetails: Manufac: %s,Prod: %s,SlNo: %s\n",
+    _manufacturer.c_str(), _product.c_str(), _serialNum.c_str()) ;
 }

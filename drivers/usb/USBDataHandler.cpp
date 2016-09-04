@@ -177,8 +177,7 @@ void USBDataHandler_CopyStrDescZero(USBStringDescZero* pDest, const void* pSrcv)
 
 	pSrc->usLangID = (unsigned short*)((byte*)pSrc +  2) ;
 
-	int i ;
-	for(i = 0; i < (pSrc->bLength - 2 ) / 2; i++)
+	for(int i = 0; i < (pSrc->bLength - 2 ) / 2; ++i)
 		pDest->usLangID[i] = pSrc->usLangID[ i ] ;
 }
 
@@ -236,12 +235,6 @@ void USBDataHandler_DisplayEndPtDesc(const USBStandardEndPt* pDesc)
     pDesc->bmAttributes,
     pDesc->wMaxPacketSize,
     pDesc->bInterval);
-}
-
-void USBDataHandler_DisplayDeviceStringDetails(const USBDevice* pUSBDevice)
-{
-	printf("\n USBDevDetails: Manufac: %s,Prod: %s,SlNo: %s\n",
-			pUSBDevice->_manufacturer.c_str(), pUSBDevice->_product.c_str(), pUSBDevice->_serialNum.c_str()) ;
 }
 
 void USBDataHandler_DeAllocConfigDesc(USBStandardConfigDesc* pCD, char bNumConfigs)

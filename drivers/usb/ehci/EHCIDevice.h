@@ -18,6 +18,7 @@
 #ifndef _EHCI_DEVICE_H_
 #define _EHCI_DEVICE_H_
 
+#include <USBDevice.h>
 #include <EHCIStructures.h>
 
 class EHCIDevice final : public USBDevice
@@ -40,7 +41,7 @@ class EHCIDevice final : public USBDevice
     bool SetConfiguration(char bConfigValue);
     bool CheckConfiguration(char& bConfigValue, char bNumConfigs);
     bool GetConfigDescriptor(char bNumConfigs, USBStandardConfigDesc** pConfigDesc);
-    bool GetStringDescriptorZero(USBStringDescZero** ppStrDescZero);
+    bool GetStringDescriptorZero();
     byte SetupBuffer(EHCIQTransferDesc* pTD, unsigned uiAddress, unsigned uiSize);
     byte SetupAllocBuffer(EHCIQTransferDesc* pTD, unsigned uiSize);
     void DisplayTransactionState(EHCIQueueHead* pQH, EHCIQTransferDesc* pTDStart);

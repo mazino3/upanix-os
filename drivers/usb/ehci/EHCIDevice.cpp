@@ -50,7 +50,7 @@ EHCIDevice::EHCIDevice(EHCIController& controller)
 
 	USBDataHandler_CopyDevDesc(&_deviceDesc, &devDesc, sizeof(USBStandardDeviceDesc)) ;
 
-  if(GetStringDescriptorZero(&_pStrDescZero))
+  if(GetStringDescriptorZero())
 	  SetLangId();
   else
 //    throw upan::exception(XLOC, "GetStringDescZero Failed");
@@ -69,7 +69,7 @@ EHCIDevice::EHCIDevice(EHCIController& controller)
   GetDeviceStringDesc(_manufacturer, _deviceDesc.indexManufacturer);
   GetDeviceStringDesc(_product, _deviceDesc.indexProduct);
   GetDeviceStringDesc(_serialNum, _deviceDesc.indexSerialNum);
-	USBDataHandler_DisplayDeviceStringDetails(this) ;
+  PrintDeviceStringDetails();
 }
 
 bool EHCIDevice::SetConfiguration(char bConfigValue)
@@ -242,7 +242,7 @@ bool EHCIDevice::GetConfigDescriptor(char bNumConfigs, USBStandardConfigDesc** p
 	return true;
 }
 
-bool EHCIDevice::GetStringDescriptorZero(USBStringDescZero** ppStrDescZero)
+bool EHCIDevice::GetStringDescriptorZero()
 {
 	unsigned short usDescValue = (0x3 << 8) ;
 	char szPart[ 8 ];
@@ -261,10 +261,10 @@ bool EHCIDevice::GetStringDescriptorZero(USBStringDescZero** ppStrDescZero)
 		return false;
 	}
 
-	*ppStrDescZero = (USBStringDescZero*)DMM_AllocateForKernel(sizeof(USBStringDescZero)) ;
+	_pStrDescZero = (USBStringDescZero*)DMM_AllocateForKernel(sizeof(USBStringDescZero)) ;
 
-	USBDataHandler_CopyStrDescZero(*ppStrDescZero, pStringDescZero) ;
-	USBDataHandler_DisplayStrDescZero(*ppStrDescZero) ;
+	USBDataHandler_CopyStrDescZero(_pStrDescZero, pStringDescZero) ;
+	USBDataHandler_DisplayStrDescZero(_pStrDescZero);
 
 	DMM_DeAllocateForKernel((unsigned)pStringDescZero) ;
 
