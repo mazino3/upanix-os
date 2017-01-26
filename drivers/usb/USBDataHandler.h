@@ -25,14 +25,11 @@
 
 void USBDataHandler_DisplayDevDesc(const USBStandardDeviceDesc* pDevDesc) ;
 void USBDataHandler_CopyDevDesc(void* pDest, const void* pSrc, size_t len);
-void USBDataHandler_DisplayConfigDesc(const USBStandardConfigDesc* pConfigDesc) ;
 void USBDataHandler_CopyConfigDesc(void* pDest, const void* pSrc, int iLen) ;
 void USBDataHandler_InitDevDesc(USBStandardDeviceDesc* pDesc) ;
 void USBDataHandler_InitConfigDesc(USBStandardConfigDesc* pDesc) ;
 void USBDataHandler_InitInterfaceDesc(USBStandardInterface* pInt) ;
-void USBDataHandler_DisplayInterfaceDesc(const USBStandardInterface* pInt) ;
 void USBDataHandler_InitEndPtDesc(USBStandardEndPt* pDesc) ;
-void USBDataHandler_DisplayEndPtDesc(const USBStandardEndPt* pDesc) ;
 void USBDataHandler_CopyStrDescZero(USBStringDescZero* pDest, const void* pSrcv) ;
 void USBDataHandler_DisplayStrDescZero(USBStringDescZero* pStringDescZero) ;
 void USBDataHandler_DisplayDeviceStringDetails(const USBDevice* pUSBDevice) ;

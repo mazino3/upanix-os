@@ -52,3 +52,73 @@ void USBStandardDeviceDesc::DebugPrint() const
     (int)indexSerialNum,
     (int)bNumConfigs);
 }
+
+USBStandardConfigDesc::USBStandardConfigDesc() : 
+  bLength(0), 
+  bDescriptorType(0),
+  wTotalLength(0),
+  bNumInterfaces(0),
+  bConfigurationValue(0),
+  iConfiguration(0),
+  bmAttributes(0),
+  bMaxPower(0),
+  pInterfaces(NULL)
+{
+}
+
+void USBStandardConfigDesc::DebugPrint()
+{
+  printf("\n Len=%d,DType=%d,TotLen=%d,nInterfs=%d,ConfVal=%d,Conf=%d,Attrs=%x,MaxPower=%d", 
+    bLength,
+    bDescriptorType,
+    wTotalLength,
+    bNumInterfaces,
+    bConfigurationValue,
+    iConfiguration,
+    bmAttributes,
+    bMaxPower);
+}
+
+USBStandardInterface::USBStandardInterface() :
+	bLength(0),
+	bDescriptorType(0),
+	bInterfaceNumber(0),
+	bAlternateSetting(0),
+	bNumEndpoints(0),
+	bInterfaceClass(0),
+	bInterfaceSubClass(0),
+	bInterfaceProtocol(0),
+	iInterface(0),
+	pEndPoints(NULL)
+{
+}
+
+void USBStandardInterface::DebugPrint()
+{
+  printf("\n Len=%d,DType=%d,IntrfceNo=%d,AltSetting=%d,nEpts=%d,IC=%d,ISubC=%d,IProto=%d,Intrfce=%d", 
+    bLength,
+    bDescriptorType,
+    bInterfaceNumber,
+    bAlternateSetting,
+    bNumEndpoints,
+    bInterfaceClass,
+    bInterfaceSubClass,
+    bInterfaceProtocol,
+    iInterface);
+}
+
+USBStandardEndPt::USBStandardEndPt() :
+	bLength(0),
+	bDescriptorType(0),
+	bEndpointAddress(0),
+	bmAttributes(0),
+	wMaxPacketSize(0),
+	bInterval(0)
+{
+}
+
+void USBStandardEndPt::DebugPrint()
+{
+  printf("\n Len=%d,DType=%d,EpAddr=%x,Attrs=%d,MaxPktSize=%d,Intrvl=%d", 
+    bLength, bDescriptorType, bEndpointAddress, bmAttributes, wMaxPacketSize, bInterval);
+}

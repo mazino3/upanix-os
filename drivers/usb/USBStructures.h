@@ -61,18 +61,26 @@ class USBStandardDeviceDesc
 	char bNumConfigs ;
 } PACKED;
 
-typedef struct
+class USBStandardEndPt
 {
+  public:
+  USBStandardEndPt();
+  void DebugPrint();
+
 	char bLength ;
 	char bDescriptorType ;
 	byte bEndpointAddress ;
 	char bmAttributes ;
 	unsigned short wMaxPacketSize ;
 	char bInterval ;
-} PACKED USBStandardEndPt ;
+} PACKED;
 
-typedef struct
+class USBStandardInterface
 {
+  public:
+  USBStandardInterface();
+  void DebugPrint();
+
 	char bLength ;
 	char bDescriptorType ;
 	char bInterfaceNumber ;
@@ -83,7 +91,7 @@ typedef struct
 	byte bInterfaceProtocol ;
 	char iInterface ;
 	USBStandardEndPt* pEndPoints ;
-} PACKED USBStandardInterface ;
+} PACKED;
 
 typedef struct
 {
@@ -92,8 +100,12 @@ typedef struct
 	unsigned short* usLangID ;
 } USBStringDescZero ;
 
-typedef struct
+class USBStandardConfigDesc
 {
+  public:
+  USBStandardConfigDesc();
+  void DebugPrint();
+
 	char bLength ;
 	char bDescriptorType ;
 	unsigned short wTotalLength ;
@@ -103,7 +115,7 @@ typedef struct
 	byte bmAttributes ;
 	char bMaxPower ;
 	USBStandardInterface* pInterfaces ;
-} PACKED USBStandardConfigDesc ;
+} PACKED;
 
 class USBDevice;
 typedef struct USBulkDisk USBulkDisk ;

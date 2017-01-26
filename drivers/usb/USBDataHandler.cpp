@@ -111,19 +111,6 @@ void USBDataHandler_CopyDevDesc(void* pDestv, const void* pSrcv, size_t iLen)
 	}
 }
 
-void USBDataHandler_DisplayConfigDesc(const USBStandardConfigDesc* pConfigDesc)
-{
-  printf("\n Len=%d,DType=%d,TotLen=%d,nInterfs=%d,ConfVal=%d,Conf=%d,Attrs=%x,MaxPower=%d", 
-    pConfigDesc->bLength,
-    pConfigDesc->bDescriptorType,
-    pConfigDesc->wTotalLength,
-    pConfigDesc->bNumInterfaces,
-    pConfigDesc->bConfigurationValue,
-    pConfigDesc->iConfiguration,
-    pConfigDesc->bmAttributes,
-    pConfigDesc->bMaxPower);
-}
-
 void USBDataHandler_InitConfigDesc(USBStandardConfigDesc* pDesc)
 {
 	pDesc->bLength = 0 ;
@@ -202,20 +189,6 @@ void USBDataHandler_InitInterfaceDesc(USBStandardInterface* pInt)
 	pInt->pEndPoints = NULL ;
 }
 
-void USBDataHandler_DisplayInterfaceDesc(const USBStandardInterface* pInt)
-{
-  printf("\n Len=%d,DType=%d,IntrfceNo=%d,AltSetting=%d,nEpts=%d,IC=%d,ISubC=%d,IProto=%d,Intrfce=%d", 
-    pInt->bLength,
-    pInt->bDescriptorType,
-    pInt->bInterfaceNumber,
-    pInt->bAlternateSetting,
-    pInt->bNumEndpoints,
-    pInt->bInterfaceClass,
-    pInt->bInterfaceSubClass,
-    pInt->bInterfaceProtocol,
-    pInt->iInterface);
-}
-
 void USBDataHandler_InitEndPtDesc(USBStandardEndPt* pDesc)
 {
 	pDesc->bLength = 0 ;
@@ -224,17 +197,6 @@ void USBDataHandler_InitEndPtDesc(USBStandardEndPt* pDesc)
 	pDesc->bmAttributes = 0 ;
 	pDesc->wMaxPacketSize = 0 ;
 	pDesc->bInterval = 0 ;
-}
-
-void USBDataHandler_DisplayEndPtDesc(const USBStandardEndPt* pDesc)
-{
-  printf("\n Len=%d,DType=%d,EpAddr=%d,Attrs=%d,MaxPktSize=%d,Intrvl=%d", 
-    pDesc->bLength,
-    pDesc->bDescriptorType,
-    pDesc->bEndpointAddress,
-    pDesc->bmAttributes,
-    pDesc->wMaxPacketSize,
-    pDesc->bInterval);
 }
 
 void USBDataHandler_DeAllocConfigDesc(USBStandardConfigDesc* pCD, char bNumConfigs)

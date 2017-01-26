@@ -166,7 +166,7 @@ class ConfigureEndPointTRB : public CommandTRB
       Type(12);
       SlotID(slotID);
     }
-};
+} PACKED;
 
 class EventTRB : public TRB
 {

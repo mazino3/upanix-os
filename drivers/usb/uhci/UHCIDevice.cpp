@@ -861,7 +861,7 @@ void UHCIDevice::GetConfigDescriptor(char bNumConfigs, USBStandardConfigDesc** p
 
 		USBDataHandler_CopyConfigDesc(&pCD[index], pBuffer, pCD[index].bLength);
 
-		USBDataHandler_DisplayConfigDesc(&pCD[index]);
+		pCD[index].DebugPrint();
 
 		printf("\n Parsing Interface information for Configuration: %d", index);
 		printf("\n Number of Interfaces: %d", (int)pCD[ index ].bNumInterfaces);
@@ -891,7 +891,7 @@ void UHCIDevice::GetConfigDescriptor(char bNumConfigs, USBStandardConfigDesc** p
 								MemUtil_GetDS(), (unsigned)&(pCD[index].pInterfaces[iI]),
 								iCopyLen);
 
-			USBDataHandler_DisplayInterfaceDesc(&(pCD[index].pInterfaces[iI]));
+			pCD[index].pInterfaces[iI].DebugPrint();
 
 			USBStandardEndPt* pEndPtBuffer = (USBStandardEndPt*)((char*)pInterfaceBuffer + pInt->bLength);
 
@@ -921,7 +921,7 @@ void UHCIDevice::GetConfigDescriptor(char bNumConfigs, USBStandardConfigDesc** p
 									MemUtil_GetDS(), (unsigned)&(pCD[index].pInterfaces[iI].pEndPoints[iE]),
 									iECopyLen);
 
-				USBDataHandler_DisplayEndPtDesc(&(pCD[index].pInterfaces[iI].pEndPoints[iE]));
+				pCD[index].pInterfaces[iI].pEndPoints[iE].DebugPrint();
 			}
 
 			pInterfaceBuffer = (USBStandardInterface*)((char*)pEndPtBuffer + iNumEndPoints * sizeof(USBStandardEndPt));
