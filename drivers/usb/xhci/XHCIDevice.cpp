@@ -67,6 +67,19 @@ XHCIDevice::XHCIDevice(XHCIController& controller,
 
   GetConfigDescriptor();
 
+  ConfigureEndPoint();
+
+  SetConfiguration();
+}
+
+XHCIDevice::~XHCIDevice()
+{
+  delete _devContext;
+  delete _inputContext;
+}
+
+void XHCIDevice::ConfigureEndPoint()
+{
   uint32_t lastEPIndex = 0;
   uint32_t addContextFlag = 1; //Only Slot is set to 1, A1 (EP0) is not required
 	for(int index = 0; index < (int)_deviceDesc.bNumConfigs; ++index)
@@ -96,20 +109,6 @@ XHCIDevice::XHCIDevice(XHCIController& controller,
 
   if(_devContext->Slot().SlotState() != SlotContext::Configured)
     throw upan::exception(XLOC, "After ConfigureEndPoint, Slot is in %d state", _devContext->Slot().SlotState());
-
-  //char configValue = GetConfigValue();
-  //printf("\n Current Config Value: %d", (int)configValue);
-
-  //ConfigureEndPoint((unsigned)&inputContext->Control(), slotID);
-  //SetConfiguration
-  //Read Config descriptors
-  //Update EPs and Evaluate Context
-}
-
-XHCIDevice::~XHCIDevice()
-{
-  delete _devContext;
-  delete _inputContext;
 }
 
 void XHCIDevice::GetDeviceDescriptor()
@@ -187,9 +186,9 @@ void XHCIDevice::GetDescriptor(uint16_t descValue, uint16_t index, int len, void
   _controller.InitiateTransfer(trbId, _slotID, 1);
 }
 
-char XHCIDevice::GetConfigValue()
+byte XHCIDevice::GetConfigValue()
 {
-  char* buffer = new char[8];
+  byte* buffer = new byte[8];
 
   //Setup stage
   _inputContext->CTRing().AddSetupStageTRB(0x80, 8, 0, 0, 8, TransferType::IN_DATA_STAGE);
@@ -270,6 +269,25 @@ void XHCIDevice::GetConfigDescriptor()
 
     delete[] pBuffer;
 	}
+}
+
+void XHCIDevice::SetConfiguration()
+{
+  auto configValue = GetConfigValue();
+  printf("\n Current Config Value: %d", (int)configValue);
+
+  if(configValue <= 0 || configValue > _deviceDesc.bNumConfigs)
+  {
+    configValue = 1;
+    //Setup stage
+    _inputContext->CTRing().AddSetupStageTRB(0x00, 9, configValue, 0, 0, TransferType::NO_DATA_STAGE);
+    //Status Stage
+    const uint32_t trbId = _inputContext->CTRing().AddStatusStageTRB();
+    _controller.InitiateTransfer(trbId, _slotID, 1);
+
+    configValue = GetConfigValue();
+    printf("\n New Config Value: %d", (int)configValue);
+  }
 }
 
 bool XHCIDevice::GetMaxLun(byte* bLUN)

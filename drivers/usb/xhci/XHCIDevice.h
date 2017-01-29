@@ -42,10 +42,12 @@ class XHCIDevice final : public USBDevice
   private:
     void GetDeviceDescriptor();
     void GetConfigDescriptor();
+    void ConfigureEndPoint();
+    void SetConfiguration();
     void GetStringDescriptorZero();
     void GetDeviceStringDesc(upan::string& desc, int descIndex);
     void GetDescriptor(uint16_t descValue, uint16_t index, int len, void* dataBuffer);
-    char GetConfigValue();
+    byte GetConfigValue();
 
     uint32_t                _slotID;
     uint32_t                _portId;
