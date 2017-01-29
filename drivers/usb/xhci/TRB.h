@@ -168,6 +168,19 @@ class ConfigureEndPointTRB : public CommandTRB
     }
 } PACKED;
 
+class EvaluateContextTRB : public CommandTRB
+{
+  public:
+    EvaluateContextTRB(unsigned inputContextPtr, unsigned slotID)
+    {
+      if(inputContextPtr & 0xF)
+        throw upan::exception(XLOC, "InputContext Address must be 8 byte aligned");
+      _b1 = inputContextPtr;
+      Type(13);
+      SlotID(slotID);
+    }
+} PACKED;
+
 class EventTRB : public TRB
 {
   public:

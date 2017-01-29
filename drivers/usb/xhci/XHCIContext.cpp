@@ -20,8 +20,9 @@
 #include <Alloc.h>
 #include <XHCIContext.h>
 #include <XHCIStructures.h>
+#include <TRB.h>
 
-InputContext::InputContext(bool use64, const XHCIPortRegister& port, uint32_t portId, uint32_t routeString, uint32_t trRingPtr)
+InputContext::InputContext(bool use64, const XHCIPortRegister& port, uint32_t portId, uint32_t routeString)
 {
   unsigned addr = KERNEL_VIRTUAL_ADDRESS(MemManager::Instance().AllocatePhysicalPage() * PAGE_SIZE);
   if(use64)
@@ -37,7 +38,10 @@ InputContext::InputContext(bool use64, const XHCIPortRegister& port, uint32_t po
     _devContext = new DeviceContext(context32->_deviceContext);
   }
   Slot().Init(portId, routeString, port.PortSpeedID());
-  EP0().EP0Init(trRingPtr, port.MaxPacketSize());
+  _ctRing = new TransferRing(64);
+  EP0().Init(KERNEL_REAL_ADDRESS(_ctRing->RingBase()), USBStandardEndPt::BI, 0, port.MaxPacketSize(), 0);
+  //set A0 and A1 -> Slot and EP0 are affected by command
+  Control().SetAddContextFlag(0x3);
 }
 
 InputContext::~InputContext()
@@ -45,6 +49,27 @@ InputContext::~InputContext()
   unsigned addr = KERNEL_REAL_ADDRESS(_control);
   MemManager::Instance().DeAllocatePhysicalPage(addr / PAGE_SIZE);
   delete _devContext;
+  delete _ctRing;
+  for(auto itring : _itRings)
+    delete itring;
+  for(auto otring : _otRings)
+    delete otring;
+}
+
+uint32_t InputContext::InitEP(const USBStandardEndPt& endpoint)
+{
+  const byte epID = endpoint.Address();
+  const uint32_t epIndex = endpoint.Direction() == USBStandardEndPt::IN ? (epID * 2 - 1) : (epID * 2 - 2);
+
+  TransferRing* tRing = new TransferRing(64);
+  EP(epIndex).Init(KERNEL_REAL_ADDRESS(tRing->RingBase()), endpoint.Direction(), endpoint.bmAttributes & 0x3, endpoint.wMaxPacketSize, endpoint.bInterval);
+
+  if(endpoint.Direction() == USBStandardEndPt::IN)
+    _itRings.push_back(tRing);
+  else
+    _otRings.push_back(tRing);
+
+  return epIndex;
 }
 
 DeviceContext::DeviceContext(bool use64) : _allocated(true)
@@ -81,4 +106,44 @@ DeviceContext::~DeviceContext()
     unsigned addr = KERNEL_REAL_ADDRESS(_slot);
     MemManager::Instance().DeAllocatePhysicalPage(addr / PAGE_SIZE);
   }
+}
+
+void EndPointContext::Init(uint32_t dqPtr, USBStandardEndPt::DirectionTypes dir, byte type, int32_t maxPacketSize, byte interval)
+{
+  uint32_t epType = 4;
+  uint32_t avgTRBLen = maxPacketSize / 2;
+  switch (type)
+  {
+    case 0:
+      epType = 4;
+      avgTRBLen = 8;
+      break;
+    case 1:
+      epType = 1;
+      break;
+    case 2:
+      epType = 2;
+      break;
+    case 3:
+      epType = 3;
+      break;
+  }
+
+  if(dir == USBStandardEndPt::IN)
+    epType += 4;
+
+  EPType(epType);
+
+  //Interval, MaxPStreams = 0, Mult = 0
+  _context1 &= (0xFF008000 | ((interval & 0xFF) << 16));
+  //Max packet size
+  _context2 = (_context2 & ~(0xFFFF << 16)) | (maxPacketSize << 16);
+  //Max Burst Size = 0
+  _context2 = _context2 & ~(0xFF << 8);
+  //Error count = 3
+  _context2 = (_context2 & ~(0x7)) | 0x6;
+  //Average TRB Len
+  _context3 = avgTRBLen;
+  //TR DQ Ptr + DCS = 1
+  _trDQPtr = (uint64_t)(dqPtr | 0x1);
 }

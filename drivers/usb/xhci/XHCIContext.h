@@ -19,8 +19,11 @@
 #define _XHCI_CONTEXT_H_
 
 #include <exception.h>
+#include <list.h>
+#include <USBStructures.h>
 
 class XHCIPortRegister;
+class TransferRing;
 
 class ReservedPadding
 {
@@ -83,9 +86,14 @@ class SlotContext
       _context1 = (_context1 & ~(0xFFFFF)) | routeString;
       _context1 = (_context1 & ~(0x00F00000)) | (speed << 20);
       //context entries
-      _context1 = (_context1 & ~(0x1F000000)) | (1 << 27);
+      SetContextEntries(1);
       //root hub port number
       _context2 = (_context2 & ~(0x00FF0000)) | (portId << 16);
+    }
+
+    void SetContextEntries(uint32_t val)
+    {
+      _context1 = (_context1 & ~(0x1F000000)) | (val << 27);
     }
 
     State SlotState() const
@@ -151,6 +159,8 @@ class EndPointContext
       //TR DQ Ptr + DCS = 1
       _trDQPtr = (uint64_t)(dqPtr | 0x1);
     }
+
+    void Init(uint32_t dqPtr, USBStandardEndPt::DirectionTypes dir, byte type, int32_t maxPacketSize, byte interval);
 
     uint32_t MaxPacketSize() const
     {
@@ -267,16 +277,26 @@ class DeviceContext
 class InputContext
 {
   public:
-    InputContext(bool use64, const XHCIPortRegister& port, uint32_t portId, uint32_t routeString, uint32_t trRingPtr);
+    InputContext(bool use64, const XHCIPortRegister& port, uint32_t portId, uint32_t routeString);
     ~InputContext();
     InputControlContext& Control() { return *_control; }
     SlotContext& Slot() { return _devContext->Slot(); }
     EndPointContext& EP0() { return _devContext->EP0(); }
     EndPointContext& EP(uint32_t index) { return _devContext->EP(index); }
+    uint32_t InitEP(const USBStandardEndPt&);
+    //Control transfer ring
+    TransferRing& CTRing() { return *_ctRing; }
+    //IN endpoint transfer ring
+    TransferRing& ITRing(uint32_t index = 0) { return *_itRings[index]; }
+    //OUT endpoint transfer ring
+    TransferRing& OTRing(uint32_t index = 0) { return *_otRings[index]; }
 
   private:
     InputControlContext* _control;
     DeviceContext*       _devContext;
+    TransferRing*        _ctRing;
+    upan::list<TransferRing*> _itRings;
+    upan::list<TransferRing*> _otRings;
 };
 
 #endif

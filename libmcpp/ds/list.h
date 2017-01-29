@@ -63,6 +63,7 @@ class list
     reverse_iterator sorted_reverse_insert_asc(const T& v);
     reverse_iterator sorted_reverse_insert_desc(const T& v);
     void clear();
+    T& operator[](int index) const;
 
   private:
     bool pop(bool front);
@@ -495,6 +496,17 @@ void list<T>::clear()
     delete it._node;
   _size = 0;
   _first = nullptr;
+}
+
+template <typename T>
+T& list<T>::operator[](int index) const
+{
+  if(index < 0 || index >= (int)size())
+    throw upan::exception(XLOC, "list index %d is out-of-bounds", index);
+  auto i = begin();
+  for(int count = 0; count <= index; ++count)
+    ++i;
+  return *i;
 }
 
 };

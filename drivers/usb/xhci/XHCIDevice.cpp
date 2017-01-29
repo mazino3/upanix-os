@@ -27,19 +27,14 @@ XHCIDevice::XHCIDevice(XHCIController& controller,
                        XHCIPortRegister& port,
                        unsigned portId,
                        unsigned slotType) : _portId(portId), _port(port), _controller(controller),
-                       _tRing(nullptr), _inputContext(nullptr), _devContext(nullptr)
+                       _inputContext(nullptr), _devContext(nullptr)
 {
   _slotID = _controller.EnableSlot(slotType);
   if(!_slotID)
     throw upan::exception(XLOC, "Failed to get SlotID");
 
-  _tRing = new TransferRing(64);
-  uint32_t trRingPtr = KERNEL_REAL_ADDRESS(_tRing->RingBase());
-
-  _inputContext = new InputContext(_controller.CapReg().IsContextSize64(), port, portId, 0, trRingPtr);
+  _inputContext = new InputContext(_controller.CapReg().IsContextSize64(), port, portId, 0);
   _devContext = new DeviceContext(_controller.CapReg().IsContextSize64());
-  //set A0 and A1 -> Slot and EP0 are affected by command
-  _inputContext->Control().SetAddContextFlag(0x3);
 
   _controller.SetDeviceContext(_slotID, _devContext->Slot());
 
@@ -62,8 +57,6 @@ XHCIDevice::XHCIDevice(XHCIController& controller,
 
   GetDeviceDescriptor();
 
-  GetConfigDescriptor();
-
   GetStringDescriptorZero();
 	SetLangId();
   GetDeviceStringDesc(_manufacturer, _deviceDesc.indexManufacturer);
@@ -71,6 +64,33 @@ XHCIDevice::XHCIDevice(XHCIController& controller,
   GetDeviceStringDesc(_serialNum, _deviceDesc.indexSerialNum);
 
   PrintDeviceStringDetails();
+
+  GetConfigDescriptor();
+
+  uint32_t lastEPIndex = 0;
+  uint32_t addContextFlag = 1; //Only Slot is set to 1, A1 (EP0) is not required
+	for(int index = 0; index < (int)_deviceDesc.bNumConfigs; ++index)
+	{
+    const auto& config = _pArrConfigDesc[index];
+		for(int iI = 0; iI < (int)config.bNumInterfaces; ++iI)
+		{
+      const auto& interface = config.pInterfaces[iI];
+			for(int iE = 0; iE < interface.bNumEndpoints; ++iE)
+			{
+        const auto& endpoint = interface.pEndPoints[iE];
+        const auto epIndex = _inputContext->InitEP(endpoint);
+        if(lastEPIndex < epIndex)
+          lastEPIndex = epIndex;
+        addContextFlag |=  (1 << (epIndex + 2));
+			}
+		}
+	}
+  _inputContext->Slot().SetContextEntries(lastEPIndex + 2);
+  //TODO: is it requied to update MaxPacketSize of FS device ? if so then update and call Evaluate Context with A0 and A1 set
+  _controller.EvaluateContext(KERNEL_REAL_ADDRESS(&_inputContext->Control()), _slotID);
+
+  //set A1 -> Slot and other A bits corresponding to EPs being configured
+  _inputContext->Control().SetAddContextFlag(addContextFlag);
 
   _controller.ConfigureEndPoint(KERNEL_REAL_ADDRESS(&_inputContext->Control()), _slotID);
 
@@ -90,7 +110,6 @@ XHCIDevice::~XHCIDevice()
 {
   delete _devContext;
   delete _inputContext;
-  delete _tRing;
 }
 
 void XHCIDevice::GetDeviceDescriptor()
@@ -160,11 +179,11 @@ void XHCIDevice::GetDescriptor(uint16_t descValue, uint16_t index, int len, void
   if(len < 0)
     len = DEF_DESC_LEN;
   //Setup stage
-  _tRing->AddSetupStageTRB(0x80, 6, descValue, index, len, TransferType::IN_DATA_STAGE);
+  _inputContext->CTRing().AddSetupStageTRB(0x80, 6, descValue, index, len, TransferType::IN_DATA_STAGE);
   //Data stage
-  _tRing->AddDataStageTRB(KERNEL_REAL_ADDRESS(dataBuffer), len, DataDirection::IN, _port.MaxPacketSize());
+  _inputContext->CTRing().AddDataStageTRB(KERNEL_REAL_ADDRESS(dataBuffer), len, DataDirection::IN, _port.MaxPacketSize());
   //Status Stage
-  const uint32_t trbId = _tRing->AddStatusStageTRB();
+  const uint32_t trbId = _inputContext->CTRing().AddStatusStageTRB();
   _controller.InitiateTransfer(trbId, _slotID, 1);
 }
 
@@ -173,11 +192,11 @@ char XHCIDevice::GetConfigValue()
   char* buffer = new char[8];
 
   //Setup stage
-  _tRing->AddSetupStageTRB(0x80, 8, 0, 0, 8, TransferType::IN_DATA_STAGE);
+  _inputContext->CTRing().AddSetupStageTRB(0x80, 8, 0, 0, 8, TransferType::IN_DATA_STAGE);
   //Data stage
-  _tRing->AddDataStageTRB(KERNEL_REAL_ADDRESS(buffer), 8, DataDirection::IN, _port.MaxPacketSize());
+  _inputContext->CTRing().AddDataStageTRB(KERNEL_REAL_ADDRESS(buffer), 8, DataDirection::IN, _port.MaxPacketSize());
   //Status Stage
-  const uint32_t trbId = _tRing->AddStatusStageTRB();
+  const uint32_t trbId = _inputContext->CTRing().AddStatusStageTRB();
   _controller.InitiateTransfer(trbId, _slotID, 1);
 
   auto ret = buffer[0];
@@ -250,7 +269,6 @@ void XHCIDevice::GetConfigDescriptor()
 		}
 
     delete[] pBuffer;
-		pBuffer = NULL ;
 	}
 }
 

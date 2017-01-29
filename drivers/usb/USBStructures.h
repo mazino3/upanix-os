@@ -64,8 +64,13 @@ class USBStandardDeviceDesc
 class USBStandardEndPt
 {
   public:
+  enum DirectionTypes { IN, OUT, BI };
+
   USBStandardEndPt();
   void DebugPrint();
+
+  DirectionTypes Direction() const { return bEndpointAddress & 0x80 ? IN : OUT; }
+  uint32_t Address() const { return bEndpointAddress & 0xF; }
 
 	char bLength ;
 	char bDescriptorType ;

@@ -409,6 +409,12 @@ void XHCIController::ConfigureEndPoint(unsigned icptr, unsigned slotID)
   InitiateCommand();
 }
 
+void XHCIController::EvaluateContext(unsigned icptr, unsigned slotID)
+{
+  _cmdManager->EvaluateContext(icptr, slotID);
+  InitiateCommand();
+}
+
 void XHCIController::WaitForCmdCompletion(EventTRB& result)
 {
   WaitForEvent(_cmdManager->CommandTRBAddress(), result);
@@ -416,7 +422,7 @@ void XHCIController::WaitForCmdCompletion(EventTRB& result)
     throw upan::exception(XLOC, "Got invalid Event TRB: %d", result.Type());
 
   if(!result.IsCommandSuccess())
-    throw upan::exception(XLOC, "Command did not complete successfully");
+    throw upan::exception(XLOC, "Command did not complete successfully - Completion Code: %u", result.CompletionCode());
 }
 
 void XHCIController::WaitForTransferCompletion(uint32_t trbId, EventTRB& result)
@@ -529,6 +535,12 @@ void CommandManager::AddressDevice(unsigned icptr, unsigned slotID, bool blockSe
 void CommandManager::ConfigureEndPoint(unsigned icptr, unsigned slotID)
 {
   _ring->_cmd = ConfigureEndPointTRB(icptr, slotID);
+  Apply();
+}
+
+void CommandManager::EvaluateContext(unsigned icptr, unsigned slotID)
+{
+  _ring->_cmd = EvaluateContextTRB(icptr, slotID);
   Apply();
 }
 

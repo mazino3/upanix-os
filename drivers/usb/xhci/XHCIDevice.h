@@ -51,7 +51,6 @@ class XHCIDevice final : public USBDevice
     uint32_t                _portId;
     XHCIPortRegister&       _port;
     XHCIController&         _controller;
-    TransferRing*           _tRing;
     InputContext*           _inputContext;
     DeviceContext*          _devContext;
 };

@@ -53,6 +53,7 @@ class XHCIController
     unsigned EnableSlot(unsigned slotType);
     void AddressDevice(unsigned inputContextPtr, unsigned slotID, bool blockSetAddressReq);
     void ConfigureEndPoint(unsigned icptr, unsigned slotID);
+    void EvaluateContext(unsigned icptr, unsigned slotID);
     void WaitForCmdCompletion(EventTRB& result);
     void WaitForTransferCompletion(uint32_t trbId, EventTRB& result);
     void WaitForEvent(uint32_t trbId, EventTRB& result);
@@ -105,6 +106,7 @@ class CommandManager
     void DisableSlot(unsigned slotType);
     void AddressDevice(unsigned inputContextPtr, unsigned slotID, bool blockSetAddressReq);
     void ConfigureEndPoint(unsigned icptr, unsigned slotID);
+    void EvaluateContext(unsigned icptr, unsigned slotID);
     void DebugPrint();
     uint32_t CommandTRBAddress() const
     {
