@@ -46,6 +46,33 @@ class uniq_ptr
     T* get() { return _ptr; }
     T* operator->() { return get(); }
     T& operator*() { return *get(); }
+    void release() { _ptr = nullptr; }
+
+  private:
+    T* _ptr;
+};
+
+template <typename T>
+class uniq_ptr<T[]>
+{
+  private:
+    uniq_ptr(const uniq_ptr&) = delete;
+    uniq_ptr& operator=(const uniq_ptr&) = delete;
+    
+  public:
+    uniq_ptr(T* ptr) : _ptr(ptr)
+    {
+    }
+
+    ~uniq_ptr()
+    {
+      delete[] _ptr;
+    }
+
+    T* get() { return _ptr; }
+    T& operator[](int index) { return _ptr[index]; }
+    const T& operator[](int index) const { return _ptr[index]; }
+    void release() { _ptr = nullptr; }
 
   private:
     T* _ptr;
