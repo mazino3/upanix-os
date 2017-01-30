@@ -21,7 +21,6 @@
 #include <Global.h>
 #include <SCSIHandler.h>
 #include <USBStructures.h>
-#include <UHCIStructures.h>
 
 #define USBMassBulkStorageDisk_SUCCESS 0
 #define USBMassBulkStorageDisk_FAILURE 1
@@ -59,6 +58,10 @@
 #define US_BULK_STAT_PHASE	2
 
 #define US_BULK_MAX_TRANSFER_SIZE 32768 //32 KB
+
+class USBDevice;
+class RawDiskDrive;
+
 typedef enum
 {
 	CBW_CMD_SUCCESS,
@@ -90,11 +93,29 @@ typedef struct
 class USBDiskDriver final : public USBDriver
 {
   public:
-    USBDiskDriver(const upan::string& name) : USBDriver(name), _deviceId(0) {}
-    bool DoAddDevice(USBDevice*);
+    USBDiskDriver(const upan::string& name) : USBDriver(name) {}
+    bool Match(USBDevice*);
+    void DoAddDevice(USBDevice*);
     void DoRemoveDevice(USBDevice*);
+    static int NextDeviceId() { return ++_deviceId; }
   private:
-    int _deviceId;
+    int MatchingInterfaceIndex(USBDevice* pDevice);
+    static int _deviceId;
+};
+
+class USBMassBulkStorageDisk : public SCSIHost
+{
+  public:
+    USBMassBulkStorageDisk(USBulkDisk* disk) : _disk(disk) {}
+    upan::string GetName();
+    bool QueueCommand(SCSICommand* pCommand);
+    byte DoReset();
+    void AddDeviceDrive(RawDiskDrive* pDisk);
+  private:
+    byte SendCommand(SCSICommand* pCommand);
+    byte ReadData(void* pDataBuf, unsigned uiLen);
+    byte WriteData(void* pDataBuf, unsigned uiLen);
+    USBulkDisk* _disk;
 };
 
 byte USBMassBulkStorageDisk_Initialize() ;

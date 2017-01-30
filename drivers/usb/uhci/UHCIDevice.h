@@ -32,7 +32,7 @@ class UHCIDevice final : public USBDevice
   public:
     UHCIDevice(UHCIController&, unsigned uiPortAddr);
 
-    bool GetMaxLun(byte* bLUN);
+    byte GetMaxLun();
     bool CommandReset();
     bool ClearHaltEndPoint(USBulkDisk* pDisk, bool bIn);
     bool BulkRead(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen);
@@ -43,11 +43,11 @@ class UHCIDevice final : public USBDevice
     void GetDescriptor(unsigned short usDescValue, unsigned short usIndex, int iLen, void* pDestDesc);
     void GetDeviceStringDesc(upan::string& desc, int descIndex);
     void GetDeviceDescriptor(USBStandardDeviceDesc* pDevDesc);
-    void CheckConfiguration(char* bConfigValue, char bNumConfigs);
-    void GetConfigDescriptor(char bNumConfigs, USBStandardConfigDesc** pConfigDesc);
+    void CheckConfiguration(byte* bConfigValue);
+    void GetConfigDescriptor(USBStandardConfigDesc** pConfigDesc);
     void GetStringDescriptorZero(USBStringDescZero** ppStrDescZero);
-    void GetConfiguration(char* bConfigValue);
-    void SetConfiguration(char bConfigValue);
+    void GetConfiguration(byte* bConfigValue);
+    void SetConfiguration(byte bConfigValue);
 
     unsigned uiIOSize ;
     int iIRQ ;

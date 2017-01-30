@@ -16,8 +16,13 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
 #include <DMM.h>
-#include <USBStructures.h>
 #include <stdio.h>
+#include <string.h>
+#include <exception.h>
+#include <DeviceDrive.h>
+#include <USBStructures.h>
+#include <USBMassBulkStorageDisk.h>
+#include <USBDevice.h>
 
 /***********************************************************************************************/
 
@@ -62,7 +67,7 @@ USBStandardConfigDesc::USBStandardConfigDesc() :
   iConfiguration(0),
   bmAttributes(0),
   bMaxPower(0),
-  pInterfaces(NULL)
+  pInterfaces(nullptr)
 {
 }
 
@@ -89,7 +94,7 @@ USBStandardInterface::USBStandardInterface() :
 	bInterfaceSubClass(0),
 	bInterfaceProtocol(0),
 	iInterface(0),
-	pEndPoints(NULL)
+	pEndPoints(nullptr)
 {
 }
 
@@ -121,4 +126,108 @@ void USBStandardEndPt::DebugPrint()
 {
   printf("\n Len=%d,DType=%d,EpAddr=%x,Attrs=%d,MaxPktSize=%d,Intrvl=%d", 
     bLength, bDescriptorType, bEndpointAddress, bmAttributes, wMaxPacketSize, bInterval);
+}
+
+USBulkDisk::USBulkDisk(USBDevice* device, 
+  int interfaceIndex,
+  byte maxLun, 
+  const upan::string& protoName) : 
+    pUSBDevice(device), bEndPointInToggle(0), bEndPointOutToggle(0), pRawAlignedBuffer(nullptr),
+    pSCSIDeviceList(nullptr), bMaxLun(maxLun), szProtocolName(protoName), pHostDevice(nullptr)
+{
+	const USBStandardInterface& interface = pUSBDevice->_pArrConfigDesc[ pUSBDevice->_iConfigIndex ].pInterfaces[ interfaceIndex ];
+  pUSBDevice->_iInterfaceIndex = interfaceIndex;
+  pUSBDevice->_bInterfaceNumber = interface.bInterfaceNumber;
+	pUSBDevice->_pPrivate = this;
+
+	/* Find the endpoints we need
+	 * We are expecting a minimum of 2 endpoints - in and out (bulk).
+	 * An optional interrupt is OK (necessary for CBI protocol).
+	 * We will ignore any others.
+	 */
+	USBStandardEndPt *pEndPointIn = nullptr, *pEndPointOut = nullptr;
+	for(int i = 0; i < interface.bNumEndpoints; ++i)
+	{
+		USBStandardEndPt* pEndPoint = &(interface.pEndPoints[ i ]) ;
+
+		// Bulk Endpoint
+		if( (pEndPoint->bmAttributes & USB_ENDPOINT_XFERTYPE_MASK) == USB_ENDPOINT_XFER_BULK )
+		{
+			// Bulk in/out
+			if( pEndPoint->bEndpointAddress & USB_DIR_IN )
+				pEndPointIn = pEndPoint ;
+			else
+				pEndPointOut = pEndPoint ;
+		}
+		else if( (pEndPoint->bmAttributes & USB_ENDPOINT_XFERTYPE_MASK) == USB_ENDPOINT_XFER_INT )
+			pEndPointInt = pEndPoint ;
+	}
+
+	/*  Do some basic sanity checks, and bail if we find a problem */
+	if( !pEndPointIn || !pEndPointOut || ( interface.bInterfaceProtocol == USB_PR_CB && !pEndPointInt ) )
+    throw upan::exception(XLOC, "USBMassBulkStorageDisk: Invalid End Point configuration. In:%x, Out:%x, Int:%x", pEndPointIn, pEndPointOut, pEndPointInt);
+
+	/* Copy over the endpoint data */
+	if(pEndPointIn)
+	{
+		uiEndPointIn = pEndPointIn->bEndpointAddress & USB_ENDPOINT_NUMBER_MASK ;
+		usInMaxPacketSize = pEndPointIn->wMaxPacketSize ;
+		printf("\n Max Bulk Read Size: %d", usInMaxPacketSize) ;
+	}
+
+	if(pEndPointOut)
+	{
+		uiEndPointOut = pEndPointOut->bEndpointAddress & USB_ENDPOINT_NUMBER_MASK ;
+		usOutMaxPacketSize = pEndPointOut->wMaxPacketSize ;
+		printf("\n Max Bulk Write Size: %d", usOutMaxPacketSize) ;
+	}
+
+	pRawAlignedBuffer = (byte*)DMM_AllocateForKernel(US_BULK_MAX_TRANSFER_SIZE, 16) ;
+	pHostDevice = new USBMassBulkStorageDisk(this);
+}
+
+USBulkDisk::~USBulkDisk()
+{
+  if(pRawAlignedBuffer)
+		DMM_DeAllocateForKernel((unsigned)pRawAlignedBuffer);
+
+  if(pSCSIDeviceList)
+    DMM_DeAllocateForKernel((unsigned)pSCSIDeviceList);
+
+  delete pHostDevice;
+}
+
+void USBulkDisk::Initialize()
+{
+	byte bStatus = pHostDevice->DoReset() ;
+	if(bStatus != USBMassBulkStorageDisk_SUCCESS)
+    throw upan::exception(XLOC, "Failed to reset");
+
+	pSCSIDeviceList = (SCSIDevice**)DMM_AllocateForKernel(sizeof(SCSIDevice**) * (bMaxLun + 1)) ;
+	int iLun ;
+	for(iLun = 0; iLun <= bMaxLun; iLun++)
+		pSCSIDeviceList[ iLun ] = nullptr ;
+
+	char szName[10];
+	bool bDeviceFound = false;
+
+	//TODO: For the time configuring only LUN 0
+	for(iLun = 0; iLun <= 0/*bMaxLun*/; iLun++)
+	{
+		SCSIDevice* pSCSIDevice = SCSIHandler_ScanDevice(pHostDevice, 0, 0, iLun) ;
+		pSCSIDeviceList[ iLun ] = pSCSIDevice ;
+
+		if(pSCSIDevice == NULL)
+		{
+			printf("\n No SCSI USB Mass Bulk Storage Device @ LUN: %d", iLun) ;
+			continue ;
+		}
+
+    sprintf(szName, "usbdisk%d", USBDiskDriver::NextDeviceId());
+		pHostDevice->AddDeviceDrive(DiskDriveManager::Instance().CreateRawDisk(szName, USB_SCSI_DISK, pSCSIDevice));
+		bDeviceFound = true ;
+	}
+
+	if(!bDeviceFound)
+    throw upan::exception(XLOC, "No USB Bulk Storage Device Found. Driver setup failed");
 }

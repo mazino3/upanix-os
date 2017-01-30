@@ -26,7 +26,7 @@ class EHCIDevice final : public USBDevice
   public:
     EHCIDevice(EHCIController&);
 
-    bool GetMaxLun(byte* bLUN);
+    byte GetMaxLun();
     bool CommandReset();
     bool ClearHaltEndPoint(USBulkDisk* pDisk, bool bIn);
     bool BulkRead(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen);
@@ -37,10 +37,10 @@ class EHCIDevice final : public USBDevice
     bool SetAddress();
     bool GetDeviceDescriptor(USBStandardDeviceDesc* pDevDesc);
     bool GetDescriptor(unsigned short usDescValue, unsigned short usIndex, int iLen, void* pDestDesc);
-    bool GetConfigValue(char& bConfigValue);
-    bool SetConfiguration(char bConfigValue);
-    bool CheckConfiguration(char& bConfigValue, char bNumConfigs);
-    bool GetConfigDescriptor(char bNumConfigs, USBStandardConfigDesc** pConfigDesc);
+    bool GetConfigValue(byte& bConfigValue);
+    bool SetConfiguration(byte bConfigValue);
+    bool CheckConfiguration(byte& bConfigValue);
+    bool GetConfigDescriptor(USBStandardConfigDesc** pConfigDesc);
     bool GetStringDescriptorZero();
     byte SetupBuffer(EHCIQTransferDesc* pTD, unsigned uiAddress, unsigned uiSize);
     byte SetupAllocBuffer(EHCIQTransferDesc* pTD, unsigned uiSize);

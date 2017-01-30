@@ -38,8 +38,20 @@ void USBDevice::SetLangId()
 	}
 }
 
+void USBDevice::SetConfigIndex(byte bConfigValue)
+{
+	_iConfigIndex = 0 ;
+	for(int i = 0; i < _deviceDesc.bNumConfigs; i++)
+	{
+		if(_pArrConfigDesc[ i ].bConfigurationValue == bConfigValue)
+		{
+			_iConfigIndex = i;
+			break;
+		}
+	}
+}
+
 void USBDevice::PrintDeviceStringDetails() const
 {
-	printf("\n USBDevDetails: Manufac: %s,Prod: %s,SlNo: %s\n",
-    _manufacturer.c_str(), _product.c_str(), _serialNum.c_str()) ;
+	printf("\n USBDevDetails: Manufac: %s,Prod: %s,SlNo: %s\n", _manufacturer.c_str(), _product.c_str(), _serialNum.c_str()) ;
 }

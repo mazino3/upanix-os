@@ -21,7 +21,7 @@
 #include <stdio.h>
 #include <PortCom.h>
 #include <string.h>
-#include <Display.h>
+#include <uniq_ptr.h>
 #include <PartitionManager.h>
 #include <FileSystem.h>
 #include <StringUtil.h>
@@ -30,8 +30,9 @@
 #include <USBDevice.h>
 
 static int USDDeviceId ;
+int USBDiskDriver::_deviceId = 0;
 
-static void USBMassBulkStorageDisk_AddDeviceDrive(RawDiskDrive* pDisk)
+void USBMassBulkStorageDisk::AddDeviceDrive(RawDiskDrive* pDisk)
 {
 	char driveCh = 'a' ;
 	char driveName[5] = { 'u', 's', 'd', '\0', '\0' } ;
@@ -92,16 +93,16 @@ static void USBMassBulkStorageDisk_AddDeviceDrive(RawDiskDrive* pDisk)
 	}
 }
 
-static byte USBMassBulkStorageDisk_DoReset(USBulkDisk* pDisk)
+byte USBMassBulkStorageDisk::DoReset()
 {
 	printf("\n Doing Bulk Reset on USB Bulk Mass Storage Device\n") ;
 
-	USBDevice* pUSBDevice = pDisk->pUSBDevice ;
+	USBDevice* pUSBDevice = _disk->pUSBDevice ;
 
 	if(pUSBDevice == NULL)
 		return USBMassBulkStorageDisk_FAILURE ;
 
-	KC::MDisplay().Message("\n Doing Command Reset", Display::WHITE_ON_BLACK()) ;
+	printf("\n Doing Command Reset");
 
 	if(!pUSBDevice->CommandReset())
 	{
@@ -109,40 +110,37 @@ static byte USBMassBulkStorageDisk_DoReset(USBulkDisk* pDisk)
 		return USBMassBulkStorageDisk_FAILURE ;
 	}
 
-	KC::MDisplay().Message("\n Command Reset Complete", Display::WHITE_ON_BLACK()) ;
+	printf("\n Command Reset Complete");
 
 	// Long Wait For Reset
 	ProcessManager::Instance().Sleep( 5 * 1000 );
 
-	KC::MDisplay().Message("\n Doing IN EndPoint Clear Halt", Display::WHITE_ON_BLACK()) ;
+	printf("\n Doing IN EndPoint Clear Halt");
 
-	if(!pUSBDevice->ClearHaltEndPoint(pDisk, true))
+	if(!pUSBDevice->ClearHaltEndPoint(_disk, true))
 	{
 		printf("\n Failed to Clear Halt EndPointIn. Bulk Mass Storage Reset Failed !\n") ;
 		return USBMassBulkStorageDisk_FAILURE ;
 	}
 
-	KC::MDisplay().Message("\n IN EndPoint Clear Halt Complete", Display::WHITE_ON_BLACK()) ;
+	printf("\n IN EndPoint Clear Halt Complete");
 
-	KC::MDisplay().Message("\n Doing OUT EndPoint Clear Halt", Display::WHITE_ON_BLACK()) ;
+	printf("\n Doing OUT EndPoint Clear Halt");
 
-	if(!pUSBDevice->ClearHaltEndPoint(pDisk, false))
+	if(!pUSBDevice->ClearHaltEndPoint(_disk, false))
 	{
 		printf("\n Failed to Clear Halt EndPointOut. Bulk Mass Storage Reset Failed !\n") ;
 		return USBMassBulkStorageDisk_FAILURE ;
 	}
 
-	KC::MDisplay().Message("\n OUT EndPoint Clear Halt Complete", Display::WHITE_ON_BLACK()) ;
+	printf("\n OUT EndPoint Clear Halt Complete");
 
 	printf("\n Bulk soft Reset Complete\n") ;
 
 	return USBMassBulkStorageDisk_SUCCESS ;
 }
 
-
-/***************************************************************************************************************************/
-
-byte USBMassBulkStorageDisk_ReadData(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen)
+byte USBMassBulkStorageDisk::ReadData(void* pDataBuf, unsigned uiLen)
 {
 	unsigned uiTranLen ;
 	while(uiLen > 0)
@@ -150,7 +148,7 @@ byte USBMassBulkStorageDisk_ReadData(USBulkDisk* pDisk, void* pDataBuf, unsigned
 		uiTranLen = (uiLen > US_BULK_MAX_TRANSFER_SIZE) ? US_BULK_MAX_TRANSFER_SIZE : uiLen ;
 		uiLen -= uiTranLen ;
 
-		if(!pDisk->pUSBDevice->BulkRead(pDisk, pDataBuf, uiTranLen))
+		if(!_disk->pUSBDevice->BulkRead(_disk, pDataBuf, uiTranLen))
 		{
 			printf("\n Bulk Read Data Failed") ;
 			return USBMassBulkStorageDisk_FAILURE ;
@@ -162,7 +160,7 @@ byte USBMassBulkStorageDisk_ReadData(USBulkDisk* pDisk, void* pDataBuf, unsigned
 	return USBMassBulkStorageDisk_SUCCESS ;
 }
 
-byte USBMassBulkStorageDisk_WriteData(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen)
+byte USBMassBulkStorageDisk::WriteData(void* pDataBuf, unsigned uiLen)
 {
 	unsigned uiTranLen ;
 	while(uiLen > 0)
@@ -170,7 +168,7 @@ byte USBMassBulkStorageDisk_WriteData(USBulkDisk* pDisk, void* pDataBuf, unsigne
 		uiTranLen = (uiLen > US_BULK_MAX_TRANSFER_SIZE) ? US_BULK_MAX_TRANSFER_SIZE : uiLen ;
 		uiLen -= uiTranLen ;
 
-		if(!pDisk->pUSBDevice->BulkWrite(pDisk, pDataBuf, uiTranLen))
+		if(!_disk->pUSBDevice->BulkWrite(_disk, pDataBuf, uiTranLen))
 		{
 			printf("\n Bulk Write Data Failed") ;
 			return USBMassBulkStorageDisk_FAILURE ;
@@ -182,12 +180,12 @@ byte USBMassBulkStorageDisk_WriteData(USBulkDisk* pDisk, void* pDataBuf, unsigne
 	return USBMassBulkStorageDisk_SUCCESS ;
 }
 
-byte USBMassBulkStorageDisk_SendCommand(USBulkDisk* pDisk, SCSICommand* pCommand)
+byte USBMassBulkStorageDisk::SendCommand(SCSICommand* pCommand)
 {
 	USBulkCBW oCBW ;
 	USBulkCSW oCSW ;
 
-	USBDevice* pUSBDevice = (USBDevice*)(pDisk->pUSBDevice) ;
+	USBDevice* pUSBDevice = (USBDevice*)(_disk->pUSBDevice) ;
 
 	if(pUSBDevice == NULL)
 		return USBMassBulkStorageDisk_FAILURE ;
@@ -212,18 +210,18 @@ byte USBMassBulkStorageDisk_SendCommand(USBulkDisk* pDisk, SCSICommand* pCommand
 
 	/* Send it to out endpoint */
 	byte bStatus ;
-	RETURN_IF_NOT(bStatus, USBMassBulkStorageDisk_WriteData(pDisk, &oCBW, USB_CBW_SIZE), USBMassBulkStorageDisk_SUCCESS) ;
+	RETURN_IF_NOT(bStatus, WriteData(&oCBW, USB_CBW_SIZE), USBMassBulkStorageDisk_SUCCESS) ;
 
 	if(pCommand->iDirection == SCSI_DATA_READ)
 	{
-		RETURN_IF_NOT(bStatus, USBMassBulkStorageDisk_ReadData(pDisk, pCommand->pRequestBuffer, oCBW.uiDataTransferLen), USBMassBulkStorageDisk_SUCCESS) ;
+		RETURN_IF_NOT(bStatus, ReadData(pCommand->pRequestBuffer, oCBW.uiDataTransferLen), USBMassBulkStorageDisk_SUCCESS) ;
 	}
 	else
 	{
-		RETURN_IF_NOT(bStatus, USBMassBulkStorageDisk_WriteData(pDisk, pCommand->pRequestBuffer, oCBW.uiDataTransferLen), USBMassBulkStorageDisk_SUCCESS) ;
+		RETURN_IF_NOT(bStatus, WriteData(pCommand->pRequestBuffer, oCBW.uiDataTransferLen), USBMassBulkStorageDisk_SUCCESS) ;
 	}
 
-	RETURN_IF_NOT(bStatus, USBMassBulkStorageDisk_ReadData(pDisk, &oCSW, 13), USBMassBulkStorageDisk_SUCCESS) ;
+	RETURN_IF_NOT(bStatus, ReadData(&oCSW, 13), USBMassBulkStorageDisk_SUCCESS) ;
 
 	/* Checl bulk status */
 	if(oCSW.uiSignature != USBDISK_BULK_CSW_SIGNATURE || oCSW.uiTag != oCBW.uiTag || oCSW.bStatus > US_BULK_STAT_PHASE)
@@ -255,24 +253,22 @@ byte USBMassBulkStorageDisk_SendCommand(USBulkDisk* pDisk, SCSICommand* pCommand
 	return USBMassBulkStorageDisk_SUCCESS ;
 }
 
-const char* USBMassBulkStorageDisk_GetName()
+upan::string USBMassBulkStorageDisk::GetName()
 {
 	return "USB Disk" ;
 }
 
-bool USBMassBulkStorageDisk_SCSICommand(SCSICommand* pCommand)
+bool USBMassBulkStorageDisk::QueueCommand(SCSICommand* pCommand)
 {
-	USBulkDisk* pDisk = (USBulkDisk*)pCommand->pHost->pPrivate ;
-
-	if(pCommand->iLun > pDisk->bMaxLun)
+	if(pCommand->iLun > _disk->MaxLun())
 		return false ;
 
-	byte bStatus = USBMassBulkStorageDisk_SendCommand(pDisk, pCommand) ;
+	byte bStatus = SendCommand(pCommand) ;
 
 	if(bStatus == USBMassBulkStorageDisk_ERROR)
 	{
 		printf("\n Doing Full Reset of Mass Storage Device") ;
-		USBMassBulkStorageDisk_DoReset(pDisk) ;
+		DoReset() ;
 		pCommand->iResult = 1 ;
 		return false ;
 	}
@@ -332,12 +328,12 @@ bool USBMassBulkStorageDisk_SCSICommand(SCSICommand* pCommand)
 
 		/* issue the auto-sense command */
 		printf("\nAuto Sensing...") ;
-		bStatus = USBMassBulkStorageDisk_SendCommand(pDisk, pCommand) ;
+		bStatus = SendCommand(pCommand) ;
 
 		if(bStatus == USBMassBulkStorageDisk_ERROR)
 		{
 			printf("Error processing Request Sense. Trying Complete RESET\n") ;
-			USBMassBulkStorageDisk_DoReset(pDisk) ;
+			DoReset() ;
 			pCommand->iResult = 2 ;
 			return false ;
 		}
@@ -412,226 +408,70 @@ byte USBMassBulkStorageDisk_Initialize()
 	return USBMassBulkStorageDisk_SUCCESS ;
 }
 
-bool USBDiskDriver::DoAddDevice(USBDevice* pUSBDevice)
+int USBDiskDriver::MatchingInterfaceIndex(USBDevice* pUSBDevice)
 {
-	USBulkDisk* pDisk = NULL ;
-	bool bFound = false ;
-	byte bDeviceSubClass = 0 ;
-	byte bDeviceProtocol = 0 ;
-	USBStandardInterface* pInterface = NULL ;
-	USBStandardEndPt *pEndPointIn = NULL, *pEndPointOut = NULL, *pEndPointInt = NULL ;
-	
 	USBStandardConfigDesc* pConfig = &(pUSBDevice->_pArrConfigDesc[ pUSBDevice->_iConfigIndex ]) ;
+  for(byte i = 0; i < pConfig->bNumInterfaces; ++i)
+  {
+    const auto& interface = pConfig->pInterfaces[i];
+    if(interface.bInterfaceClass == USB_CLASS_MASS_STORAGE && interface.bInterfaceProtocol == USB_PR_BULK)
+      return i;
+  }
+  return -1;
+}
 
+bool USBDiskDriver::Match(USBDevice* pUSBDevice)
+{
+  return MatchingInterfaceIndex(pUSBDevice) >= 0;
+}
+
+void USBDiskDriver::DoAddDevice(USBDevice* pUSBDevice)
+{
 	if(pUSBDevice->_deviceDesc.sVendorID == 0x05DC)
-	{
-    printf("\nLexar Jumpshot USB CF Reader detected - Not supported yet!");
-		return false;
-	}
+    throw upan::exception(XLOC, "Lexar Jumpshot USB CF Reader detected - Not supported yet!");
 
-	if(bFound == false)
-	{
-		byte i ;
-		for(i = 0; i < pConfig->bNumInterfaces; i++)
-		{
-			pInterface = &(pConfig->pInterfaces[ i ]) ;
-			if(pInterface->bInterfaceClass == USB_CLASS_MASS_STORAGE)
-			{
-				if(pInterface->bInterfaceProtocol == USB_PR_BULK)
-				{
-					bFound = true ;
-					pUSBDevice->_iInterfaceIndex = i ;
-					pUSBDevice->_bInterfaceNumber = pInterface->bInterfaceNumber ;
-					bDeviceSubClass = pInterface->bInterfaceSubClass ;
-					bDeviceProtocol = pInterface->bInterfaceProtocol ;
-					break;
-				}
-			}
-		}
-	}
+  int interfaceIndex = MatchingInterfaceIndex(pUSBDevice); 
+  if(interfaceIndex < 0)
+    throw upan::exception(XLOC, "USB disk driver doesn't match the given USB device");
 
-	if( !bFound )
-		return false ;
+	const USBStandardInterface& interface = pUSBDevice->_pArrConfigDesc[ pUSBDevice->_iConfigIndex ].pInterfaces[ interfaceIndex ];
 
-	/* Find the endpoints we need
-	 * We are expecting a minimum of 2 endpoints - in and out (bulk).
-	 * An optional interrupt is OK (necessary for CBI protocol).
-	 * We will ignore any others.
-	 */
-	int i ;
-	for(i = 0; i < pInterface->bNumEndpoints; i++)
-	{
-		USBStandardEndPt* pEndPoint = &(pInterface->pEndPoints[ i ]) ;
-
-		// Bulk Endpoint
-		if( (pEndPoint->bmAttributes & USB_ENDPOINT_XFERTYPE_MASK) == USB_ENDPOINT_XFER_BULK )
-		{
-			// Bulk in/out
-			if( pEndPoint->bEndpointAddress & USB_DIR_IN )
-				pEndPointIn = pEndPoint ;
-			else
-				pEndPointOut = pEndPoint ;
-		}
-		else if( (pEndPoint->bmAttributes & USB_ENDPOINT_XFERTYPE_MASK) == USB_ENDPOINT_XFER_INT )
-			pEndPointInt = pEndPoint ;
-	}
-
-	/*  Do some basic sanity checks, and bail if we find a problem */
-	if( !pEndPointIn || !pEndPointOut || ( bDeviceProtocol == USB_PR_CB && !pEndPointInt ) )
-	{
-		printf("USBMassBulkStorageDisk: Invalid End Point configuration. In:%x, Out:%x, Int:%x", pEndPointIn, pEndPointOut, pEndPointInt) ;
-		return false ;
-	}
-
-	/* Create device */
-	pDisk = (USBulkDisk*)DMM_AllocateForKernel(sizeof(USBulkDisk)) ;
-	if(pDisk == NULL)
-	{
-		KC::MDisplay().Message("USBMassBulkStorageDisk: Panic error -> Out of memory", ' ') ;
-		return false ;
-	}
-
-	memset(pDisk, 0, sizeof(USBulkDisk)) ;
-
-	/* copy over the subclass and protocol data */
-	pDisk->bDeviceSubClass = bDeviceSubClass ;
-	pDisk->bDeviceProtocol = bDeviceProtocol ;
-
-	/* Copy over the endpoint data */
-	if(pEndPointIn)
-	{
-		pDisk->uiEndPointIn = pEndPointIn->bEndpointAddress & USB_ENDPOINT_NUMBER_MASK ;
-		pDisk->usInMaxPacketSize = pEndPointIn->wMaxPacketSize ;
-		printf("\n Max Bulk Read Size: %d", pDisk->usInMaxPacketSize) ;
-	}
-
-	if(pEndPointOut)
-	{
-		pDisk->uiEndPointOut = pEndPointOut->bEndpointAddress & USB_ENDPOINT_NUMBER_MASK ;
-		pDisk->usOutMaxPacketSize = pEndPointOut->wMaxPacketSize ;
-		printf("\n Max Bulk Write Size: %d", pDisk->usOutMaxPacketSize) ;
-	}
-
-	pDisk->pRawAlignedBuffer = (byte*)DMM_AllocateForKernel(US_BULK_MAX_TRANSFER_SIZE, 16) ;
-
-	pDisk->pEndPointInt = pEndPointInt ;
-
-	pDisk->pUSBDevice = pUSBDevice ;
-	pUSBDevice->_pPrivate = pDisk ;
-
-	pDisk->bEndPointInToggle = pDisk->bEndPointOutToggle = 0 ;
-
+  byte bMaxLun = 0;
 	/* Set the handler pointers based on the protocol
 	 * Again, this data is persistant across reattachments
 	 */
-	switch(pDisk->bDeviceProtocol)
+	switch(interface.bInterfaceProtocol)
 	{
 		case USB_PR_BULK:
 			printf("\n Reading MAX LUN for the Bulk Storage Disk\n") ;
-			pDisk->bMaxLun = 0 ;
-			if(!pUSBDevice->GetMaxLun(&(pDisk->bMaxLun)))
-			{
-				printf("\n Failed to Read MAX LUN from the device") ;
-				DMM_DeAllocateForKernel((unsigned)pDisk->pRawAlignedBuffer) ;
-				DMM_DeAllocateForKernel((unsigned)pDisk) ;
-				return false ;
-			}
-			printf("\n Max LUN of the device: %d", pDisk->bMaxLun) ;
+      bMaxLun = pUSBDevice->GetMaxLun();
+			printf("\n Max LUN of the device: %d", bMaxLun) ;
 			break;
 
 		default:
-			printf("\n Unsupported USB Disk Device Protocol: %d", pDisk->bDeviceProtocol) ;
-			DMM_DeAllocateForKernel((unsigned)pDisk->pRawAlignedBuffer) ;
-			DMM_DeAllocateForKernel((unsigned)pDisk) ;
-			return false ;
+      throw upan::exception(XLOC, "Unsupported USB Disk Device Protocol: %d", interface.bInterfaceProtocol);
 	}
 
-	switch(pDisk->bDeviceSubClass)
+  upan::string protoName;
+	switch(interface.bInterfaceSubClass)
 	{
 		case USB_SC_SCSI:
-			pDisk->szProtocolName = "SCSI" ;
-			break ;
+			protoName = "SCSI";
+			break;
 
 		default:
-			printf("\n Unsupported USB Disk Device SubClass: %d", pDisk->bDeviceSubClass) ;
-			DMM_DeAllocateForKernel((unsigned)pDisk->pRawAlignedBuffer) ;
-			DMM_DeAllocateForKernel((unsigned)pDisk) ;
-			return false ;
+      throw upan::exception(XLOC, "Unsupported USB Disk Device SubClass: %d", interface.bInterfaceSubClass);
 	}
 
-	//TODO
-	/* allocate an IRQ callback if one is needed */
-//	if ( (  psDisk -> nProtocol == US_PR_CBI ) && usbDiskAllocateIrq( psDisk ) ) {
-//		AtomicDec( &psDevice -> nRefCount );
-//		return FALSE;
-//	}
-
-	/* Create SCSI host */
-	pDisk->pHost = (SCSIHost*)DMM_AllocateForKernel(sizeof(SCSIHost)) ;
-	memset(pDisk->pHost, 0, sizeof(SCSIHost)) ;
-
-	//TODO
-	pDisk->pHost->GetName = USBMassBulkStorageDisk_GetName ;
-	pDisk->pHost->QueueCommand = USBMassBulkStorageDisk_SCSICommand ;
-	pDisk->pHost->pPrivate = pDisk ;
-	pDisk->pSCSIDeviceList = NULL ;
-
-	byte bStatus = USBMassBulkStorageDisk_DoReset(pDisk) ;
-	if(bStatus != USBMassBulkStorageDisk_SUCCESS)
-	{
-		DMM_DeAllocateForKernel((unsigned)pDisk->pRawAlignedBuffer) ;
-		DMM_DeAllocateForKernel((unsigned)pDisk->pHost) ;
-		DMM_DeAllocateForKernel((unsigned)pDisk) ;
-		return false ;
-	}
-
-	pDisk->pSCSIDeviceList = (SCSIDevice**)DMM_AllocateForKernel(sizeof(SCSIDevice**) * (pDisk->bMaxLun + 1)) ;
-	int iLun ;
-	for(iLun = 0; iLun <= pDisk->bMaxLun; iLun++)
-		pDisk->pSCSIDeviceList[ iLun ] = NULL ;
-
-	char szName[10];
-	bool bDeviceFound = false ;
-
-	//TODO: For the time configuring only LUN 0
-	for(iLun = 0; iLun <= 0/*pDisk->bMaxLun*/; iLun++)
-	{
-		SCSIDevice* pSCSIDevice = SCSIHandler_ScanDevice(pDisk->pHost, 0, 0, iLun) ;
-		pDisk->pSCSIDeviceList[ iLun ] = pSCSIDevice ;
-
-		if(pSCSIDevice == NULL)
-		{
-			printf("\n No SCSI USB Mass Bulk Storage Device @ LUN: %d", iLun) ;
-			continue ;
-		}
-
-    sprintf(szName, "usbdisk%d", _deviceId++);
-		RawDiskDrive* pDisk = DiskDriveManager::Instance().CreateRawDisk(szName, USB_SCSI_DISK, pSCSIDevice) ;
-    try
-    {
-  		USBMassBulkStorageDisk_AddDeviceDrive(pDisk) ;
-    }
-    catch(const upan::exception& ex)
-    {
-      printf("\n failed to read partition table - %s", ex.Error().c_str());
-    }
-
-		bDeviceFound = true ;
-	}
-
-	if(!bDeviceFound)
-	{
-		printf("\n No USB Bulk Storage Device Found. Driver setup failed") ;
-		return false ;
-	}
-
-	return true ;
+	/* Create device */
+  upan::uniq_ptr<USBulkDisk> pDisk(new USBulkDisk(pUSBDevice, interfaceIndex, bMaxLun, protoName));
+  pDisk->Initialize();
+  pDisk.release();
 }
 
 void USBDiskDriver::DoRemoveDevice(USBDevice* pUSBDevice)
 {
 	USBulkDisk* pDisk = (USBulkDisk*)pUSBDevice->_pPrivate ;
-	SCSIHost* pHost = pDisk->pHost ;
 	SCSIDevice** pSCSIDeviceList = pDisk->pSCSIDeviceList ;
 
 	class USBDriveRemoveClause : public DriveRemoveClause
@@ -660,9 +500,7 @@ void USBDiskDriver::DoRemoveDevice(USBDevice* pUSBDevice)
 	} ;
 
 	if(pSCSIDeviceList != NULL)
-		DiskDriveManager::Instance().RemoveEntryByCondition(USBDriveRemoveClause(pSCSIDeviceList, pDisk->bMaxLun)) ;
+		DiskDriveManager::Instance().RemoveEntryByCondition(USBDriveRemoveClause(pSCSIDeviceList, pDisk->MaxLun())) ;
 
-	DMM_DeAllocateForKernel((unsigned)pHost) ;
-	DMM_DeAllocateForKernel((unsigned)pDisk->pRawAlignedBuffer) ;
-	DMM_DeAllocateForKernel((unsigned)pDisk) ;
+  delete pDisk;
 }

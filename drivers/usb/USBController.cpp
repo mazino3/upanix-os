@@ -38,8 +38,18 @@ USBDriver* USBController::FindDriver(USBDevice* pUSBDevice)
 {
 	for(auto pDriver : _drivers)
 	{
-    if(pDriver->AddDevice(pUSBDevice))
-      return pDriver;
+    if(pDriver->Match(pUSBDevice))
+    {
+      try
+      {
+        pDriver->AddDevice(pUSBDevice);
+        return pDriver;
+      }
+      catch(const upan::exception& e)
+      {
+        e.Print();
+      }
+    }
 	}
 
 	return nullptr;

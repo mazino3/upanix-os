@@ -29,7 +29,7 @@ class USBDevice
     USBDevice();
     virtual ~USBDevice() {}
 
-    virtual bool GetMaxLun(byte* bLUN) = 0;
+    virtual byte GetMaxLun() = 0;
     virtual bool CommandReset() = 0;
     virtual bool ClearHaltEndPoint(USBulkDisk* pDisk, bool bIn) = 0;
     virtual bool BulkRead(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen) = 0;
@@ -37,6 +37,7 @@ class USBDevice
 
   protected:
     void SetLangId();
+    void SetConfigIndex(byte bConfigValue);
     void PrintDeviceStringDetails() const;
 
   public:

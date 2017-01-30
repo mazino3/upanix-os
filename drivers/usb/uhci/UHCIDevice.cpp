@@ -30,34 +30,21 @@ UHCIDevice::UHCIDevice(UHCIController& c, unsigned portAddr)
 {
 	SetAddress();
 
-	USBStandardDeviceDesc devDesc ;
-	GetDeviceDescriptor(&devDesc);
-  devDesc.DebugPrint();
+	GetDeviceDescriptor(&_deviceDesc);
+  _deviceDesc.DebugPrint();
 
-	char bConfigValue = 0;
+	byte bConfigValue = 0;
 	GetConfiguration(&bConfigValue);
 
-  CheckConfiguration(&bConfigValue, devDesc.bNumConfigs);
+  CheckConfiguration(&bConfigValue);
 
-  GetConfigDescriptor(devDesc.bNumConfigs, &_pArrConfigDesc);
+  GetConfigDescriptor(&_pArrConfigDesc);
 
   GetStringDescriptorZero(&_pStrDescZero);
 
 	_eControllerType = UHCI_CONTROLLER ;
-	USBDataHandler_CopyDevDesc(&_deviceDesc, &devDesc, sizeof(USBStandardDeviceDesc));
 
 	SetLangId();
-
-	_iConfigIndex = 0 ;
-
-	for(int i = 0; i < devDesc.bNumConfigs; i++)
-	{
-		if(_pArrConfigDesc[ i ].bConfigurationValue == bConfigValue)
-		{
-			_iConfigIndex = i ;
-			break ;
-		}
-	}
 	
   GetDeviceStringDesc(_manufacturer, _deviceDesc.indexManufacturer);
   GetDeviceStringDesc(_product, _deviceDesc.indexProduct);
@@ -96,7 +83,7 @@ void UHCIDevice::GetDeviceStringDesc(upan::string& desc, int descIndex)
   delete[] strDesc;
 }
 
-bool UHCIDevice::GetMaxLun(byte* bLUN)
+byte UHCIDevice::GetMaxLun()
 {
 	unsigned uiFrameNumber = _controller.GetNextFreeFrame();
 
@@ -153,6 +140,7 @@ bool UHCIDevice::GetMaxLun(byte* bLUN)
 	pTD3->SetTDAttribute(UHCI_ATTR_TD_PID, TOKEN_PID_OUT);
 	pTD3->SetTDAttribute(UHCI_ATTR_TD_TERMINATE, 1);
 
+  byte bLUN = 0;
 	if(UpanixMain_IsKernelDebugOn())
 	{
 		printf("\n QH Element Pointer = %x", pQH->ElementLinkPointer());
@@ -178,7 +166,7 @@ bool UHCIDevice::GetMaxLun(byte* bLUN)
 		printf("\n Port Status = %x", PortCom_ReceiveWord(_portAddr + 2));
 		printf("\nFrame Number = %d", PortCom_ReceiveWord(_controller.IOBase() + FRNUM_REG));
 
-		*bLUN = pBufPtr[0] ;
+		bLUN = pBufPtr[0] ;
 		printf("\n\n Scheduling Frame Clean %d: %d", uiFrameNumber, _controller.CleanFrame(uiFrameNumber));
 		ProcessManager::Instance().Sleep(2000);
 	}
@@ -199,12 +187,11 @@ bool UHCIDevice::GetMaxLun(byte* bLUN)
 			printf("\nFrame Number = %d", PortCom_ReceiveWord(_controller.IOBase() + FRNUM_REG));
 		}
 		else
-			*bLUN = pBufPtr[0] ;
+			bLUN = pBufPtr[0] ;
 
 		_controller.CleanFrame(uiFrameNumber);
 	}
-
-	return true ;
+  return bLUN;
 }
 
 bool UHCIDevice::CommandReset()
@@ -825,29 +812,31 @@ void UHCIDevice::GetDeviceDescriptor(USBStandardDeviceDesc* pDevDesc)
 	GetDescriptor(0x100, 0, iLen, pDevDesc);
 }
 
-void UHCIDevice::CheckConfiguration(char* bConfigValue, char bNumConfigs)
+void UHCIDevice::CheckConfiguration(byte* bConfigValue)
 {
-	if(bNumConfigs <= 0)
-    throw upan::exception(XLOC, "\n Invalid NumConfigs: %d", bNumConfigs);
+	if(_deviceDesc.bNumConfigs <= 0)
+    throw upan::exception(XLOC, "\n Invalid NumConfigs: %d", _deviceDesc.bNumConfigs);
 
-	if(*bConfigValue <= 0 || *bConfigValue > bNumConfigs)
+	if(*bConfigValue <= 0 || *bConfigValue > _deviceDesc.bNumConfigs)
 	{
 		printf("\n Current Configuration %d -> Invalid. Setting to Configuration 1", *bConfigValue);
 		SetConfiguration(1);
 		*bConfigValue = 1 ;
 	}
+
+  SetConfigIndex(*bConfigValue);
 }
 
-void UHCIDevice::GetConfigDescriptor(char bNumConfigs, USBStandardConfigDesc** pConfigDesc)
+void UHCIDevice::GetConfigDescriptor(USBStandardConfigDesc** pConfigDesc)
 {
 	int index ;
 
-	USBStandardConfigDesc* pCD = (USBStandardConfigDesc*)DMM_AllocateForKernel(sizeof(USBStandardConfigDesc) * bNumConfigs);
+	USBStandardConfigDesc* pCD = (USBStandardConfigDesc*)DMM_AllocateForKernel(sizeof(USBStandardConfigDesc) * _deviceDesc.bNumConfigs);
 
-	for(index = 0; index < (int)bNumConfigs; index++)
+	for(index = 0; index < (int)_deviceDesc.bNumConfigs; index++)
 		USBDataHandler_InitConfigDesc(&pCD[index]);
 
-	for(index = 0; index < (int)bNumConfigs; index++)
+	for(index = 0; index < (int)_deviceDesc.bNumConfigs; index++)
 	{
 		unsigned short usDescValue = (0x2 << 8) | (index & 0xFF);
 
@@ -956,7 +945,7 @@ void UHCIDevice::GetStringDescriptorZero(USBStringDescZero** ppStrDescZero)
 	DMM_DeAllocateForKernel((unsigned)pStringDescZero);
 }
 
-void UHCIDevice::GetConfiguration(char* bConfigValue)
+void UHCIDevice::GetConfiguration(byte* bConfigValue)
 {
 	unsigned uiFrameNumber = _controller.GetNextFreeFrame();
 
@@ -1072,7 +1061,7 @@ void UHCIDevice::GetConfiguration(char* bConfigValue)
 	}
 }
 
-void UHCIDevice::SetConfiguration(char bConfigValue)
+void UHCIDevice::SetConfiguration(byte bConfigValue)
 {
 	unsigned uiFrameNumber = _controller.GetNextFreeFrame();
 

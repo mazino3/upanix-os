@@ -23,20 +23,22 @@
 #include <SCSIHandler.h>
 #include <string.h>
 
+class USBMassBulkStorageDisk;
+
 typedef enum
 {
 	UHCI_CONTROLLER = 100,
 	EHCI_CONTROLLER = 101,
-} USB_CONTROLLER_TYPE ;
+} USB_CONTROLLER_TYPE;
 
 typedef struct
 {
 	byte bRequestType;
-	byte bRequest ;
-	unsigned short usWValue ;
-	unsigned short usWIndex ;
-	unsigned short usWLength ;
-} PACKED USBDevRequest ;
+	byte bRequest;
+	unsigned short usWValue;
+	unsigned short usWIndex;
+	unsigned short usWLength;
+} PACKED USBDevRequest;
 
 class USBStandardDeviceDesc
 {
@@ -44,21 +46,21 @@ class USBStandardDeviceDesc
   USBStandardDeviceDesc();
   void DebugPrint() const;
 
-	byte bLength ;
-	byte bDescType ;
-	unsigned short bcdUSB ;
-	byte bDeviceClass ;
-	byte bDeviceSubClass ;
-	byte bDeviceProtocol ;
-	byte bMaxPacketSize0 ;
+	byte bLength;
+	byte bDescType;
+	unsigned short bcdUSB;
+	byte bDeviceClass;
+	byte bDeviceSubClass;
+	byte bDeviceProtocol;
+	byte bMaxPacketSize0;
 
-	short sVendorID ;
-	short sProductID ;
-	short bcdDevice ;
-	char indexManufacturer ;
-	char indexProduct ;
-	char indexSerialNum ;
-	char bNumConfigs ;
+	short sVendorID;
+	short sProductID;
+	short bcdDevice;
+	char indexManufacturer;
+	char indexProduct;
+	char indexSerialNum;
+	char bNumConfigs;
 } PACKED;
 
 class USBStandardEndPt
@@ -72,12 +74,12 @@ class USBStandardEndPt
   DirectionTypes Direction() const { return bEndpointAddress & 0x80 ? IN : OUT; }
   uint32_t Address() const { return bEndpointAddress & 0xF; }
 
-	char bLength ;
-	char bDescriptorType ;
-	byte bEndpointAddress ;
-	char bmAttributes ;
-	unsigned short wMaxPacketSize ;
-	char bInterval ;
+	char bLength;
+	char bDescriptorType;
+	byte bEndpointAddress;
+	char bmAttributes;
+	unsigned short wMaxPacketSize;
+	char bInterval;
 } PACKED;
 
 class USBStandardInterface
@@ -86,24 +88,24 @@ class USBStandardInterface
   USBStandardInterface();
   void DebugPrint();
 
-	char bLength ;
-	char bDescriptorType ;
-	char bInterfaceNumber ;
-	char bAlternateSetting ;
-	char bNumEndpoints ;
-	byte bInterfaceClass ;
-	byte bInterfaceSubClass ;
-	byte bInterfaceProtocol ;
-	char iInterface ;
-	USBStandardEndPt* pEndPoints ;
+	char bLength;
+	char bDescriptorType;
+	char bInterfaceNumber;
+	char bAlternateSetting;
+	char bNumEndpoints;
+	byte bInterfaceClass;
+	byte bInterfaceSubClass;
+	byte bInterfaceProtocol;
+	char iInterface;
+	USBStandardEndPt* pEndPoints;
 } PACKED;
 
 typedef struct
 {
-	byte bLength ;
-	byte bDescriptorType ;
-	unsigned short* usLangID ;
-} USBStringDescZero ;
+	byte bLength;
+	byte bDescriptorType;
+	unsigned short* usLangID;
+} USBStringDescZero;
 
 class USBStandardConfigDesc
 {
@@ -111,43 +113,43 @@ class USBStandardConfigDesc
   USBStandardConfigDesc();
   void DebugPrint();
 
-	char bLength ;
-	char bDescriptorType ;
-	unsigned short wTotalLength ;
-	char bNumInterfaces ;
-	char bConfigurationValue ;
-	char iConfiguration ;
-	byte bmAttributes ;
-	char bMaxPower ;
-	USBStandardInterface* pInterfaces ;
+	char bLength;
+	char bDescriptorType;
+	unsigned short wTotalLength;
+	char bNumInterfaces;
+	char bConfigurationValue;
+	char iConfiguration;
+	byte bmAttributes;
+	char bMaxPower;
+	USBStandardInterface* pInterfaces;
 } PACKED;
 
 class USBDevice;
-typedef struct USBulkDisk USBulkDisk ;
 
-struct USBulkDisk
+class USBulkDisk
 {
-	USBDevice* pUSBDevice ;
+  public:
+    USBulkDisk(USBDevice*, int interfaceIndex, byte maxLun, const upan::string& protoName);
+    ~USBulkDisk();
+    void Initialize();
+    byte MaxLun() const { return bMaxLun; }
 
-	byte bDeviceSubClass ;
-	byte bDeviceProtocol ;
+  public:
+    USBDevice* pUSBDevice;
+    byte bEndPointInToggle;
+    byte bEndPointOutToggle;
+    unsigned uiEndPointIn;
+    unsigned uiEndPointOut;
+    unsigned short usInMaxPacketSize;
+    unsigned short usOutMaxPacketSize;
+    USBStandardEndPt* pEndPointInt;
+    byte* pRawAlignedBuffer;
+    SCSIDevice** pSCSIDeviceList;
 
-	unsigned uiEndPointIn ;
-	unsigned uiEndPointOut ;
-	unsigned short usInMaxPacketSize ;
-	unsigned short usOutMaxPacketSize ;
-
-	byte bEndPointInToggle ;
-	byte bEndPointOutToggle ;
-
-	USBStandardEndPt* pEndPointInt ;
-
-	byte bMaxLun ;
-
-	upan::string szProtocolName ;
-	SCSIHost* pHost ;
-	SCSIDevice** pSCSIDeviceList ;
-	byte* pRawAlignedBuffer ;
+  private:
+    const byte bMaxLun;
+    const upan::string szProtocolName;
+    USBMassBulkStorageDisk* pHostDevice;
 };
 
 class USBDriver
@@ -157,18 +159,12 @@ class USBDriver
 
     const upan::string& Name() const { return _name; }
 
-    bool AddDevice(USBDevice* d)
-    {
-      return DoAddDevice(d);
-    }
-
-    void RemoveDevice(USBDevice* d)
-    {
-      DoRemoveDevice(d);
-    }
+    virtual bool Match(USBDevice* d) = 0;
+    void AddDevice(USBDevice* d) { DoAddDevice(d); }
+    void RemoveDevice(USBDevice* d) { DoRemoveDevice(d); }
 
   protected:
-    virtual bool DoAddDevice(USBDevice*) = 0;
+    virtual void DoAddDevice(USBDevice*) = 0;
     virtual void DoRemoveDevice(USBDevice*) = 0;
 
     const upan::string _name;

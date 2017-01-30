@@ -33,7 +33,7 @@ class XHCIDevice final : public USBDevice
     XHCIDevice(XHCIController& controller, XHCIPortRegister& port, unsigned portId, unsigned slotType);
     ~XHCIDevice();
 
-    bool GetMaxLun(byte* bLUN);
+    byte GetMaxLun();
     bool CommandReset();
     bool ClearHaltEndPoint(USBulkDisk* pDisk, bool bIn);
     bool BulkRead(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen);

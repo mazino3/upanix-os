@@ -357,6 +357,12 @@ void XHCIController::Probe()
     PortSpeed ps = supProtocol->PortSpeedInfo(port.PortSpeedID());
     printf("\n %s [%u %s] device connected to port %d", PortProtocolName(protocol), ps.Mantissa(), ps.BitRateS(), portId);
 		_devices[portId] = new XHCIDevice(*this, port, portId, supProtocol->SlotType());
+
+    auto driver = USBController::Instance().FindDriver(_devices[portId]);
+    if(driver)
+      printf("\n'%s' driver found for the USB Device", driver->Name().c_str());
+    else
+      printf("\nNo Driver found for this USB device") ;
 	}
 }
 

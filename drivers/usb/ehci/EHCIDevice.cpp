@@ -32,39 +32,26 @@ EHCIDevice::EHCIDevice(EHCIController& controller)
   if(!SetAddress())
     throw upan::exception(XLOC, "SetAddress Failed");
 
-	USBStandardDeviceDesc devDesc;
-  if(!GetDeviceDescriptor(&devDesc))
+  if(!GetDeviceDescriptor(&_deviceDesc))
     throw upan::exception(XLOC, "GetDevDesc Failed");
-  devDesc.DebugPrint();
+  _deviceDesc.DebugPrint();
 
-	char bConfigValue = 0;
+	byte bConfigValue = 0;
   if(!GetConfigValue(bConfigValue))
     throw upan::exception(XLOC, "GetConfigVal Failed") ;
 	printf("\n ConfifValue: %d", bConfigValue) ;
 
-  if(!CheckConfiguration(bConfigValue, devDesc.bNumConfigs))
+  if(!CheckConfiguration(bConfigValue))
     throw upan::exception(XLOC, "CheckConfig Failed");
 
-  if(!GetConfigDescriptor(devDesc.bNumConfigs, &_pArrConfigDesc))
+  if(!GetConfigDescriptor(&_pArrConfigDesc))
     throw upan::exception(XLOC, "GeConfigDesc Failed");
-
-	USBDataHandler_CopyDevDesc(&_deviceDesc, &devDesc, sizeof(USBStandardDeviceDesc)) ;
 
   if(GetStringDescriptorZero())
 	  SetLangId();
   else
 //    throw upan::exception(XLOC, "GetStringDescZero Failed");
     printf("\n String DESC not supported!");
-	_iConfigIndex = 0 ;
-
-	for(int i = 0; i < devDesc.bNumConfigs; i++)
-	{
-		if(_pArrConfigDesc[ i ].bConfigurationValue == bConfigValue)
-		{
-			_iConfigIndex = i;
-			break ;
-		}
-	}
 	
   GetDeviceStringDesc(_manufacturer, _deviceDesc.indexManufacturer);
   GetDeviceStringDesc(_product, _deviceDesc.indexProduct);
@@ -72,7 +59,7 @@ EHCIDevice::EHCIDevice(EHCIController& controller)
   PrintDeviceStringDetails();
 }
 
-bool EHCIDevice::SetConfiguration(char bConfigValue)
+bool EHCIDevice::SetConfiguration(byte bConfigValue)
 {
 	// Setup TDs
 	EHCIQTransferDesc* pTDStart = EHCIDataHandler_CreateAsyncQTransferDesc() ;
@@ -111,19 +98,18 @@ bool EHCIDevice::SetConfiguration(char bConfigValue)
 	}
 	
   aTransaction.Clear();
-
 	return true;
 }
 
-bool EHCIDevice::CheckConfiguration(char& bConfigValue, char bNumConfigs)
+bool EHCIDevice::CheckConfiguration(byte& bConfigValue)
 {
-	if(bNumConfigs <= 0)
+	if(_deviceDesc.bNumConfigs <= 0)
 	{
-		printf("\n Invalid NumConfigs: %d", bNumConfigs) ;
+		printf("\n Invalid NumConfigs: %d", _deviceDesc.bNumConfigs) ;
     return false;
 	}
 
-	if(bConfigValue <= 0 || bConfigValue > bNumConfigs)
+	if(bConfigValue <= 0 || bConfigValue > _deviceDesc.bNumConfigs)
 	{
 		bool bStatus ;
 		printf("\n Current Configuration %d -> Invalid. Setting to Configuration 1", bConfigValue) ;
@@ -131,20 +117,21 @@ bool EHCIDevice::CheckConfiguration(char& bConfigValue, char bNumConfigs)
 		bConfigValue = 1 ;
 	}
 
+  SetConfigIndex(bConfigValue);
 	return true;
 }
 
-bool EHCIDevice::GetConfigDescriptor(char bNumConfigs, USBStandardConfigDesc** pConfigDesc)
+bool EHCIDevice::GetConfigDescriptor(USBStandardConfigDesc** pConfigDesc)
 {
   bool status = true;
 	int index ;
 
-	USBStandardConfigDesc* pCD = (USBStandardConfigDesc*)DMM_AllocateForKernel(sizeof(USBStandardConfigDesc) * bNumConfigs) ;
+	USBStandardConfigDesc* pCD = (USBStandardConfigDesc*)DMM_AllocateForKernel(sizeof(USBStandardConfigDesc) * _deviceDesc.bNumConfigs) ;
 
-	for(index = 0; index < (int)bNumConfigs; index++)
+	for(index = 0; index < (int)_deviceDesc.bNumConfigs; index++)
 		USBDataHandler_InitConfigDesc(&pCD[index]) ;
 
-	for(index = 0; index < (int)bNumConfigs; index++)
+	for(index = 0; index < (int)_deviceDesc.bNumConfigs; index++)
 	{
 		unsigned short usDescValue = (0x2 << 8) | (index & 0xFF) ;
 
@@ -233,7 +220,7 @@ bool EHCIDevice::GetConfigDescriptor(char bNumConfigs, USBStandardConfigDesc** p
 
 	if(!status)
 	{
-		USBDataHandler_DeAllocConfigDesc(pCD, bNumConfigs) ;
+		USBDataHandler_DeAllocConfigDesc(pCD, _deviceDesc.bNumConfigs) ;
     return false;
 	}
 
@@ -307,7 +294,7 @@ void EHCIDevice::GetDeviceStringDesc(upan::string& desc, int descIndex)
   delete[] strDesc;
 }
 
-bool EHCIDevice::GetMaxLun(byte* bLUN)
+byte EHCIDevice::GetMaxLun()
 {
 	// Setup TDs
 	EHCIQTransferDesc* pTDStart = EHCIDataHandler_CreateAsyncQTransferDesc() ;
@@ -318,7 +305,7 @@ bool EHCIDevice::GetMaxLun(byte* bLUN)
 	if(SetupAllocBuffer(pTDStart, sizeof(USBDevRequest)) != EHCIController_SUCCESS)
 	{
 		DMM_DeAllocateForKernel((unsigned)pTDStart) ;
-		return false ;
+    throw upan::exception(XLOC, "Failed to setup buffer");
 	}
 
 	USBDevRequest* pDevRequest = (USBDevRequest*)(KERNEL_VIRTUAL_ADDRESS(pTDStart->uiBufferPointer[ 0 ])) ;
@@ -337,7 +324,7 @@ bool EHCIDevice::GetMaxLun(byte* bLUN)
 	{
 		DMM_DeAllocateForKernel((unsigned)pTDStart) ;
 		DMM_DeAllocateForKernel((unsigned)pTD1) ;
-		return false ;
+    throw upan::exception(XLOC, "Failed to setup buffer");
 	}
 
 	// It is important to store the data buffer address now for later read as the data buffer address
@@ -358,14 +345,14 @@ bool EHCIDevice::GetMaxLun(byte* bLUN)
 		DisplayTransactionState(_pControlQH, pTDStart) ;
 		_controller.DisplayStats() ;
     aTransaction.Clear();
-		return false ;
+    throw upan::exception(XLOC, "EHCI transaction failed");
 	}
 	
-	*bLUN = *((char*)uiDataBuffer) ;
+	byte bLUN = *((char*)uiDataBuffer) ;
 
   aTransaction.Clear();
 
-	return true ;
+	return bLUN;
 }
 
 bool EHCIDevice::CommandReset()
@@ -776,7 +763,7 @@ bool EHCIDevice::GetDescriptor(unsigned short usDescValue, unsigned short usInde
 	return true;
 }
 
-bool EHCIDevice::GetConfigValue(char& bConfigValue)
+bool EHCIDevice::GetConfigValue(byte& bConfigValue)
 {
 	EHCIQTransferDesc* pTDStart = EHCIDataHandler_CreateAsyncQTransferDesc() ;
 

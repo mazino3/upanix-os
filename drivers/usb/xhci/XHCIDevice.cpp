@@ -16,6 +16,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
 
+#include <uniq_ptr.h>
 #include <XHCIDevice.h>
 #include <XHCIController.h>
 #include <XHCIContext.h>
@@ -288,16 +289,40 @@ void XHCIDevice::SetConfiguration()
     configValue = GetConfigValue();
     printf("\n New Config Value: %d", (int)configValue);
   }
+  SetConfigIndex(configValue);
 }
 
-bool XHCIDevice::GetMaxLun(byte* bLUN)
+byte XHCIDevice::GetMaxLun()
 {
-  return false;
+  upan::uniq_ptr<byte[]> buffer(new byte[8]);
+
+  //Setup stage
+  const uint32_t requestType = USB_TYPE_CLASS | USB_RECIP_INTERFACE | USB_DIR_IN;
+  const int len = 1;
+  _inputContext->CTRing().AddSetupStageTRB(requestType, 0xFE, 0, _bInterfaceNumber, len, TransferType::IN_DATA_STAGE);
+
+  //Data stage
+  _inputContext->CTRing().AddDataStageTRB(KERNEL_REAL_ADDRESS(buffer.get()), len, DataDirection::IN, _port.MaxPacketSize());
+
+  //Status Stage
+  const uint32_t trbId = _inputContext->CTRing().AddStatusStageTRB();
+
+  _controller.InitiateTransfer(trbId, _slotID, 1);
+	
+  return buffer[0];
 }
 
 bool XHCIDevice::CommandReset()
 {
-  return false;
+  //Setup stage
+  const uint32_t requestType = USB_TYPE_CLASS | USB_RECIP_INTERFACE;
+  _inputContext->CTRing().AddSetupStageTRB(requestType, 0xFF, 0, _bInterfaceNumber, 0, TransferType::NO_DATA_STAGE);
+
+  //Status Stage
+  const uint32_t trbId = _inputContext->CTRing().AddStatusStageTRB();
+
+  _controller.InitiateTransfer(trbId, _slotID, 1);
+	return true ;
 }
 
 bool XHCIDevice::ClearHaltEndPoint(USBulkDisk* pDisk, bool bIn)

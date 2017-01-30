@@ -19,6 +19,7 @@
 #define _SCSIHANDLER_H_
 
 #include <Global.h>
+#include <string.h>
 
 #define SCSIHandler_SUCCESS 0
 #define SCSIHandler_FAILURE 1
@@ -233,12 +234,13 @@ typedef struct SCSICommand SCSICommand ;
 struct SCSIHost ;
 typedef struct SCSIHost SCSIHost ;
 
-struct SCSIHost
+class SCSIHost
 {
-	void *pPrivate;
-	const char *( *GetName )( void );
-	bool ( *QueueCommand )(SCSICommand*);
-} ;
+  public:
+  virtual ~SCSIHost() {}
+	virtual upan::string GetName() = 0;
+  virtual bool QueueCommand(SCSICommand*) = 0;
+};
 
 typedef struct
 {
@@ -252,10 +254,10 @@ typedef struct
 	int iDeviceTypeIndex ;
 	const char* pszDeviceType ;
 
-	char szName[64] ;
-	char szVendor[32] ;
-	char szModel[32] ;
-	char szRevision[32] ;
+	upan::string szName;
+	upan::string szVendor;
+	upan::string szModel;
+	upan::string szRevision;
 
 	unsigned uiSectorSize ;
 	unsigned uiSectors ;

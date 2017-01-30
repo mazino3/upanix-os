@@ -275,36 +275,29 @@ __attribute__((unused)) static int SCSIHandler_UnitNotReady(SCSIDevice* pDevice,
 	return iStatus ;
 }
 
-static void SCSIHandler_ExtractString(byte* szSCSIResult, int iStart, int iEnd, char* szBuf)
+upan::string SCSIHandler_ExtractString(byte* szSCSIResult, int iStart, int iEnd)
 {
-	char szCh[ 2 ] ;
-	int i ;
-
-	szCh[1] = '\0' ;
-
-	strcpy(szBuf, "") ;
-	for(i = iStart; i < iEnd; i++)
+  int len = iEnd - iStart;
+  char* buf = new char[len + 1];
+  buf[len] = '\0';
+  
+	for(int si = 0, i = iStart; i < iEnd; ++i, ++si)
 	{
-
 		if(szSCSIResult[i] >= 0x20 && i < szSCSIResult[4] + 5)
-		{
-			szCh[0] = szSCSIResult[i] ;
-			strcat(szBuf, szCh) ;
-		}
+			buf[si] = szSCSIResult[i] ;
 		else
-		{
-			strcat(szBuf, " ") ;
-		}
+      buf[si] = ' ';
 	}
+  return buf;
 }
 
 static SCSIDevice* SCSIHandler_CreateDisk(SCSIHost* pHost, int iChannel, int iDevice, int iLun, byte* szSCSIResult)
 {
 	SCSIDevice* pDevice = (SCSIDevice*)DMM_AllocateForKernel(sizeof(SCSIDevice)) ;
 	
-	SCSIHandler_ExtractString(szSCSIResult, 8, 16, pDevice->szVendor) ;
-	SCSIHandler_ExtractString(szSCSIResult, 16, 32, pDevice->szModel) ;
-	SCSIHandler_ExtractString(szSCSIResult, 32, 36, pDevice->szRevision) ;
+	pDevice->szVendor = SCSIHandler_ExtractString(szSCSIResult, 8, 16);
+	pDevice->szModel = SCSIHandler_ExtractString(szSCSIResult, 16, 32);
+	pDevice->szRevision = SCSIHandler_ExtractString(szSCSIResult, 32, 36);
 
 	pDevice->iDeviceTypeIndex = szSCSIResult[0] & 0x1F ;
 	pDevice->pszDeviceType = (pDevice->iDeviceTypeIndex < 14) ? SCSIHandler_szDeviceTypes[pDevice->iDeviceTypeIndex] : "Unknown" ;
@@ -315,9 +308,9 @@ static SCSIDevice* SCSIHandler_CreateDisk(SCSIHost* pHost, int iChannel, int iDe
 	if(pDevice->bRemovable)
 		printf("Removable Disk.\n") ;
 
-	printf("\nSCSI Vendor: %s", pDevice->szVendor) ;
-	printf("\nSCSI Model: %s", pDevice->szModel) ;
-	printf("\nSCSI Revision: %s", pDevice->szRevision) ;
+	printf("\nSCSI Vendor: %s", pDevice->szVendor.c_str());
+	printf("\nSCSI Model: %s", pDevice->szModel.c_str());
+	printf("\nSCSI Revision: %s", pDevice->szRevision.c_str());
 	printf("\nType: %s ANSI SCSI revision %02x", pDevice->pszDeviceType, szSCSIResult[2] & 0x07) ;
 
 	pDevice->pHost = pHost ;
@@ -325,7 +318,7 @@ static SCSIDevice* SCSIHandler_CreateDisk(SCSIHost* pHost, int iChannel, int iDe
 	pDevice->iDevice = iDevice ;
 	pDevice->iLun = iLun ;
 
-	strcpy(pDevice->szName, pHost->GetName()) ;
+	pDevice->szName = pHost->GetName();
 
 	if(SCSIHandler_GenericOpen(pDevice) != SCSIHandler_SUCCESS)
 	{
