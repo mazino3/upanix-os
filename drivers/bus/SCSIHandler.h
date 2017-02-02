@@ -308,12 +308,12 @@ struct SCSICommand
 	int iRequestLen ;
 	int iResult ;
 
-    union
+  union
 	{
 		byte bSense[ SCSI_SENSE_SIZE ];
 		SCSISense Sense ;
-    } u;
-} ;
+  } u;
+};
 
 void SCSIHandler_Initialize() ;
 byte SCSIHandler_Start(SCSIDevice* pDevice) ;

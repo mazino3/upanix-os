@@ -351,7 +351,7 @@ bool XHCIDevice::BulkRead(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen)
 		return false ;
 	}
 
-  const uint32_t trbId = _inputContext->ITRing().AddDataTRB(pDisk->pRawAlignedBuffer, uiLen, DataDirection::IN, pDisk->usInMaxPacketSize);
+  const uint32_t trbId = _inputContext->ITRing().AddDataTRB((unsigned)pDisk->pRawAlignedBuffer, uiLen, DataDirection::IN, pDisk->usInMaxPacketSize);
 
   _controller.InitiateTransfer(trbId, _slotID, 1 + 2);
 
@@ -374,7 +374,7 @@ bool XHCIDevice::BulkWrite(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen)
 
 	memcpy(pDisk->pRawAlignedBuffer, pDataBuf, uiLen) ;
 
-  const uint32_t trbId = _inputContext->OTRing().AddDataTRB(pDisk->pRawAlignedBuffer, uiLen, DataDirection::OUT, pDisk->usOutMaxPacketSize);
+  const uint32_t trbId = _inputContext->OTRing().AddDataTRB((unsigned)pDisk->pRawAlignedBuffer, uiLen, DataDirection::OUT, pDisk->usOutMaxPacketSize);
 
   _controller.InitiateTransfer(trbId, _slotID, 2 + 2);
 

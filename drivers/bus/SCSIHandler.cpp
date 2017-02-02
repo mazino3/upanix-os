@@ -61,8 +61,8 @@ static unsigned SCSIHandler_Rev32ToCPU(unsigned uiVal)
 
 static void SCSIHandler_InitCommand(SCSICommand* pCommand, SCSIDevice* pDevice)
 {
-    if(pCommand == NULL || pDevice == NULL)
-		return ;
+  if(pCommand == NULL || pDevice == NULL)
+    return ;
     
 	memset(pCommand, 0, sizeof(SCSICommand)) ;
 

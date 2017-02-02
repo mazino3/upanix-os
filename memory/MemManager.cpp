@@ -400,7 +400,7 @@ Result MemManager::AllocatePage(int iProcessID, unsigned uiFaultyAddress)
 
 	if(ProcessManager::Instance().GetAddressSpace(iProcessID).bIsKernelProcess == true)
 	{
-		printf("\n Page Fault in Kernel! COMMON MAN... FIX THIS !!!") ;
+		printf("\n Page Fault in Kernel! FIX THIS !!!") ;
 		printf("\n Page Fault Address/Page: %u / %u", uiFaultyAddress, uiVirtualPageNo);
 		while(1);
 		m_uiPTEBase[uiVirtualPageNo] = ((uiFreePageNo * PAGE_SIZE) & 0xFFFFF000) | 0x3 ;

@@ -120,18 +120,17 @@ void TransferRing::AddEventDataTRB(uint32_t statusAddr, bool ioc)
 
 uint32_t TransferRing::AddDataTRB(uint32_t dataBufferAddr, uint32_t len, DataDirection dir, int32_t maxPacketSize)
 {
-  int32_t transferLen = len;
-  int32_t remainingPackets = (len + (maxPacketSize - 1)) / maxPacketSize;
+  int32_t remainingBytesToTransfer = len;
   TRB* lastTRB = nullptr;
 
-  while(transferLen > 0)
+  while(remainingBytesToTransfer > 0)
   {
     int32_t bytesToTransfer = PAGE_SIZE - (dataBufferAddr % PAGE_SIZE);
-    if(transferLen < bytesToTransfer)
-      bytesToTransfer = transferLen;
+    if(remainingBytesToTransfer < bytesToTransfer)
+      bytesToTransfer = remainingBytesToTransfer;
+    remainingBytesToTransfer -= bytesToTransfer;
 
-    int32_t packetsToTransfer = (bytesToTransfer + (maxPacketSize - 1)) / maxPacketSize;
-    remainingPackets -= packetsToTransfer;
+    int32_t remainingPackets = (remainingBytesToTransfer + (maxPacketSize - 1)) / maxPacketSize;
 
     const bool ioc = remainingPackets <= 0;
 
@@ -145,7 +144,6 @@ uint32_t TransferRing::AddDataTRB(uint32_t dataBufferAddr, uint32_t len, DataDir
     trb.SetCycleBit(_cycleState);
 
     dataBufferAddr += bytesToTransfer;
-    transferLen -= bytesToTransfer;
     
     NextTRB();
 
