@@ -438,7 +438,7 @@ void XHCIController::WaitForTransferCompletion(uint32_t trbId, EventTRB& result)
     throw upan::exception(XLOC, "Got invalid Event TRB: %d", result.Type());
 
   if(!result.IsCommandSuccess())
-    throw upan::exception(XLOC, "Transfer command did not complete successfully");
+    throw upan::exception(XLOC, "Transfer command did not complete successfully - Completion Code: %u", result.CompletionCode());
 
 //  if(!result.IsEventDataTRB())
   //  throw upan::exception(XLOC, "Transfer event is not Event Data TRB");

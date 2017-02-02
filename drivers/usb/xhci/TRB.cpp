@@ -117,3 +117,41 @@ void TransferRing::AddEventDataTRB(uint32_t statusAddr, bool ioc)
   trb.SetCycleBit(_cycleState);
   NextTRB();
 }
+
+uint32_t TransferRing::AddDataTRB(uint32_t dataBufferAddr, uint32_t len, DataDirection dir, int32_t maxPacketSize)
+{
+  int32_t transferLen = len;
+  int32_t remainingPackets = (len + (maxPacketSize - 1)) / maxPacketSize;
+  TRB* lastTRB = nullptr;
+
+  while(transferLen > 0)
+  {
+    int32_t bytesToTransfer = PAGE_SIZE - (dataBufferAddr % PAGE_SIZE);
+    if(transferLen < bytesToTransfer)
+      bytesToTransfer = transferLen;
+
+    int32_t packetsToTransfer = (bytesToTransfer + (maxPacketSize - 1)) / maxPacketSize;
+    remainingPackets -= packetsToTransfer;
+
+    const bool ioc = remainingPackets <= 0;
+
+    TRB& trb = _trbs[_nextTRBIndex];
+    //TODO: Write to 64bit field (i.e. _b1 + _b2 together) in a single assigment
+    trb._b1 = dataBufferAddr;
+    trb._b2 = 0;
+    trb._b3 = (remainingPackets << 17) | bytesToTransfer;
+    trb._b4 = (dir << 16) | (ioc ? INTERRUPT_ON_COMPLETE : 0);
+    trb.Type(3);
+    trb.SetCycleBit(_cycleState);
+
+    dataBufferAddr += bytesToTransfer;
+    transferLen -= bytesToTransfer;
+    
+    NextTRB();
+
+    if(ioc)
+      lastTRB = &trb;
+  }
+
+  return (uint32_t)lastTRB;
+}

@@ -504,7 +504,7 @@ T& list<T>::operator[](int index) const
   if(index < 0 || index >= (int)size())
     throw upan::exception(XLOC, "list index %d is out-of-bounds", index);
   auto i = begin();
-  for(int count = 0; count <= index; ++count)
+  for(int count = 0; count < index; ++count)
     ++i;
   return *i;
 }

@@ -122,13 +122,13 @@ void XHCIDevice::GetDeviceDescriptor()
 
 void XHCIDevice::GetStringDescriptorZero()
 {
-	unsigned short usDescValue = (0x3 << 8) ;
+	unsigned short usDescValue = (0x3 << 8);
 	byte* buffer = new byte[8];
 
 	GetDescriptor(usDescValue, 0, -1, buffer);
 
-	int iLen = reinterpret_cast<USBStringDescZero*>(buffer)->bLength ;
-	printf("\n String Desc Zero Len: %d", iLen) ;
+	int iLen = reinterpret_cast<USBStringDescZero*>(buffer)->bLength;
+	printf("\n String Desc Zero Len: %d", iLen);
 
   delete[] buffer;
   buffer = new byte[iLen];
@@ -154,7 +154,7 @@ void XHCIDevice::GetDeviceStringDesc(upan::string& desc, int descIndex)
 
   GetDescriptor(usDescValue | descIndex, _usLangID, -1, buffer);
 
-	int iLen = reinterpret_cast<USBStringDescZero*>(buffer)->bLength ;
+	int iLen = reinterpret_cast<USBStringDescZero*>(buffer)->bLength;
   if(iLen == 0)
     return;
 
@@ -189,19 +189,17 @@ void XHCIDevice::GetDescriptor(uint16_t descValue, uint16_t index, int len, void
 
 byte XHCIDevice::GetConfigValue()
 {
-  byte* buffer = new byte[8];
+  upan::uniq_ptr<byte[]> buffer(new byte[8]);
 
   //Setup stage
   _inputContext->CTRing().AddSetupStageTRB(0x80, 8, 0, 0, 8, TransferType::IN_DATA_STAGE);
   //Data stage
-  _inputContext->CTRing().AddDataStageTRB(KERNEL_REAL_ADDRESS(buffer), 8, DataDirection::IN, _port.MaxPacketSize());
+  _inputContext->CTRing().AddDataStageTRB(KERNEL_REAL_ADDRESS(buffer.get()), 8, DataDirection::IN, _port.MaxPacketSize());
   //Status Stage
   const uint32_t trbId = _inputContext->CTRing().AddStatusStageTRB();
   _controller.InitiateTransfer(trbId, _slotID, 1);
 
-  auto ret = buffer[0];
-  delete[] buffer;
-  return ret;
+  return buffer[0];
 }
 
 void XHCIDevice::GetConfigDescriptor()
@@ -210,31 +208,31 @@ void XHCIDevice::GetConfigDescriptor()
 
 	for(int index = 0; index < (int)_deviceDesc.bNumConfigs; ++index)
 	{
-		unsigned short usDescValue = (0x2 << 8) | (index & 0xFF) ;
+		unsigned short usDescValue = (0x2 << 8) | (index & 0xFF);
 		GetDescriptor(usDescValue, 0, -1, &(_pArrConfigDesc[index]));
 
 		int iLen = _pArrConfigDesc[index].wTotalLength;
 		char* pBuffer = new char[iLen];
 		GetDescriptor(usDescValue, 0, iLen, pBuffer);
 
-		USBDataHandler_CopyConfigDesc(&_pArrConfigDesc[index], pBuffer, _pArrConfigDesc[index].bLength) ;
+		USBDataHandler_CopyConfigDesc(&_pArrConfigDesc[index], pBuffer, _pArrConfigDesc[index].bLength);
 
 		_pArrConfigDesc[index].DebugPrint();
 
-		printf("\n Parsing Interface information for Configuration: %d", index) ;
-		printf("\n Number of Interfaces: %d", (int)_pArrConfigDesc[ index ].bNumInterfaces) ;
+		printf("\n Parsing Interface information for Configuration: %d", index);
+		printf("\n Number of Interfaces: %d", (int)_pArrConfigDesc[ index ].bNumInterfaces);
 
-		void* pInterfaceBuffer = (char*)pBuffer + _pArrConfigDesc[index].bLength ;
+		void* pInterfaceBuffer = (char*)pBuffer + _pArrConfigDesc[index].bLength;
 
 		_pArrConfigDesc[index].pInterfaces = new USBStandardInterface[_pArrConfigDesc[index].bNumInterfaces]; 
 
 		for(int iI = 0; iI < (int)_pArrConfigDesc[index].bNumInterfaces;)
 		{
-			USBStandardInterface* pInt = (USBStandardInterface*)(pInterfaceBuffer) ;
-			int iIntLen = sizeof(USBStandardInterface) - sizeof(USBStandardEndPt*) ;
+			USBStandardInterface* pInt = (USBStandardInterface*)(pInterfaceBuffer);
+			int iIntLen = sizeof(USBStandardInterface) - sizeof(USBStandardEndPt*);
       if(pInt->bLength != iIntLen || pInt->bDescriptorType != 4)
       {
-			  pInterfaceBuffer = (USBStandardInterface*)((char*)pInterfaceBuffer + pInt->bLength) ;
+			  pInterfaceBuffer = (USBStandardInterface*)((char*)pInterfaceBuffer + pInt->bLength);
         continue;
       }
 
@@ -242,13 +240,13 @@ void XHCIDevice::GetConfigDescriptor()
 
 			_pArrConfigDesc[index].pInterfaces[iI].DebugPrint();
 
-			void* pEndPtBuffer = ((char*)pInterfaceBuffer + pInt->bLength) ;
+			void* pEndPtBuffer = ((char*)pInterfaceBuffer + pInt->bLength);
 
-			int iNumEndPoints = _pArrConfigDesc[index].pInterfaces[iI].bNumEndpoints ;
+			int iNumEndPoints = _pArrConfigDesc[index].pInterfaces[iI].bNumEndpoints;
 
 			_pArrConfigDesc[index].pInterfaces[iI].pEndPoints = new USBStandardEndPt[iNumEndPoints];
 
-			printf("\n Parsing EndPoints for Interface: %d of Configuration: %d", iI, index) ;
+			printf("\n Parsing EndPoints for Interface: %d of Configuration: %d", iI, index);
 
 			for(int iE = 0; iE < iNumEndPoints;)
 			{
@@ -322,21 +320,63 @@ bool XHCIDevice::CommandReset()
   const uint32_t trbId = _inputContext->CTRing().AddStatusStageTRB();
 
   _controller.InitiateTransfer(trbId, _slotID, 1);
-	return true ;
+	return true;
 }
 
 bool XHCIDevice::ClearHaltEndPoint(USBulkDisk* pDisk, bool bIn)
 {
-  return false;
+	unsigned uiEndPoint = (bIn) ? pDisk->uiEndPointIn : pDisk->uiEndPointOut;
+
+  //Setup stage
+  const uint32_t index = (uiEndPoint & 0xF) | ((bIn) ? 0x80 : 0x00);
+  _inputContext->CTRing().AddSetupStageTRB(USB_RECIP_ENDPOINT, 1, 0, index, 0, TransferType::NO_DATA_STAGE);
+
+  //Status Stage
+  const uint32_t trbId = _inputContext->CTRing().AddStatusStageTRB();
+
+  _controller.InitiateTransfer(trbId, _slotID, 1);
+
+	return true;
 }
 
 bool XHCIDevice::BulkRead(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen)
 {
-  return false;
+	if(uiLen == 0)
+		return true ;
+
+	unsigned uiMaxLen = pDisk->usInMaxPacketSize * 64;//MAX_EHCI_TD_PER_BULK_RW ;
+	if(uiLen > uiMaxLen)
+	{
+		printf("\n Max Bulk Transfer per Frame is %d bytes", uiMaxLen) ;
+		return false ;
+	}
+
+  const uint32_t trbId = _inputContext->ITRing().AddDataTRB(pDisk->pRawAlignedBuffer, uiLen, DataDirection::IN, pDisk->usInMaxPacketSize);
+
+  _controller.InitiateTransfer(trbId, _slotID, 1 + 2);
+
+	memcpy(pDataBuf, pDisk->pRawAlignedBuffer, uiLen) ;
+
+	return true ;
 }
 
 bool XHCIDevice::BulkWrite(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen)
 {
-  return false;
-}
+	if(uiLen == 0)
+		return true;
 
+	unsigned uiMaxLen = pDisk->usOutMaxPacketSize * 64;//MAX_EHCI_TD_PER_BULK_RW;
+	if(uiLen > uiMaxLen)
+	{
+		printf("\n Max Bulk Transfer per Frame is %d bytes", uiMaxLen);
+		return false;
+	}
+
+	memcpy(pDisk->pRawAlignedBuffer, pDataBuf, uiLen) ;
+
+  const uint32_t trbId = _inputContext->OTRing().AddDataTRB(pDisk->pRawAlignedBuffer, uiLen, DataDirection::OUT, pDisk->usOutMaxPacketSize);
+
+  _controller.InitiateTransfer(trbId, _slotID, 2 + 2);
+
+  return true;
+}
