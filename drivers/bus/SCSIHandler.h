@@ -291,8 +291,15 @@ typedef struct
 	byte Asb[ 46 ];
 } PACKED SCSISense ;
 
-struct SCSICommand
+class SCSICommand
 {
+  private:
+    void Init();
+
+  public:
+  SCSICommand(const SCSIDevice& device);
+  SCSICommand(SCSIHost* host, int channel, int device, int lun);
+
 	SCSIHost* pHost ;
 
 	int iChannel ;

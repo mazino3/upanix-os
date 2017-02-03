@@ -59,21 +59,26 @@ static unsigned SCSIHandler_Rev32ToCPU(unsigned uiVal)
 				( uiVal & 0x0000FF00 ) << 8 | ( uiVal & 0x000000FF ) << 24 ) ;
 }
 
-static void SCSIHandler_InitCommand(SCSICommand* pCommand, SCSIDevice* pDevice)
+SCSICommand::SCSICommand(const SCSIDevice& device) :
+  pHost(device.pHost), iChannel(device.iChannel), iDevice(device.iDevice), iLun(device.iLun),
+  iDirection(SCSI_DATA_NONE), iCmdLen(0), pRequestBuffer(nullptr),
+  iRequestLen(0), iResult(0)
 {
-  if(pCommand == NULL || pDevice == NULL)
-    return ;
-    
-	memset(pCommand, 0, sizeof(SCSICommand)) ;
+  Init();
+}
 
-	pCommand->pHost = pDevice->pHost ;
-	pCommand->iChannel = pDevice->iChannel ;
-	pCommand->iDevice = pDevice->iDevice ;
-	pCommand->iLun = pDevice->iLun ;
+SCSICommand::SCSICommand(SCSIHost* host, int channel, int device, int lun) :
+  pHost(host), iChannel(channel), iDevice(device), iLun(lun),
+  iDirection(SCSI_DATA_NONE), iCmdLen(0), pRequestBuffer(nullptr),
+  iRequestLen(0), iResult(0)
+{
+  Init();
+}
 
-	pCommand->iDirection = SCSI_DATA_NONE ;
-	pCommand->pRequestBuffer = NULL ;
-	pCommand->iRequestLen = 0 ;
+void SCSICommand::Init()
+{
+  memset(bCommand, 0, sizeof(bCommand));
+  memset(&u, 0, sizeof(u));
 }
 
 __attribute__((unused)) static int SCSIHandler_UnitNotReady(SCSIDevice* pDevice, SCSISense* pSense)
@@ -332,13 +337,12 @@ static SCSIDevice* SCSIHandler_CreateDisk(SCSIHost* pHost, int iChannel, int iDe
 
 static byte SCSIHandler_TestReady(SCSIDevice* pDevice)
 {
-	SCSICommand sCommand ;
 	byte bStatus ;
 
 	while(true)
 	{
 		/* Try to test the state of the unit */
-		SCSIHandler_InitCommand(&sCommand, pDevice) ;
+	  SCSICommand sCommand(*pDevice);
 
 		sCommand.bCommand[0] = SCSI_TEST_UNIT_READY ;
 
@@ -375,7 +379,6 @@ static byte SCSIHandler_TestReady(SCSIDevice* pDevice)
 
 static byte SCSIHandler_ReadCapacity(SCSIDevice* pDevice)
 {
-	SCSICommand sCommand ;
 	struct {
 		unsigned uiLBA ;
 		unsigned uiBlockLen ;
@@ -387,7 +390,7 @@ static byte SCSIHandler_ReadCapacity(SCSIDevice* pDevice)
 
 	while(true)
 	{
-		SCSIHandler_InitCommand(&sCommand, pDevice) ;
+    SCSICommand sCommand(*pDevice);
 
 		sCommand.iDirection = SCSI_DATA_READ ;
 		sCommand.pRequestBuffer = (byte*)&sCap ;
@@ -480,7 +483,6 @@ byte SCSIHandler_GenericClose(SCSIDevice* pDevice)
 
 byte SCSIHandler_GenericRead(SCSIDevice* pDevice, unsigned uiStartSector, unsigned uiNumOfSectors, byte* pDataBuffer)
 {
-	SCSICommand sCommand ;
 	unsigned uiBlock ;
 	unsigned uiBlockCount ;
 	unsigned uiMaxBlock = 8 ;
@@ -493,7 +495,7 @@ byte SCSIHandler_GenericRead(SCSIDevice* pDevice, unsigned uiStartSector, unsign
 		uiBlock = uiStartSector ;
 
 		/* Build SCSI_READ_10 command */
-		SCSIHandler_InitCommand(&sCommand, pDevice) ;
+    SCSICommand sCommand(*pDevice);
 
 		sCommand.iDirection = SCSI_DATA_READ ;
 		sCommand.pRequestBuffer = pDataBuffer ;
@@ -532,7 +534,6 @@ byte SCSIHandler_GenericRead(SCSIDevice* pDevice, unsigned uiStartSector, unsign
 
 byte SCSIHandler_GenericWrite(SCSIDevice* pDevice, unsigned uiStartSector, unsigned uiNumOfSectors, byte* pDataBuffer)
 {
-	SCSICommand sCommand ;
 	unsigned uiBlock ;
 	unsigned uiBlockCount ;
 	unsigned uiMaxBlock = 16 ;
@@ -545,7 +546,7 @@ byte SCSIHandler_GenericWrite(SCSIDevice* pDevice, unsigned uiStartSector, unsig
 		uiBlock = uiStartSector ;
 
 		/* Build SCSI_WRITE_10 command */
-		SCSIHandler_InitCommand(&sCommand, pDevice) ;
+    SCSICommand sCommand(*pDevice);
 		sCommand.iDirection = SCSI_DATA_WRITE ;
 		sCommand.pRequestBuffer = pDataBuffer ;
 		sCommand.iRequestLen = uiWriteLen ;
@@ -583,10 +584,8 @@ byte SCSIHandler_GenericWrite(SCSIDevice* pDevice, unsigned uiStartSector, unsig
 
 byte SCSIHandler_DoStartStop(SCSIDevice* pDevice, unsigned uiFlags)
 {
-	SCSICommand sCommand ;
-
 	/* Create and queue request sense command */
-	SCSIHandler_InitCommand(&sCommand, pDevice) ;
+	SCSICommand sCommand(*pDevice);
 
 	sCommand.bCommand[0] = SCSI_START_STOP ;
 	sCommand.bCommand[4] = uiFlags ;
@@ -1118,8 +1117,6 @@ int SCSIHandler_CheckSense(SCSISense* pSense)
 
 byte SCSIHandler_RequestSense(SCSIDevice* pDevice, SCSISense* pSense)
 {
-	SCSICommand sCommand ;
-
 	if(pSense == NULL)
 	{
 		KC::MDisplay().Message("\n pSense param is NULL...!", Display::WHITE_ON_BLACK()) ;
@@ -1127,7 +1124,7 @@ byte SCSIHandler_RequestSense(SCSIDevice* pDevice, SCSISense* pSense)
 	}
 
 	/* Create and queue request sense command */
-	SCSIHandler_InitCommand(&sCommand, pDevice) ;
+	SCSICommand sCommand(*pDevice);
 
 	sCommand.iDirection = SCSI_DATA_READ ;
 	sCommand.pRequestBuffer = (byte*)pSense ;
@@ -1152,11 +1149,11 @@ byte SCSIHandler_RequestSense(SCSIDevice* pDevice, SCSISense* pSense)
 SCSIDevice* SCSIHandler_ScanDevice(SCSIHost *pHost, int iChannel, int iDevice, int iLun)
 {
 	byte szSCSIResult[ 256 ] ;
-	SCSICommand sCommand ;
 
 	printf("\n Scanning device - %d:%d:%d...", iChannel, iDevice, iLun) ;
 
 	/* Build SCSI_INQUIRY command */
+	SCSICommand sCommand(pHost, iChannel, iDevice, iLun);
 	memset(&sCommand, 0, sizeof(SCSICommand)) ;
 
 	sCommand.pHost = pHost ;
