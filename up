@@ -1,0 +1,5 @@
+drivers/usb/xhci/TRB.cpp
+drivers/usb/xhci/XHCIContext.cpp
+drivers/usb/xhci/XHCIContext.h
+drivers/usb/xhci/XHCIController.h
+drivers/usb/xhci/XHCIDevice.cpp
