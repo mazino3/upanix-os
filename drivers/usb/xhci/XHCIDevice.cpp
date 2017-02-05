@@ -34,7 +34,7 @@ XHCIDevice::XHCIDevice(XHCIController& controller,
   if(!_slotID)
     throw upan::exception(XLOC, "Failed to get SlotID");
 
-  _inputContext = new InputContext(_controller.CapReg().IsContextSize64(), port, portId, 0);
+  _inputContext = new InputContext(_controller, _slotID, port, portId, 0);
   _devContext = new DeviceContext(_controller.CapReg().IsContextSize64());
 
   _controller.SetDeviceContext(_slotID, _devContext->Slot());
@@ -81,7 +81,7 @@ XHCIDevice::~XHCIDevice()
 
 void XHCIDevice::ConfigureEndPoint()
 {
-  uint32_t lastEPIndex = 0;
+  uint32_t lastEPId = 0;
   uint32_t addContextFlag = 1; //Only Slot is set to 1, A1 (EP0) is not required
 	for(int index = 0; index < (int)_deviceDesc.bNumConfigs; ++index)
 	{
@@ -92,14 +92,14 @@ void XHCIDevice::ConfigureEndPoint()
 			for(int iE = 0; iE < interface.bNumEndpoints; ++iE)
 			{
         const auto& endpoint = interface.pEndPoints[iE];
-        const auto epIndex = _inputContext->InitEP(endpoint);
-        if(lastEPIndex < epIndex)
-          lastEPIndex = epIndex;
-        addContextFlag |=  (1 << (epIndex + 2));
+        const auto epId = _inputContext->AddEndPoint(endpoint);
+        if(lastEPId < epId)
+          lastEPId = epId;
+        addContextFlag |=  (1 << epId);
 			}
 		}
 	}
-  _inputContext->Slot().SetContextEntries(lastEPIndex + 2);
+  _inputContext->Slot().SetContextEntries(lastEPId);
   //TODO: is it requied to update MaxPacketSize of FS device ? if so then update and call Evaluate Context with A0 and A1 set
   _controller.EvaluateContext(KERNEL_REAL_ADDRESS(&_inputContext->Control()), _slotID);
 
@@ -178,27 +178,13 @@ void XHCIDevice::GetDescriptor(uint16_t descValue, uint16_t index, int len, void
 {
   if(len < 0)
     len = DEF_DESC_LEN;
-  //Setup stage
-  _inputContext->CTRing().AddSetupStageTRB(0x80, 6, descValue, index, len, TransferType::IN_DATA_STAGE);
-  //Data stage
-  _inputContext->CTRing().AddDataStageTRB(KERNEL_REAL_ADDRESS(dataBuffer), len, DataDirection::IN, _port.MaxPacketSize());
-  //Status Stage
-  const uint32_t trbId = _inputContext->CTRing().AddStatusStageTRB();
-  _controller.InitiateTransfer(trbId, _slotID, 1);
+  _inputContext->SendCommand(0x80, 6, descValue, index, len, TransferType::IN_DATA_STAGE, dataBuffer);
 }
 
 byte XHCIDevice::GetConfigValue()
 {
   upan::uniq_ptr<byte[]> buffer(new byte[8]);
-
-  //Setup stage
-  _inputContext->CTRing().AddSetupStageTRB(0x80, 8, 0, 0, 8, TransferType::IN_DATA_STAGE);
-  //Data stage
-  _inputContext->CTRing().AddDataStageTRB(KERNEL_REAL_ADDRESS(buffer.get()), 8, DataDirection::IN, _port.MaxPacketSize());
-  //Status Stage
-  const uint32_t trbId = _inputContext->CTRing().AddStatusStageTRB();
-  _controller.InitiateTransfer(trbId, _slotID, 1);
-
+  _inputContext->SendCommand(0x80, 8, 0, 0, 8, TransferType::IN_DATA_STAGE, buffer.get());
   return buffer[0];
 }
 
@@ -278,12 +264,7 @@ void XHCIDevice::SetConfiguration()
   if(configValue <= 0 || configValue > _deviceDesc.bNumConfigs)
   {
     configValue = 1;
-    //Setup stage
-    _inputContext->CTRing().AddSetupStageTRB(0x00, 9, configValue, 0, 0, TransferType::NO_DATA_STAGE);
-    //Status Stage
-    const uint32_t trbId = _inputContext->CTRing().AddStatusStageTRB();
-    _controller.InitiateTransfer(trbId, _slotID, 1);
-
+    _inputContext->SendCommand(0x00, 9, configValue, 0, 0, TransferType::NO_DATA_STAGE, nullptr);
     configValue = GetConfigValue();
     printf("\n New Config Value: %d", (int)configValue);
   }
@@ -297,15 +278,7 @@ byte XHCIDevice::GetMaxLun()
   //Setup stage
   const uint32_t requestType = USB_TYPE_CLASS | USB_RECIP_INTERFACE | USB_DIR_IN;
   const int len = 1;
-  _inputContext->CTRing().AddSetupStageTRB(requestType, 0xFE, 0, _bInterfaceNumber, len, TransferType::IN_DATA_STAGE);
-
-  //Data stage
-  _inputContext->CTRing().AddDataStageTRB(KERNEL_REAL_ADDRESS(buffer.get()), len, DataDirection::IN, _port.MaxPacketSize());
-
-  //Status Stage
-  const uint32_t trbId = _inputContext->CTRing().AddStatusStageTRB();
-
-  _controller.InitiateTransfer(trbId, _slotID, 1);
+  _inputContext->SendCommand(requestType, 0xFE, 0, _bInterfaceNumber, len, TransferType::IN_DATA_STAGE, buffer.get());
 	
   return buffer[0];
 }
@@ -314,28 +287,15 @@ bool XHCIDevice::CommandReset()
 {
   //Setup stage
   const uint32_t requestType = USB_TYPE_CLASS | USB_RECIP_INTERFACE;
-  _inputContext->CTRing().AddSetupStageTRB(requestType, 0xFF, 0, _bInterfaceNumber, 0, TransferType::NO_DATA_STAGE);
-
-  //Status Stage
-  const uint32_t trbId = _inputContext->CTRing().AddStatusStageTRB();
-
-  _controller.InitiateTransfer(trbId, _slotID, 1);
+  _inputContext->SendCommand(requestType, 0xFF, 0, _bInterfaceNumber, 0, TransferType::NO_DATA_STAGE, nullptr);
 	return true;
 }
 
 bool XHCIDevice::ClearHaltEndPoint(USBulkDisk* pDisk, bool bIn)
 {
 	unsigned uiEndPoint = (bIn) ? pDisk->uiEndPointIn : pDisk->uiEndPointOut;
-
-  //Setup stage
   const uint32_t index = (uiEndPoint & 0xF) | ((bIn) ? 0x80 : 0x00);
-  _inputContext->CTRing().AddSetupStageTRB(USB_RECIP_ENDPOINT, 1, 0, index, 0, TransferType::NO_DATA_STAGE);
-
-  //Status Stage
-  const uint32_t trbId = _inputContext->CTRing().AddStatusStageTRB();
-
-  _controller.InitiateTransfer(trbId, _slotID, 1);
-
+  _inputContext->SendCommand(USB_RECIP_ENDPOINT, 1, 0, index, 0, TransferType::NO_DATA_STAGE, nullptr);
 	return true;
 }
 
@@ -350,13 +310,8 @@ bool XHCIDevice::BulkRead(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen)
 		printf("\n Max Bulk Transfer per Frame is %d bytes", uiMaxLen) ;
 		return false ;
 	}
-
-  const uint32_t trbId = _inputContext->ITRing().AddDataTRB((unsigned)pDisk->pRawAlignedBuffer, uiLen, DataDirection::IN, pDisk->usInMaxPacketSize);
-
-  _controller.InitiateTransfer(trbId, _slotID, 1 + 2);
-
+  _inputContext->ReceiveData((unsigned)pDisk->pRawAlignedBuffer, uiLen);
 	memcpy(pDataBuf, pDisk->pRawAlignedBuffer, uiLen) ;
-
 	return true ;
 }
 
@@ -371,12 +326,7 @@ bool XHCIDevice::BulkWrite(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen)
 		printf("\n Max Bulk Transfer per Frame is %d bytes", uiMaxLen);
 		return false;
 	}
-
 	memcpy(pDisk->pRawAlignedBuffer, pDataBuf, uiLen) ;
-
-  const uint32_t trbId = _inputContext->OTRing().AddDataTRB((unsigned)pDisk->pRawAlignedBuffer, uiLen, DataDirection::OUT, pDisk->usOutMaxPacketSize);
-
-  _controller.InitiateTransfer(trbId, _slotID, 2 + 2);
-
+  _inputContext->SendData((unsigned)pDisk->pRawAlignedBuffer, uiLen);
   return true;
 }

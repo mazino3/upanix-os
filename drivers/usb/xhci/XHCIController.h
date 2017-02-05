@@ -39,13 +39,13 @@ class XHCIController
     XHCIController(PCIEntry*);
     void Probe();
     void NotifyEvent();
+    const XHCICapRegister& CapReg() const { return *_capReg; }
 
   private:
     void Start();
     void InitInterruptHandler();
     void LoadXCaps(unsigned base);
     void PerformBiosToOSHandoff();
-    XHCICapRegister& CapReg() { return *_capReg; }
     EventTRB InitiateCommand();
     EventTRB InitiateTransfer(uint32_t trbId, uint32_t slotID, uint32_t ep);
     void SetDeviceContext(uint32_t slotID, SlotContext& slotContext);
@@ -95,6 +95,7 @@ class XHCIController
     friend class XHCIManager;
     friend class EventManager;
 		friend class XHCIDevice;
+    friend class InputContext;
 };
 
 class CommandManager

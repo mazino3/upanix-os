@@ -21,9 +21,12 @@
 #include <exception.h>
 #include <list.h>
 #include <USBStructures.h>
+#include <TRB.h>
 
 class XHCIPortRegister;
 class TransferRing;
+class InputContext;
+class XHCIController;
 
 class ReservedPadding
 {
@@ -274,29 +277,86 @@ class DeviceContext
     EndPointContext* _eps;
 };
 
+class EndPoint
+{
+  public:
+    uint32_t Id() const { return _id; }
+
+  protected:
+    EndPoint(uint32_t maxPacketSize);
+    virtual ~EndPoint();
+
+  protected:
+    uint32_t         _id;
+    EndPointContext* _ep;
+    TransferRing*    _tRing;
+    const uint32_t   _maxPacketSize;
+};
+
+class ControlEndPoint : public EndPoint
+{
+  public:
+    ControlEndPoint(InputContext&, int32_t maxPacketSize);
+    uint32_t SetupTransfer(uint32_t bmRequestType, uint32_t bmRequest, 
+                       uint32_t wValue, uint32_t wIndex, uint32_t wLength,
+                       TransferType trt, void* dataBuffer);
+};
+
+class InOutEndPoint : public EndPoint
+{
+  protected:
+    InOutEndPoint(uint32_t epOffset, InputContext&, const USBStandardEndPt&);
+};
+
+class InEndPoint : public InOutEndPoint
+{
+  public:
+    InEndPoint(InputContext&, const USBStandardEndPt&);
+    uint32_t SetupTransfer(uint32_t bufferAddress, uint32_t len);
+};
+
+class OutEndPoint : public InOutEndPoint
+{
+  public:
+    OutEndPoint(InputContext&, const USBStandardEndPt&);
+    uint32_t SetupTransfer(uint32_t bufferAddress, uint32_t len);
+};
+
 class InputContext
 {
   public:
-    InputContext(bool use64, const XHCIPortRegister& port, uint32_t portId, uint32_t routeString);
+    InputContext(XHCIController&, uint32_t slotId, const XHCIPortRegister&, uint32_t portId, uint32_t routeString);
     ~InputContext();
     InputControlContext& Control() { return *_control; }
     SlotContext& Slot() { return _devContext->Slot(); }
-    EndPointContext& EP0() { return _devContext->EP0(); }
-    EndPointContext& EP(uint32_t index) { return _devContext->EP(index); }
-    uint32_t InitEP(const USBStandardEndPt&);
-    //Control transfer ring
-    TransferRing& CTRing() { return *_ctRing; }
-    //IN endpoint transfer ring
-    TransferRing& ITRing(uint32_t index = 0) { return *_itRings[index]; }
-    //OUT endpoint transfer ring
-    TransferRing& OTRing(uint32_t index = 0) { return *_otRings[index]; }
+    uint32_t AddEndPoint(const USBStandardEndPt& endpoint);
+    void SendCommand(uint32_t bmRequestType, uint32_t bmRequest,
+                     uint32_t wValue, uint32_t wIndex, uint32_t wLength,
+                     TransferType trt, void* dataBuffer);
+    void SendData(uint32_t bufferAddress, uint32_t len);
+    void ReceiveData(uint32_t bufferAddress, uint32_t len);
 
   private:
-    InputControlContext* _control;
-    DeviceContext*       _devContext;
-    TransferRing*        _ctRing;
-    upan::list<TransferRing*> _itRings;
-    upan::list<TransferRing*> _otRings;
+    EndPointContext& EP0() { return _devContext->EP0(); }
+    EndPointContext& EP(uint32_t index) { return _devContext->EP(index); }
+    InEndPoint& InEP(uint32_t index = 0) { return *_inEPs[index]; }
+    OutEndPoint& OutEP(uint32_t index = 0) { return *_outEPs[index]; }
+    void AddInEP(InEndPoint* ep) { _inEPs.push_back(ep); }
+    void AddOutEP(OutEndPoint* ep) { _outEPs.push_back(ep); }
+
+    friend class ControlEndPoint;
+    friend class InOutEndPoint;
+    friend class InEndPoint;
+    friend class OutEndPoint;
+
+  private:
+    uint32_t                 _slotID;
+    XHCIController&          _controller;
+    InputControlContext*     _control;
+    DeviceContext*           _devContext;
+    ControlEndPoint*         _controlEP;
+    upan::list<InEndPoint*>  _inEPs;
+    upan::list<OutEndPoint*> _outEPs;
 };
 
 #endif

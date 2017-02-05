@@ -27,6 +27,7 @@
 #include <XHCIManager.h>
 #include <USBDataHandler.h>
 #include <XHCIDevice.h>
+#include <Display.h>
 
 unsigned XHCIController::_memMapBaseAddress = XHCI_MMIO_BASE_ADDR;
 

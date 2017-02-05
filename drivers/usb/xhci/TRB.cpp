@@ -61,6 +61,7 @@ void TransferRing::AddSetupStageTRB(uint32_t bmRequestType, uint32_t bmRequest,
 
 void TransferRing::AddDataStageTRB(uint32_t dataBufferAddr, uint32_t len, DataDirection dir, int32_t maxPacketSize)
 {
+  dataBufferAddr = KERNEL_REAL_ADDRESS(dataBufferAddr);
   int32_t transferLen = len;
   int32_t remainingPackets = ((len + (maxPacketSize - 1)) / maxPacketSize) - 1;
   if(remainingPackets < 0)
@@ -120,6 +121,7 @@ void TransferRing::AddEventDataTRB(uint32_t statusAddr, bool ioc)
 
 uint32_t TransferRing::AddDataTRB(uint32_t dataBufferAddr, uint32_t len, DataDirection dir, int32_t maxPacketSize)
 {
+  dataBufferAddr = KERNEL_REAL_ADDRESS(dataBufferAddr);
   int32_t remainingBytesToTransfer = len;
   TRB* lastTRB = nullptr;
 
@@ -150,6 +152,5 @@ uint32_t TransferRing::AddDataTRB(uint32_t dataBufferAddr, uint32_t len, DataDir
     if(ioc)
       lastTRB = &trb;
   }
-
   return (uint32_t)lastTRB;
 }

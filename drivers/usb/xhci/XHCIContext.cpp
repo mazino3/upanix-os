@@ -21,11 +21,13 @@
 #include <XHCIContext.h>
 #include <XHCIStructures.h>
 #include <TRB.h>
+#include <XHCIController.h>
 
-InputContext::InputContext(bool use64, const XHCIPortRegister& port, uint32_t portId, uint32_t routeString)
+InputContext::InputContext(XHCIController& controller, uint32_t slotID, const XHCIPortRegister& port,
+                           uint32_t portId, uint32_t routeString) : _slotID(slotID), _controller(controller)
 {
   unsigned addr = KERNEL_VIRTUAL_ADDRESS(MemManager::Instance().AllocatePhysicalPage() * PAGE_SIZE);
-  if(use64)
+  if(_controller.CapReg().IsContextSize64())
   {
     auto context64 = new ((void*)addr)InputContext64();
     _control = &context64->_controlContext;
@@ -38,8 +40,7 @@ InputContext::InputContext(bool use64, const XHCIPortRegister& port, uint32_t po
     _devContext = new DeviceContext(context32->_deviceContext);
   }
   Slot().Init(portId, routeString, port.PortSpeedID());
-  _ctRing = new TransferRing(64);
-  EP0().Init(KERNEL_REAL_ADDRESS(_ctRing->RingBase()), USBStandardEndPt::BI, 0, port.MaxPacketSize(), 0);
+  _controlEP = new ControlEndPoint(*this, port.MaxPacketSize());
   //set A0 and A1 -> Slot and EP0 are affected by command
   Control().SetAddContextFlag(0x3);
 }
@@ -49,27 +50,39 @@ InputContext::~InputContext()
   unsigned addr = KERNEL_REAL_ADDRESS(_control);
   MemManager::Instance().DeAllocatePhysicalPage(addr / PAGE_SIZE);
   delete _devContext;
-  delete _ctRing;
-  for(auto itring : _itRings)
-    delete itring;
-  for(auto otring : _otRings)
-    delete otring;
+  delete _controlEP;
+  for(auto inEP : _inEPs)
+    delete inEP;
+  for(auto outEP : _outEPs)
+    delete outEP;
 }
 
-uint32_t InputContext::InitEP(const USBStandardEndPt& endpoint)
+uint32_t InputContext::AddEndPoint(const USBStandardEndPt& endpoint)
 {
-  const byte epID = endpoint.Address();
-  const uint32_t epIndex = endpoint.Direction() == USBStandardEndPt::IN ? (epID * 2 - 1) : (epID * 2 - 2);
-
-  TransferRing* tRing = new TransferRing(64);
-  EP(epIndex).Init(KERNEL_REAL_ADDRESS(tRing->RingBase()), endpoint.Direction(), endpoint.bmAttributes & 0x3, endpoint.wMaxPacketSize, endpoint.bInterval);
-
   if(endpoint.Direction() == USBStandardEndPt::IN)
-    _itRings.push_back(tRing);
+    return (new InEndPoint(*this, endpoint))->Id();
   else
-    _otRings.push_back(tRing);
+    return (new OutEndPoint(*this, endpoint))->Id();
+}
 
-  return epIndex;
+void InputContext::SendCommand(uint32_t bmRequestType, uint32_t bmRequest, 
+                               uint32_t wValue, uint32_t wIndex, uint32_t wLength, 
+                               TransferType trt, void* dataBuffer)
+{
+  const uint32_t trbId = _controlEP->SetupTransfer(bmRequestType, bmRequest, wValue, wIndex, wLength, trt, dataBuffer);
+  _controller.InitiateTransfer(trbId, _slotID, _controlEP->Id());
+}
+
+void InputContext::SendData(uint32_t bufferAddress, uint32_t len)
+{
+  const uint32_t trbId = OutEP().SetupTransfer(bufferAddress, len);
+  _controller.InitiateTransfer(trbId, _slotID, OutEP().Id());
+}
+
+void InputContext::ReceiveData(uint32_t bufferAddress, uint32_t len)
+{
+  const uint32_t trbId = InEP().SetupTransfer(bufferAddress, len);
+  _controller.InitiateTransfer(trbId, _slotID, InEP().Id());
 }
 
 DeviceContext::DeviceContext(bool use64) : _allocated(true)
@@ -106,6 +119,68 @@ DeviceContext::~DeviceContext()
     unsigned addr = KERNEL_REAL_ADDRESS(_slot);
     MemManager::Instance().DeAllocatePhysicalPage(addr / PAGE_SIZE);
   }
+}
+
+EndPoint::EndPoint(uint32_t maxPacketSize) : _id(0), _ep(nullptr), _tRing(new TransferRing(64)), _maxPacketSize(maxPacketSize)
+{
+}
+
+EndPoint::~EndPoint()
+{
+  delete _tRing;
+}
+
+ControlEndPoint::ControlEndPoint(InputContext& inContext, int32_t maxPacketSize) : EndPoint(maxPacketSize)
+{
+  _ep = &inContext.EP0();
+  _ep->Init(KERNEL_REAL_ADDRESS(_tRing->RingBase()), USBStandardEndPt::BI, 0, maxPacketSize, 0);
+  _id = 1;
+}
+
+uint32_t ControlEndPoint::SetupTransfer(uint32_t bmRequestType, uint32_t bmRequest, 
+                                        uint32_t wValue, uint32_t wIndex, uint32_t wLength, 
+                                        TransferType trt, void* dataBuffer)
+{
+  //Setup stage
+  _tRing->AddSetupStageTRB(bmRequestType, bmRequest, wValue, wIndex, wLength, trt);
+  //Data stage
+  if(trt != TransferType::NO_DATA_STAGE)
+  {
+    const auto dir = trt == TransferType::IN_DATA_STAGE ? DataDirection::IN : DataDirection::OUT;
+    _tRing->AddDataStageTRB(KERNEL_REAL_ADDRESS(dataBuffer), wLength, dir, _maxPacketSize);
+  }
+  //Status Stage
+  return _tRing->AddStatusStageTRB();
+}
+
+InOutEndPoint::InOutEndPoint(uint32_t epOffset, InputContext& inContext, const USBStandardEndPt& endpoint) : EndPoint(endpoint.wMaxPacketSize)
+{
+  const byte epID = endpoint.Address();
+  const uint32_t epIndex = epID * 2 - epOffset;
+
+  _ep = &inContext.EP(epIndex);
+  _ep->Init(KERNEL_REAL_ADDRESS(_tRing->RingBase()), endpoint.Direction(), endpoint.bmAttributes & 0x3, endpoint.wMaxPacketSize, endpoint.bInterval);
+  _id = epIndex + 2;
+}
+
+InEndPoint::InEndPoint(InputContext& inContext, const USBStandardEndPt& endpoint) : InOutEndPoint(1, inContext, endpoint)
+{
+  inContext.AddInEP(this);
+}
+
+uint32_t InEndPoint::SetupTransfer(uint32_t bufferAddress, uint32_t len)
+{
+  return _tRing->AddDataTRB(bufferAddress, len, DataDirection::IN, _maxPacketSize);
+}
+
+OutEndPoint::OutEndPoint(InputContext& inContext, const USBStandardEndPt& endpoint) : InOutEndPoint(2, inContext, endpoint)
+{
+  inContext.AddOutEP(this);
+}
+
+uint32_t OutEndPoint::SetupTransfer(uint32_t bufferAddress, uint32_t len)
+{
+  return _tRing->AddDataTRB(bufferAddress, len, DataDirection::OUT, _maxPacketSize);
 }
 
 void EndPointContext::Init(uint32_t dqPtr, USBStandardEndPt::DirectionTypes dir, byte type, int32_t maxPacketSize, byte interval)
