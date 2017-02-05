@@ -317,16 +317,16 @@ bool XHCIDevice::BulkRead(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen)
 
 bool XHCIDevice::BulkWrite(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen)
 {
-	if(uiLen == 0)
-		return true;
+  if(uiLen == 0)
+    return true;
 
-	unsigned uiMaxLen = pDisk->usOutMaxPacketSize * 64;//MAX_EHCI_TD_PER_BULK_RW;
-	if(uiLen > uiMaxLen)
-	{
-		printf("\n Max Bulk Transfer per Frame is %d bytes", uiMaxLen);
-		return false;
-	}
-	memcpy(pDisk->pRawAlignedBuffer, pDataBuf, uiLen) ;
+  unsigned uiMaxLen = pDisk->usOutMaxPacketSize * 64;//MAX_EHCI_TD_PER_BULK_RW;
+  if(uiLen > uiMaxLen)
+  {
+    printf("\n Max Bulk Transfer per Frame is %d bytes", uiMaxLen);
+    return false;
+  }
+  memcpy(pDisk->pRawAlignedBuffer, pDataBuf, uiLen) ;
   _inputContext->SendData((unsigned)pDisk->pRawAlignedBuffer, uiLen);
   return true;
 }

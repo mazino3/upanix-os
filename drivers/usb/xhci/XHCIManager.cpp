@@ -27,24 +27,24 @@ static const IRQ* XHCI_IRQ = nullptr;
 
 static void XHCI_IRQHandler()
 {
-	unsigned GPRStack[NO_OF_GPR] ;
-	AsmUtil_STORE_GPR(GPRStack) ;
-	AsmUtil_SET_KERNEL_DATA_SEGMENTS
+  unsigned GPRStack[NO_OF_GPR];
+  AsmUtil_STORE_GPR(GPRStack);
+  AsmUtil_SET_KERNEL_DATA_SEGMENTS
 
- // printf("\n XHCI IRQ");
+  //printf("\n XHCI IRQ");
   if(XHCIManager::Instance().Initialized() && XHCIManager::Instance().GetEventMode() == XHCIManager::Interrupt)
   {
     for(auto c : XHCIManager::Instance().Controllers())
       c->NotifyEvent();
   }
 
-	IrqManager::Instance().SendEOI(*XHCI_IRQ);
-	
-	AsmUtil_REVOKE_KERNEL_DATA_SEGMENTS
-	AsmUtil_RESTORE_GPR(GPRStack) ;
-	
-	asm("leave") ;
-	asm("IRET") ;
+  IrqManager::Instance().SendEOI(*XHCI_IRQ);
+
+  AsmUtil_REVOKE_KERNEL_DATA_SEGMENTS
+  AsmUtil_RESTORE_GPR(GPRStack);
+
+  asm("leave");
+  asm("IRET");
 }
 
 XHCIManager::XHCIManager() : _initialized(false)
@@ -70,7 +70,7 @@ void XHCIManager::Initialize()
   for(auto pPCIEntry : PCIBusHandler::Instance().PCIEntries())
   {
     if(pPCIEntry->bHeaderType & PCI_HEADER_BRIDGE)
-      continue ;
+      continue;
 
     if(pPCIEntry->bInterface == 48 && 
       pPCIEntry->bClassCode == PCI_SERIAL_BUS && 
@@ -89,9 +89,9 @@ void XHCIManager::Initialize()
   }
 
 	if(_controllers.size())
-		KC::MDisplay().LoadMessage("USB XHCI Controller Found", Success) ;
+		KC::MDisplay().LoadMessage("USB XHCI Controller Found", Success);
 	else
-		KC::MDisplay().LoadMessage("No USB XHCI Controller Found", Failure) ;
+		KC::MDisplay().LoadMessage("No USB XHCI Controller Found", Failure);
 
   if(_eventMode == EventMode::Interrupt)
     IrqManager::Instance().EnableIRQ(*XHCI_IRQ);
