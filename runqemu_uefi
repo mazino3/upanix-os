@@ -20,12 +20,20 @@ clear
 
 OVMF_VERSION=$1
 
-if [ -z "$2" ]
+SUDO_PW=""
+if [ -f .sudopw ]
+then
+  SUDO_PW=`cat .sudopw`
+else
+  echo "Don't find .sudopw file. Create a (secure) file .sudopw containing sudo password"
+  exit 1
+fi
+
+if [ "$DRIVE" = "" ]
 then
   BOOT_DRIVE="$UPANIX_HOME/USBImage/300MUSB.img"
 else
-  BOOT_DRIVE="/dev/$2"
-	SUDO=sudo
+  BOOT_DRIVE="/dev/$DRIVE"
 fi
 
 echo "\n\n*****************************************************************************\n\n"
@@ -43,7 +51,7 @@ sleep 1
 
 QEMU_PATH=
 #$SUDO ~/opt/bin/qemu-system-x86_64 \
-$SUDO qemu-system-x86_64 \
+echo $SUDO_PW | sudo -S qemu-system-x86_64 \
 -serial file:serial_debug.log \
 -L $UPANIX_HOME/ovmf.$OVMF_VERSION \
 -bios OVMF.fd \
