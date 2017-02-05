@@ -1,3 +1,4 @@
+#!/bin/bash
 #	 Upanix - An x86 based Operating System
 #	 Copyright (C) 2011 'Prajwala Prabhakar' 'srinivasa_prajwal@yahoo.co.in'
 #																			 

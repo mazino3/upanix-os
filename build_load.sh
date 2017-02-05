@@ -1,3 +1,4 @@
+#!/bin/bash
 #	 Upanix - An x86 based Operating System
 #	 Copyright (C) 2011 'Prajwala Prabhakar' 'srinivasa_prajwal@yahoo.co.in'
 #																			 
@@ -51,6 +52,7 @@ fi
 
 echo $SUDO_PW | sudo -S kpartx -d "$DEV"
 echo $SUDO_PW | sudo -S kpartx -av "$DEV"
+sleep 2
 echo $SUDO_PW | sudo -S mount /dev/mapper/$MOUNTP usb_boot/MntUSB 
 
 if [ $? -ne 0 ]

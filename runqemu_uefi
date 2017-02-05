@@ -1,3 +1,4 @@
+#!/bin/bash
 #	 Upanix - An x86 based Operating System
 #	 Copyright (C) 2011 'Prajwala Prabhakar' 'srinivasa_prajwal@yahoo.co.in'
 #																			 
@@ -13,7 +14,6 @@
 #																			 
 #	 You should have received a copy of the GNU General Public License
 #	 along with this program.  If not, see <http://www.gnu.org/licenses/
-#!/bin/bash
 
 #Customized Qemu Run Script -- Self Written
 clear
