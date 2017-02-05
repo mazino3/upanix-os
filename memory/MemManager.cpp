@@ -155,26 +155,28 @@ void MemManager::InitPage(unsigned uiPage)
 
 bool MemManager::BuildRawPageMap()
 {
-	m_uiPageMap = (unsigned*)MEM_PAGE_MAP_START ;
-	m_uiPageMapSize = (((RAM_SIZE / PAGE_SIZE) / 8) / 4) ;
-	m_uiResvSize = (((MEM_RESV_SIZE / PAGE_SIZE) / 8) / 4) ;
-	m_uiKernelHeapSize = (MEM_KERNEL_HEAP_SIZE / PAGE_SIZE) / 8 / 4 ;
-	m_uiKernelHeapStartAddress = MEM_RESV_SIZE ;
+  m_uiPageMap = (unsigned*)MEM_PAGE_MAP_START ;
+  m_uiPageMapSize = (((RAM_SIZE / PAGE_SIZE) / 8) / 4) ;
+  m_uiResvSize = (((MEM_KERNEL_RESV_SIZE / PAGE_SIZE) / 8) / 4) ;
+  m_uiNoOfResvPages = MEM_KERNEL_RESV_SIZE / PAGE_SIZE;
+  m_uiKernelHeapSize = (MEM_KERNEL_HEAP_SIZE / PAGE_SIZE) / 8 / 4 ;
+  m_uiKernelHeapStartAddress = MEM_KERNEL_HEAP_START - GLOBAL_DATA_SEGMENT_BASE;
+  m_uiKernelPagePoolAddress = MEM_KERNEL_HEAP_START + MEM_KERNEL_HEAP_SIZE - GLOBAL_DATA_SEGMENT_BASE;
 
-	if((m_uiPageMapSize * 4) > (MEM_PAGE_MAP_END - MEM_PAGE_MAP_START))
-	{
-		KC::MDisplay().Message("\n Mem Page Map Size InSufficient\n", 'A') ;
-		return false ;
-	}
+  if((m_uiPageMapSize * 4) > (MEM_PAGE_MAP_END - MEM_PAGE_MAP_START))
+  {
+    KC::MDisplay().Message("\n Mem Page Map Size InSufficient\n", 'A') ;
+    return false ;
+  }
 
-	unsigned i ;
-	for(i = 0; i < m_uiPageMapSize; i++)
-		m_uiPageMap[i] &= 0x0 ;
+  unsigned i ;
+  for(i = 0; i < m_uiPageMapSize; i++)
+    m_uiPageMap[i] &= 0x0 ;
 
-	for(i = 0; i < m_uiResvSize + m_uiKernelHeapSize; i++)
-		m_uiPageMap[i] |= 0xFFFFFFFF ;
- 
-	return true ;
+  for(i = 0; i < m_uiResvSize; i++)
+    m_uiPageMap[i] |= 0xFFFFFFFF ;
+
+  return true ;
 }	
 
 bool MemManager::BuildPageTable()
@@ -184,14 +186,11 @@ bool MemManager::BuildPageTable()
 	MEM_PDBR = MEM_PDE_START + GLOBAL_DATA_SEGMENT_BASE ;
 
 	unsigned uiNoOfPDEEntries ;
-	unsigned uiPDE ;
-	unsigned uiPTE ;
 	unsigned uiPageAddress ;
 	unsigned uiPageTableAddress ;
 	
 	m_uiNoOfPages = RAM_SIZE / PAGE_SIZE ;
 	uiNoOfPDEEntries = m_uiNoOfPages / PAGE_TABLE_ENTRIES ;
-	m_uiNoOfResvPages = MEM_RESV_SIZE / PAGE_SIZE ;
 
 	m_uiPDEBase = (unsigned*)MEM_PDE_START ; 
 	m_uiPTEBase = (unsigned*)MEM_PTE_START ;
@@ -215,20 +214,14 @@ bool MemManager::BuildPageTable()
 	
 	//Map all PTEs into PDE. Pages in PTE will be mapped based 
 	//on RAM SIZE.
-	for(uiPDE = 0; uiPDE < PAGE_TABLE_ENTRIES; uiPDE++)
+	for(uint32_t uiPDE = 0; uiPDE < PAGE_TABLE_ENTRIES; uiPDE++)
 	{
 		m_uiPDEBase[uiPDE] = (uiPageTableAddress & 0xFFFFF000) | 0x3 ;
 		uiPageTableAddress += PAGE_TABLE_SIZE ;
 	}
 
 	uiPageAddress = 0 ;
-	for(uiPTE = 0; uiPTE < m_uiNoOfResvPages; uiPTE++)
-	{
-		m_uiPTEBase[uiPTE] = (uiPageAddress & 0xFFFFF000) | 0x3 ;
-		uiPageAddress += PAGE_SIZE ;
-	}
-
-	for(;uiPTE < m_uiNoOfPages; uiPTE++)
+	for(uint32_t uiPTE = 0; uiPTE < m_uiNoOfPages; uiPTE++)
 	{
 		m_uiPTEBase[uiPTE] = (uiPageAddress & 0xFFFFF000) | 0x3 ;
 		uiPageAddress += PAGE_SIZE ;

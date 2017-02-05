@@ -88,6 +88,7 @@ class MemManager
 		unsigned m_uiNoOfResvPages ;
 		unsigned m_uiKernelHeapSize ;
 		unsigned m_uiKernelHeapStartAddress ;
+		unsigned m_uiKernelPagePoolAddress;
 
 		unsigned* m_uiPageMap ;
 		unsigned m_uiPageMapSize ;

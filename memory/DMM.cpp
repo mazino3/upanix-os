@@ -166,7 +166,7 @@ unsigned DMM_AllocateForKernel(unsigned uiSizeInBytes, unsigned uiAlignNumber)
 	// Dedicated Head Node. This will avoid Back Loop at Head
 	if(uiAUTAddress == NULL)
 	{
-	  unsigned uiHeapStartAddress = MemManager::Instance().GetKernelHeapStartAddr() - GLOBAL_DATA_SEGMENT_BASE;
+	  unsigned uiHeapStartAddress = MemManager::Instance().GetKernelHeapStartAddr();
 		aut = (AllocationUnitTracker*)(uiHeapStartAddress);
 		aut->uiAllocatedAddress = uiHeapStartAddress;
 		aut->uiSize = MEM_KERNEL_HEAP_SIZE;
@@ -302,7 +302,7 @@ byte DMM_DeAllocateForKernel(unsigned uiAddress)
 {
   IrqGuard g;
 	unsigned& uiAUTAddress = MemManager::Instance().GetKernelAUTAddress() ;
-	unsigned uiHeapStartAddress = MemManager::Instance().GetKernelHeapStartAddr() - GLOBAL_DATA_SEGMENT_BASE ;
+	unsigned uiHeapStartAddress = MemManager::Instance().GetKernelHeapStartAddr();
 
 	if(uiAddress == NULL)
 		return DMM_SUCCESS ;
@@ -368,7 +368,7 @@ void DMM_DeAllocatePhysicalPages(ProcessAddressSpace* processAddressSpace)
 
 unsigned DMM_KernelHeapAllocSize()
 {
-	unsigned uiHeapStartAddress = MemManager::Instance().GetKernelHeapStartAddr() - GLOBAL_DATA_SEGMENT_BASE ;
+	unsigned uiHeapStartAddress = MemManager::Instance().GetKernelHeapStartAddr();
 	AllocationUnitTracker *aut ;
 	unsigned uiSize = 0 ;
 
