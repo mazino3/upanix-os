@@ -100,23 +100,26 @@ MemManager::MemManager() :
 	m_uiKernelAUTAddress(NULL),
 	RAM_SIZE(MultiBoot::Instance().GetRamSize())
 {
-	if(BuildRawPageMap())
-	{
-		if(BuildPageTable())
-		{
-      MemMapGraphicsLFB(MEM_PDBR);
-			Mem_EnablePaging() ;
-	
-			KC::MDisplay().LoadMessage("Memory Manager Initialization", Success) ;
-			printf("\n\tRAM SIZE = %d", RAM_SIZE) ;
-			printf("\n\tNo. of Pages = %d", m_uiNoOfPages) ;
-			printf("\n\tNo. of Resv Pages = %d", m_uiNoOfResvPages) ;
-			return;
-		}
-	}
+  if(BuildRawPageMap())
+  {
+    if(BuildPageTable())
+    {
+        if(BuildPagePoolMap())
+        {
+          MemMapGraphicsLFB(MEM_PDBR);
+          Mem_EnablePaging() ;
 
-	KC::MDisplay().Message("\n *********** KERNEL PANIC ************ \n", '$') ;
-	while(1) ;
+          KC::MDisplay().LoadMessage("Memory Manager Initialization", Success) ;
+          printf("\n\tRAM SIZE = %d", RAM_SIZE) ;
+          printf("\n\tNo. of Pages = %d", m_uiNoOfPages) ;
+          printf("\n\tNo. of Resv Pages = %d", m_uiNoOfResvPages) ;
+          return;
+        }
+    }
+  }
+
+  KC::MDisplay().Message("\n *********** KERNEL PANIC ************ \n", '$') ;
+  while(1) ;
 }
 
 void MemManager::MemMapGraphicsLFB(unsigned uiPDEAddress)
@@ -161,7 +164,6 @@ bool MemManager::BuildRawPageMap()
   m_uiNoOfResvPages = MEM_KERNEL_RESV_SIZE / PAGE_SIZE;
   m_uiKernelHeapSize = (MEM_KERNEL_HEAP_SIZE / PAGE_SIZE) / 8 / 4 ;
   m_uiKernelHeapStartAddress = MEM_KERNEL_HEAP_START - GLOBAL_DATA_SEGMENT_BASE;
-  m_uiKernelPagePoolAddress = MEM_KERNEL_HEAP_START + MEM_KERNEL_HEAP_SIZE - GLOBAL_DATA_SEGMENT_BASE;
 
   if((m_uiPageMapSize * 4) > (MEM_PAGE_MAP_END - MEM_PAGE_MAP_START))
   {
@@ -169,15 +171,32 @@ bool MemManager::BuildRawPageMap()
     return false ;
   }
 
-  unsigned i ;
-  for(i = 0; i < m_uiPageMapSize; i++)
+  for(uint32_t i = 0; i < m_uiPageMapSize; i++)
     m_uiPageMap[i] &= 0x0 ;
 
-  for(i = 0; i < m_uiResvSize; i++)
+  for(uint32_t i = 0; i < m_uiResvSize; i++)
     m_uiPageMap[i] |= 0xFFFFFFFF ;
 
   return true ;
 }	
+
+bool MemManager::BuildPagePoolMap()
+{
+  m_uiKernelPagePoolMap = (unsigned*)(MEM_KERNEL_PAGE_POOL_MAP_START - GLOBAL_DATA_SEGMENT_BASE);
+  m_uiKernelPagePoolMapSize = MEM_KERNEL_PAGE_POOL_SIZE / PAGE_SIZE / 8 / 4;
+  m_uiKernelPagePoolStartPage = (MEM_KERNEL_HEAP_START + MEM_KERNEL_HEAP_SIZE) / PAGE_SIZE;
+
+  if((m_uiKernelPagePoolMapSize * 4) > (MEM_KERNEL_PAGE_POOL_MAP_END - MEM_KERNEL_PAGE_POOL_MAP_START))
+  {
+    KC::MDisplay().Message("\n Mem Page Pool Map Size InSufficient\n", 'A') ;
+    return false ;
+  }
+
+  for(uint32_t i = 0; i < m_uiKernelPagePoolMapSize; i++)
+    m_uiKernelPagePoolMap[i] &= 0x0 ;
+
+  return true;
+}
 
 bool MemManager::BuildPageTable()
 {
@@ -315,6 +334,40 @@ void MemManager::DeAllocatePhysicalPage(const unsigned uiPageNumber)
 	uiPageMapPosition = uiPageNumber / (8 * 4) ;
 	
 	m_uiPageMap[uiPageMapPosition] = m_uiPageMap[uiPageMapPosition] & ~(0x1 << uiPageOffset) ;
+}
+
+unsigned MemManager::AllocatePageForKernel()
+{
+  ProcessSwitchLock lock;
+
+  for(uint32_t i = 0; i < m_uiKernelPagePoolMapSize; ++i)
+  {
+    if((m_uiKernelPagePoolMap[i] & 0xFFFFFFFF) != 0xFFFFFFFF)
+    {
+      uint32_t uiPageMapEntry = m_uiKernelPagePoolMap[i] ;
+      for(uint32_t uiPageOffset = 0; uiPageOffset < 32; ++uiPageOffset)
+      {
+        if((uiPageMapEntry & 0x1) == 0x0)
+        {
+          m_uiKernelPagePoolMap[i] |= (0x1 << uiPageOffset) ;
+          return (i * 4 * 8) + uiPageOffset + m_uiKernelPagePoolStartPage;
+        }
+        uiPageMapEntry >>= 1 ;
+      }
+    }
+  }
+  throw upan::exception(XLOC, "Out of memory pages in kernel pool!");
+}
+
+void MemManager::DeAllocatePageForKernel(unsigned uiPageNumber)
+{
+  ProcessSwitchLock lock;
+
+  uiPageNumber -= m_uiKernelPagePoolStartPage;
+  const unsigned uiPageMapPosition = uiPageNumber / (8 * 4);
+  const unsigned uiPageOffset = uiPageNumber % (8 * 4) ;
+
+  m_uiKernelPagePoolMap[uiPageMapPosition] = m_uiKernelPagePoolMap[uiPageMapPosition] & ~(0x1 << uiPageOffset) ;
 }
 
 //uint32_t MemManager::AllocatePhysicalPage(const uint32_t noOfPages)

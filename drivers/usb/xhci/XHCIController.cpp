@@ -127,7 +127,7 @@ XHCIController::XHCIController(PCIEntry* pPCIEntry)
   _opReg->SetDNCTRL(0x2);
 
   //program device context base address pointer
-  unsigned deviceContextTable = MemManager::Instance().AllocatePhysicalPage() * PAGE_SIZE;
+  unsigned deviceContextTable = MemManager::Instance().AllocatePageForKernel() * PAGE_SIZE;
   _deviceContextAddrArray = (uint64_t*)KERNEL_VIRTUAL_ADDRESS(deviceContextTable);
   memset((void*)_deviceContextAddrArray, 0, PAGE_SIZE);
   _opReg->SetDCBaap(deviceContextTable);
@@ -576,7 +576,7 @@ void EventManager::InterrupterRegister::DebugPrint()
 const int EventManager::ERST_SIZE = 256;
 EventManager::ERSTEntry::ERSTEntry() : _size(ERST_SIZE)
 {
-  unsigned eventSegmentTable = MemManager::Instance().AllocatePhysicalPage() * PAGE_SIZE;
+  unsigned eventSegmentTable = MemManager::Instance().AllocatePageForKernel() * PAGE_SIZE;
   EventTRB* events = new ((void*)KERNEL_VIRTUAL_ADDRESS(eventSegmentTable))EventTRB[_size];
   _ersAddr = (uint64_t)KERNEL_REAL_ADDRESS(events);
 }

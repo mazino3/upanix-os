@@ -46,6 +46,9 @@ class MemManager
 		Result MarkPageAsAllocated(unsigned uiPageNumber) ;
 		unsigned AllocatePhysicalPage();
 		void DeAllocatePhysicalPage(const unsigned uiPageNumber) ;
+		unsigned AllocatePageForKernel();
+		void DeAllocatePageForKernel(unsigned uiPageNumber);
+
     //uint32_t AllocatePhysicalPage(const uint32_t noOfPages = 1);
     //void DeAllocatePhysicalPage(uint32_t pageNo, const uint32_t noOfPages = 1);
 		Result AllocatePage(int iProcessID, unsigned uiFaultyAddress) ;
@@ -81,6 +84,7 @@ class MemManager
 
 	private:
 		bool BuildRawPageMap() ;
+		bool BuildPagePoolMap();
 		bool BuildPageTable() ;
 
 	private:
@@ -88,10 +92,13 @@ class MemManager
 		unsigned m_uiNoOfResvPages ;
 		unsigned m_uiKernelHeapSize ;
 		unsigned m_uiKernelHeapStartAddress ;
-		unsigned m_uiKernelPagePoolAddress;
 
 		unsigned* m_uiPageMap ;
 		unsigned m_uiPageMapSize ;
+
+		unsigned* m_uiKernelPagePoolMap;
+		unsigned m_uiKernelPagePoolMapSize;
+		unsigned m_uiKernelPagePoolStartPage;
 
 		unsigned m_uiResvSize ;
 

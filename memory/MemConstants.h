@@ -110,13 +110,9 @@ extern unsigned RAM_SIZE ;
 #define MEM_PAGE_FAULT_HANDLER_STACK	0x828FFF // (8 MB + 132 KB + 8 * PAGE_SIZE - 1)
 #define MEM_KERNEL_SERVICE_STACK		0x830FFF // (8 MB + 132 KB + 16 * PAGE_SIZE - 1)
 
-/* File Descriptor Table -> Currently not used */
-#define MEM_FDT_START		0x831000 // 8 MB + 196 KB
-#define MEM_FDT_END			0x839000 // 8 MB + 228 KB
-
-/* User Table */
-//#define MEM_USR_LIST_START	0x839000 // 8 MB + 228 KB
-//#define MEM_USR_LIST_END	0x83C000 // 8 MB + 240 KB
+/* kernel page heap/pool */
+#define MEM_KERNEL_PAGE_POOL_MAP_START 0x831000 // 8 MB + 196 KB
+#define MEM_KERNEL_PAGE_POOL_MAP_END   0x833000 // 8 MB + 204 KB
 
 /* PGAS */
 #define MEM_PGAS_START		0x83C000 // 8 MB + 240 KB
