@@ -229,12 +229,12 @@ class TransferRing
     uint32_t AddDataTRB(uint32_t dataBufferAddr, uint32_t len, DataDirection dir, int32_t maxPacketSize);
     TRB* RingBase() { return _trbs; }
   private:
-    void NextTRB();
+    TRB& NextTRB();
 
     uint32_t  _size;
     bool      _cycleState;
-    TRB*      _trbs;
     uint32_t  _nextTRBIndex;
+    TRB*      _trbs;
 };
 
 #endif

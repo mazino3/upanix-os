@@ -25,7 +25,7 @@
 TransferRing::TransferRing(unsigned size) : _size(size), _cycleState(true), _nextTRBIndex(0)
 {
   _trbs = new ((void*)DMM_AllocateForKernel(sizeof(TRB) * _size, 16))TRB[_size];
-  LinkTRB& link = static_cast<LinkTRB&>(_trbs[_size - 1]);
+  auto& link = *new (&_trbs[_size - 1])LinkTRB();
   link.SetLinkAddr(KERNEL_REAL_ADDRESS(_trbs));
   link.SetToggleBit(true);
 }
@@ -35,28 +35,28 @@ TransferRing::~TransferRing()
   DMM_DeAllocateForKernel((unsigned)_trbs);
 }
 
-void TransferRing::NextTRB()
+TRB& TransferRing::NextTRB()
 {
-  ++_nextTRBIndex;
   if(_nextTRBIndex == (_size - 1))
   {
+    _trbs[_nextTRBIndex].SetCycleBit(_cycleState);
     _nextTRBIndex = 0;
     _cycleState = !_cycleState;
   }
+  return _trbs[_nextTRBIndex++];
 }
 
 void TransferRing::AddSetupStageTRB(uint32_t bmRequestType, uint32_t bmRequest,
                                     uint32_t wValue, uint32_t wIndex, uint32_t wLength,
                                     TransferType trt)
 {
-  TRB& trb = _trbs[_nextTRBIndex];
+  TRB& trb = NextTRB();
   trb._b1 =  wValue << 16 | bmRequest << 8 | bmRequestType;
   trb._b2 =  wLength << 16 | wIndex;
   trb._b3 = 8;
   trb._b4 = (trt << 16) | (1 << 6);
   trb.Type(2);
   trb.SetCycleBit(_cycleState);
-  NextTRB();
 }
 
 void TransferRing::AddDataStageTRB(uint32_t dataBufferAddr, uint32_t len, DataDirection dir, int32_t maxPacketSize)
@@ -70,7 +70,7 @@ void TransferRing::AddDataStageTRB(uint32_t dataBufferAddr, uint32_t len, DataDi
   uint32_t trbType = 3; //Data
   while(transferLen > 0)
   {
-    TRB& trb = _trbs[_nextTRBIndex];
+    TRB& trb = NextTRB();
     //TODO: Write to 64bit field (i.e. _b1 + _b2 together) in a single assigment
     trb._b1 = dataBufferAddr;
     trb._b2 = 0;
@@ -87,8 +87,6 @@ void TransferRing::AddDataStageTRB(uint32_t dataBufferAddr, uint32_t len, DataDi
     //for DATA stage, after the first trb, the remaining are NORMAL TRBs and direction is not used
     trbType = 1; //Normal
     dir = DataDirection::OUT;
-
-    NextTRB();
   }
 //  auto statusAddr = DMM_AllocateForKernel(4, 16);
 //  AddEventDataTRB(statusAddr, true);
@@ -96,27 +94,25 @@ void TransferRing::AddDataStageTRB(uint32_t dataBufferAddr, uint32_t len, DataDi
 
 uint32_t TransferRing::AddStatusStageTRB()
 {
-  TRB& trb = _trbs[_nextTRBIndex];
+  TRB& trb = NextTRB();
   trb._b1 = 0;
   trb._b2 = 0;
   trb._b3 = 0;
   trb._b4 = DataDirection::OUT << 16 | INTERRUPT_ON_COMPLETE;
   trb.Type(4);
   trb.SetCycleBit(_cycleState);
-  NextTRB();
   return (uint32_t)&trb;
 }
 
 void TransferRing::AddEventDataTRB(uint32_t statusAddr, bool ioc)
 {
-  TRB& trb = _trbs[_nextTRBIndex];
+  TRB& trb = NextTRB();
   trb._b1 = statusAddr;
   trb._b2 = 0;
   trb._b3 = 0;
   trb._b4 = ioc ? INTERRUPT_ON_COMPLETE : 0;
   trb.Type(7);
   trb.SetCycleBit(_cycleState);
-  NextTRB();
 }
 
 uint32_t TransferRing::AddDataTRB(uint32_t dataBufferAddr, uint32_t len, DataDirection dir, int32_t maxPacketSize)
@@ -136,19 +132,17 @@ uint32_t TransferRing::AddDataTRB(uint32_t dataBufferAddr, uint32_t len, DataDir
 
     const bool ioc = remainingPackets <= 0;
 
-    TRB& trb = _trbs[_nextTRBIndex];
+    TRB& trb = NextTRB();
     //TODO: Write to 64bit field (i.e. _b1 + _b2 together) in a single assigment
     trb._b1 = dataBufferAddr;
     trb._b2 = 0;
     trb._b3 = (remainingPackets << 17) | bytesToTransfer;
-    trb._b4 = (dir << 16) | (ioc ? INTERRUPT_ON_COMPLETE : 0);
+    trb._b4 = (dir << 16) | ((remainingPackets != 0) << 4) | (ioc ? INTERRUPT_ON_COMPLETE : 0);
     trb.Type(3);
     trb.SetCycleBit(_cycleState);
 
     dataBufferAddr += bytesToTransfer;
     
-    NextTRB();
-
     if(ioc)
       lastTRB = &trb;
   }
