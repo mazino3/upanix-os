@@ -37,18 +37,11 @@ USBStandardDeviceDesc::USBStandardDeviceDesc() :
 
 void USBStandardDeviceDesc::DebugPrint() const
 {
-	printf("\n Len=%d,DType=%d,bcd=%d", 
-    (int)bLength, 
-    (int)bDescType, 
-    (int)bcdUSB);
+  printf("\n Len=%d,DType=%d,bcd=%d",  (int)bLength,  (int)bDescType,  (int)bcdUSB);
 
-	printf(",Dev C=%d,SubC=%d,Proto=%d,MaxPkSize=%d", 
-    (int)bDeviceClass, 
-    (int)bDeviceSubClass, 
-    (int)bDeviceProtocol, 
-    (int)bMaxPacketSize0);
+  printf(",Dev C=%d,SubC=%d,Proto=%d,MaxPkSize=%d", (int)bDeviceClass, (int)bDeviceSubClass, (int)bDeviceProtocol, (int)bMaxPacketSize0);
 
-	printf(",VenID=%d,ProdID=%d,bcdDev=%d,iManufac=%d,iProd=%d,iSlNo=%d,nConfigs=%d", 
+  printf(",VenID=%d,ProdID=%d,bcdDev=%d,iManufac=%d,iProd=%d,iSlNo=%d,nConfigs=%d",
     (int)sVendorID,
     (int)sProductID,
     (int)bcdDevice,

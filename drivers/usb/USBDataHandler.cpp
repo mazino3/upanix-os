@@ -170,9 +170,9 @@ void USBDataHandler_CopyStrDescZero(USBStringDescZero* pDest, const void* pSrcv)
 
 void USBDataHandler_DisplayStrDescZero(USBStringDescZero* pStringDescZero)
 {
-	printf("\n Len: %d,DType: %d", pStringDescZero->bLength, pStringDescZero->bDescriptorType);
-	for(int i = 0; i < (pStringDescZero->bLength - 2) / 2; i++)
-		printf(",LangId[ %d ]=0x%x", i, pStringDescZero->usLangID[i]) ;
+  printf("\n Len: %d,DType: %d", pStringDescZero->bLength, pStringDescZero->bDescriptorType);
+  for(int i = 0; i < (pStringDescZero->bLength - 2) / 2; i++)
+    printf(",LangId[ %d ]=0x%x", i, pStringDescZero->usLangID[i]) ;
 }
 
 void USBDataHandler_InitInterfaceDesc(USBStandardInterface* pInt)

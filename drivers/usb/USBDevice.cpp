@@ -28,14 +28,14 @@ void USBDevice::SetLangId()
   if(SUPPORTED_LAND_IDS.empty())
     SUPPORTED_LAND_IDS.insert(0x409);
 
-	for(int i = 0; i < (_pStrDescZero->bLength - 2) / 2; ++i)
-	{
-		if(SUPPORTED_LAND_IDS.exists(_pStrDescZero->usLangID[i]))
+  for(int i = 0; i < (_pStrDescZero->bLength - 2) / 2; ++i)
+  {
+    if(SUPPORTED_LAND_IDS.exists(_pStrDescZero->usLangID[i]))
     {
       _usLangID = _pStrDescZero->usLangID[i];
       break;
-		}
-	}
+    }
+  }
 }
 
 void USBDevice::SetConfigIndex(byte bConfigValue)
