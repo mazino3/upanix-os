@@ -150,7 +150,10 @@ uint32_t ControlEndPoint::SetupTransfer(uint32_t bmRequestType, uint32_t bmReque
     _tRing->AddDataStageTRB(KERNEL_REAL_ADDRESS(dataBuffer), wLength, dir, _maxPacketSize);
   }
   //Status Stage
-  return _tRing->AddStatusStageTRB();
+  uint32_t statusDir = DataDirection::IN;
+  if(wLength > 0 && trt == TransferType::IN_DATA_STAGE)
+    statusDir = DataDirection::OUT;
+  return _tRing->AddStatusStageTRB(statusDir);
 }
 
 InOutEndPoint::InOutEndPoint(uint32_t epOffset, InputContext& inContext, const USBStandardEndPt& endpoint) : EndPoint(endpoint.wMaxPacketSize)
@@ -186,7 +189,17 @@ uint32_t OutEndPoint::SetupTransfer(uint32_t bufferAddress, uint32_t len)
 void EndPointContext::Init(uint32_t dqPtr, USBStandardEndPt::DirectionTypes dir, byte type, int32_t maxPacketSize, byte interval)
 {
   uint32_t epType = 4;
-  uint32_t avgTRBLen = maxPacketSize / 2;
+
+  uint32_t avgTRBLen;
+  if(dir == USBStandardEndPt::BI)
+    avgTRBLen = 8;
+  else
+  {
+   avgTRBLen = maxPacketSize / 2;
+   if(avgTRBLen == 0)
+      avgTRBLen = 1;
+  }
+
   switch (type)
   {
     case 0:
