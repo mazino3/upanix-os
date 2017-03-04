@@ -92,13 +92,13 @@ void TransferRing::AddDataStageTRB(uint32_t dataBufferAddr, uint32_t len, DataDi
 //  AddEventDataTRB(statusAddr, true);
 }
 
-uint32_t TransferRing::AddStatusStageTRB()
+uint32_t TransferRing::AddStatusStageTRB(uint32_t dir)
 {
   TRB& trb = NextTRB();
   trb._b1 = 0;
   trb._b2 = 0;
   trb._b3 = 0;
-  trb._b4 = DataDirection::OUT << 16 | INTERRUPT_ON_COMPLETE;
+  trb._b4 = dir << 16 | INTERRUPT_ON_COMPLETE;
   trb.Type(4);
   trb.SetCycleBit(_cycleState);
   return (uint32_t)&trb;
