@@ -59,7 +59,7 @@ XHCIDevice::XHCIDevice(XHCIController& controller,
   GetDeviceDescriptor();
 
   GetStringDescriptorZero();
-	SetLangId();
+  SetLangId();
   GetDeviceStringDesc(_manufacturer, _deviceDesc.indexManufacturer);
   GetDeviceStringDesc(_product, _deviceDesc.indexProduct);
   GetDeviceStringDesc(_serialNum, _deviceDesc.indexSerialNum);
@@ -83,22 +83,22 @@ void XHCIDevice::ConfigureEndPoint()
 {
   uint32_t lastEPId = 0;
   uint32_t addContextFlag = 1; //Only Slot is set to 1, A1 (EP0) is not required
-	for(int index = 0; index < (int)_deviceDesc.bNumConfigs; ++index)
-	{
+  for(int index = 0; index < (int)_deviceDesc.bNumConfigs; ++index)
+  {
     const auto& config = _pArrConfigDesc[index];
-		for(int iI = 0; iI < (int)config.bNumInterfaces; ++iI)
-		{
+    for(int iI = 0; iI < (int)config.bNumInterfaces; ++iI)
+    {
       const auto& interface = config.pInterfaces[iI];
-			for(int iE = 0; iE < interface.bNumEndpoints; ++iE)
-			{
+      for(int iE = 0; iE < interface.bNumEndpoints; ++iE)
+      {
         const auto& endpoint = interface.pEndPoints[iE];
         const auto epId = _inputContext->AddEndPoint(endpoint);
         if(lastEPId < epId)
           lastEPId = epId;
         addContextFlag |=  (1 << epId);
-			}
-		}
-	}
+      }
+    }
+  }
   _inputContext->Slot().SetContextEntries(lastEPId);
   //TODO: is it requied to update MaxPacketSize of FS device ? if so then update and call Evaluate Context with A0 and A1 set
   _controller.EvaluateContext(KERNEL_REAL_ADDRESS(&_inputContext->Control()), _slotID);
@@ -122,13 +122,13 @@ void XHCIDevice::GetDeviceDescriptor()
 
 void XHCIDevice::GetStringDescriptorZero()
 {
-	unsigned short usDescValue = (0x3 << 8);
-	byte* buffer = new byte[8];
+  unsigned short usDescValue = (0x3 << 8);
+  byte* buffer = new byte[8];
 
-	GetDescriptor(usDescValue, 0, -1, buffer);
+  GetDescriptor(usDescValue, 0, -1, buffer);
 
-	int iLen = reinterpret_cast<USBStringDescZero*>(buffer)->bLength;
-	printf("\n String Desc Zero Len: %d", iLen);
+  int iLen = reinterpret_cast<USBStringDescZero*>(buffer)->bLength;
+  printf("\n String Desc Zero Len: %d", iLen);
 
   delete[] buffer;
   buffer = new byte[iLen];
@@ -137,8 +137,8 @@ void XHCIDevice::GetStringDescriptorZero()
 
   _pStrDescZero = new USBStringDescZero();
 
-	USBDataHandler_CopyStrDescZero(_pStrDescZero, buffer);
-	USBDataHandler_DisplayStrDescZero(_pStrDescZero);
+  USBDataHandler_CopyStrDescZero(_pStrDescZero, buffer);
+  USBDataHandler_DisplayStrDescZero(_pStrDescZero);
 
   delete[] buffer;
 }
@@ -146,15 +146,19 @@ void XHCIDevice::GetStringDescriptorZero()
 void XHCIDevice::GetDeviceStringDesc(upan::string& desc, int descIndex)
 {
   desc = "Unknown";
-	if(_usLangID == 0)
+  if(_usLangID == 0)
     return;
 
-	unsigned short usDescValue = (0x3 << 8);
-	char* buffer = new char[8];
+  //index = 0 means there is no string descriptor
+  if(descIndex == 0)
+    return;
+
+  unsigned short usDescValue = (0x3 << 8);
+  char* buffer = new char[8];
 
   GetDescriptor(usDescValue | descIndex, _usLangID, -1, buffer);
 
-	int iLen = reinterpret_cast<USBStringDescZero*>(buffer)->bLength;
+  int iLen = reinterpret_cast<USBStringDescZero*>(buffer)->bLength;
   if(iLen == 0)
     return;
 
@@ -184,7 +188,7 @@ void XHCIDevice::GetDescriptor(uint16_t descValue, uint16_t index, int len, void
 byte XHCIDevice::GetConfigValue()
 {
   upan::uniq_ptr<byte[]> buffer(new byte[8]);
-  _inputContext->SendCommand(0x80, 8, 0, 0, 8, TransferType::IN_DATA_STAGE, buffer.get());
+  _inputContext->SendCommand(0x80, 8, 0, 0, 1, TransferType::IN_DATA_STAGE, buffer.get());
   return buffer[0];
 }
 
@@ -192,51 +196,51 @@ void XHCIDevice::GetConfigDescriptor()
 {
   _pArrConfigDesc = new USBStandardConfigDesc[_deviceDesc.bNumConfigs];
 
-	for(int index = 0; index < (int)_deviceDesc.bNumConfigs; ++index)
-	{
-		unsigned short usDescValue = (0x2 << 8) | (index & 0xFF);
-		GetDescriptor(usDescValue, 0, -1, &(_pArrConfigDesc[index]));
+  for(int index = 0; index < (int)_deviceDesc.bNumConfigs; ++index)
+  {
+    unsigned short usDescValue = (0x2 << 8) | (index & 0xFF);
+    GetDescriptor(usDescValue, 0, -1, &(_pArrConfigDesc[index]));
 
-		int iLen = _pArrConfigDesc[index].wTotalLength;
-		char* pBuffer = new char[iLen];
-		GetDescriptor(usDescValue, 0, iLen, pBuffer);
+    int iLen = _pArrConfigDesc[index].wTotalLength;
+    char* pBuffer = new char[iLen];
+    GetDescriptor(usDescValue, 0, iLen, pBuffer);
 
-		USBDataHandler_CopyConfigDesc(&_pArrConfigDesc[index], pBuffer, _pArrConfigDesc[index].bLength);
+    USBDataHandler_CopyConfigDesc(&_pArrConfigDesc[index], pBuffer, _pArrConfigDesc[index].bLength);
 
-		_pArrConfigDesc[index].DebugPrint();
+    _pArrConfigDesc[index].DebugPrint();
 
-		printf("\n Parsing Interface information for Configuration: %d", index);
-		printf("\n Number of Interfaces: %d", (int)_pArrConfigDesc[ index ].bNumInterfaces);
+    printf("\n Parsing Interface information for Configuration: %d", index);
+    printf("\n Number of Interfaces: %d", (int)_pArrConfigDesc[ index ].bNumInterfaces);
 
-		void* pInterfaceBuffer = (char*)pBuffer + _pArrConfigDesc[index].bLength;
+    void* pInterfaceBuffer = (char*)pBuffer + _pArrConfigDesc[index].bLength;
 
-		_pArrConfigDesc[index].pInterfaces = new USBStandardInterface[_pArrConfigDesc[index].bNumInterfaces]; 
+    _pArrConfigDesc[index].pInterfaces = new USBStandardInterface[_pArrConfigDesc[index].bNumInterfaces];
 
-		for(int iI = 0; iI < (int)_pArrConfigDesc[index].bNumInterfaces;)
-		{
-			USBStandardInterface* pInt = (USBStandardInterface*)(pInterfaceBuffer);
-			int iIntLen = sizeof(USBStandardInterface) - sizeof(USBStandardEndPt*);
+    for(int iI = 0; iI < (int)_pArrConfigDesc[index].bNumInterfaces;)
+    {
+      USBStandardInterface* pInt = (USBStandardInterface*)(pInterfaceBuffer);
+      int iIntLen = sizeof(USBStandardInterface) - sizeof(USBStandardEndPt*);
       if(pInt->bLength != iIntLen || pInt->bDescriptorType != 4)
       {
-			  pInterfaceBuffer = (USBStandardInterface*)((char*)pInterfaceBuffer + pInt->bLength);
+        pInterfaceBuffer = (USBStandardInterface*)((char*)pInterfaceBuffer + pInt->bLength);
         continue;
       }
 
       memcpy(&(_pArrConfigDesc[index].pInterfaces[iI]), pInt, pInt->bLength);
 
-			_pArrConfigDesc[index].pInterfaces[iI].DebugPrint();
+      _pArrConfigDesc[index].pInterfaces[iI].DebugPrint();
 
-			void* pEndPtBuffer = ((char*)pInterfaceBuffer + pInt->bLength);
+      void* pEndPtBuffer = ((char*)pInterfaceBuffer + pInt->bLength);
 
-			int iNumEndPoints = _pArrConfigDesc[index].pInterfaces[iI].bNumEndpoints;
+      int iNumEndPoints = _pArrConfigDesc[index].pInterfaces[iI].bNumEndpoints;
 
-			_pArrConfigDesc[index].pInterfaces[iI].pEndPoints = new USBStandardEndPt[iNumEndPoints];
+      _pArrConfigDesc[index].pInterfaces[iI].pEndPoints = new USBStandardEndPt[iNumEndPoints];
 
-			printf("\n Parsing EndPoints for Interface: %d of Configuration: %d", iI, index);
+      printf("\n Parsing EndPoints for Interface: %d of Configuration: %d", iI, index);
 
-			for(int iE = 0; iE < iNumEndPoints;)
-			{
-				USBStandardEndPt* pEndPt = (USBStandardEndPt*)(pEndPtBuffer);
+      for(int iE = 0; iE < iNumEndPoints;)
+      {
+        USBStandardEndPt* pEndPt = (USBStandardEndPt*)(pEndPtBuffer);
         if(pEndPt->bLength != sizeof(USBStandardEndPt) || pEndPt->bDescriptorType != 5)
         {
           pEndPtBuffer = (char*)pEndPtBuffer + pEndPt->bLength;
@@ -246,14 +250,14 @@ void XHCIDevice::GetConfigDescriptor()
         _pArrConfigDesc[index].pInterfaces[iI].pEndPoints[iE].DebugPrint();
         pEndPtBuffer = (char*)pEndPtBuffer + pEndPt->bLength;
         ++iE;
-			}
+      }
 
-			pInterfaceBuffer = (USBStandardInterface*)pEndPtBuffer;
+      pInterfaceBuffer = (USBStandardInterface*)pEndPtBuffer;
       ++iI;
-		}
+    }
 
     delete[] pBuffer;
-	}
+  }
 }
 
 void XHCIDevice::SetConfiguration()

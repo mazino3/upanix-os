@@ -312,9 +312,9 @@ void XHCIController::Probe()
       continue;
     }
     auto protocol = supProtocol->Protocol();
-		printf("\n Setup Port: %d [%s] -> ", portId, PortProtocolName(protocol));
+    printf("\n Setup Port: %d [%s] -> ", portId, PortProtocolName(protocol));
     port.Print();
-		if(_capReg->IsPPC())
+    if(_capReg->IsPPC())
       port.PowerOn();
 
     if(!port.IsPowerOn())
@@ -449,7 +449,7 @@ void XHCIController::WaitForEvent(uint32_t trbId, EventTRB& result)
 {
   if(XHCIManager::Instance().GetEventMode() == XHCIManager::Poll)
   {
-    if(!_eventManager->WaitForEvent(result))
+    if(!_eventManager->WaitForEvent(trbId, result))
       throw upan::exception(XLOC, "Timedout while waiting for Command Completion");
   }
   else
@@ -463,6 +463,7 @@ void XHCIController::RegisterForEventResult(uint32_t trbId)
 {
   //TODO: Find an efficient way w/o disabling interrupts
   IrqGuard g;
+  printf("\n Registering for TRB event: %x, Process: %d", trbId, ProcessManager::Instance().GetCurProcId());
   _eventResults[trbId] = EventResult(ProcessManager::Instance().GetCurProcId());
 }
 
@@ -475,6 +476,7 @@ XHCIController::EventResult XHCIController::ConsumeEventResult(uint32_t trbId)
     throw upan::exception(XLOC, "Can't find TRB ID: %x in EventResults", trbId);
   auto result = it->second;
   _eventResults.erase(it);
+  printf("\n Returning result for TRB event: %x, Process: %d", trbId, result.Pid());
   return result;
 }
 
@@ -485,7 +487,9 @@ void XHCIController::PublishEventResult(const EventTRB& result)
   auto it = _eventResults.find(result.TRBPointer());
   if(it == _eventResults.end())
   {
-    printf("\n No entry found in EventResults for TRB Id: %x, Event Type: %d", (uint32_t)result.TRBPointer(), result.Type());
+    printf("\n No entry found in EventResults for\nTRB Id: %x, Event Type: %d\nCC: %d, TLen: %d",
+           (uint32_t)result.TRBPointer(), result.Type(),
+           result.CompletionCode(), result.TransferLength());
     return;
   }
   EventResult& r =  it->second;
@@ -596,7 +600,7 @@ void EventManager::DebugPrint() const
   _iregs[0].DebugPrint();
 }
 
-bool EventManager::WaitForEvent(EventTRB& result)
+bool EventManager::WaitForEvent(uint32_t trbId, EventTRB& result)
 {
   int timeout = 2000;//2 seconds
   while(timeout > 10)
@@ -607,7 +611,8 @@ bool EventManager::WaitForEvent(EventTRB& result)
         _eventCycleBit = !_eventCycleBit;
       result = *_iregs[0].DQEvent();
       _iregs[0].IncrementDQPtr();
-      return true;
+      if(result.TRBPointer() == trbId)
+        return true;
     }
     ProcessManager::Instance().Sleep(10);
     timeout -= 10;

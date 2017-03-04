@@ -133,7 +133,7 @@ class EventManager
 {
   public:
     void DebugPrint() const;
-    bool WaitForEvent(EventTRB& result);
+    bool WaitForEvent(uint32_t trbId, EventTRB& result);
     void NotifyEvents();
 
   private:
