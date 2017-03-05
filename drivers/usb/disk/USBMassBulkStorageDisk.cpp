@@ -427,43 +427,44 @@ bool USBDiskDriver::Match(USBDevice* pUSBDevice)
 
 void USBDiskDriver::DoAddDevice(USBDevice* pUSBDevice)
 {
-	if(pUSBDevice->_deviceDesc.sVendorID == 0x05DC)
+  if(pUSBDevice->_deviceDesc.sVendorID == 0x05DC)
     throw upan::exception(XLOC, "Lexar Jumpshot USB CF Reader detected - Not supported yet!");
 
-  int interfaceIndex = MatchingInterfaceIndex(pUSBDevice); 
+  int interfaceIndex = MatchingInterfaceIndex(pUSBDevice);
   if(interfaceIndex < 0)
     throw upan::exception(XLOC, "USB disk driver doesn't match the given USB device");
 
-	const USBStandardInterface& interface = pUSBDevice->_pArrConfigDesc[ pUSBDevice->_iConfigIndex ].pInterfaces[ interfaceIndex ];
+  const USBStandardInterface& interface = pUSBDevice->_pArrConfigDesc[ pUSBDevice->_iConfigIndex ].pInterfaces[ interfaceIndex ];
 
   byte bMaxLun = 0;
-	/* Set the handler pointers based on the protocol
-	 * Again, this data is persistant across reattachments
-	 */
-	switch(interface.bInterfaceProtocol)
-	{
-		case USB_PR_BULK:
-			printf("\n Reading MAX LUN for the Bulk Storage Disk\n") ;
-      bMaxLun = pUSBDevice->GetMaxLun();
-			printf("\n Max LUN of the device: %d", bMaxLun) ;
-			break;
+  /* Set the handler pointers based on the protocol
+  * Again, this data is persistant across reattachments
+  */
+  switch(interface.bInterfaceProtocol)
+  {
+    case USB_PR_BULK:
+      printf("\n Reading MAX LUN for the Bulk Storage Disk\n") ;
+      //TODO: Some devices which don't support multiple LUN can stall the command
+      //bMaxLun = pUSBDevice->GetMaxLun();
+      printf("\n Max LUN of the device: %d", bMaxLun) ;
+      break;
 
-		default:
+    default:
       throw upan::exception(XLOC, "Unsupported USB Disk Device Protocol: %d", interface.bInterfaceProtocol);
-	}
+  }
 
   upan::string protoName;
-	switch(interface.bInterfaceSubClass)
-	{
-		case USB_SC_SCSI:
-			protoName = "SCSI";
-			break;
+  switch(interface.bInterfaceSubClass)
+  {
+    case USB_SC_SCSI:
+      protoName = "SCSI";
+      break;
 
-		default:
+    default:
       throw upan::exception(XLOC, "Unsupported USB Disk Device SubClass: %d", interface.bInterfaceSubClass);
-	}
+  }
 
-	/* Create device */
+  /* Create device */
   upan::uniq_ptr<USBulkDisk> pDisk(new USBulkDisk(pUSBDevice, interfaceIndex, bMaxLun, protoName));
   pDisk->Initialize();
   pDisk.release();
