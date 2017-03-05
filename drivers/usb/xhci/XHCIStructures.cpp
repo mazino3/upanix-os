@@ -21,7 +21,7 @@
 
 void XHCICapRegister::Print() const
 {
-	printf("\n CapLen: %d, HCSPARAMS1: %x, HCSPARAMS2: %x, HCSPARAMS3: %x", _capLength, _hcsParams1, _hcsParams2, _hcsParams3);
+  printf("\n CapLen: %d, HCSPARAMS1: %x, HCSPARAMS2: %x, HCSPARAMS3: %x", _capLength, _hcsParams1, _hcsParams2, _hcsParams3);
   printf("\n HCCPARAMS1: %x, HCCPARAMS2: %x, DoorBellOffset: %x, RTSOffset: %x", _hccParams1, _hccParams2, DoorBellOffset(), RTSOffset());
 }
 

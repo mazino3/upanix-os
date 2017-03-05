@@ -265,16 +265,21 @@ class DeviceContext
     { 
       if(index >= 30)
         throw upan::exception(XLOC, "Invalid EndPointContext Index: %u", index);
-      return _eps[index]; 
+      if(_eps32)
+        return _eps32[index];
+      else
+        return _eps64[index];
     }
 
   private:
-    template <typename DC> void Init(DC& dc);
+    void Init32(DeviceContext32& dc);
+    void Init64(DeviceContext64& dc);
 
-    bool             _allocated;
-    SlotContext*     _slot;
-    EndPointContext* _ep0;
-    EndPointContext* _eps;
+    bool               _allocated;
+    SlotContext*       _slot;
+    EndPointContext*   _ep0;
+    EndPointContext*   _eps32;
+    EndPointContext64* _eps64;
 };
 
 class EndPoint

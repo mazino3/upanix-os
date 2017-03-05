@@ -89,27 +89,35 @@ DeviceContext::DeviceContext(bool use64) : _allocated(true)
 {
   unsigned addr = KERNEL_VIRTUAL_ADDRESS(MemManager::Instance().AllocatePageForKernel() * PAGE_SIZE);
   if(use64)
-    Init(*new ((void*)addr)DeviceContext64());
+    Init64(*new ((void*)addr)DeviceContext64());
   else
-    Init(*new ((void*)addr)DeviceContext32());
+    Init32(*new ((void*)addr)DeviceContext32());
 }
 
 DeviceContext::DeviceContext(DeviceContext32& dc32) : _allocated(false)
 {
-  Init(dc32);
+  Init32(dc32);
 }
 
 DeviceContext::DeviceContext(DeviceContext64& dc64) : _allocated(false)
 {
-  Init(dc64);
+  Init64(dc64);
 }
 
-template <typename DC>
-void DeviceContext::Init(DC& dc)
+void DeviceContext::Init32(DeviceContext32& dc)
 {
   _slot = &dc._slotContext;
   _ep0 = &dc._epContext0;
-  _eps = dc._epContexts;
+  _eps32 = dc._epContexts;
+  _eps64 = nullptr;
+}
+
+void DeviceContext::Init64(DeviceContext64& dc)
+{
+  _slot = &dc._slotContext;
+  _ep0 = &dc._epContext0;
+  _eps64 = dc._epContexts;
+  _eps32 = nullptr;
 }
 
 DeviceContext::~DeviceContext()
