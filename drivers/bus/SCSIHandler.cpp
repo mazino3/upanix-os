@@ -1167,7 +1167,7 @@ SCSIDevice* SCSIHandler_ScanDevice(SCSIHost *pHost, int iChannel, int iDevice, i
 
 	sCommand.bCommand[ 1 ] = (iLun << 5) & 0xE0 ;
 
-	sCommand.bCommand[ 4 ] = 255 ;
+	sCommand.bCommand[ 4 ] = 36;
 
 	sCommand.iCmdLen = SCSIHandler_GetCommandSize(SCSI_INQUIRY) ;
 
