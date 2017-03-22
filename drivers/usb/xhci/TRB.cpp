@@ -138,7 +138,7 @@ uint32_t TransferRing::AddDataTRB(uint32_t dataBufferAddr, uint32_t len, DataDir
     trb._b2 = 0;
     trb._b3 = (remainingPackets << 17) | bytesToTransfer;
     trb._b4 = (dir << 16) | ((remainingPackets != 0) << 4) | (ioc ? INTERRUPT_ON_COMPLETE : 0);
-    trb.Type(3);
+    trb.Type(1);
     trb.SetCycleBit(_cycleState);
 
     dataBufferAddr += bytesToTransfer;
