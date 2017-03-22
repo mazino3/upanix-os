@@ -117,7 +117,7 @@ USBStandardEndPt::USBStandardEndPt() :
 
 void USBStandardEndPt::DebugPrint()
 {
-  printf("\n Len=%d,DType=%d,EpAddr=%x,Attrs=%d,MaxPktSize=%d,Intrvl=%d", 
+  printf("\n Len=%d,DType=%d,EpAddr=%x,Attrs=%d,MaxPktSize=%d,Intrvl=%u",
     bLength, bDescriptorType, bEndpointAddress, bmAttributes, wMaxPacketSize, bInterval);
 }
 
@@ -192,35 +192,35 @@ USBulkDisk::~USBulkDisk()
 
 void USBulkDisk::Initialize()
 {
-	byte bStatus = pHostDevice->DoReset() ;
-	if(bStatus != USBMassBulkStorageDisk_SUCCESS)
+  byte bStatus = pHostDevice->DoReset() ;
+  if(bStatus != USBMassBulkStorageDisk_SUCCESS)
     throw upan::exception(XLOC, "Failed to reset");
 
-	pSCSIDeviceList = (SCSIDevice**)DMM_AllocateForKernel(sizeof(SCSIDevice**) * (bMaxLun + 1)) ;
-	int iLun ;
-	for(iLun = 0; iLun <= bMaxLun; iLun++)
-		pSCSIDeviceList[ iLun ] = nullptr ;
+  pSCSIDeviceList = (SCSIDevice**)DMM_AllocateForKernel(sizeof(SCSIDevice**) * (bMaxLun + 1)) ;
+  int iLun ;
+  for(iLun = 0; iLun <= bMaxLun; iLun++)
+    pSCSIDeviceList[ iLun ] = nullptr ;
 
-	char szName[10];
-	bool bDeviceFound = false;
+  char szName[10];
+  bool bDeviceFound = false;
 
-	//TODO: For the time configuring only LUN 0
-	for(iLun = 0; iLun <= 0/*bMaxLun*/; iLun++)
-	{
-		SCSIDevice* pSCSIDevice = SCSIHandler_ScanDevice(pHostDevice, 0, 0, iLun) ;
-		pSCSIDeviceList[ iLun ] = pSCSIDevice ;
+  //TODO: For the time configuring only LUN 0
+  for(iLun = 0; iLun <= 0/*bMaxLun*/; iLun++)
+  {
+    SCSIDevice* pSCSIDevice = SCSIHandler_ScanDevice(pHostDevice, 0, 0, iLun) ;
+    pSCSIDeviceList[ iLun ] = pSCSIDevice ;
 
-		if(pSCSIDevice == NULL)
-		{
-			printf("\n No SCSI USB Mass Bulk Storage Device @ LUN: %d", iLun) ;
-			continue ;
-		}
+    if(pSCSIDevice == NULL)
+    {
+      printf("\n No SCSI USB Mass Bulk Storage Device @ LUN: %d", iLun) ;
+      continue ;
+    }
 
     sprintf(szName, "usbdisk%d", USBDiskDriver::NextDeviceId());
-		pHostDevice->AddDeviceDrive(DiskDriveManager::Instance().CreateRawDisk(szName, USB_SCSI_DISK, pSCSIDevice));
-		bDeviceFound = true ;
-	}
+    pHostDevice->AddDeviceDrive(DiskDriveManager::Instance().CreateRawDisk(szName, USB_SCSI_DISK, pSCSIDevice));
+    bDeviceFound = true ;
+  }
 
-	if(!bDeviceFound)
+  if(!bDeviceFound)
     throw upan::exception(XLOC, "No USB Bulk Storage Device Found. Driver setup failed");
 }
