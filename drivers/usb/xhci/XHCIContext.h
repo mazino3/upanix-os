@@ -59,6 +59,10 @@ class InputControlContext
     {
       _addContextFlags = val;
     }
+    void SetDropContextFlag(uint32_t val)
+    {
+      _dropContextFlags = val;
+    }
     void DebugPrint()
     {
       printf("\n ICC DC: %x, AC: %x, C: %x", _dropContextFlags, _addContextFlags, _context);
@@ -137,7 +141,7 @@ class SlotContext
 class EndPointContext
 {
   public:
-    enum State { Disables, Running, Halted, Stopped, Error, Undefined };
+    enum State { Disabled, Running, Halted, Stopped, Error, Undefined };
 
     EndPointContext() : _context1(0), _context2(0),
       _trDQPtr(0), _context3(0), _reserved1(0),

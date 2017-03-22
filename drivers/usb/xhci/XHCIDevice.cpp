@@ -105,6 +105,7 @@ void XHCIDevice::ConfigureEndPoint()
 
   //set A1 -> Slot and other A bits corresponding to EPs being configured
   _inputContext->Control().SetAddContextFlag(addContextFlag);
+  _inputContext->Control().SetDropContextFlag((~addContextFlag) & ~(0x3));
 
   _controller.ConfigureEndPoint(KERNEL_REAL_ADDRESS(&_inputContext->Control()), _slotID);
 

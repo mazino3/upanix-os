@@ -85,7 +85,7 @@ class XHCICapRegister
     //Bandwidth negotiation capability
     bool IsBNC() const { return Bit::IsSet(_hccParams1, 0x2); }
     //64 or 32 uint8_t context data structure size
-    uint32_t IsContextSize64() const { return Bit::IsSet(_hccParams1, 0x4); }
+    bool IsContextSize64() const { return Bit::IsSet(_hccParams1, 0x4); }
     //Supports Port Power Control
     bool IsPPC() const { return Bit::IsSet(_hccParams1, 0x8); }
     //Supports Port Indicator
@@ -336,6 +336,8 @@ class XHCIOpRegister
       if(IsU3EntryEnabled())
         _config = Bit::Set(_config, 0x100, false);
     }
+    //Configuration Information Enable
+    bool IsCIE() const { return Bit::IsSet(_config, 0x200); }
 
     //Port Registers is an array starting at 0x400
     //So, it's address is same as address of _portRegs;
