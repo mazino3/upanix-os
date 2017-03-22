@@ -47,6 +47,12 @@ then
   fi
 else
   DEV="/dev/$DRIVE"
+  bus=`udevadm info --query=all -n $DEV | grep ID_BUS | cut -d"=" -f2`
+  if [ "$bus" != "usb" ]
+  then
+    echo "ERROR: $DEV ($bus) is not a USB disk!!"
+    exit 200
+  fi
   MOUNTP="${DRIVE}1"
 fi
 
