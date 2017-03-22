@@ -242,8 +242,9 @@ class SCSIHost
   virtual bool QueueCommand(SCSICommand*) = 0;
 };
 
-typedef struct
+class SCSIDevice
 {
+public:
 	SCSIHost* pHost ;
 	int iOpenCount ;
 
@@ -265,7 +266,7 @@ typedef struct
 
 	int iSCSILevel ;
 	bool bRemovable ;
-} SCSIDevice ;
+};
 
 /* Sense data */
 typedef struct

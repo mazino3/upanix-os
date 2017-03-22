@@ -298,12 +298,10 @@ upan::string SCSIHandler_ExtractString(byte* szSCSIResult, int iStart, int iEnd)
 
 static SCSIDevice* SCSIHandler_CreateDisk(SCSIHost* pHost, int iChannel, int iDevice, int iLun, byte* szSCSIResult)
 {
-	SCSIDevice* pDevice = (SCSIDevice*)DMM_AllocateForKernel(sizeof(SCSIDevice)) ;
-	
+  SCSIDevice* pDevice = new SCSIDevice();
 	pDevice->szVendor = SCSIHandler_ExtractString(szSCSIResult, 8, 16);
 	pDevice->szModel = SCSIHandler_ExtractString(szSCSIResult, 16, 32);
 	pDevice->szRevision = SCSIHandler_ExtractString(szSCSIResult, 32, 36);
-
 	pDevice->iDeviceTypeIndex = szSCSIResult[0] & 0x1F ;
 	pDevice->pszDeviceType = (pDevice->iDeviceTypeIndex < 14) ? SCSIHandler_szDeviceTypes[pDevice->iDeviceTypeIndex] : "Unknown" ;
 
