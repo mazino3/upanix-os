@@ -308,7 +308,7 @@ void XHCIController::Probe()
     auto supProtocol = GetSupportedProtocol(portId);
     if(!supProtocol)
     {
-      printf("\n There is Extended Supported Protocol Cap for Port: %d !", portId);
+      printf("\n There is no Extended Supported Protocol Cap for Port: %d !", portId);
       continue;
     }
     auto protocol = supProtocol->Protocol();
