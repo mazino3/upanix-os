@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE QtCreatorProject>
-<!-- Written by QtCreator 4.0.2, 2017-03-22T22:51:58. -->
+<!-- Written by QtCreator 4.0.2, 2017-05-01T15:49:01. -->
 <qtcreator>
  <data>
   <variable>EnvironmentId</variable>
@@ -154,7 +154,7 @@
      <value type="QString">UPANIX_HOME=/home/prajwala/workspace/mosland/upanix</value>
      <value type="QString">UPANTOOLS_HOME=/home/prajwala/workspace/mosland/upantools</value>
      <value type="QString">PATH=/home/prajwala/opt/cross/bin:/usr/lib/x86_64-linux-gnu/qt5/bin:/usr/bin:/home/prajwala/bin:/home/prajwala/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin</value>
-     <value type="QString">DRIVE=sde</value>
+     <value type="QString">DRIVE=sdg</value>
     </valuelist>
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.DefaultDisplayName">Default</value>
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName">disk</value>

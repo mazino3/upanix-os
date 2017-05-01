@@ -39,9 +39,9 @@ XHCIDevice::XHCIDevice(XHCIController& controller,
 
   _controller.SetDeviceContext(_slotID, _devContext->Slot());
 
-//TODO: to deal with older devices - you may have to send 2 AddressDevice twice
+//TODO: to deal with older devices - you may have to send AddressDevice twice
 //first, with block bit set and then with block bit cleared
-//With first request, address should be set and slot stat is default (1)
+//With first request, address should be set and slot state is default (1)
 //With second request, slot state should change to Addressed (2)
   _controller.AddressDevice(KERNEL_REAL_ADDRESS(&_inputContext->Control()), _slotID, false);
 

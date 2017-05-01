@@ -132,6 +132,17 @@ XHCIController::XHCIController(PCIEntry* pPCIEntry)
   memset((void*)_deviceContextAddrArray, 0, PAGE_SIZE);
   _opReg->SetDCBaap(deviceContextTable);
 
+  //allocate scratchpad buffer
+  auto maxScratchpadBuffers = _capReg->MaxScratchpadBufSize();
+  if(maxScratchpadBuffers > 0)
+  {
+    printf("\n Allocating %u scratchpad buffer entries", maxScratchpadBuffers);
+    uint64_t* scratchpadBufferArray = DMM_AllocateForKernel(sizeof(uint64_t) * maxScratchpadBuffers, 64);
+    for(int i = 0; i < maxScratchpadBuffers; ++i)
+      scratchpadBufferArray[i] = MemManager::Instance().AllocatePageForKernel() * PAGE_SIZE;
+    _deviceContextAddrArray[0] = (uint64_t)KERNEL_REAL_ADDRESS(scratchpadBufferArray);
+  }
+
   //Door Bell array
   _doorBellRegs = (unsigned*)(uiMappedIOAddr + _capReg->DoorBellOffset());
 
@@ -336,7 +347,7 @@ void XHCIController::Probe()
         if(protocol == USB_PROTOCOL::USB2)
         {
           port.Reset();
-          _eventManager->DebugPrint();
+          //_eventManager->DebugPrint();
         }
         else
           port.WarmReset();
@@ -357,7 +368,7 @@ void XHCIController::Probe()
     port.Print();
     PortSpeed ps = supProtocol->PortSpeedInfo(port.PortSpeedID());
     printf("\n %s [%u %s] device connected to port %d", PortProtocolName(protocol), ps.Mantissa(), ps.BitRateS(), portId);
-		_devices[portId] = new XHCIDevice(*this, port, portId, supProtocol->SlotType());
+    _devices[portId] = new XHCIDevice(*this, port, portId, supProtocol->SlotType());
 
     auto driver = USBController::Instance().FindDriver(_devices[portId]);
     if(driver)
@@ -374,7 +385,9 @@ void XHCIController::SetDeviceContext(uint32_t slotID, SlotContext& slotContext)
 
 void XHCIController::RingDoorBell(unsigned index, unsigned value)
 {
+  __volatile__ uint32_t temp = _doorBellRegs[index];
   _doorBellRegs[index] = value;
+  temp = _doorBellRegs[index];
 //	Atomic::Swap(_doorBellRegs[index], value);
 }
 
@@ -463,7 +476,7 @@ void XHCIController::RegisterForEventResult(uint32_t trbId)
 {
   //TODO: Find an efficient way w/o disabling interrupts
   IrqGuard g;
-  printf("\n Registering for TRB event: %x, Process: %d", trbId, ProcessManager::Instance().GetCurProcId());
+  //printf("\n Registering for TRB event: %x, Process: %d", trbId, ProcessManager::Instance().GetCurProcId());
   _eventResults[trbId] = EventResult(ProcessManager::Instance().GetCurProcId());
 }
 
@@ -476,7 +489,7 @@ XHCIController::EventResult XHCIController::ConsumeEventResult(uint32_t trbId)
     throw upan::exception(XLOC, "Can't find TRB ID: %x in EventResults", trbId);
   auto result = it->second;
   _eventResults.erase(it);
-  printf("\n Returning result for TRB event: %x, Process: %d", trbId, result.Pid());
+  //printf("\n Returning result for TRB event: %x, Process: %d", trbId, result.Pid());
   return result;
 }
 
@@ -487,7 +500,7 @@ void XHCIController::PublishEventResult(const EventTRB& result)
   auto it = _eventResults.find(result.TRBPointer());
   if(it == _eventResults.end())
   {
-    printf("\n No entry found in EventResults for\nTRB Id: %x, Event Type: %d\nCC: %d, TLen: %d",
+    printf("\n No entry found in EventResults for TRB Id: %x, Event Type: %d CC: %d, TLen: %d\n",
            (uint32_t)result.TRBPointer(), result.Type(),
            result.CompletionCode(), result.TransferLength());
     return;
