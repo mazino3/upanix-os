@@ -20,7 +20,7 @@ build: ${OBJS}
 	cd uhci && make
 	cd ehci && make
 	cd xhci && make
-	cd disk && make
+	cd devices && make
 
 include depend.d
 
@@ -29,11 +29,11 @@ clean:
 	cd uhci && make clean
 	cd ehci && make clean
 	cd xhci && make clean
-	cd disk && make clean
+	cd devices && make clean
 
 distclean:
 	rm -f *.o
 	cd uhci && make distclean
 	cd ehci && make distclean
 	cd xhci && make distclean
-	cd disk && make distclean
+	cd devices && make distclean

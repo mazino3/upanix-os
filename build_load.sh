@@ -36,7 +36,16 @@ echo $SUDO_PW | sudo -S cp -f bin/upanix.elf floppy/MntFloppy/boot
 
 echo $SUDO_PW | sudo -S umount floppy/MntFloppy 
 
-if [ "$DRIVE" = "" ]
+if [ "$BOOT_USB_DEVICE_NAME" = "" -a "$BOOT_USB_DEVICE_ID" != "" ]
+then
+  devicename=`udevadm info --query=all -n disk/by-id/$BOOT_USB_DEVICE_ID | grep "^N:" | cut -d":" -f2 | tr -d " "`
+  if [ $? -eq 0 ]
+  then
+    BOOT_USB_DEVICE_NAME=$devicename
+  fi
+fi
+
+if [ "$BOOT_USB_DEVICE_NAME" = "" ]
 then
   DEV="USBImage/300MUSB.img"
   if [ "$LOOP" = "" ]
@@ -46,14 +55,14 @@ then
     MOUNTP="${LOOP}p1"
   fi
 else
-  DEV="/dev/$DRIVE"
+  DEV="/dev/$BOOT_USB_DEVICE_NAME"
   bus=`udevadm info --query=all -n $DEV | grep ID_BUS | cut -d"=" -f2`
   if [ "$bus" != "usb" ]
   then
     echo "ERROR: $DEV ($bus) is not a USB disk!!"
     exit 200
   fi
-  MOUNTP="${DRIVE}1"
+  MOUNTP="${BOOT_USB_DEVICE_NAME}1"
 fi
 
 echo $SUDO_PW | sudo -S kpartx -d "$DEV"

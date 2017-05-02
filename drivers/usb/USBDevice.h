@@ -21,6 +21,7 @@
 #include <Global.h>
 #include <USBConstants.h>
 #include <USBStructures.h>
+#include <exception.h>
 #include <string.h>
 
 class USBDevice
@@ -34,6 +35,7 @@ class USBDevice
     virtual bool ClearHaltEndPoint(USBulkDisk* pDisk, bool bIn) = 0;
     virtual bool BulkRead(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen) = 0;
     virtual bool BulkWrite(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen) = 0;
+    virtual void SetIdle() { throw upan::exception(XLOC, "Set_Idle not supported"); }
 
   protected:
     void SetLangId();

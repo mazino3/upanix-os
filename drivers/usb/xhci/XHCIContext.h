@@ -167,7 +167,7 @@ class EndPointContext
       _trDQPtr = (uint64_t)(dqPtr | 0x1);
     }
 
-    void Init(uint32_t dqPtr, USBStandardEndPt::DirectionTypes dir, byte type, int32_t maxPacketSize, byte interval);
+    void Init(uint32_t dqPtr, USBStandardEndPt::DirectionTypes dir, USBStandardEndPt::Types type, int32_t maxPacketSize, byte interval);
 
     uint32_t MaxPacketSize() const
     {

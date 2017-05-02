@@ -38,6 +38,7 @@ class XHCIDevice final : public USBDevice
     bool ClearHaltEndPoint(USBulkDisk* pDisk, bool bIn);
     bool BulkRead(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen);
     bool BulkWrite(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen);
+    void SetIdle();
 
   private:
     void GetDeviceDescriptor();

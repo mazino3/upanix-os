@@ -29,11 +29,20 @@ else
   exit 1
 fi
 
-if [ "$DRIVE" = "" ]
+if [ "$BOOT_USB_DEVICE_NAME" = "" -a "$BOOT_USB_DEVICE_ID" != "" ]
+then
+  devicename=`udevadm info --query=all -n disk/by-id/$BOOT_USB_DEVICE_ID | grep "^N:" | cut -d":" -f2 | tr -d " "`
+  if [ $? -eq 0 ]
+  then
+    BOOT_USB_DEVICE_NAME=$devicename
+  fi
+fi
+
+if [ "$BOOT_USB_DEVICE_NAME" = "" ]
 then
   BOOT_DRIVE="$UPANIX_HOME/USBImage/300MUSB.img"
 else
-  BOOT_DRIVE="/dev/$DRIVE"
+  BOOT_DRIVE="/dev/$BOOT_USB_DEVICE_NAME"
 fi
 
 echo "\n\n*****************************************************************************\n\n"
@@ -64,13 +73,15 @@ echo $SUDO_PW | sudo -S qemu-system-x86_64 \
 -drive if=none,id=usbdrive2,file=$UPANIX_HOME/USBImage/300MUSB.img \
 \
 -device nec-usb-xhci,id=xhci \
--device usb-storage,bus=xhci.0,drive=usbdrive2 \
+-device usb-storage,bus=xhci.0,port=1,drive=usbdrive2 \
 \
 -device usb-ehci,id=ehci \
 -device usb-storage,bus=ehci.0,drive=usbdrive \
 -device usb-storage,bus=ehci.0,drive=usbdrive1 \
 \
--device usb-hub,bus=xhci.0,port=2
+-device usb-hub,bus=xhci.0,port=3
+
+#-device usb-storage,bus=xhci.0,port=2,drive=usbdrive1 \
 
 #-drive if=none,id=usbdrive,file=/dev/sdb \
 #-device usb-ehci,id=ehci1 \

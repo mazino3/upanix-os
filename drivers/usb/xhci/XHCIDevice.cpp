@@ -337,3 +337,9 @@ bool XHCIDevice::BulkWrite(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen)
   _inputContext->SendData((unsigned)pDisk->pRawAlignedBuffer, uiLen);
   return true;
 }
+
+void XHCIDevice::SetIdle()
+{
+  const uint32_t requestType = USB_TYPE_CLASS | USB_RECIP_INTERFACE;
+  _inputContext->SendCommand(requestType, 0x0A, 0, _bInterfaceNumber, 0, TransferType::NO_DATA_STAGE, nullptr);
+}

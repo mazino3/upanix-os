@@ -21,6 +21,7 @@
 #include <Global.h>
 #include <USBConstants.h>
 #include <SCSIHandler.h>
+#include <exception.h>
 #include <string.h>
 
 class USBMassBulkStorageDisk;
@@ -67,12 +68,25 @@ class USBStandardEndPt
 {
   public:
   enum DirectionTypes { IN, OUT, BI };
+  enum Types { CONTROL, ISOCHRONOUS, BULK, INTERRUPT };
 
   USBStandardEndPt();
   void DebugPrint();
 
   DirectionTypes Direction() const { return bEndpointAddress & 0x80 ? IN : OUT; }
   uint32_t Address() const { return bEndpointAddress & 0xF; }
+  Types Type() const
+  {
+    int type = bmAttributes & 0x03;
+    switch(type)
+    {
+    case 0: return Types::CONTROL;
+    case 1: return Types::ISOCHRONOUS;
+    case 2: return Types::BULK;
+    case 3: return Types::INTERRUPT;
+    }
+    throw upan::exception(XLOC, "Invalid endpoint type: %d", type);
+  }
 
 	char bLength;
 	char bDescriptorType;
@@ -154,20 +168,14 @@ class USBulkDisk
 
 class USBDriver
 {
-  public:
-    USBDriver(const upan::string& name) : _name(name) {}
+public:
+  USBDriver(const upan::string& name) : _name(name) {}
+  const upan::string& Name() const { return _name; }
+  virtual bool AddDevice(USBDevice* d) = 0;
+  virtual void RemoveDevice(USBDevice* d) = 0;
 
-    const upan::string& Name() const { return _name; }
-
-    virtual bool Match(USBDevice* d) = 0;
-    void AddDevice(USBDevice* d) { DoAddDevice(d); }
-    void RemoveDevice(USBDevice* d) { DoRemoveDevice(d); }
-
-  protected:
-    virtual void DoAddDevice(USBDevice*) = 0;
-    virtual void DoRemoveDevice(USBDevice*) = 0;
-
-    const upan::string _name;
+protected:
+  const upan::string _name;
 };
 
 #endif

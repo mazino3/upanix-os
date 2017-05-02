@@ -92,15 +92,18 @@ typedef struct
 
 class USBDiskDriver final : public USBDriver
 {
-  public:
-    USBDiskDriver(const upan::string& name) : USBDriver(name) {}
-    bool Match(USBDevice*);
-    void DoAddDevice(USBDevice*);
-    void DoRemoveDevice(USBDevice*);
-    static int NextDeviceId() { return ++_deviceId; }
-  private:
-    int MatchingInterfaceIndex(USBDevice* pDevice);
-    static int _deviceId;
+public:
+  USBDiskDriver(const upan::string& name) : USBDriver(name) {}
+  static void Register();
+  static int NextDeviceId() { return ++_deviceId; }
+
+private:
+  bool AddDevice(USBDevice*);
+  void RemoveDevice(USBDevice*);
+  int MatchingInterfaceIndex(USBDevice*);
+
+private:
+  static int _deviceId;
 };
 
 class USBMassBulkStorageDisk : public SCSIHost
@@ -117,7 +120,5 @@ class USBMassBulkStorageDisk : public SCSIHost
     byte WriteData(void* pDataBuf, unsigned uiLen);
     USBulkDisk* _disk;
 };
-
-byte USBMassBulkStorageDisk_Initialize() ;
 
 #endif

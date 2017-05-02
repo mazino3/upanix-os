@@ -141,7 +141,7 @@ EndPoint::~EndPoint()
 ControlEndPoint::ControlEndPoint(InputContext& inContext, int32_t maxPacketSize) : EndPoint(maxPacketSize)
 {
   _ep = &inContext.EP0();
-  _ep->Init(KERNEL_REAL_ADDRESS(_tRing->RingBase()), USBStandardEndPt::BI, 0, maxPacketSize, 0);
+  _ep->Init(KERNEL_REAL_ADDRESS(_tRing->RingBase()), USBStandardEndPt::BI, USBStandardEndPt::CONTROL, maxPacketSize, 0);
   _id = 1;
 }
 
@@ -170,7 +170,7 @@ InOutEndPoint::InOutEndPoint(uint32_t epOffset, InputContext& inContext, const U
   const uint32_t epIndex = epID * 2 - epOffset;
 
   _ep = &inContext.EP(epIndex);
-  _ep->Init(KERNEL_REAL_ADDRESS(_tRing->RingBase()), endpoint.Direction(), endpoint.bmAttributes & 0x3, endpoint.wMaxPacketSize, endpoint.bInterval);
+  _ep->Init(KERNEL_REAL_ADDRESS(_tRing->RingBase()), endpoint.Direction(), endpoint.Type(), endpoint.wMaxPacketSize, endpoint.bInterval);
   _id = epIndex + 2;
 }
 
@@ -194,7 +194,7 @@ uint32_t OutEndPoint::SetupTransfer(uint32_t bufferAddress, uint32_t len)
   return _tRing->AddDataTRB(bufferAddress, len, DataDirection::OUT, _maxPacketSize);
 }
 
-void EndPointContext::Init(uint32_t dqPtr, USBStandardEndPt::DirectionTypes dir, byte type, int32_t maxPacketSize, byte interval)
+void EndPointContext::Init(uint32_t dqPtr, USBStandardEndPt::DirectionTypes dir, USBStandardEndPt::Types type, int32_t maxPacketSize, byte interval)
 {
   uint32_t epType = 4;
 
@@ -210,17 +210,17 @@ void EndPointContext::Init(uint32_t dqPtr, USBStandardEndPt::DirectionTypes dir,
 
   switch (type)
   {
-    case 0:
+    case USBStandardEndPt::CONTROL:
       epType = 4;
       avgTRBLen = 8;
       break;
-    case 1:
+    case USBStandardEndPt::ISOCHRONOUS:
       epType = 1;
       break;
-    case 2:
+    case USBStandardEndPt::BULK:
       epType = 2;
       break;
-    case 3:
+    case USBStandardEndPt::INTERRUPT:
       epType = 3;
       break;
   }

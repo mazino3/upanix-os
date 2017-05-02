@@ -139,7 +139,8 @@ UPANIX_OBJS = \
 	./drivers/usb/xhci/XHCIManager.o \
 	./drivers/usb/xhci/XHCIController.o \
 	./drivers/usb/xhci/XHCIDevice.o \
-	./drivers/usb/disk/USBMassBulkStorageDisk.o \
+  ./drivers/usb/devices/USBMassBulkStorageDisk.o \
+  ./drivers/usb/devices/USBKeyboard.o \
 	./drivers/video/GraphicsVideo.o \
 	./drivers/video/GraphicsFont.o \
 	./drivers/net/RealtekNIC.o \

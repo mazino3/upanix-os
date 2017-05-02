@@ -39,3 +39,4 @@ users
 util
 util/bak
 .
+drivers/usb/devices

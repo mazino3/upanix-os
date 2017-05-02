@@ -15,39 +15,26 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
+#ifndef _USB_KEYBOARD_H_
+#define _USB_KEYBOARD_H_
+
+#include <Global.h>
+#include <SCSIHandler.h>
 #include <USBStructures.h>
-#include <USBController.h>
-#include <DMM.h>
-#include <set.h>
 
-USBController::USBController() : _seqDevAddr(1)
+class USBKeyboardDriver final : public USBDriver
 {
-}
+public:
+  USBKeyboardDriver(const upan::string& name) : USBDriver(name) {}
+  static void Register();
+private:
+  bool AddDevice(USBDevice*);
+  void RemoveDevice(USBDevice*);
+  int MatchingInterfaceIndex(USBDevice*);
+private:
+  const int CLASS_CODE = 0x3;
+  const int SUB_CLASS_CODE_BOOT = 0x01;
+  const int PROTOCOL = 0x1;
+};
 
-void USBController::RegisterDriver(USBDriver* pDriver)
-{
-  _drivers.push_back(pDriver);
-}
-
-int USBController::GetNextDevNum()
-{
-  return _seqDevAddr++;
-}
-
-USBDriver* USBController::FindDriver(USBDevice* pUSBDevice)
-{
-	for(auto pDriver : _drivers)
-	{
-    try
-    {
-      if(pDriver->AddDevice(pUSBDevice))
-        return pDriver;
-    }
-    catch(const upan::exception& e)
-    {
-      e.Print();
-    }
-	}
-
-	return nullptr;
-}
+#endif

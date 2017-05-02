@@ -400,17 +400,15 @@ bool USBMassBulkStorageDisk::QueueCommand(SCSICommand* pCommand)
 //	return 0;
 //}
 
-
-byte USBMassBulkStorageDisk_Initialize()
+void USBDiskDriver::Register()
 {
 	USDDeviceId = 0;
 	USBController::Instance().RegisterDriver(new USBDiskDriver("USB Mass Storage Disk"));
-	return USBMassBulkStorageDisk_SUCCESS ;
 }
 
 int USBDiskDriver::MatchingInterfaceIndex(USBDevice* pUSBDevice)
 {
-	USBStandardConfigDesc* pConfig = &(pUSBDevice->_pArrConfigDesc[ pUSBDevice->_iConfigIndex ]) ;
+  USBStandardConfigDesc* pConfig = &(pUSBDevice->_pArrConfigDesc[ pUSBDevice->_iConfigIndex ]) ;
   for(byte i = 0; i < pConfig->bNumInterfaces; ++i)
   {
     const auto& interface = pConfig->pInterfaces[i];
@@ -420,19 +418,14 @@ int USBDiskDriver::MatchingInterfaceIndex(USBDevice* pUSBDevice)
   return -1;
 }
 
-bool USBDiskDriver::Match(USBDevice* pUSBDevice)
+bool USBDiskDriver::AddDevice(USBDevice* pUSBDevice)
 {
-  return MatchingInterfaceIndex(pUSBDevice) >= 0;
-}
-
-void USBDiskDriver::DoAddDevice(USBDevice* pUSBDevice)
-{
-  if(pUSBDevice->_deviceDesc.sVendorID == 0x05DC)
-    throw upan::exception(XLOC, "Lexar Jumpshot USB CF Reader detected - Not supported yet!");
-
   int interfaceIndex = MatchingInterfaceIndex(pUSBDevice);
   if(interfaceIndex < 0)
-    throw upan::exception(XLOC, "USB disk driver doesn't match the given USB device");
+    return false;
+
+  if(pUSBDevice->_deviceDesc.sVendorID == 0x05DC)
+    throw upan::exception(XLOC, "Lexar Jumpshot USB CF Reader detected - Not supported yet!");
 
   const USBStandardInterface& interface = pUSBDevice->_pArrConfigDesc[ pUSBDevice->_iConfigIndex ].pInterfaces[ interfaceIndex ];
 
@@ -468,9 +461,10 @@ void USBDiskDriver::DoAddDevice(USBDevice* pUSBDevice)
   upan::uniq_ptr<USBulkDisk> pDisk(new USBulkDisk(pUSBDevice, interfaceIndex, bMaxLun, protoName));
   pDisk->Initialize();
   pDisk.release();
+  return true;
 }
 
-void USBDiskDriver::DoRemoveDevice(USBDevice* pUSBDevice)
+void USBDiskDriver::RemoveDevice(USBDevice* pUSBDevice)
 {
 	USBulkDisk* pDisk = (USBulkDisk*)pUSBDevice->_pPrivate ;
 	SCSIDevice** pSCSIDeviceList = pDisk->pSCSIDeviceList ;
