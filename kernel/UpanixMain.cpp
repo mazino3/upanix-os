@@ -45,6 +45,7 @@
 # include <EHCIManager.h>
 # include <XHCIManager.h>
 # include <USBMassBulkStorageDisk.h>
+# include <USBKeyboard.h>
 # include <exception.h>
 # include <GraphicsVideo.h>
 # include <KBDriver.h>
@@ -187,10 +188,14 @@ void Initialize()
     
     //USB
     USBController::Instance();
-    UHCIManager::Instance();
-    EHCIManager::Instance();
-    XHCIManager::Instance();
-    USBMassBulkStorageDisk_Initialize() ;
+    //UHCIManager::Instance();
+    //EHCIManager::Instance();
+    XHCIManager::Instance().Initialize();
+
+    USBDiskDriver::Register();
+    USBKeyboardDriver::Register();
+
+    KBDriver::Instance().Getch();
 
     SessionManager_Initialize() ;
 
