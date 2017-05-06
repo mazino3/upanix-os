@@ -32,6 +32,8 @@ class SupProtocolXCap;
 class IRQ;
 class XHCIDevice;
 class SlotContext;
+class EventResult;
+class InputContext;
 
 class XHCIController
 {
@@ -48,35 +50,23 @@ class XHCIController
     void PerformBiosToOSHandoff();
     EventTRB InitiateCommand();
     EventTRB InitiateTransfer(uint32_t trbId, uint32_t slotID, uint32_t ep);
+    void InitiateInterruptTransfer(InputContext& context, uint32_t trbId, uint32_t slotID, uint32_t ep);
     void SetDeviceContext(uint32_t slotID, SlotContext& slotContext);
     void RingDoorBell(unsigned index, unsigned value);
     unsigned EnableSlot(unsigned slotType);
     void AddressDevice(unsigned inputContextPtr, unsigned slotID, bool blockSetAddressReq);
     void ConfigureEndPoint(unsigned icptr, unsigned slotID);
     void EvaluateContext(unsigned icptr, unsigned slotID);
-    void WaitForCmdCompletion(EventTRB& result);
-    void WaitForTransferCompletion(uint32_t trbId, EventTRB& result);
-    void WaitForEvent(uint32_t trbId, EventTRB& result);
+    EventTRB WaitForCmdCompletion();
+    EventTRB WaitForTransferCompletion(uint32_t trbId);
+    EventTRB WaitForEvent(uint32_t trbId);
 
     SupProtocolXCap* GetSupportedProtocol(unsigned portId) const;
     const char* PortProtocolName(USB_PROTOCOL) const;
     const char* PortSpeedName(DEVICE_SPEED speed) const;
 
-    class EventResult
-    {
-      public:
-        EventResult() : _pid(NO_PROCESS_ID) {}
-        EventResult(int pid) : _pid(pid) {}
-        int Pid() const { return _pid; }
-        const EventTRB& Result() const { return _result; }
-        void Result(const EventTRB& r) { _result = r; }
-      private:
-        int      _pid;
-        EventTRB _result;
-    };
-
-    void RegisterForEventResult(uint32_t trbId);
-    EventResult ConsumeEventResult(uint32_t trbId);
+    void RegisterForWaitedEventResult(uint32_t trbId);
+    EventTRB ConsumeEventResult(uint32_t trbId);
     void PublishEventResult(const EventTRB& result);
 
     static unsigned  _memMapBaseAddress;
@@ -89,13 +79,14 @@ class XHCIController
     LegSupXCap*      _legSupXCap;
     volatile unsigned* _doorBellRegs;
     upan::list<SupProtocolXCap*> _supProtoXCaps;
-    upan::map<uint32_t, EventResult> _eventResults;
+    upan::map<uint32_t, EventResult*> _eventResults;
 		upan::map<uint32_t, XHCIDevice*> _devices;
 
     friend class XHCIManager;
     friend class EventManager;
 		friend class XHCIDevice;
     friend class InputContext;
+    friend class InterruptEventResult;
 };
 
 class CommandManager
@@ -230,6 +221,38 @@ class EventManager
     XHCIOpRegister& _opReg;
     XHCIController& _controller;
   friend class XHCIController;
+};
+
+class EventResult
+{
+public:
+  EventResult(int pid) : _pid(pid) {}
+  virtual ~EventResult() { }
+
+  int Pid() const { return _pid; }
+  const EventTRB& Result() const { return _result; }
+
+  virtual void Consume(const EventTRB& r) = 0;
+protected:
+  int      _pid;
+  EventTRB _result;
+};
+
+class WaitedEventResult : public EventResult
+{
+public:
+  WaitedEventResult(int pid) : EventResult(pid) { }
+  void Consume(const EventTRB& r);
+};
+
+class InterruptEventResult : public EventResult
+{
+public:
+  InterruptEventResult(InputContext& context, int pid) : EventResult(pid), _context(context) { }
+  void Consume(const EventTRB &r);
+
+private:
+  InputContext& _context;
 };
 
 #endif

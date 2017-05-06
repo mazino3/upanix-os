@@ -215,6 +215,24 @@ class EventTRB : public TRB
       return _b3 & 0xFFFFFF;
     }
 
+    void ValidateCommandResult()
+    {
+      if(Type() != 33)
+        throw upan::exception(XLOC, "Got invalid Event TRB: %d", Type());
+
+      if(!IsCommandSuccess())
+        throw upan::exception(XLOC, "Command did not complete successfully - Completion Code: %u", CompletionCode());
+    }
+
+    void ValidateTransferResult()
+    {
+      if(Type() != 32)
+        throw upan::exception(XLOC, "Got invalid Event TRB: %d", Type());
+
+      if(!IsCommandSuccess())
+        throw upan::exception(XLOC, "Transfer command did not complete successfully - Completion Code: %u", CompletionCode());
+    }
+
 } PACKED;
 
 class TransferRing

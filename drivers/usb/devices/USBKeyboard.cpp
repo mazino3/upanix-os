@@ -49,11 +49,42 @@ bool USBKeyboardDriver::AddDevice(USBDevice* pUSBDevice)
   if(interface.bInterfaceSubClass != SUB_CLASS_CODE_BOOT)
     throw upan::exception(XLOC, "Non boot-device USB keyboard not supported - SubClass: %d", interface.bInterfaceSubClass);
 
-  pUSBDevice->SetIdle();
+  _devices.push_back(new USBKeyboard(*pUSBDevice, interfaceIndex));
 
   return true;
 }
 
 void USBKeyboardDriver::RemoveDevice(USBDevice* pUSBDevice)
 {
+  for(auto device : _devices)
+  {
+    if(pUSBDevice == &device->GetUSBDevice())
+    {
+      _devices.erase(device);
+      delete device;
+      break;
+    }
+  }
+}
+
+USBKeyboard::USBKeyboard(USBDevice& device, int interfaceIndex) : _device(device), _report(new byte[STD_USB_KB_REPORT_LEN])
+{
+  const USBStandardInterface& interface = _device._pArrConfigDesc[ _device._iConfigIndex ].pInterfaces[ interfaceIndex ];
+  _device._iInterfaceIndex = interfaceIndex;
+  _device._bInterfaceNumber = interface.bInterfaceNumber;
+  _device._pPrivate = this;
+
+  _device.SetIdle();
+  _device.SetupInterruptReceiveData((uint32_t)_report, STD_USB_KB_REPORT_LEN, this);
+}
+
+USBKeyboard::~USBKeyboard()
+{
+  delete _report;
+}
+
+void USBKeyboard::Handle()
+{
+  printf("\n Received KB Data");
+  _device.SetupInterruptReceiveData((uint32_t)_report, STD_USB_KB_REPORT_LEN, this);
 }

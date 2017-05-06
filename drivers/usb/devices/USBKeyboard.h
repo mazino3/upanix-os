@@ -21,6 +21,23 @@
 #include <Global.h>
 #include <SCSIHandler.h>
 #include <USBStructures.h>
+#include <USBDataHandler.h>
+#include <list.h>
+
+class USBKeyboard final : public USBInterruptDataHandler
+{
+public:
+  USBKeyboard(USBDevice& device, int interfaceIndex);
+  ~USBKeyboard();
+  USBDevice& GetUSBDevice() { return _device; }
+
+private:
+  virtual void Handle();
+
+  const int STD_USB_KB_REPORT_LEN = 8;
+  USBDevice& _device;
+  byte*      _report;
+};
 
 class USBKeyboardDriver final : public USBDriver
 {
@@ -35,6 +52,8 @@ private:
   const int CLASS_CODE = 0x3;
   const int SUB_CLASS_CODE_BOOT = 0x01;
   const int PROTOCOL = 0x1;
+
+  upan::list<USBKeyboard*> _devices;
 };
 
 #endif

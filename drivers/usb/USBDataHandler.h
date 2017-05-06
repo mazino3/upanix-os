@@ -35,4 +35,10 @@ void USBDataHandler_DisplayStrDescZero(USBStringDescZero* pStringDescZero) ;
 void USBDataHandler_DisplayDeviceStringDetails(const USBDevice* pUSBDevice) ;
 void USBDataHandler_DeAllocConfigDesc(USBStandardConfigDesc* pCD, char bNumConfigs) ;
 
+class USBInterruptDataHandler
+{
+public:
+  virtual void Handle() = 0;
+};
+
 #endif

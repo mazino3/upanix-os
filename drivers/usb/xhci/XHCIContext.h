@@ -27,6 +27,7 @@ class XHCIPortRegister;
 class TransferRing;
 class InputContext;
 class XHCIController;
+class USBInterruptDataHandler;
 
 class ReservedPadding
 {
@@ -311,24 +312,37 @@ class ControlEndPoint : public EndPoint
                        TransferType trt, void* dataBuffer);
 };
 
-class InOutEndPoint : public EndPoint
+class DataEndPoint : public EndPoint
 {
-  protected:
-    InOutEndPoint(uint32_t epOffset, InputContext&, const USBStandardEndPt&);
+public:
+  DataEndPoint(InputContext& inContext, const USBStandardEndPt& endpoint);
 };
 
-class InEndPoint : public InOutEndPoint
+class BulkInEndPoint : public DataEndPoint
 {
   public:
-    InEndPoint(InputContext&, const USBStandardEndPt&);
+    BulkInEndPoint(InputContext&, const USBStandardEndPt&);
     uint32_t SetupTransfer(uint32_t bufferAddress, uint32_t len);
 };
 
-class OutEndPoint : public InOutEndPoint
+class BulkOutEndPoint : public DataEndPoint
 {
   public:
-    OutEndPoint(InputContext&, const USBStandardEndPt&);
+    BulkOutEndPoint(InputContext&, const USBStandardEndPt&);
     uint32_t SetupTransfer(uint32_t bufferAddress, uint32_t len);
+};
+
+class InterruptInEndPoint : public DataEndPoint
+{
+  public:
+    InterruptInEndPoint(InputContext&, const USBStandardEndPt&);
+    uint32_t SetupTransfer(uint32_t bufferAddress, uint32_t len);
+};
+
+class InterruptOutEndPoint : public DataEndPoint
+{
+  public:
+    InterruptOutEndPoint(InputContext&, const USBStandardEndPt&);
 };
 
 class InputContext
@@ -344,28 +358,75 @@ class InputContext
                      TransferType trt, void* dataBuffer);
     void SendData(uint32_t bufferAddress, uint32_t len);
     void ReceiveData(uint32_t bufferAddress, uint32_t len);
+    void ReceiveInterruptData(uint32_t bufferAddress, uint32_t len);
+
+    void SetInterruptDataHandler(USBInterruptDataHandler* handler)
+    {
+      _interruptDataHandler = handler;
+    }
 
   private:
     EndPointContext& EP0() { return _devContext->EP0(); }
     EndPointContext& EP(uint32_t index) { return _devContext->EP(index); }
-    InEndPoint& InEP(uint32_t index = 0) { return *_inEPs[index]; }
-    OutEndPoint& OutEP(uint32_t index = 0) { return *_outEPs[index]; }
-    void AddInEP(InEndPoint* ep) { _inEPs.push_back(ep); }
-    void AddOutEP(OutEndPoint* ep) { _outEPs.push_back(ep); }
+
+    XHCIController& Controller() { return _controller; }
+
+    void AddBulkInEP(BulkInEndPoint* ep) { _bulkInEPs.push_back(ep); }
+    BulkInEndPoint& BulkInEP(uint32_t index = 0)
+    {
+      if(index >= _bulkInEPs.size())
+        throw upan::exception(XLOC, "No BulkIn EP found with ID: %u", index);
+
+      return *_bulkInEPs[index];
+    }
+
+    void AddBulkOutEP(BulkOutEndPoint* ep) { _bulkOutEPs.push_back(ep); }
+    BulkOutEndPoint& BulkOutEP(uint32_t index = 0)
+    {
+      if(index >= _bulkOutEPs.size())
+        throw upan::exception(XLOC, "No BulkOut EP found with ID: %u", index);
+      return *_bulkOutEPs[index];
+    }
+
+    void AddInterruptInEP(InterruptInEndPoint* ep) { _interruptInEPs.push_back(ep); }
+    InterruptInEndPoint& InterruptInEP(uint32_t index = 0)
+    {
+      if(index >= _interruptInEPs.size())
+        throw upan::exception(XLOC, "No InterruptIn EP found with ID: %u", index);
+
+      return *_interruptInEPs[index];
+    }
+
+    void AddInterruptOutEP(InterruptOutEndPoint* ep) { _interruptOutEPs.push_back(ep); }
+    InterruptOutEndPoint& InterruptOutEP(uint32_t index = 0)
+    {
+      if(index >= _interruptOutEPs.size())
+        throw upan::exception(XLOC, "No InterruptOut EP found with ID: %u", index);
+
+      return *_interruptOutEPs[index];
+    }
+
+    void OnInterrupt(const EventTRB&);
 
     friend class ControlEndPoint;
-    friend class InOutEndPoint;
-    friend class InEndPoint;
-    friend class OutEndPoint;
+    friend class DataEndPoint;
+    friend class BulkInEndPoint;
+    friend class BulkOutEndPoint;
+    friend class InterruptInEndPoint;
+    friend class InterruptOutEndPoint;
+    friend class InterruptEventResult;
 
   private:
-    uint32_t                 _slotID;
-    XHCIController&          _controller;
-    InputControlContext*     _control;
-    DeviceContext*           _devContext;
-    ControlEndPoint*         _controlEP;
-    upan::list<InEndPoint*>  _inEPs;
-    upan::list<OutEndPoint*> _outEPs;
+    uint32_t                          _slotID;
+    XHCIController&                   _controller;
+    InputControlContext*              _control;
+    DeviceContext*                    _devContext;
+    ControlEndPoint*                  _controlEP;
+    upan::list<BulkInEndPoint*>       _bulkInEPs;
+    upan::list<BulkOutEndPoint*>      _bulkOutEPs;
+    upan::list<InterruptInEndPoint*>  _interruptInEPs;
+    upan::list<InterruptOutEndPoint*> _interruptOutEPs;
+    USBInterruptDataHandler*          _interruptDataHandler;
 };
 
 #endif

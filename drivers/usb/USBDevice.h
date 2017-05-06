@@ -24,6 +24,8 @@
 #include <exception.h>
 #include <string.h>
 
+class USBInterruptDataHandler;
+
 class USBDevice
 {
   public:
@@ -35,7 +37,8 @@ class USBDevice
     virtual bool ClearHaltEndPoint(USBulkDisk* pDisk, bool bIn) = 0;
     virtual bool BulkRead(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen) = 0;
     virtual bool BulkWrite(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen) = 0;
-    virtual void SetIdle() { throw upan::exception(XLOC, "Set_Idle not supported"); }
+    virtual void SetIdle() { throw upan::exception(XLOC, "SetIdle not supported"); }
+    virtual void SetupInterruptReceiveData(uint32_t bufferAddress, uint32_t len, USBInterruptDataHandler* handler) { throw upan::exception(XLOC, "StartInterruptDataFeed not supported"); }
 
   protected:
     void SetLangId();

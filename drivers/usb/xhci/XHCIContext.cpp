@@ -22,9 +22,10 @@
 #include <XHCIStructures.h>
 #include <TRB.h>
 #include <XHCIController.h>
+#include <USBDataHandler.h>
 
-InputContext::InputContext(XHCIController& controller, uint32_t slotID, const XHCIPortRegister& port,
-                           uint32_t portId, uint32_t routeString) : _slotID(slotID), _controller(controller)
+InputContext::InputContext(XHCIController& controller, uint32_t slotID, const XHCIPortRegister& port, uint32_t portId, uint32_t routeString)
+  : _slotID(slotID), _controller(controller), _interruptDataHandler(nullptr)
 {
   unsigned addr = KERNEL_VIRTUAL_ADDRESS(MemManager::Instance().AllocatePageForKernel() * PAGE_SIZE);
   if(_controller.CapReg().IsContextSize64())
@@ -51,18 +52,44 @@ InputContext::~InputContext()
   MemManager::Instance().DeAllocatePageForKernel(addr / PAGE_SIZE);
   delete _devContext;
   delete _controlEP;
-  for(auto inEP : _inEPs)
-    delete inEP;
-  for(auto outEP : _outEPs)
-    delete outEP;
+  for(auto ep : _bulkInEPs) delete ep;
+  for(auto ep : _bulkOutEPs) delete ep;
+  for(auto ep : _interruptInEPs) delete ep;
+  for(auto ep : _interruptOutEPs) delete ep;
 }
 
 uint32_t InputContext::AddEndPoint(const USBStandardEndPt& endpoint)
 {
-  if(endpoint.Direction() == USBStandardEndPt::IN)
-    return (new InEndPoint(*this, endpoint))->Id();
-  else
-    return (new OutEndPoint(*this, endpoint))->Id();
+  EndPoint* endPoint = nullptr;
+  switch(endpoint.Direction())
+  {
+  case USBStandardEndPt::IN:
+    switch(endpoint.Type())
+    {
+    case USBStandardEndPt::BULK:
+      endPoint = new BulkInEndPoint(*this, endpoint);
+      break;
+    case USBStandardEndPt::INTERRUPT:
+      endPoint = new InterruptInEndPoint(*this, endpoint);
+      break;
+    }
+    break;
+
+  case USBStandardEndPt::OUT:
+    switch(endpoint.Type())
+    {
+    case USBStandardEndPt::BULK:
+      endPoint = new BulkOutEndPoint(*this, endpoint);
+      break;
+    case USBStandardEndPt::INTERRUPT:
+      endPoint = new InterruptOutEndPoint(*this, endpoint);
+      break;
+    }
+    break;
+  }
+  if(endPoint)
+    return endPoint->Id();
+  throw upan::exception(XLOC, "EndpointFactory: unsupported endpoint Dir %d and Type %d", (int32_t)endpoint.Direction(), (int32_t)endpoint.Type());
 }
 
 void InputContext::SendCommand(uint32_t bmRequestType, uint32_t bmRequest, 
@@ -75,14 +102,26 @@ void InputContext::SendCommand(uint32_t bmRequestType, uint32_t bmRequest,
 
 void InputContext::SendData(uint32_t bufferAddress, uint32_t len)
 {
-  const uint32_t trbId = OutEP().SetupTransfer(bufferAddress, len);
-  _controller.InitiateTransfer(trbId, _slotID, OutEP().Id());
+  const uint32_t trbId = BulkOutEP().SetupTransfer(bufferAddress, len);
+  _controller.InitiateTransfer(trbId, _slotID, BulkOutEP().Id());
 }
 
 void InputContext::ReceiveData(uint32_t bufferAddress, uint32_t len)
 {
-  const uint32_t trbId = InEP().SetupTransfer(bufferAddress, len);
-  _controller.InitiateTransfer(trbId, _slotID, InEP().Id());
+  const uint32_t trbId = BulkInEP().SetupTransfer(bufferAddress, len);
+  _controller.InitiateTransfer(trbId, _slotID, BulkInEP().Id());
+}
+
+void InputContext::ReceiveInterruptData(uint32_t bufferAddress, uint32_t len)
+{
+  const uint32_t trbId = InterruptInEP().SetupTransfer(bufferAddress, len);
+  _controller.InitiateInterruptTransfer(*this, trbId, _slotID, InterruptInEP().Id());
+}
+
+void InputContext::OnInterrupt(const EventTRB& result)
+{
+  if(_interruptDataHandler)
+    _interruptDataHandler->Handle();
 }
 
 DeviceContext::DeviceContext(bool use64) : _allocated(true)
@@ -164,8 +203,9 @@ uint32_t ControlEndPoint::SetupTransfer(uint32_t bmRequestType, uint32_t bmReque
   return _tRing->AddStatusStageTRB(statusDir);
 }
 
-InOutEndPoint::InOutEndPoint(uint32_t epOffset, InputContext& inContext, const USBStandardEndPt& endpoint) : EndPoint(endpoint.wMaxPacketSize)
+DataEndPoint::DataEndPoint(InputContext& inContext, const USBStandardEndPt& endpoint) : EndPoint(endpoint.wMaxPacketSize)
 {
+  const uint32_t epOffset = endpoint.Direction() == USBStandardEndPt::IN ? 1 : 2;
   const byte epID = endpoint.Address();
   const uint32_t epIndex = epID * 2 - epOffset;
 
@@ -174,24 +214,39 @@ InOutEndPoint::InOutEndPoint(uint32_t epOffset, InputContext& inContext, const U
   _id = epIndex + 2;
 }
 
-InEndPoint::InEndPoint(InputContext& inContext, const USBStandardEndPt& endpoint) : InOutEndPoint(1, inContext, endpoint)
+BulkInEndPoint::BulkInEndPoint(InputContext& inContext, const USBStandardEndPt& endpoint) : DataEndPoint(inContext, endpoint)
 {
-  inContext.AddInEP(this);
+  inContext.AddBulkInEP(this);
 }
 
-uint32_t InEndPoint::SetupTransfer(uint32_t bufferAddress, uint32_t len)
+uint32_t BulkInEndPoint::SetupTransfer(uint32_t bufferAddress, uint32_t len)
 {
   return _tRing->AddDataTRB(bufferAddress, len, DataDirection::IN, _maxPacketSize);
 }
 
-OutEndPoint::OutEndPoint(InputContext& inContext, const USBStandardEndPt& endpoint) : InOutEndPoint(2, inContext, endpoint)
+BulkOutEndPoint::BulkOutEndPoint(InputContext& inContext, const USBStandardEndPt& endpoint) : DataEndPoint(inContext, endpoint)
 {
-  inContext.AddOutEP(this);
+  inContext.AddBulkOutEP(this);
 }
 
-uint32_t OutEndPoint::SetupTransfer(uint32_t bufferAddress, uint32_t len)
+uint32_t BulkOutEndPoint::SetupTransfer(uint32_t bufferAddress, uint32_t len)
 {
   return _tRing->AddDataTRB(bufferAddress, len, DataDirection::OUT, _maxPacketSize);
+}
+
+InterruptInEndPoint::InterruptInEndPoint(InputContext& inContext, const USBStandardEndPt& endpoint) : DataEndPoint(inContext, endpoint)
+{
+  inContext.AddInterruptInEP(this);
+}
+
+uint32_t InterruptInEndPoint::SetupTransfer(uint32_t bufferAddress, uint32_t len)
+{
+  return _tRing->AddDataTRB(bufferAddress, len, DataDirection::IN, _maxPacketSize);
+}
+
+InterruptOutEndPoint::InterruptOutEndPoint(InputContext& inContext, const USBStandardEndPt& endpoint) : DataEndPoint(inContext, endpoint)
+{
+  inContext.AddInterruptOutEP(this);
 }
 
 void EndPointContext::Init(uint32_t dqPtr, USBStandardEndPt::DirectionTypes dir, USBStandardEndPt::Types type, int32_t maxPacketSize, byte interval)
