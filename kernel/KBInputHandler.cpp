@@ -41,21 +41,13 @@ byte KBInputHandler_InRegList(byte key)
 
 /***************************************************************/
 
-byte KBInputHandler_Process(byte key) 
+bool KBInputHandler_Process(KeyboardKey kbKey)
 {
-	byte bKeyRelease = false ;
-	
-	if(key & 0x80)
-	{
-		key -= 0x80 ;
-		bKeyRelease = true ;
-	}
-
-	key = Keyboard_MapKey(key) ;
+  auto key = kbKey.MapChar();
 
 	if(KBInputHandler_InRegList(key))
 	{
-		if(bKeyRelease)
+    if(kbKey.IsKeyRelease())
 			return true ;
 
 		SessionManager_SwitchToSession(SessionManager_KeyToSessionIDMap(key)) ;

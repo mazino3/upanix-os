@@ -20,6 +20,7 @@
 
 #include <Global.h>
 #include <queue.h>
+#include <KeyboardKeyProcessor.h>
 
 #define KBDriver_SUCCESS 0
 #define KBDriver_ERR_BUFFER_EMPTY 1
@@ -27,6 +28,67 @@
 
 #define KB_DATA_PORT 0x60
 #define KB_STAT_PORT 0x64
+
+class KeyboardKey
+{
+public:
+  KeyboardKey(byte rawKey, KeyboardKeyProcessor& processor) : _rawKey(rawKey), _processor(&processor)
+  {
+  }
+
+  KeyboardKey() : _rawKey(-1), _processor(nullptr)
+  {
+  }
+
+  byte Data()
+  {
+    return _processor->Data(_rawKey);
+  }
+
+  byte MapChar()
+  {
+    return _processor->MapChar(_rawKey);
+  }
+
+  byte ShiftedMapChar()
+  {
+    return _processor->ShiftedMapChar(_rawKey);
+  }
+
+  bool IsKeyRelease()
+  {
+    return _processor->IsKeyRelease(_rawKey);
+  }
+
+  bool IsExtraKey()
+  {
+    return _processor->IsExtraKey(_rawKey);
+  }
+
+  byte ExtraKey()
+  {
+    return _processor->ExtraKey(_rawKey);
+  }
+
+  bool IsKey(byte val)
+  {
+    return _processor->IsKey(_rawKey, val);
+  }
+
+  bool IsNormal()
+  {
+    return _processor->IsNormal(_rawKey);
+  }
+
+  bool IsSpecial()
+  {
+    return _processor->IsSpecial(_rawKey);
+  }
+
+private:
+  byte _rawKey;
+  KeyboardKeyProcessor* _processor;
+};
 
 class KBDriver
 {
@@ -38,17 +100,20 @@ class KBDriver
       static KBDriver instance;
       return instance;
     }
-    bool GetCharInBlockMode(byte *data);
-    bool GetCharInNonBlockMode(byte *data);
+
+    bool Process(KeyboardKey key);
+    KeyboardKey GetCharInBlockMode();
+    bool GetCharInNonBlockMode(KeyboardKey& data);
+    bool PutToQueueBuffer(KeyboardKey data);
+
     bool WaitForWrite();
     bool WaitForRead();
     void Reboot();
-    bool PutToQueueBuffer(byte data);
     void Getch();
   private:
-    bool GetFromQueueBuffer(byte *data);
+    bool GetFromQueueBuffer(KeyboardKey& data);
 
-    upan::queue<byte> _qBuffer;
+    upan::queue<KeyboardKey> _qBuffer;
 };
 
 #endif

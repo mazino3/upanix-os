@@ -43,11 +43,8 @@ static void KBDriver_Handler()
 	{
 		key = ((PortCom_ReceiveByte(KB_DATA_PORT)) & 0xFF) ;
 
-		if(!KBInputHandler_Process(key))
-		{
-			KBDriver::Instance().PutToQueueBuffer((key & 0xFF)) ;
+    if(KBDriver::Instance().Process(KeyboardKey(key, BuiltInKeyboardKeyProcessor::Instance())))
       StdIRQ::Instance().KEYBOARD_IRQ.Signal();
-		}
 	}
 
 	IrqManager::Instance().SendEOI(StdIRQ::Instance().KEYBOARD_IRQ);
@@ -70,28 +67,39 @@ KBDriver::KBDriver() : _qBuffer(1024)
 	KC::MDisplay().LoadMessage("Keyboard Initialization", Success) ;
 }
 
-bool KBDriver::GetCharInBlockMode(byte *data)
+bool KBDriver::Process(KeyboardKey kbKey)
+{
+  if(!KBInputHandler_Process(kbKey))
+  {
+    PutToQueueBuffer(kbKey);
+    return true;
+  }
+  return false;
+}
+
+KeyboardKey KBDriver::GetCharInBlockMode()
 {		
+  KeyboardKey data;
 	while(!GetFromQueueBuffer(data))
 		ProcessManager::Instance().WaitOnInterrupt(StdIRQ::Instance().KEYBOARD_IRQ);
-	return true;
+  return data;
 }
 
-bool KBDriver::GetCharInNonBlockMode(byte *data)
+bool KBDriver::GetCharInNonBlockMode(KeyboardKey& data)
 {
-	return GetFromQueueBuffer(data) ;
+  return GetFromQueueBuffer(data);
 }
 
-bool KBDriver::GetFromQueueBuffer(byte *data)
+bool KBDriver::GetFromQueueBuffer(KeyboardKey& data)
 {
   if(_qBuffer.empty())
     return false;
-  *data = _qBuffer.front();
+  data = _qBuffer.front();
   _qBuffer.pop_front();
   return true;
 }
 
-bool KBDriver::PutToQueueBuffer(byte data)
+bool KBDriver::PutToQueueBuffer(KeyboardKey data)
 {
   return _qBuffer.push_back(data);
 }
@@ -122,7 +130,7 @@ void KBDriver::Reboot()
 //just wait for a keyboard char input
 void KBDriver::Getch()
 {
-  byte ch;
-  while(!GetCharInNonBlockMode(&ch));
-  while(!GetCharInNonBlockMode(&ch));
+  KeyboardKey ch;
+  while(!GetCharInNonBlockMode(ch));
+  while(!GetCharInNonBlockMode(ch));
 }
