@@ -48,7 +48,7 @@
 # include <USBKeyboard.h>
 # include <exception.h>
 # include <GraphicsVideo.h>
-# include <KBDriver.h>
+# include <KeyboardHandler.h>
 # include <GenericUtil.h>
 # include <Acpi.h>
 # include <Cpu.h>
@@ -175,7 +175,8 @@ void Initialize()
 
     DiskDriveManager::Instance();
 
-    Keyboard_Initialize() ;
+    KeyboardHandler::Instance();
+    BuiltInKeyboardDriver::Instance();
 
     //Floppy_Initialize() ;
     //ATADeviceController_Initialize() ;
@@ -195,7 +196,7 @@ void Initialize()
     USBDiskDriver::Register();
     USBKeyboardDriver::Register();
 
-    KBDriver::Instance().Getch();
+    KeyboardHandler::Instance().Getch();
 
     SessionManager_Initialize() ;
 

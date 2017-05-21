@@ -18,7 +18,7 @@
 # include <SystemUtil.h>
 # include <FSCommand.h>
 # include <DMM.h>
-# include <KBDriver.h>
+# include <BuiltInKeyboardDriver.h>
 # include <RTC.h>
 # include <dtime.h>
 # include <stdio.h>
@@ -43,7 +43,7 @@ void SystemUtil_Reboot()
 		}
 	}
 	ProcessManager::Instance().Sleep(2000) ;
-	KBDriver::Instance().Reboot() ;
+  BuiltInKeyboardDriver::Instance().Reboot() ;
 }
 
 byte SystemUtil_GetTimeOfDay(struct timeval* tv)

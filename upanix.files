@@ -38,10 +38,10 @@ drivers/ide/ATAPortOperation.h
 drivers/ide/ATATimingManager.cpp
 drivers/ide/ATATimingManager.h
 drivers/ide/Makefile
-drivers/keyboard/KBDriver.cpp
-drivers/keyboard/KBDriver.h
-drivers/keyboard/Keyboard.cpp
-drivers/keyboard/Keyboard.h
+drivers/keyboard/KeyboardHandler.cpp
+drivers/keyboard/KeyboardHandler.h
+drivers/keyboard/BuiltInKeyboardDriver.cpp
+drivers/keyboard/BuiltInKeyboardDriver.h
 drivers/keyboard/Makefile
 drivers/mouse/Makefile
 drivers/mouse/MouseDriver.cpp

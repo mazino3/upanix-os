@@ -19,7 +19,7 @@
 #include <AsmUtil.h>
 #include <PIC.h>
 #include <PortCom.h>
-#include <KBDriver.h>
+#include <BuiltInKeyboardDriver.h>
 #include <ProcessManager.h>
 #include <MouseDriver.h>
 #include <stdio.h>
@@ -45,7 +45,7 @@ void MouseDriver::Initialize()
 		}
 
 		byte status ;
-		KBDriver::Instance().WaitForRead() ;
+    BuiltInKeyboardDriver::Instance().WaitForRead() ;
 		status = PortCom_ReceiveByte(KB_DATA_PORT) ;
 
 		status |= 0x2 ;
@@ -58,7 +58,7 @@ void MouseDriver::Initialize()
 			break ;
 		}
 
-		KBDriver::Instance().WaitForWrite() ;
+    BuiltInKeyboardDriver::Instance().WaitForWrite() ;
 		PortCom_SendByte(KB_DATA_PORT, status) ;
 
 		WaitForAck() ;
@@ -109,7 +109,7 @@ void MouseDriver::Handler()
 
 bool MouseDriver::SendCommand1(byte command)
 {
-	if(!KBDriver::Instance().WaitForWrite())
+  if(!BuiltInKeyboardDriver::Instance().WaitForWrite())
 		return false ;
 
 	PortCom_SendByte(KB_STAT_PORT, command) ;
@@ -118,11 +118,11 @@ bool MouseDriver::SendCommand1(byte command)
 
 bool MouseDriver::SendCommand2(byte command)
 {
-	if(!KBDriver::Instance().WaitForWrite())
+  if(!BuiltInKeyboardDriver::Instance().WaitForWrite())
 		return false ;
 	PortCom_SendByte(KB_STAT_PORT, 0xD4) ;
 
-	if(!KBDriver::Instance().WaitForWrite())
+  if(!BuiltInKeyboardDriver::Instance().WaitForWrite())
 		return false ;
 	PortCom_SendByte(KB_DATA_PORT, command) ;
 
@@ -140,7 +140,7 @@ bool MouseDriver::WaitForAck()
 
 bool MouseDriver::ReceiveData(byte& data)
 {
-	if(!KBDriver::Instance().WaitForRead())
+  if(!BuiltInKeyboardDriver::Instance().WaitForRead())
 		return false ;
 
 	data = PortCom_ReceiveByte(KB_DATA_PORT) ;
@@ -149,7 +149,7 @@ bool MouseDriver::ReceiveData(byte& data)
 
 bool MouseDriver::ReceiveIRQData(byte& data)
 {
-	if(!KBDriver::Instance().WaitForRead())
+  if(!BuiltInKeyboardDriver::Instance().WaitForRead())
 		return false ;
 
 	if(!(PortCom_ReceiveByte(KB_STAT_PORT) & 0x20))
@@ -162,7 +162,7 @@ bool MouseDriver::ReceiveIRQData(byte& data)
 
 bool MouseDriver::SendData(byte data)
 {
-	if(!KBDriver::Instance().WaitForWrite())
+  if(!BuiltInKeyboardDriver::Instance().WaitForWrite())
 		return false ;
 
 	PortCom_SendByte(KB_DATA_PORT, data) ;

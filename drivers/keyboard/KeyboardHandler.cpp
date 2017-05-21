@@ -15,37 +15,49 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
-# include <SysCall.h>
-# include <SysCallKB.h>
-# include <KeyboardHandler.h>
+#include <KeyboardHandler.h>
+#include <Display.h>
+#include <PIC.h>
+#include <IDT.h>
+#include <ProcessManager.h>
+#include <MemUtil.h>
+#include <BuiltInKeyboardDriver.h>
 
-byte SysCallKB_IsPresent(unsigned uiSysCallID)
+KeyboardHandler::KeyboardHandler() : _qBuffer(1024)
 {
-	return (uiSysCallID > SYS_CALL_KB_START && uiSysCallID < SYS_CALL_KB_END) ;
+	KC::MDisplay().LoadMessage("Keyboard Initialization", Success) ;
 }
 
-void SysCallKB_Handle(
-__volatile__ int* piRetVal,
-__volatile__ unsigned uiSysCallID, 
-__volatile__ bool bDoAddrTranslation,
-__volatile__ unsigned uiP1, 
-__volatile__ unsigned uiP2, 
-__volatile__ unsigned uiP3, 
-__volatile__ unsigned uiP4, 
-__volatile__ unsigned uiP5, 
-__volatile__ unsigned uiP6, 
-__volatile__ unsigned uiP7, 
-__volatile__ unsigned uiP8, 
-__volatile__ unsigned uiP9)
+byte KeyboardHandler::GetCharInBlockMode()
+{		
+  byte data;
+	while(!GetFromQueueBuffer(data))
+		ProcessManager::Instance().WaitOnInterrupt(StdIRQ::Instance().KEYBOARD_IRQ);
+  return data;
+}
+
+bool KeyboardHandler::GetCharInNonBlockMode(byte& data)
 {
-	switch(uiSysCallID)
-	{
-		case SYS_CALL_KB_READ : // Wait for Key In
-			// P1 => Address of Variable where Keyed In Value is Stored
-			{
-        int* ch = KERNEL_ADDR(bDoAddrTranslation, int*, uiP1);
-        *ch = KeyboardHandler::Instance().GetCharInBlockMode();
-			}
-			break ;
-	}
+  return GetFromQueueBuffer(data);
+}
+
+bool KeyboardHandler::GetFromQueueBuffer(byte& data)
+{
+  if(_qBuffer.empty())
+    return false;
+  data = _qBuffer.front();
+  _qBuffer.pop_front();
+  return true;
+}
+
+bool KeyboardHandler::PutToQueueBuffer(byte data)
+{
+  return _qBuffer.push_back(data);
+}
+
+//just wait for a keyboard char input
+void KeyboardHandler::Getch()
+{
+  byte ch;
+  while(!GetCharInNonBlockMode(ch));
 }

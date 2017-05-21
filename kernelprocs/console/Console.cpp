@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
 #include <Console.h>
-#include <Keyboard.h>
+#include <KeyboardHandler.h>
 #include <Display.h>
 #include <StringUtil.h>
 #include <Directory.h>
@@ -66,8 +66,6 @@ void Console_StartUpanixConsole()
 	
 	debug_point = 0 ;
 
-	int ch ;
-
 //	byte bStatus ;
 //	if((bStatus = FileOperations_ChangeDir(FS_ROOT_DIR)) != FileOperations_SUCCESS)
 //	{
@@ -84,7 +82,7 @@ void Console_StartUpanixConsole()
 */
 	while(SUCCESS)
 	{
-		ch = Keyboard_GetKeyInBlockMode() ;
+    int ch = KeyboardHandler::Instance().GetCharInBlockMode();
 
 		switch(ch)
 		{

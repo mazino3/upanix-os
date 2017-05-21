@@ -25,7 +25,7 @@
 #include <stdio.h>
 #include <cstring.h>
 #include <StringUtil.h>
-#include <KBDriver.h>
+#include <KeyboardHandler.h>
 #include <ProcessManager.h>
 
 #include <USBStructures.h>

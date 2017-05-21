@@ -1,153 +1,71 @@
 #include <KeyboardKeyProcessor.h>
-#include <Keyboard.h>
+#include <KeyboardHandler.h>
 
-// index 0 is dummy
-static __volatile__ byte Keyboard_GENERIC_KEY_MAP[] = { 'x',
-  Keyboard_ESC, '1', '2', '3', '4', '5', '6', '7', '8', '9',
+static const byte Keyboard_USB_GENERIC_KEY_MAP[] = {
+  0, 0, 0, 0, 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l',
 
-  '0', '-', '=', Keyboard_BACKSPACE, '\t', 'q', 'w', 'e', 'r',
+  'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '1', '2',
 
-  't', 'y', 'u', 'i', 'o', 'p', '[', ']', Keyboard_ENTER,
+  '3', '4', '5', '6', '7', '8', '9', '0', Keyboard_ENTER, Keyboard_ESC, Keyboard_BACKSPACE,
 
-  Keyboard_LEFT_CTRL, 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k',
+  '\t', ' ', '-', '=', '[', ']', '\\', 0, ';', '\'', '`', ',', '.', '/', Keyboard_CAPS_LOCK,
 
-  'l', ';', '\'', '`', Keyboard_LEFT_SHIFT, '\\', 'z', 'x', 'c',
+  Keyboard_F1, Keyboard_F2, Keyboard_F3, Keyboard_F4, Keyboard_F5, Keyboard_F6, Keyboard_F7,
 
-  'v', 'b', 'n', 'm', ',', '.', '/', Keyboard_RIGHT_SHIFT, '*',
+  Keyboard_F8, Keyboard_F9, Keyboard_F10, Keyboard_F11, Keyboard_F12, 0/*print*/, 0/*scroll*/, 0/*pause*/,
 
-  Keyboard_LEFT_ALT, ' ', Keyboard_CAPS_LOCK, Keyboard_F1, Keyboard_F2,
+  Keyboard_KEY_INST, Keyboard_KEY_HOME, Keyboard_KEY_PG_UP, Keyboard_KEY_DEL, Keyboard_KEY_END,
 
-  Keyboard_F3, Keyboard_F4, Keyboard_F5, Keyboard_F6, Keyboard_F7,
+  Keyboard_KEY_PG_DOWN, Keyboard_KEY_RIGHT, Keyboard_KEY_LEFT, Keyboard_KEY_DOWN, Keyboard_KEY_UP, Keyboard_KEY_NUM,
 
-    Keyboard_F8, Keyboard_F9, Keyboard_F10
-} ;
+  '/', '*', '-', '+', Keyboard_ENTER, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '.', 0, 0, 0, 0,
 
-static __volatile__ byte Keyboard_GENERIC_SHIFTED_KEY_MAP[] = { 'x',
-  Keyboard_ESC, '!', '@', '#', '$', '%', '^', '&', '*', '(',
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 
-  ')', '_', '+', Keyboard_BACKSPACE, '\t', 'Q', 'W', 'E', 'R',
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 
-  'T', 'Y', 'U', 'I', 'O', 'P', '{', '}', Keyboard_ENTER,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 
-  Keyboard_LEFT_CTRL, 'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K',
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 
-  'L', ':', '"', '~', Keyboard_LEFT_SHIFT, '|', 'Z', 'X', 'C',
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 
-  'V', 'B', 'N', 'M', '<', '>', '?', Keyboard_RIGHT_SHIFT, '*',
+  Keyboard_LEFT_CTRL, Keyboard_LEFT_SHIFT, Keyboard_LEFT_ALT, 0, Keyboard_RIGHT_CTRL, Keyboard_RIGHT_SHIFT, Keyboard_RIGHT_ALT,
 
-  Keyboard_LEFT_ALT, ' ', Keyboard_CAPS_LOCK, Keyboard_F1, Keyboard_F2,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+};
 
-  Keyboard_F3, Keyboard_F4, Keyboard_F5, Keyboard_F6, Keyboard_F7,
-
-    Keyboard_F8, Keyboard_F9, Keyboard_F10
-} ;
-
-// Extra Keys
-#define EXTRA_KEYS 224
-
-#define EXTRA_KEY_UP		72
-#define EXTRA_KEY_DOWN		80
-#define EXTRA_KEY_LEFT		75
-#define EXTRA_KEY_RIGHT		77
-#define EXTRA_KEY_HOME		71
-#define EXTRA_KEY_END		79
-#define EXTRA_KEY_INST		82
-#define EXTRA_KEY_DEL		83
-#define EXTRA_KEY_PG_UP		73
-#define EXTRA_KEY_PG_DOWN	81
-#define EXTRA_KEY_ENTER		28
-
-byte BuiltInKeyboardKeyProcessor::Data(byte rawKey)
+static const byte Keyboard_USB_SHIFTED_KEY_MAP[] =
 {
-  if (IsKeyRelease(rawKey))
-    rawKey -= 0x80;
-  return rawKey;
-}
+  0, 0, 0, 0, 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L',
 
-byte BuiltInKeyboardKeyProcessor::MapChar(byte rawKey)
-{
-  return Keyboard_GENERIC_KEY_MAP[(int)Data(rawKey)];
-}
+  'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '!', '@',
 
-byte BuiltInKeyboardKeyProcessor::ShiftedMapChar(byte rawKey)
-{
-  return Keyboard_GENERIC_SHIFTED_KEY_MAP[(int)Data(rawKey)];
-}
+  '#', '$', '%', '^', '&', '*', '(', ')', Keyboard_ENTER, Keyboard_ESC, Keyboard_BACKSPACE,
 
-bool BuiltInKeyboardKeyProcessor::IsKeyRelease(byte rawKey)
-{
-  return rawKey & 0x80;
-}
+  '\t', ' ', '_', '+', '{', '}', '|', 0, ':', '"', '~', '<', '>', '?', Keyboard_CAPS_LOCK,
 
-bool BuiltInKeyboardKeyProcessor::IsExtraKey(byte rawKey)
-{
-  return MapChar(rawKey) == EXTRA_KEYS;
-}
+  Keyboard_F1, Keyboard_F2, Keyboard_F3, Keyboard_F4, Keyboard_F5, Keyboard_F6, Keyboard_F7,
 
-int BuiltInKeyboardKeyProcessor::ExtraKey(byte rawKey)
-{
-  if(IsKeyRelease(rawKey))
-    return -1 ;
-  else
-  {
-    switch(MapChar(rawKey))
-    {
-    case EXTRA_KEY_UP:
-        return Keyboard_KEY_UP ;
-    case EXTRA_KEY_DOWN:
-        return Keyboard_KEY_DOWN ;
-    case EXTRA_KEY_LEFT:
-        return Keyboard_KEY_LEFT ;
-    case EXTRA_KEY_RIGHT:
-        return Keyboard_KEY_RIGHT ;
-    case EXTRA_KEY_HOME:
-        return Keyboard_KEY_HOME ;
-    case EXTRA_KEY_END:
-        return Keyboard_KEY_END ;
-    case EXTRA_KEY_INST:
-        return Keyboard_KEY_INST ;
-    case EXTRA_KEY_DEL:
-        return Keyboard_KEY_DEL ;
-    case EXTRA_KEY_PG_UP:
-        return Keyboard_KEY_PG_UP ;
-    case EXTRA_KEY_PG_DOWN:
-        return Keyboard_KEY_PG_DOWN ;
-    case EXTRA_KEY_ENTER:
-        return Keyboard_ENTER ;
-    }
-  }
-  return -1;
-}
+  Keyboard_F8, Keyboard_F9, Keyboard_F10, Keyboard_F11, Keyboard_F12, 0/*print*/, 0/*scroll*/, 0/*pause*/,
 
-bool BuiltInKeyboardKeyProcessor::IsKey(byte rawKey, byte val)
-{
-  return MapChar(rawKey) == val;
-}
+  Keyboard_KEY_INST, Keyboard_KEY_HOME, Keyboard_KEY_PG_UP, Keyboard_KEY_DEL, Keyboard_KEY_END,
 
-bool BuiltInKeyboardKeyProcessor::IsNormal(byte rawKey)
-{
-  return rawKey >= 0 && rawKey <= 69;
-}
+  Keyboard_KEY_PG_DOWN, Keyboard_KEY_RIGHT, Keyboard_KEY_LEFT, Keyboard_KEY_DOWN, Keyboard_KEY_UP, Keyboard_KEY_NUM,
 
-bool BuiltInKeyboardKeyProcessor::IsSpecial(byte rawKey)
-{
-  auto key = MapChar(rawKey) ;
+  '/', '*', '-', '+', Keyboard_ENTER, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '.', 0, 0, 0, 0,
 
-  return (key == Keyboard_ESC ||
-      key == Keyboard_BACKSPACE ||
-      key == Keyboard_LEFT_CTRL ||
-      key == Keyboard_LEFT_SHIFT ||
-      key == Keyboard_RIGHT_SHIFT ||
-      key == Keyboard_LEFT_ALT ||
-      key == Keyboard_CAPS_LOCK ||
-      key == Keyboard_F1 ||
-      key == Keyboard_F2 ||
-      key == Keyboard_F3 ||
-      key == Keyboard_F4 ||
-      key == Keyboard_F5 ||
-      key == Keyboard_F6 ||
-      key == Keyboard_F7 ||
-      key == Keyboard_F8 ||
-      key == Keyboard_F9 ||
-      key == Keyboard_F10);
-}
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+
+  Keyboard_LEFT_CTRL, Keyboard_LEFT_SHIFT, Keyboard_LEFT_ALT, 0, Keyboard_RIGHT_CTRL, Keyboard_RIGHT_SHIFT, Keyboard_RIGHT_ALT,
+
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+};

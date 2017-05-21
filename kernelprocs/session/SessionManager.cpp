@@ -25,7 +25,7 @@
 # include <MemUtil.h>
 # include <UserManager.h>
 # include <GenericUtil.h>
-# include <Keyboard.h>
+# include <KeyboardHandler.h>
 # include <ProcessGroup.h>
 # include <KernelService.h>
 

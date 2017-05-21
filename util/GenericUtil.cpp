@@ -17,8 +17,8 @@
  */
 # include <GenericUtil.h>
 # include <Display.h>
-# include <Keyboard.h>
-# include <KBDriver.h>
+# include <BuiltInKeyboardDriver.h>
+# include <KeyboardHandler.h>
 # include <Display.h>
 # include <MemConstants.h>
 # include <ProcessEnv.h>
@@ -74,11 +74,10 @@ class StrPathTokenizer : public StringTokenizer
 void GenericUtil_ReadInput(char* szInputBuffer, const int iMaxReadLength, byte bEcho)
 {
 	int iCurrentReadPos = 0 ;
-	byte ch ;
 
 	while(SUCCESS)
 	{
-		ch = Keyboard_GetKeyInBlockMode() ;
+    auto ch = KeyboardHandler::Instance().GetCharInBlockMode();
 
 		switch(ch)
 		{
@@ -181,6 +180,6 @@ byte GenericUtil_GetFullFilePathFromEnv(const char* szPathEnvVar, const char* sz
 void debug_step(const char* msg)
 {
   printf("\n%s...", msg);
-  KBDriver::Instance().Getch();
+  KeyboardHandler::Instance().Getch();
   printf("\n%s - done!");
 }

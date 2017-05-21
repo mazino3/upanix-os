@@ -15,37 +15,41 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
-# include <SysCall.h>
-# include <SysCallKB.h>
-# include <KeyboardHandler.h>
+#ifndef _BUILTINKEYBOARDDRIVER_H_
+#define _BUILTINKEYBOARDDRIVER_H_
 
-byte SysCallKB_IsPresent(unsigned uiSysCallID)
-{
-	return (uiSysCallID > SYS_CALL_KB_START && uiSysCallID < SYS_CALL_KB_END) ;
-}
+#include <Global.h>
 
-void SysCallKB_Handle(
-__volatile__ int* piRetVal,
-__volatile__ unsigned uiSysCallID, 
-__volatile__ bool bDoAddrTranslation,
-__volatile__ unsigned uiP1, 
-__volatile__ unsigned uiP2, 
-__volatile__ unsigned uiP3, 
-__volatile__ unsigned uiP4, 
-__volatile__ unsigned uiP5, 
-__volatile__ unsigned uiP6, 
-__volatile__ unsigned uiP7, 
-__volatile__ unsigned uiP8, 
-__volatile__ unsigned uiP9)
+#define KB_DATA_PORT 0x60
+#define KB_STAT_PORT 0x64
+
+class BuiltInKeyboardDriver
 {
-	switch(uiSysCallID)
-	{
-		case SYS_CALL_KB_READ : // Wait for Key In
-			// P1 => Address of Variable where Keyed In Value is Stored
-			{
-        int* ch = KERNEL_ADDR(bDoAddrTranslation, int*, uiP1);
-        *ch = KeyboardHandler::Instance().GetCharInBlockMode();
-			}
-			break ;
-	}
-}
+private:
+  BuiltInKeyboardDriver();
+  BuiltInKeyboardDriver(const BuiltInKeyboardDriver&) = delete;
+  BuiltInKeyboardDriver& operator=(const BuiltInKeyboardDriver&) = delete;
+
+public:
+  static BuiltInKeyboardDriver& Instance()
+  {
+    static BuiltInKeyboardDriver instance;
+    return instance;
+  }
+  void Process(byte rawKey);
+
+  bool WaitForWrite();
+  bool WaitForRead();
+  void Reboot();
+
+private:
+  byte Decode(byte rawKey);
+
+  bool _isShiftKey;
+  bool _isCapsLock;
+  bool _isCtrlKey;
+  bool _isExtraCharSet;
+};
+
+#endif
+

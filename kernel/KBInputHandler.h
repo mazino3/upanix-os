@@ -19,8 +19,8 @@
 #define _KB_INPUT_HANDLER_H_
 
 # include <Global.h>
-# include <KBDriver.h>
+# include <KeyboardHandler.h>
 
-bool KBInputHandler_Process(KeyboardKey ch) ;
+bool KBInputHandler_Process(byte ch) ;
 
 #endif

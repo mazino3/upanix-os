@@ -19,7 +19,7 @@
 # include <CommandLineParser.h>
 
 #include <Display.h>
-#include <Keyboard.h>
+#include <BuiltInKeyboardDriver.h>
 #include <StringUtil.h>
 #include <Floppy.h>
 #include <MemUtil.h>
@@ -37,7 +37,7 @@
 #include <UserManager.h>
 #include <GenericUtil.h>
 #include <SessionManager.h>
-#include <KBDriver.h>
+#include <KeyboardHandler.h>
 #include <DeviceDrive.h>
 #include <RTC.h>
 #include <MultiBoot.h>

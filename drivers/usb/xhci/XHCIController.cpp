@@ -21,7 +21,7 @@
 #include <MemUtil.h>
 #include <stdio.h>
 #include <uniq_ptr.h>
-#include <KBDriver.h>
+#include <KeyboardHandler.h>
 #include <XHCIController.h>
 #include <XHCIContext.h>
 #include <XHCIManager.h>
@@ -504,7 +504,6 @@ EventTRB XHCIController::ConsumeEventResult(uint32_t trbId)
 void XHCIController::PublishEventResult(const EventTRB& result)
 {
   auto it = _eventResults.find(result.TRBPointer());
-  printf("\n Interrupt for TRB: %x", (uint32_t)result.TRBPointer());
   if(it == _eventResults.end())
   {
     printf("\n No entry found in EventResults for TRB Id: %x, Event Type: %d CC: %d, TLen: %d\n",

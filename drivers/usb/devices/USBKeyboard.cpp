@@ -85,6 +85,6 @@ USBKeyboard::~USBKeyboard()
 
 void USBKeyboard::Handle()
 {
-  printf("\n Received KB Data");
+  printf("\n %d %d %d %d %d %d %d %d", _report[0], _report[1], _report[2], _report[3], _report[4], _report[5], _report[6], _report[7]);
   _device.SetupInterruptReceiveData((uint32_t)_report, STD_USB_KB_REPORT_LEN, this);
 }

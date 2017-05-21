@@ -115,9 +115,8 @@ UPANIX_OBJS = \
 	./drivers/ide/ATAPortManager.o \
 	./drivers/ide/ATATimingManager.o \
 	./drivers/floppy/Floppy.o \
-  ./drivers/keyboard/KeyboardKeyProcessor.o \
-	./drivers/keyboard/Keyboard.o \
-	./drivers/keyboard/KBDriver.o \
+  ./drivers/keyboard/KeyboardHandler.o \
+  ./drivers/keyboard/BuiltInKeyboardDriver.o \
 	./drivers/mouse/MouseDriver.o \
 	./drivers/bus/PCIBusHandler.o \
 	./drivers/bus/SCSIHandler.o \

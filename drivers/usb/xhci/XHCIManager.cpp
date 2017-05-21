@@ -21,7 +21,7 @@
 #include <XHCIController.h>
 #include <XHCIManager.h>
 #include <IrqManager.h>
-#include <KBDriver.h>
+#include <KeyboardHandler.h>
 
 static const IRQ* XHCI_IRQ = nullptr;
 

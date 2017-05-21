@@ -24,7 +24,7 @@
 #include <AsmUtil.h>
 #include <DynamicLinkLoader.h>
 #include <Directory.h>
-#include <Keyboard.h>
+#include <BuiltInKeyboardDriver.h>
 #include <PIT.h>
 #include <StringUtil.h>
 #include <KernelService.h>

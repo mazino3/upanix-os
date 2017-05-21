@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
 # include <KBInputHandler.h>
-# include <Keyboard.h>
+# include <BuiltInKeyboardDriver.h>
 # include <SessionManager.h>
 
 /******************* Static Functions ***************************/
@@ -41,19 +41,13 @@ byte KBInputHandler_InRegList(byte key)
 
 /***************************************************************/
 
-bool KBInputHandler_Process(KeyboardKey kbKey)
+bool KBInputHandler_Process(byte key)
 {
-  auto key = kbKey.MapChar();
-
 	if(KBInputHandler_InRegList(key))
 	{
-    if(kbKey.IsKeyRelease())
-			return true ;
-
 		SessionManager_SwitchToSession(SessionManager_KeyToSessionIDMap(key)) ;
 		return true ;
 	}
-
 	return false ;
 }
 

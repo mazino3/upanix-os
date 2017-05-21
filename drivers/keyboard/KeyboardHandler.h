@@ -15,56 +15,76 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
-#ifndef _KEYBOARD_H_
-#define _KEYBOARD_H_
+#ifndef _KB_DRIVER_H_
+#define _KB_DRIVER_H_
 
 #include <Global.h>
-
-#define Keyboard_SUCCESS 0
-#define Keyboard_ERR_BUFFER_EMPTY 1
-#define Keyboard_ERR_BUFFER_FULL 2
+#include <queue.h>
+#include <KeyboardKeyProcessor.h>
 
 typedef enum
 {
-	Keyboard_ESC = 0,
-	Keyboard_BACKSPACE,
-	Keyboard_ENTER,
-	Keyboard_LEFT_CTRL,
-	Keyboard_LEFT_SHIFT,
-	Keyboard_RIGHT_SHIFT,
-	Keyboard_LEFT_ALT,
-	Keyboard_CAPS_LOCK,
-	Keyboard_F1 = 19,
-	Keyboard_F2,
-	Keyboard_F3,
-	Keyboard_F4,
-	Keyboard_F5,
-	Keyboard_F6,
-	Keyboard_F7,
-	Keyboard_F8,
-	Keyboard_F9,
-	Keyboard_F10,
+  Keyboard_ESC = 1,
+  Keyboard_BACKSPACE,
+  Keyboard_ENTER,
+  Keyboard_LEFT_CTRL,
+  Keyboard_LEFT_SHIFT,
+  Keyboard_LEFT_ALT,
+  Keyboard_RIGHT_SHIFT,
+  Keyboard_RIGHT_CTRL,
+  Keyboard_RIGHT_ALT,
+  Keyboard_CAPS_LOCK,
+  Keyboard_F1 = 19,
+  Keyboard_F2,
+  Keyboard_F3,
+  Keyboard_F4,
+  Keyboard_F5,
+  Keyboard_F6,
+  Keyboard_F7,
+  Keyboard_F8,
+  Keyboard_F9,
+  Keyboard_F10,
+  Keyboard_F11,
+  Keyboard_F12,
 
-	Keyboard_KEY_UP = 400,
-	Keyboard_KEY_DOWN,
-	Keyboard_KEY_LEFT,
-	Keyboard_KEY_RIGHT,
-	Keyboard_KEY_HOME,
-	Keyboard_KEY_END,
-	Keyboard_KEY_INST,
-	Keyboard_KEY_DEL,
-	Keyboard_KEY_PG_UP,
-	Keyboard_KEY_PG_DOWN,
+  Keyboard_KEY_UP = 150,
+  Keyboard_KEY_DOWN,
+  Keyboard_KEY_LEFT,
+  Keyboard_KEY_RIGHT,
+  Keyboard_KEY_HOME,
+  Keyboard_KEY_END,
+  Keyboard_KEY_INST,
+  Keyboard_KEY_DEL,
+  Keyboard_KEY_PG_UP,
+  Keyboard_KEY_PG_DOWN,
+  Keyboard_KEY_NUM
 
 } Keyboard_SpecialKeys ;
 
 #define CTRL_VALUE 100
 #define CTRL(v, c) (v == CTRL_VALUE + c)
 
-void Keyboard_Initialize() ;
-int Keyboard_GetKeyInBlockMode() ;
-byte Keyboard_MapKey(char key) ;
+class KeyboardHandler
+{
+  private:
+    KeyboardHandler();
+  public:
+    static KeyboardHandler& Instance()
+    {
+      static KeyboardHandler instance;
+      return instance;
+    }
 
+    byte GetCharInBlockMode();
+    bool GetCharInNonBlockMode(byte& data);
+    bool PutToQueueBuffer(byte data);
+
+    void Getch();
+  private:
+    bool GetFromQueueBuffer(byte& data);
+
+    upan::queue<byte> _qBuffer;
+};
 
 #endif
 
