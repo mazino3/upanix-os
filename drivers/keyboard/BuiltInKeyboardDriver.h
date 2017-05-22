@@ -48,7 +48,6 @@ private:
   bool _isShiftKey;
   bool _isCapsLock;
   bool _isCtrlKey;
-  bool _isExtraCharSet;
 };
 
 #endif

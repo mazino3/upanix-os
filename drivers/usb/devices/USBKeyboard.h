@@ -23,6 +23,7 @@
 #include <USBStructures.h>
 #include <USBDataHandler.h>
 #include <list.h>
+#include <set.h>
 
 class USBKeyboard final : public USBInterruptDataHandler
 {
@@ -37,21 +38,33 @@ private:
   const int STD_USB_KB_REPORT_LEN = 8;
   USBDevice& _device;
   byte*      _report;
+  upan::set<byte> _pressedKeys;
 };
 
 class USBKeyboardDriver final : public USBDriver
 {
-public:
-  USBKeyboardDriver(const upan::string& name) : USBDriver(name) {}
-  static void Register();
 private:
+  static USBKeyboardDriver* _instance;
+public:
+  USBKeyboardDriver(const upan::string& name);
+  static void Register();
+  static USBKeyboardDriver& Instance();
+  void Process(byte rawKey);
+
+private:
+  byte Decode(byte rawKey);
   bool AddDevice(USBDevice*);
   void RemoveDevice(USBDevice*);
   int MatchingInterfaceIndex(USBDevice*);
+
 private:
   const int CLASS_CODE = 0x3;
   const int SUB_CLASS_CODE_BOOT = 0x01;
   const int PROTOCOL = 0x1;
+
+  bool _isShiftKey;
+  bool _isCapsLock;
+  bool _isCtrlKey;
 
   upan::list<USBKeyboard*> _devices;
 };

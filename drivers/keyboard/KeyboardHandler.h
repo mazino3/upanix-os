@@ -20,7 +20,6 @@
 
 #include <Global.h>
 #include <queue.h>
-#include <KeyboardKeyProcessor.h>
 
 typedef enum
 {
@@ -57,7 +56,9 @@ typedef enum
   Keyboard_KEY_DEL,
   Keyboard_KEY_PG_UP,
   Keyboard_KEY_PG_DOWN,
-  Keyboard_KEY_NUM
+  Keyboard_KEY_NUM,
+
+  Keyboard_NA_CHAR = 0xFF
 
 } Keyboard_SpecialKeys ;
 

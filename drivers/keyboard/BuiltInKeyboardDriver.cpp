@@ -47,11 +47,10 @@ static void KBDriver_Handler()
   __asm__ __volatile__("IRET") ;
 }
 
-static const byte NA_CHAR = 0xFF;
 static const byte EXTRA_KEYS = 224;
 static const int MAX_KEYBOARD_CHARS = 84;
 
-static const byte Keyboard_GENERIC_KEY_MAP[MAX_KEYBOARD_CHARS] = { NA_CHAR,
+static const byte Keyboard_GENERIC_KEY_MAP[MAX_KEYBOARD_CHARS] = { Keyboard_NA_CHAR,
   Keyboard_ESC, '1', '2', '3', '4', '5', '6', '7', '8', '9',
 
   '0', '-', '=', Keyboard_BACKSPACE, '\t', 'q', 'w', 'e', 'r',
@@ -68,16 +67,16 @@ static const byte Keyboard_GENERIC_KEY_MAP[MAX_KEYBOARD_CHARS] = { NA_CHAR,
 
   Keyboard_F3, Keyboard_F4, Keyboard_F5, Keyboard_F6, Keyboard_F7,
 
-  Keyboard_F8, Keyboard_F9, Keyboard_F10, NA_CHAR, NA_CHAR, Keyboard_KEY_HOME,
+  Keyboard_F8, Keyboard_F9, Keyboard_F10, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_KEY_HOME,
 
-  Keyboard_KEY_UP, Keyboard_KEY_PG_UP, NA_CHAR, Keyboard_KEY_LEFT, NA_CHAR,
+  Keyboard_KEY_UP, Keyboard_KEY_PG_UP, Keyboard_NA_CHAR, Keyboard_KEY_LEFT, Keyboard_NA_CHAR,
 
-  Keyboard_KEY_RIGHT, NA_CHAR, Keyboard_KEY_END, Keyboard_KEY_DOWN,
+  Keyboard_KEY_RIGHT, Keyboard_NA_CHAR, Keyboard_KEY_END, Keyboard_KEY_DOWN,
 
   Keyboard_KEY_PG_DOWN, Keyboard_KEY_INST, Keyboard_KEY_DEL
 };
 
-static const byte Keyboard_GENERIC_SHIFTED_KEY_MAP[MAX_KEYBOARD_CHARS] = { NA_CHAR,
+static const byte Keyboard_GENERIC_SHIFTED_KEY_MAP[MAX_KEYBOARD_CHARS] = { Keyboard_NA_CHAR,
   Keyboard_ESC, '!', '@', '#', '$', '%', '^', '&', '*', '(',
 
   ')', '_', '+', Keyboard_BACKSPACE, '\t', 'Q', 'W', 'E', 'R',
@@ -94,11 +93,11 @@ static const byte Keyboard_GENERIC_SHIFTED_KEY_MAP[MAX_KEYBOARD_CHARS] = { NA_CH
 
   Keyboard_F3, Keyboard_F4, Keyboard_F5, Keyboard_F6, Keyboard_F7,
 
-  Keyboard_F8, Keyboard_F9, Keyboard_F10, NA_CHAR, NA_CHAR, Keyboard_KEY_HOME,
+  Keyboard_F8, Keyboard_F9, Keyboard_F10, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_KEY_HOME,
 
-  Keyboard_KEY_UP, Keyboard_KEY_PG_UP, NA_CHAR, Keyboard_KEY_LEFT, NA_CHAR,
+  Keyboard_KEY_UP, Keyboard_KEY_PG_UP, Keyboard_NA_CHAR, Keyboard_KEY_LEFT, Keyboard_NA_CHAR,
 
-  Keyboard_KEY_RIGHT, NA_CHAR, Keyboard_KEY_END, Keyboard_KEY_DOWN,
+  Keyboard_KEY_RIGHT, Keyboard_NA_CHAR, Keyboard_KEY_END, Keyboard_KEY_DOWN,
 
   Keyboard_KEY_PG_DOWN, Keyboard_KEY_INST, Keyboard_KEY_DEL
 };
@@ -117,7 +116,7 @@ BuiltInKeyboardDriver::BuiltInKeyboardDriver() : _isShiftKey(false), _isCapsLock
 void BuiltInKeyboardDriver::Process(byte rawKey)
 {
   byte kbKey = Decode(rawKey);
-  if (kbKey == NA_CHAR)
+  if (kbKey == Keyboard_NA_CHAR)
     return;
 
   if(!KBInputHandler_Process(kbKey))
@@ -130,14 +129,14 @@ void BuiltInKeyboardDriver::Process(byte rawKey)
 byte BuiltInKeyboardDriver::Decode(byte rawKey)
 {
   if (rawKey == EXTRA_KEYS)
-    return NA_CHAR;
+    return Keyboard_NA_CHAR;
 
   const bool keyRelease = rawKey & 0x80;
   if (keyRelease)
     rawKey -= 0x80;
 
   if (rawKey >= MAX_KEYBOARD_CHARS)
-    return NA_CHAR;
+    return Keyboard_NA_CHAR;
 
   byte mappedKey = Keyboard_GENERIC_KEY_MAP[rawKey];
 
@@ -172,7 +171,7 @@ byte BuiltInKeyboardDriver::Decode(byte rawKey)
       }
     }
   }
-  return NA_CHAR;
+  return Keyboard_NA_CHAR;
 }
 
 bool BuiltInKeyboardDriver::WaitForWrite()

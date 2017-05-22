@@ -573,5 +573,3 @@ drivers/usb/USBStructures.h
 drivers/usb/devices/Makefile
 drivers/usb/devices/USBKeyboard.cpp
 drivers/usb/devices/USBKeyboard.h
-drivers/keyboard/KeyboardKeyProcessor.cpp
-drivers/keyboard/KeyboardKeyProcessor.h
