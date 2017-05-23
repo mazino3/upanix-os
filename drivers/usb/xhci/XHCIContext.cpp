@@ -115,13 +115,13 @@ void InputContext::ReceiveData(uint32_t bufferAddress, uint32_t len)
 void InputContext::ReceiveInterruptData(uint32_t bufferAddress, uint32_t len)
 {
   const uint32_t trbId = InterruptInEP().SetupTransfer(bufferAddress, len);
-  _controller.InitiateInterruptTransfer(*this, trbId, _slotID, InterruptInEP().Id());
+  _controller.InitiateInterruptTransfer(*this, trbId, _slotID, InterruptInEP().Id(), bufferAddress);
 }
 
-void InputContext::OnInterrupt(const EventTRB& result)
+void InputContext::OnInterrupt(const EventTRB& result, uint32_t interruptDataAddress)
 {
   if(_interruptDataHandler)
-    _interruptDataHandler->Handle();
+    _interruptDataHandler->Handle(interruptDataAddress);
 }
 
 DeviceContext::DeviceContext(bool use64) : _allocated(true)

@@ -406,7 +406,7 @@ class InputContext
       return *_interruptOutEPs[index];
     }
 
-    void OnInterrupt(const EventTRB&);
+    void OnInterrupt(const EventTRB&, uint32_t interruptDataAddress);
 
     friend class ControlEndPoint;
     friend class DataEndPoint;

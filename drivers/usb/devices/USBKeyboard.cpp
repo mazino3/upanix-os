@@ -259,30 +259,33 @@ USBKeyboard::~USBKeyboard()
   delete _report;
 }
 
-void USBKeyboard::Handle()
+void USBKeyboard::Handle(uint32_t data)
 {
-  for(int i = 2; i < 8 && _report[i] != 0; ++i)
-  {
-    if(_pressedKeys.exists(_report[i]))
-      continue;
-
-    USBKeyboardDriver::Instance().Process(_report[i]);
-  }
-
+  byte* report = (byte*)data;
   for(auto k = _pressedKeys.begin(); k != _pressedKeys.end();)
   {
     bool found = false;
-    for(int i = 2; i < 8 && _report[i] != 0; ++i)
+    for(int i = 2; i < 8 && report[i] != 0; ++i)
     {
-      found = _report[i] == *k;
+      found = report[i] == *k;
       if(found)
         break;
     }
-    if(found)
+    if(!found)
       _pressedKeys.erase(k++);
     else
       ++k;
   }
 
-  _device.SetupInterruptReceiveData((uint32_t)_report, STD_USB_KB_REPORT_LEN, this);
+  for(int i = 2; i < 8 && report[i] != 0; ++i)
+  {
+    //TODO: it's a set - so a check for exists may not be required. try insert and check if it is a success instead
+    if(_pressedKeys.exists(report[i]))
+      continue;
+    _pressedKeys.insert(report[i]);
+    USBKeyboardDriver::Instance().Process(report[i]);
+  }
+
+  //printf("\n%d %d %d %d %d %d", _report[2], _report[3], _report[4], _report[5], _report[6], _report[7]);
+  _device.SetupInterruptReceiveData((uint32_t)report, STD_USB_KB_REPORT_LEN, this);
 }

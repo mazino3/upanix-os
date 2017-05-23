@@ -33,7 +33,7 @@ public:
   USBDevice& GetUSBDevice() { return _device; }
 
 private:
-  virtual void Handle();
+  virtual void Handle(uint32_t data);
 
   const int STD_USB_KB_REPORT_LEN = 8;
   USBDevice& _device;

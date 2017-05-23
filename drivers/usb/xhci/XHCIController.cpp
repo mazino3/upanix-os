@@ -407,13 +407,12 @@ EventTRB XHCIController::InitiateTransfer(uint32_t trbId, uint32_t slotID, uint3
   return WaitForTransferCompletion(trbId);
 }
 
-void XHCIController::InitiateInterruptTransfer(InputContext& context, uint32_t trbId, uint32_t slotID, uint32_t ep)
+void XHCIController::InitiateInterruptTransfer(InputContext& context, uint32_t trbId, uint32_t slotID, uint32_t ep, uint32_t interruptDataAddress)
 {
   {
     //TODO: Find an efficient way w/o disabling interrupts
     IrqGuard g;
-    //printf("\n Registering for TRB event: %x, Process: %d", trbId, ProcessManager::Instance().GetCurProcId());
-    _eventResults[trbId] = new InterruptEventResult(context, ProcessManager::Instance().GetCurProcId());
+    _eventResults[trbId] = new InterruptEventResult(context, ProcessManager::Instance().GetCurProcId(), interruptDataAddress);
   }
   RingDoorBell(slotID, ep);
 }
@@ -461,20 +460,21 @@ EventTRB XHCIController::WaitForTransferCompletion(uint32_t trbId)
 
 EventTRB XHCIController::WaitForEvent(uint32_t trbId)
 {
-  EventTRB result;
-
   if(XHCIManager::Instance().GetEventMode() == XHCIManager::Poll)
   {
+    EventTRB result;
     if(!_eventManager->WaitForEvent(trbId, result))
       throw upan::exception(XLOC, "Timedout while waiting for Command Completion");
+    return result;
   }
   else
   {
     ProcessManager::Instance().WaitForEvent();
-    result = ConsumeEventResult(trbId);
+    EventResult& result = ConsumeEventResult(trbId);
+    auto eventTRB = result.Result();
+    delete &result;
+    return eventTRB;
   }
-
-  return result;
 }
 
 void XHCIController::RegisterForWaitedEventResult(uint32_t trbId)
@@ -485,7 +485,7 @@ void XHCIController::RegisterForWaitedEventResult(uint32_t trbId)
   _eventResults[trbId] = new WaitedEventResult(ProcessManager::Instance().GetCurProcId());
 }
 
-EventTRB XHCIController::ConsumeEventResult(uint32_t trbId)
+EventResult& XHCIController::ConsumeEventResult(uint32_t trbId)
 {
   //TODO: Find an efficient way w/o disabling interrupts
   IrqGuard g;
@@ -494,9 +494,7 @@ EventTRB XHCIController::ConsumeEventResult(uint32_t trbId)
     throw upan::exception(XLOC, "Can't find TRB ID: %x in EventResults", trbId);
   auto result = it->second;
   _eventResults.erase(it);
-  auto eventTRB = result->Result();
-  delete result;
-  return eventTRB;
+  return *result;
 }
 
 //This function is called from XHCI IRQ handler, hence doesn't need any
@@ -667,13 +665,17 @@ void InterruptEventResult::Consume(const EventTRB &r)
   try
   {
     r.ValidateTransferResult();
-
-    _context.OnInterrupt(r);
+    EventResult& eventResult = _context.Controller().ConsumeEventResult(r.TRBPointer());
+    auto intEventResult = dynamic_cast<InterruptEventResult*>(&eventResult);
+    if(!intEventResult)
+      throw upan::exception(XLOC, "Non-InterruptEventResult found for interrupt transfer @ TRB ID: %x", r.TRBPointer());
+    _context.OnInterrupt(r, intEventResult->InterruptDataAddress());
+    delete &eventResult;
   }
   catch(upan::exception& e)
   {
     e.Print();
   }
 
-  _context.Controller().ConsumeEventResult(r.TRBPointer());
+
 }

@@ -50,7 +50,7 @@ class XHCIController
     void PerformBiosToOSHandoff();
     EventTRB InitiateCommand();
     EventTRB InitiateTransfer(uint32_t trbId, uint32_t slotID, uint32_t ep);
-    void InitiateInterruptTransfer(InputContext& context, uint32_t trbId, uint32_t slotID, uint32_t ep);
+    void InitiateInterruptTransfer(InputContext& context, uint32_t trbId, uint32_t slotID, uint32_t ep, uint32_t interruptDataAddress);
     void SetDeviceContext(uint32_t slotID, SlotContext& slotContext);
     void RingDoorBell(unsigned index, unsigned value);
     unsigned EnableSlot(unsigned slotType);
@@ -66,7 +66,7 @@ class XHCIController
     const char* PortSpeedName(DEVICE_SPEED speed) const;
 
     void RegisterForWaitedEventResult(uint32_t trbId);
-    EventTRB ConsumeEventResult(uint32_t trbId);
+    EventResult& ConsumeEventResult(uint32_t trbId);
     void PublishEventResult(const EventTRB& result);
 
     static unsigned  _memMapBaseAddress;
@@ -248,11 +248,13 @@ public:
 class InterruptEventResult : public EventResult
 {
 public:
-  InterruptEventResult(InputContext& context, int pid) : EventResult(pid), _context(context) { }
+  InterruptEventResult(InputContext& context, int pid, uint32_t dataAddress) : EventResult(pid), _context(context), _dataAddress(dataAddress) { }
   void Consume(const EventTRB &r);
+  uint32_t InterruptDataAddress() const { return _dataAddress; }
 
 private:
   InputContext& _context;
+  uint32_t _dataAddress;
 };
 
 #endif
