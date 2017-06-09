@@ -337,6 +337,10 @@ class InterruptInEndPoint : public DataEndPoint
   public:
     InterruptInEndPoint(InputContext&, const USBStandardEndPt&);
     uint32_t SetupTransfer(uint32_t bufferAddress, uint32_t len);
+    uint32_t Interval() const { return _interval; }
+
+  private:
+    uint32_t _interval;
 };
 
 class InterruptOutEndPoint : public DataEndPoint
@@ -359,6 +363,7 @@ class InputContext
     void SendData(uint32_t bufferAddress, uint32_t len);
     void ReceiveData(uint32_t bufferAddress, uint32_t len);
     void ReceiveInterruptData(uint32_t bufferAddress, uint32_t len);
+    int GetInterruptInEPInterval() { return InterruptInEP().Interval(); }
 
     void SetInterruptDataHandler(USBInterruptDataHandler* handler)
     {

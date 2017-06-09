@@ -23,6 +23,7 @@
 #include <KeyboardHandler.h>
 #include <IrqManager.h>
 #include <KBInputHandler.h>
+#include <KernelUtil.h>
 
 static const byte Keyboard_USB_GENERIC_KEY_MAP[] =
 {
@@ -251,7 +252,13 @@ USBKeyboard::USBKeyboard(USBDevice& device, int interfaceIndex) : _device(device
   _device._pPrivate = this;
 
   _device.SetIdle();
-  _device.SetupInterruptReceiveData((uint32_t)_report, STD_USB_KB_REPORT_LEN, this);
+  for(int i = 0; i < 32; ++i)
+  {
+    byte* report = new byte[STD_USB_KB_REPORT_LEN];
+    _device.SetupInterruptReceiveData((uint32_t)report, STD_USB_KB_REPORT_LEN, this);
+  }
+
+  //KernelUtil::ScheduleTimedTask("USB KB Poller", 2000, *this);
 }
 
 USBKeyboard::~USBKeyboard()
@@ -259,9 +266,17 @@ USBKeyboard::~USBKeyboard()
   delete _report;
 }
 
+bool USBKeyboard::TimerTrigger()
+{
+  printf("\n Interrup Interval: %d", _device.GetInterruptInInterval());
+  return true;
+}
+
 void USBKeyboard::Handle(uint32_t data)
 {
   byte* report = (byte*)data;
+  //printf("\n%d %d %d %d %d %d", report[2], report[3], report[4], report[5], report[6], report[7]);
+
   for(auto k = _pressedKeys.begin(); k != _pressedKeys.end();)
   {
     bool found = false;
@@ -286,6 +301,5 @@ void USBKeyboard::Handle(uint32_t data)
     USBKeyboardDriver::Instance().Process(report[i]);
   }
 
-  //printf("\n%d %d %d %d %d %d", _report[2], _report[3], _report[4], _report[5], _report[6], _report[7]);
-  _device.SetupInterruptReceiveData((uint32_t)report, STD_USB_KB_REPORT_LEN, this);
+//  _device.SetupInterruptReceiveData((uint32_t)report, STD_USB_KB_REPORT_LEN, this);
 }

@@ -56,18 +56,18 @@ void KernelUtil::TightLoopWait(unsigned loop)
 	}
 }
 
-void KernelUtil::ScheduleTimedTask(const char* szName, unsigned uiTimeInMilliSec, unsigned CallBackFunction)
+void KernelUtil::ScheduleTimedTask(const char* szName, unsigned uiTimeInMilliSec, TimerTask& task)
 {
 	int pid ;
-	ProcessManager::Instance().CreateKernelImage((unsigned)&SystemTimer, NO_PROCESS_ID, false, uiTimeInMilliSec, CallBackFunction, &pid, szName) ;
+  ProcessManager::Instance().CreateKernelImage((unsigned)&SystemTimer, ProcessManager::GetCurrentProcessID(), false, uiTimeInMilliSec, (uint32_t)&task, &pid, szName) ;
 }
 
-void KernelUtil::SystemTimer(unsigned uiTimeInMilliSec, KernelUtilTimerFunc* CallBackFunction)
+void KernelUtil::SystemTimer(unsigned uiTimeInMilliSec, TimerTask* task)
 {
 	do
 	{
 		ProcessManager::Instance().Sleep(uiTimeInMilliSec) ;
-	} while(CallBackFunction()) ;
+  } while(task->TimerTrigger()) ;
 	ProcessManager_EXIT() ;
 }
 

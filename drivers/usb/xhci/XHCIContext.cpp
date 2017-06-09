@@ -234,7 +234,7 @@ uint32_t BulkOutEndPoint::SetupTransfer(uint32_t bufferAddress, uint32_t len)
   return _tRing->AddDataTRB(bufferAddress, len, DataDirection::OUT, _maxPacketSize);
 }
 
-InterruptInEndPoint::InterruptInEndPoint(InputContext& inContext, const USBStandardEndPt& endpoint) : DataEndPoint(inContext, endpoint)
+InterruptInEndPoint::InterruptInEndPoint(InputContext& inContext, const USBStandardEndPt& endpoint) : DataEndPoint(inContext, endpoint), _interval(endpoint.bInterval)
 {
   inContext.AddInterruptInEP(this);
 }

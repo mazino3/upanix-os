@@ -24,8 +24,9 @@
 #include <USBDataHandler.h>
 #include <list.h>
 #include <set.h>
+#include <KernelUtil.h>
 
-class USBKeyboard final : public USBInterruptDataHandler
+class USBKeyboard final : public USBInterruptDataHandler, public KernelUtil::TimerTask
 {
 public:
   USBKeyboard(USBDevice& device, int interfaceIndex);
@@ -34,6 +35,7 @@ public:
 
 private:
   virtual void Handle(uint32_t data);
+  virtual bool TimerTrigger();
 
   const int STD_USB_KB_REPORT_LEN = 8;
   USBDevice& _device;

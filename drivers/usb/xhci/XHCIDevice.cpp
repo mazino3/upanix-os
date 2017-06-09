@@ -349,3 +349,8 @@ void XHCIDevice::SetupInterruptReceiveData(uint32_t bufferAddress, uint32_t len,
   _inputContext->SetInterruptDataHandler(handler);
   _inputContext->ReceiveInterruptData(bufferAddress, len);
 }
+
+int XHCIDevice::GetInterruptInInterval()
+{
+  return _inputContext->GetInterruptInEPInterval();
+}

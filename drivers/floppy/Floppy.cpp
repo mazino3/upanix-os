@@ -105,20 +105,22 @@ static byte Floppy_FormatTrack(const DiskDrive* pDiskDrive, const Floppy_HEAD_NO
 static byte Floppy_ReadWrite(const DiskDrive* pDiskDrive, unsigned uiStartSectorNo, unsigned uiEndSectorNo, Floppy_MODE mode) ;
 static byte Floppy_FullFormat(const DiskDrive* pDiskDrive) ;
 
-static int Floppy_MotorController()
+struct FloppyMotorController : public KernelUtil::TimerTask
 {
-	unsigned i ;
-	for(i = 0; i < MAX_DRIVES; i++)
-	{
-		if(Floppy_bRequestMotorOff[i] == true)
-		{
-			Floppy_bMotorOn[i] = false ;
-			Floppy_bRequestMotorOff[i] = false ;
-			Floppy_DisableMotorAndDrive((DRIVE_NO)i) ;
-		}
-	}
-	return 1 ;
-}
+  bool TimerTrigger()
+  {
+    for(uint32_t i = 0; i < MAX_DRIVES; i++)
+    {
+      if(Floppy_bRequestMotorOff[i] == true)
+      {
+        Floppy_bMotorOn[i] = false ;
+        Floppy_bRequestMotorOff[i] = false ;
+        Floppy_DisableMotorAndDrive((DRIVE_NO)i) ;
+      }
+    }
+    return true;
+  }
+};
 
 static void Floppy_StartMotor(DRIVE_NO driveNo)
 {
@@ -580,7 +582,7 @@ void Floppy_Initialize()
 			Floppy_bRequestMotorOff[i] = false ;
 		}
 
-		KernelUtil::ScheduleTimedTask("fmoncont", 5000, (unsigned)&Floppy_MotorController) ;
+    KernelUtil::ScheduleTimedTask("fmoncont", 5000, *new FloppyMotorController()) ;
 	}
 
 	Floppy_bInitStatus = bInitStatus ;

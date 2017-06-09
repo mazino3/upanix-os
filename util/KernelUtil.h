@@ -26,11 +26,16 @@ class KernelUtil
 	public:
 		static void Wait(unsigned uiTimeInMilliSec) ;
 		static void WaitOnInterrupt(const IRQ&);
-		static void ScheduleTimedTask(const char* szName, unsigned uiTimeInMilliSec, unsigned CallBackFunction) ;
-		static void TightLoopWait(unsigned loop) ;
+    static void TightLoopWait(unsigned loop) ;
+
+    struct TimerTask
+    {
+      virtual bool TimerTrigger() = 0;
+    };
+    static void ScheduleTimedTask(const char* szName, unsigned uiTimeInMilliSec, TimerTask&) ;
 
 	private:
-		static void SystemTimer(unsigned uiTimeInMilliSec, KernelUtilTimerFunc* CallBackFunction) ;
+    static void SystemTimer(unsigned uiTimeInMilliSec, TimerTask* task) ;
 } ;
 
 #endif
