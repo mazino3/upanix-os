@@ -161,7 +161,7 @@ class EventManager
 
       bool IsLastDQPtr()
       {
-        EventTRB* lastTRB = &ERSegment(0)[ERST_SIZE];
+        EventTRB* lastTRB = &ERSegment(0)[ERST_SIZE - 1];
         EventTRB* curTRB = DQEvent();
         return curTRB == lastTRB;
       }
