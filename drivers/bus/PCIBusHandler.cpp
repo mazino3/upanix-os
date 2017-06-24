@@ -33,7 +33,7 @@ void PCIBusHandler::Initialize()
   for(auto p : _pciEntries)
     delete p;
   _uiNoOfPCIBuses = 0;
-	Result result = Success;
+	ReturnCode result = Success;
 
 	if((result = Find()) == Success)
 	{
@@ -53,7 +53,7 @@ void PCIBusHandler::Initialize()
 	KC::MDisplay().LoadMessage("PCI Bus Initialization", result) ;
 }
 
-Result PCIBusHandler::Find()
+ReturnCode PCIBusHandler::Find()
 {
 	unsigned uiData ;
 
@@ -86,7 +86,7 @@ Result PCIBusHandler::Find()
 	return NoPCIInstalled;
 }
 
-Result PCIBusHandler::ScanBus(unsigned uiBusNumber)
+ReturnCode PCIBusHandler::ScanBus(unsigned uiBusNumber)
 {
 	unsigned uiDevicePerBus = (_type == PCI_TYPE_ONE) ? 32 : 16 ;
 	unsigned uiDeviceNumber, uiFunction ;
@@ -172,7 +172,7 @@ Result PCIBusHandler::ScanBus(unsigned uiBusNumber)
 	return Success;
 }
 
-Result PCIBusHandler::ReadPCIConfig(unsigned uiBusNumber, unsigned uiDeviceNumber, unsigned uiFunction, unsigned uiPCIEntryOffset, unsigned uiPCIEntrySize, void* pValue)
+ReturnCode PCIBusHandler::ReadPCIConfig(unsigned uiBusNumber, unsigned uiDeviceNumber, unsigned uiFunction, unsigned uiPCIEntryOffset, unsigned uiPCIEntrySize, void* pValue)
 {
 //TODO: PCI TYPE = 0 => Using BIOS PCI Interface
 	if(_type == PCI_TYPE_ONE)
@@ -233,7 +233,7 @@ Result PCIBusHandler::ReadPCIConfig(unsigned uiBusNumber, unsigned uiDeviceNumbe
 	return Failure ;
 }
 
-Result PCIBusHandler::WritePCIConfig(unsigned uiBusNumber, unsigned uiDeviceNumber, unsigned uiFunction, 
+ReturnCode PCIBusHandler::WritePCIConfig(unsigned uiBusNumber, unsigned uiDeviceNumber, unsigned uiFunction, 
 				unsigned uiPCIEntryOffset, unsigned uiPCIEntrySize, unsigned uiValue)
 {
 //TODO: PCI TYPE = 0 => Using BIOS PCI Interface
@@ -299,7 +299,7 @@ Result PCIBusHandler::WritePCIConfig(unsigned uiBusNumber, unsigned uiDeviceNumb
 PCIEntry::PCIEntry(unsigned uiBusNo, unsigned uiDeviceNo, unsigned uiFunc, byte bHeaderType)
   : uiBusNumber(uiBusNo), uiDeviceNumber(uiDeviceNo), uiFunction(uiFunc)
 {
-  Result r;
+  ReturnCode r;
   if(bHeaderType & PCI_HEADER_BRIDGE)
     r = ReadBridgePCIHeader();
   else
@@ -309,17 +309,17 @@ PCIEntry::PCIEntry(unsigned uiBusNo, unsigned uiDeviceNo, unsigned uiFunc, byte 
     throw upan::exception(XLOC, "failed to read PCI configuration for Bus:%u, Device:%u, Function:%u, HeaderType:%u", uiBusNumber, uiDeviceNumber, uiFunction, bHeaderType);
 }
 
-Result PCIEntry::ReadPCIConfig(unsigned uiPCIEntryOffset, unsigned uiPCIEntrySize, void* pValue) const
+ReturnCode PCIEntry::ReadPCIConfig(unsigned uiPCIEntryOffset, unsigned uiPCIEntrySize, void* pValue) const
 {
   return PCIBusHandler::Instance().ReadPCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, uiPCIEntryOffset, uiPCIEntrySize, pValue);
 }
 
-Result PCIEntry::WritePCIConfig(unsigned uiPCIEntryOffset, unsigned uiPCIEntrySize, unsigned uiValue) const
+ReturnCode PCIEntry::WritePCIConfig(unsigned uiPCIEntryOffset, unsigned uiPCIEntrySize, unsigned uiValue) const
 {
   return PCIBusHandler::Instance().WritePCIConfig(uiBusNumber, uiDeviceNumber, uiFunction, uiPCIEntryOffset, uiPCIEntrySize, uiValue);
 }
 
-Result PCIEntry::ReadNonBridgePCIHeader()
+ReturnCode PCIEntry::ReadNonBridgePCIHeader()
 {
 	RETURN_X_IF_NOT(ReadPCIConfig(PCI_VENDOR_ID, 2, &usVendorID), Success, Failure);
 
@@ -382,7 +382,7 @@ const PCIEntry::ExtendedCapability* PCIEntry::GetExtendedCapability(uint32_t cap
   return nullptr;
 }
 
-Result PCIEntry::ReadBridgePCIHeader()
+ReturnCode PCIEntry::ReadBridgePCIHeader()
 {
 	RETURN_X_IF_NOT(ReadPCIConfig(PCI_VENDOR_ID, 2, &usVendorID), Success, Failure);
 

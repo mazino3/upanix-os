@@ -21,6 +21,7 @@
 #include <Global.h>
 #include <stdio.h>
 #include <exception.h>
+#include <result.h>
 #include <Bit.h>
 
 enum TransferType { NO_DATA_STAGE, RESERVED, OUT_DATA_STAGE, IN_DATA_STAGE };
@@ -28,6 +29,9 @@ enum DataDirection { OUT, IN };
 
 class TRB
 {
+  public:
+    typedef upan::result<uint32_t, bool> Result;
+
   public:
     TRB() : _b1(0), _b2(0), _b3(0), _b4(0)
     {
@@ -244,8 +248,10 @@ class TransferRing
     void AddDataStageTRB(uint32_t dataBufferAddr, uint32_t len, DataDirection dir, int32_t maxPacketSize);
     uint32_t AddStatusStageTRB(uint32_t dir);
     void AddEventDataTRB(uint32_t statusAddr, bool ioc);
-    uint32_t AddDataTRB(uint32_t dataBufferAddr, uint32_t len, DataDirection dir, int32_t maxPacketSize);
+    TRB::Result AddDataTRB(uint32_t dataBufferAddr, uint32_t len, DataDirection dir, int32_t maxPacketSize);
     TRB* RingBase() { return _trbs; }
+    void UpdateDeEnQPtr(uint32_t dnqPtr);
+
   private:
     TRB& NextTRB();
 
@@ -253,6 +259,8 @@ class TransferRing
     bool      _cycleState;
     uint32_t  _nextTRBIndex;
     TRB*      _trbs;
+    __volatile__ uint32_t _freeSlots;
+    __volatile__ uint32_t _dqIndex;
 };
 
 #endif

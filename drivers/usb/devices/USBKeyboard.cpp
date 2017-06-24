@@ -252,13 +252,14 @@ USBKeyboard::USBKeyboard(USBDevice& device, int interfaceIndex) : _device(device
   _device._pPrivate = this;
 
   _device.SetIdle();
-  for(int i = 0; i < 32; ++i)
+  //TODO: To set this upfront or use scheduler ??
+  for(int i = 0; i < 0; ++i)
   {
     byte* report = new byte[STD_USB_KB_REPORT_LEN];
     _device.SetupInterruptReceiveData((uint32_t)report, STD_USB_KB_REPORT_LEN, this);
   }
 
-  //KernelUtil::ScheduleTimedTask("USB KB Poller", 2000, *this);
+  KernelUtil::ScheduleTimedTask("USB KB Poller", 50, *this);
 }
 
 USBKeyboard::~USBKeyboard()
@@ -268,7 +269,9 @@ USBKeyboard::~USBKeyboard()
 
 bool USBKeyboard::TimerTrigger()
 {
-  printf("\n Interrup Interval: %d", _device.GetInterruptInInterval());
+  //TODO: This is a memory leak - use a memory pool but after getting clarity on how TDs are processed on interrupt-in endpoint
+  byte* report = new byte[STD_USB_KB_REPORT_LEN];
+  _device.SetupInterruptReceiveData((uint32_t)report, STD_USB_KB_REPORT_LEN, this);
   return true;
 }
 
@@ -300,6 +303,4 @@ void USBKeyboard::Handle(uint32_t data)
     _pressedKeys.insert(report[i]);
     USBKeyboardDriver::Instance().Process(report[i]);
   }
-
-//  _device.SetupInterruptReceiveData((uint32_t)report, STD_USB_KB_REPORT_LEN, this);
 }

@@ -217,8 +217,8 @@ class PCIEntry
 		} CardBus;
 	} BusEntity;
 
-  Result ReadPCIConfig(unsigned uiPCIEntryOffset, unsigned uiPCIEntrySize, void* pValue) const;
-  Result WritePCIConfig(unsigned uiPCIEntryOffset, unsigned uiPCIEntrySize, unsigned uiValue) const;
+  ReturnCode ReadPCIConfig(unsigned uiPCIEntryOffset, unsigned uiPCIEntrySize, void* pValue) const;
+  ReturnCode WritePCIConfig(unsigned uiPCIEntryOffset, unsigned uiPCIEntrySize, unsigned uiValue) const;
   unsigned GetPCIMemSize(int iAddressIndex) const;
   unsigned PCISize(unsigned uiBase, unsigned uiMask) const;
   void EnableBusMaster() const;
@@ -241,8 +241,8 @@ class PCIEntry
   const ExtendedCapability* GetExtendedCapability(uint32_t capId) const;
 
   private:
-    Result ReadNonBridgePCIHeader();
-    Result ReadBridgePCIHeader();
+    ReturnCode ReadNonBridgePCIHeader();
+    ReturnCode ReadBridgePCIHeader();
     upan::list<ExtendedCapability> _extendCapabilities;
 }; 
 
@@ -257,16 +257,16 @@ class PCIBusHandler
       return instance;
     }
     void Initialize();
-    Result ReadPCIConfig(unsigned uiBusNumber, unsigned uiDeviceNumber, unsigned uiFunction, 
+    ReturnCode ReadPCIConfig(unsigned uiBusNumber, unsigned uiDeviceNumber, unsigned uiFunction, 
                 unsigned uiPCIEntryOffset, unsigned uiPCIEntrySize, void* pValue);
-    Result WritePCIConfig(unsigned uiBusNumber, unsigned uiDeviceNumber, unsigned uiFunction, 
+    ReturnCode WritePCIConfig(unsigned uiBusNumber, unsigned uiDeviceNumber, unsigned uiFunction, 
             unsigned uiPCIEntryOffset, unsigned uiPCIEntrySize, unsigned uiValue);
     const upan::list<PCIEntry*>& PCIEntries() const { return _pciEntries; }
     const upan::list<uint8_t>& IrqABCD() const { return _irqABCD; }
     const upan::list<uint8_t>& IrqEFGH() const { return _irqEFGH; }
   private:
-    Result Find();
-    Result ScanBus(unsigned uiBusNumber);
+    ReturnCode Find();
+    ReturnCode ScanBus(unsigned uiBusNumber);
 
     PCI_TYPE _type;
     unsigned _uiNoOfPCIBuses;

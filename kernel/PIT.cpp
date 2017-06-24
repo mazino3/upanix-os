@@ -35,7 +35,7 @@ static __volatile__ uint32_t Process_iTaskSwitch ;
 
 void PIT_Initialize()
 {
-  Result status = Success;
+  ReturnCode status = Success;
 	PIT_ClockCountForSleep = 0 ;
 	Process_bContextSwitch = false ;
 	Process_iTaskSwitch = 1;

@@ -157,7 +157,7 @@ class Display
     void RawCharacter(char ch, const Attribute& attr, bool bUpdateCursorOnScreen);
     void MoveCursor(int iOffSet);
     void SetCursor(int iCurPos, bool bUpdateCursorOnScreen);
-		void LoadMessage(const char* loadMessage, Result result);
+		void LoadMessage(const char* loadMessage, ReturnCode result);
 		void ShowProgress(const char* msg, int startCur, unsigned progNum);
     void ClearLine(int iStartPos);
 		void RefreshScreen();

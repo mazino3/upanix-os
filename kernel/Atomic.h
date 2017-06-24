@@ -46,7 +46,8 @@ class Mutex
 class Atomic
 {
 	public:
-		static uint32_t Swap(__volatile__ uint32_t& iLock, uint32_t val) ;
+    static uint32_t Swap(__volatile__ uint32_t& iLock, uint32_t val);
+    static void Add(__volatile__ uint32_t& var, uint32_t val);
 } ;
 
 class MutexGuard

@@ -19,10 +19,11 @@
 #include <TRB.h>
 #include <Alloc.h>
 #include <DMM.h>
+#include <Atomic.h>
 
 #define INTERRUPT_ON_COMPLETE (1 << 5)
 
-TransferRing::TransferRing(unsigned size) : _size(size), _cycleState(true), _nextTRBIndex(0)
+TransferRing::TransferRing(unsigned size) : _size(size), _cycleState(true), _nextTRBIndex(0), _freeSlots(size - 1), _dqIndex(0)
 {
   _trbs = new ((void*)DMM_AllocateForKernel(sizeof(TRB) * _size, 16))TRB[_size];
   auto& link = *new (&_trbs[_size - 1])LinkTRB();
@@ -35,6 +36,21 @@ TransferRing::~TransferRing()
   DMM_DeAllocateForKernel((unsigned)_trbs);
 }
 
+void TransferRing::UpdateDeEnQPtr(uint32_t dnqPtr)
+{
+  const auto curdqIndex = (dnqPtr - (uint32_t)&_trbs[0]) / sizeof(TRB);
+  uint32_t freeSlots = 0;
+
+  if(curdqIndex < _dqIndex)
+    // _size - 2/* -2 = -1 + (-1) -> Link TRB */ - _dqIndex + 1 + curdqIndex + 1 --> _size - _dqIndex + curdqIndex
+    freeSlots = (_size - _dqIndex + curdqIndex);
+  else
+    freeSlots = (curdqIndex - _dqIndex + 1);
+
+  Atomic::Add(_freeSlots, freeSlots);
+  _dqIndex = (curdqIndex + 1) % (_size - 1);
+}
+
 TRB& TransferRing::NextTRB()
 {
   if(_nextTRBIndex == (_size - 1))
@@ -43,6 +59,7 @@ TRB& TransferRing::NextTRB()
     _nextTRBIndex = 0;
     _cycleState = !_cycleState;
   }
+  Atomic::Add(_freeSlots, -1);
   return _trbs[_nextTRBIndex++];
 }
 
@@ -115,11 +132,26 @@ void TransferRing::AddEventDataTRB(uint32_t statusAddr, bool ioc)
   trb.SetCycleBit(_cycleState);
 }
 
-uint32_t TransferRing::AddDataTRB(uint32_t dataBufferAddr, uint32_t len, DataDirection dir, int32_t maxPacketSize)
+TRB::Result TransferRing::AddDataTRB(uint32_t dataBufferAddr, uint32_t len, DataDirection dir, int32_t maxPacketSize)
 {
   dataBufferAddr = KERNEL_REAL_ADDRESS(dataBufferAddr);
   int32_t remainingBytesToTransfer = len;
   TRB* lastTRB = nullptr;
+
+  uint32_t requiredSlots = (len / PAGE_SIZE);
+  const bool startAlign = (dataBufferAddr % PAGE_SIZE) == 0;
+  const bool endAlign = ((dataBufferAddr + len) % PAGE_SIZE) == 0;
+  if(!startAlign)
+  {
+    ++requiredSlots;
+    if(!endAlign && (dataBufferAddr / PAGE_SIZE) != ((dataBufferAddr + len) / PAGE_SIZE) )
+      ++requiredSlots;
+  }
+  else if(!endAlign)
+    ++requiredSlots;
+
+  if(requiredSlots > _freeSlots)
+    return TRB::Result(upan::error<bool>(false, "Transfer Ring is Full!"));
 
   while(remainingBytesToTransfer > 0)
   {
@@ -146,5 +178,5 @@ uint32_t TransferRing::AddDataTRB(uint32_t dataBufferAddr, uint32_t len, DataDir
     if(ioc)
       lastTRB = &trb;
   }
-  return (uint32_t)lastTRB;
+  return TRB::Result((uint32_t)lastTRB);
 }

@@ -30,6 +30,14 @@ uint32_t Atomic::Swap(__volatile__ uint32_t& iLock, uint32_t val)
 	return val ;
 }
 
+void Atomic::Add(__volatile__ uint32_t& var, uint32_t val)
+{
+  __asm__ __volatile__ ("lock xaddl %0, %1"
+    : "=r"(val)
+    : "m"( var ), "0" (val)
+    : "memory", "cc");
+}
+
 Mutex::Mutex() : m_iLock(0), m_iID(FREE_MUTEX)
 {
 }

@@ -278,7 +278,7 @@ void MemManager::FreeKernelProcessStackBlock(int id)
 	m_bAllocationMapForKernelProcessStackBlock[id] = false ;
 }
 
-Result MemManager::MarkPageAsAllocated(unsigned uiPageNumber)
+ReturnCode MemManager::MarkPageAsAllocated(unsigned uiPageNumber)
 {
   ProcessSwitchLock pLock;
 	unsigned uiPageMapIndex = uiPageNumber / 32 ;
@@ -435,7 +435,7 @@ void MemManager::DeAllocatePageForKernel(unsigned uiPageNumber)
 extern __volatile__ int SYS_CALL_ID;
 extern __volatile__ int KERNEL_DMM_ON;
 
-Result MemManager::AllocatePage(int iProcessID, unsigned uiFaultyAddress)
+ReturnCode MemManager::AllocatePage(int iProcessID, unsigned uiFaultyAddress)
 {
 	unsigned uiFreePageNo, uiVirtualPageNo ;
 	unsigned uiPDEAddress, uiPTEAddress, uiPTEFreePage ;
@@ -512,7 +512,7 @@ Result MemManager::AllocatePage(int iProcessID, unsigned uiFaultyAddress)
 	return Success;
 }
 
-Result MemManager::DeAllocatePage(const unsigned uiAddress)
+ReturnCode MemManager::DeAllocatePage(const unsigned uiAddress)
 {
 	unsigned uiFreePageNo, uiVirtualPageNo ;
 

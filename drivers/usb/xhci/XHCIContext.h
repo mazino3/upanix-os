@@ -123,6 +123,11 @@ class SlotContext
       return _context4 & 0xFF;
     }
 
+    uint32_t DevSpeed()
+    {
+      return (_context1 >> 20) & 0xF;
+    }
+
     void DebugPrint()
     {
       printf("\n Slot C1: %x, C2: %x, C3: %x, C4: %x", _context1, _context2, _context3, _context4);
@@ -159,7 +164,7 @@ class EndPointContext
       //Max packet size
       _context2 = (_context2 & ~(0xFFFF << 16)) | (maxPacketSize << 16);
       //Max Burst Size = 0
-      _context2 = _context2 & ~(0xFF << 8);
+      SetMaxBurstSize(0);
       //Error count = 3
       _context2 = (_context2 & ~(0x7)) | 0x6;
       //Average TRB Len
@@ -169,6 +174,21 @@ class EndPointContext
     }
 
     void Init(uint32_t dqPtr, USBStandardEndPt::DirectionTypes dir, USBStandardEndPt::Types type, int32_t maxPacketSize, byte interval);
+
+    void SetMaxBurstSize(uint32_t maxBurstSize)
+    {
+      _context2 = (_context2 & ~(0xFF << 8)) | (maxBurstSize && 0xFF << 8);
+    }
+
+    void SetMaxESITPayload(uint32_t maxESITPayload)
+    {
+      _context3 = (_context3 & ~(0xFFFF << 16)) | ((maxESITPayload & 0xFFFF) << 16);
+    }
+
+    void SetInterval(uint32_t interval)
+    {
+      _context1 = (_context1 & ~(0xFF << 16)) | ((interval & 0xFF) << 16);
+    }
 
     uint32_t MaxPacketSize() const
     {
@@ -291,7 +311,7 @@ class EndPoint
 {
   public:
     uint32_t Id() const { return _id; }
-
+    void UpdateDeEnQPtr(uint32_t dnqPtr) { _tRing->UpdateDeEnQPtr(dnqPtr); }
   protected:
     EndPoint(uint32_t maxPacketSize);
     virtual ~EndPoint();
@@ -322,28 +342,34 @@ class BulkInEndPoint : public DataEndPoint
 {
   public:
     BulkInEndPoint(InputContext&, const USBStandardEndPt&);
-    uint32_t SetupTransfer(uint32_t bufferAddress, uint32_t len);
+    TRB::Result SetupTransfer(uint32_t bufferAddress, uint32_t len);
 };
 
 class BulkOutEndPoint : public DataEndPoint
 {
   public:
     BulkOutEndPoint(InputContext&, const USBStandardEndPt&);
-    uint32_t SetupTransfer(uint32_t bufferAddress, uint32_t len);
+    TRB::Result SetupTransfer(uint32_t bufferAddress, uint32_t len);
 };
 
-class InterruptInEndPoint : public DataEndPoint
+class InterruptEndPoint : public DataEndPoint
+{
+protected:
+  InterruptEndPoint(InputContext& inContext, const USBStandardEndPt& endpoint);
+};
+
+class InterruptInEndPoint : public InterruptEndPoint
 {
   public:
     InterruptInEndPoint(InputContext&, const USBStandardEndPt&);
-    uint32_t SetupTransfer(uint32_t bufferAddress, uint32_t len);
+    TRB::Result SetupTransfer(uint32_t bufferAddress, uint32_t len);
     uint32_t Interval() const { return _interval; }
 
   private:
     uint32_t _interval;
 };
 
-class InterruptOutEndPoint : public DataEndPoint
+class InterruptOutEndPoint : public InterruptEndPoint
 {
   public:
     InterruptOutEndPoint(InputContext&, const USBStandardEndPt&);

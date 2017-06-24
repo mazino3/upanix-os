@@ -18,7 +18,7 @@
 #ifndef _RETURN_HANDLER_H_
 #define _RETURN_HANDLER_H_
 
-enum Result
+enum ReturnCode
 {
 	Success,
 	Failure,

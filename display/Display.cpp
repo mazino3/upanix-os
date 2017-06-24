@@ -380,7 +380,7 @@ void Display::nMessage(const __volatile__ char* message, int len, const Attribut
 		Character(message[i], attr);
 }
 
-void Display::LoadMessage(const char* loadMessage, Result result)
+void Display::LoadMessage(const char* loadMessage, ReturnCode result)
 {
 	byte width = 50;
 	unsigned int i;
