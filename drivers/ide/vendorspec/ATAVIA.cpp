@@ -44,28 +44,24 @@ static VIAIDE VIAIDEList[] = {
 
 /*************************************** Static Functions **************************************************/
 
-static byte ATAVIA_SetPortSpeed(VIAIDE* pVIAIDE, PCIEntry* pPCIEntry, ATAPort* pPort, ATATiming* pTiming)
+static void ATAVIA_SetPortSpeed(VIAIDE* pVIAIDE, PCIEntry* pPCIEntry, ATAPort* pPort, ATATiming* pTiming)
 {
 	unsigned uiDriveNumber = pPort->uiChannel * pPort->pController->uiPortsPerChannel + pPort->uiPort ;
 	byte bTemp ;
 
 	if(!(pVIAIDE->usFlags & VIA_BAD_AST))
 	{
-		RETURN_X_IF_NOT(pPCIEntry->ReadPCIConfig(VIA_ADDRESS_SETUP, 1, &bTemp), Success, ATAVIA_FAILURE);
+    pPCIEntry->ReadPCIConfig(VIA_ADDRESS_SETUP, 1, &bTemp);
 
 		bTemp = (bTemp & ~(3 << ((3 - uiDriveNumber) << 1))) |
 				((FIT(pTiming->usSetup, 1, 4) - 1) << ((3 - uiDriveNumber) << 1)) ;
 
-		RETURN_X_IF_NOT(pPCIEntry->WritePCIConfig(VIA_ADDRESS_SETUP, 1, bTemp), Success, ATAVIA_FAILURE);
+    pPCIEntry->WritePCIConfig(VIA_ADDRESS_SETUP, 1, bTemp);
 	}
 
-	RETURN_X_IF_NOT(pPCIEntry->WritePCIConfig(VIA_8BIT_TIMING + (1 - (uiDriveNumber >> 1)), 1, 
-			((FIT(pTiming->usAct8b, 1, 16) - 1) << 4) | 
-			(FIT(pTiming->usRec8b, 1, 16) - 1)), Success, ATAVIA_FAILURE) ;
+  pPCIEntry->WritePCIConfig(VIA_8BIT_TIMING + (1 - (uiDriveNumber >> 1)), 1, ((FIT(pTiming->usAct8b, 1, 16) - 1) << 4) | (FIT(pTiming->usRec8b, 1, 16) - 1));
 
-	RETURN_X_IF_NOT(pPCIEntry->WritePCIConfig(VIA_DRIVE_TIMING + (3 - uiDriveNumber), 1, 
-			((FIT(pTiming->usAct, 1, 16) - 1) << 4) | 
-			(FIT(pTiming->usRec, 1, 16) - 1)), Success, ATAVIA_FAILURE) ;
+  pPCIEntry->WritePCIConfig(VIA_DRIVE_TIMING + (3 - uiDriveNumber), 1, ((FIT(pTiming->usAct, 1, 16) - 1) << 4) | (FIT(pTiming->usRec, 1, 16) - 1));
 
 	switch(pVIAIDE->usFlags & VIA_UDMA)
 	{
@@ -86,17 +82,15 @@ static byte ATAVIA_SetPortSpeed(VIAIDE* pVIAIDE, PCIEntry* pPCIEntry, ATAPort* p
 			break ;
 
 		default:
-			return ATAVIA_SUCCESS ;
+      return;
 	}
 
-	RETURN_X_IF_NOT(pPCIEntry->WritePCIConfig(VIA_UDMA_TIMING + (3 - uiDriveNumber), 1, bTemp), Success, ATAVIA_FAILURE) ;
-
-	return ATAVIA_SUCCESS ;
+  pPCIEntry->WritePCIConfig(VIA_UDMA_TIMING + (3 - uiDriveNumber), 1, bTemp);
 }
 
 /***************************************************************************************************/
 
-byte ATAVIA_PortConfigure(ATAPort* pPort)
+void ATAVIA_PortConfigure(ATAPort* pPort)
 {
 	ATAController* pController = pPort->pController ;
 	ATAPort* pFirstPort = NULL ;
@@ -109,9 +103,8 @@ byte ATAVIA_PortConfigure(ATAPort* pPort)
 	VIAIDE* pVIAIDE = pVIAIDEInfo->pVIAIDE ;
 
 	// Check Configuration
-	if(pPort->uiPort == 0 && !(pPort->uiDevice >= ATA_DEV_ATA &&
-		pController->pPort[pPort->uiChannel * pController->uiPortsPerChannel + 1]->uiDevice < ATA_DEV_ATA))
-		return ATAVIA_SUCCESS ;
+  if(pPort->uiPort == 0 && !(pPort->uiDevice >= ATA_DEV_ATA && pController->pPort[pPort->uiChannel * pController->uiPortsPerChannel + 1]->uiDevice < ATA_DEV_ATA))
+    return;
 
 	if(pPort->uiPort == 0)
 		pFirstPort = pPort ;
@@ -119,7 +112,7 @@ byte ATAVIA_PortConfigure(ATAPort* pPort)
 	if(pPort->uiPort == 1)
 	{
 		if(pPort->uiDevice < ATA_DEV_ATA)
-			return ATAVIA_SUCCESS ;
+      return;
 
 		if(pController->pPort[pPort->uiChannel * pController->uiPortsPerChannel]->uiDevice < ATA_DEV_ATA)
 		{
@@ -158,32 +151,21 @@ byte ATAVIA_PortConfigure(ATAPort* pPort)
 	}
 
 	// Calculate Timing of First Port
-	RETURN_X_IF_NOT(ATATimingManager_Compute(pFirstPort, pFirstPort->uiCurrentSpeed, &ataTimingResult1, 
-			uiTiming, uiUDMATiming), ATATimingManager_SUCCESS, ATAVIA_FAILURE) ;
+  ATATimingManager_Compute(pFirstPort, pFirstPort->uiCurrentSpeed, &ataTimingResult1, uiTiming, uiUDMATiming);
 
 	// Calculate Timing of Second Port and Merge Both
 	if(pSecondPort)
 	{
-		RETURN_X_IF_NOT(ATATimingManager_Compute(pSecondPort, pSecondPort->uiCurrentSpeed, &ataTimingResult2, 
-				uiTiming, uiUDMATiming), ATATimingManager_SUCCESS, ATAVIA_FAILURE) ;
-		
+    ATATimingManager_Compute(pSecondPort, pSecondPort->uiCurrentSpeed, &ataTimingResult2, uiTiming, uiUDMATiming);
 		ATATimingManager_Merge(&ataTimingResult2, &ataTimingResult1, &ataTimingResult1, ATA_TIMING_8BIT) ;
 	}
 
 	// Set Speed
 	if(pSecondPort)
-	{
-		RETURN_X_IF_NOT(ATAVIA_SetPortSpeed(pVIAIDE, &pVIAIDEInfo->pciEntry, pSecondPort, &ataTimingResult2),
-			ATAVIA_SUCCESS, ATAVIA_FAILURE) ;
-	}
+    ATAVIA_SetPortSpeed(pVIAIDE, &pVIAIDEInfo->pciEntry, pSecondPort, &ataTimingResult2);
 
 	if(pFirstPort)
-	{
-		RETURN_X_IF_NOT(ATAVIA_SetPortSpeed(pVIAIDE, &pVIAIDEInfo->pciEntry, pFirstPort, &ataTimingResult1),
-			ATAVIA_SUCCESS, ATAVIA_FAILURE) ;
-	}
-
-	return ATAVIA_SUCCESS ;
+    ATAVIA_SetPortSpeed(pVIAIDE, &pVIAIDEInfo->pciEntry, pFirstPort, &ataTimingResult1);
 }
 
 void ATAVIA_InitController(const PCIEntry* pPCIEntry, ATAController* pController)
@@ -234,13 +216,11 @@ void ATAVIA_InitController(const PCIEntry* pPCIEntry, ATAController* pController
 
 	if(bIDEFound == false)
 	{
-		KC::MDisplay().Message("\n\tUnKnown VIA ATA Controller Detected", Display::WHITE_ON_BLACK()) ;
+    printf("\nUnKnown VIA ATA Controller Detected");
 		return ;
 	}
 
-	KC::MDisplay().Message("\n\tVIA ", Display::WHITE_ON_BLACK()) ;
-	KC::MDisplay().Message(pVIAIDE->szName, Display::WHITE_ON_BLACK()) ;
-	KC::MDisplay().Message(" Controller Detected", Display::WHITE_ON_BLACK()) ;
+  printf("\nVIA %s Controller Detected", pVIAIDE->szName);
 
 	// Check Cable Type
 	unsigned uiUDMATiming, ui80W = 0 ;
@@ -248,17 +228,9 @@ void ATAVIA_InitController(const PCIEntry* pPCIEntry, ATAController* pController
 	switch(pVIAIDE->usFlags & VIA_UDMA)
 	{
 		case VIA_UDMA_66:
-			if(pIDE->ReadPCIConfig(VIA_UDMA_TIMING, 4, &uiUDMATiming) != Success)
-			{
-				KC::MDisplay().Message("\n\tFailed to Init VIA Controller", Display::WHITE_ON_BLACK()) ;
-				return ;
-			}
+      pIDE->ReadPCIConfig(VIA_UDMA_TIMING, 4, &uiUDMATiming);
 
-			if(pIDE->WritePCIConfig(VIA_UDMA_TIMING, 4, uiUDMATiming | 0x80008) != Success)
-			{
-				KC::MDisplay().Message("\n\tFailed to Init VIA Controller", Display::WHITE_ON_BLACK()) ;
-				return ;
-			}
+      pIDE->WritePCIConfig(VIA_UDMA_TIMING, 4, uiUDMATiming | 0x80008);
 
 			for(i = 24; i >= 0; i -= 8)
 			{
@@ -271,11 +243,7 @@ void ATAVIA_InitController(const PCIEntry* pPCIEntry, ATAController* pController
 			break ;
 
 		case VIA_UDMA_100:
-			if(pIDE->ReadPCIConfig(VIA_UDMA_TIMING, 4, &uiUDMATiming) != Success)
-			{
-				KC::MDisplay().Message("\n\tFailed to Init VIA Controller", Display::WHITE_ON_BLACK()) ;
-				return ;
-			}
+      pIDE->ReadPCIConfig(VIA_UDMA_TIMING, 4, &uiUDMATiming);
 
 			for(i = 24; i >= 0; i -= 8)
 			{
@@ -288,11 +256,7 @@ void ATAVIA_InitController(const PCIEntry* pPCIEntry, ATAController* pController
 			break ;
 
 		case VIA_UDMA_133:
-			if(pIDE->ReadPCIConfig(VIA_UDMA_TIMING, 4, &uiUDMATiming) != Success)
-			{
-				KC::MDisplay().Message("\n\tFailed to Init VIA Controller", Display::WHITE_ON_BLACK()) ;
-				return ;
-			}
+      pIDE->ReadPCIConfig(VIA_UDMA_TIMING, 4, &uiUDMATiming);
 
 			for(i = 24; i >= 0; i -= 8)
 			{
@@ -305,41 +269,21 @@ void ATAVIA_InitController(const PCIEntry* pPCIEntry, ATAController* pController
 			break ;
 	}
 				
-	pController->pPort[0]->uiCable = pController->pPort[1]->uiCable =
-		(ui80W & 0x01) ? ATA_CABLE_PATA80 : ATA_CABLE_PATA40 ;
+  pController->pPort[0]->uiCable = pController->pPort[1]->uiCable = (ui80W & 0x01) ? ATA_CABLE_PATA80 : ATA_CABLE_PATA40 ;
 
-	pController->pPort[2]->uiCable = pController->pPort[3]->uiCable =
-		(ui80W & 0x02) ? ATA_CABLE_PATA80 : ATA_CABLE_PATA40 ;
+  pController->pPort[2]->uiCable = pController->pPort[3]->uiCable = (ui80W & 0x02) ? ATA_CABLE_PATA80 : ATA_CABLE_PATA40 ;
 
 	if(pVIAIDE->usFlags & VIA_BAD_CLK66)
 	{
-		if(pIDE->ReadPCIConfig(VIA_UDMA_TIMING, 4, &uiUDMATiming) != Success)
-		{
-			KC::MDisplay().Message("\n\tFailed to Init VIA Controller", Display::WHITE_ON_BLACK()) ;
-			return ;
-		}
+    pIDE->ReadPCIConfig(VIA_UDMA_TIMING, 4, &uiUDMATiming);
 
-		if(pIDE->WritePCIConfig(VIA_UDMA_TIMING, 4, uiUDMATiming & ~0x80008) != Success)
-		{
-			KC::MDisplay().Message("\n\tFailed to Init VIA Controller", Display::WHITE_ON_BLACK()) ;
-			return ;
-		}
+    pIDE->WritePCIConfig(VIA_UDMA_TIMING, 4, uiUDMATiming & ~0x80008);
 	}
 	
 	// Check if Interfaces are Enabled
 	byte bIDEEnabled, bFIFOConfig ;
-
-	if(pIDE->ReadPCIConfig(VIA_IDE_ENABLE, 1, &bIDEEnabled) != Success)
-	{
-		KC::MDisplay().Message("\n\tFailed to Init VIA Controller", Display::WHITE_ON_BLACK()) ;
-		return ;
-	}
-
-	if(pIDE->ReadPCIConfig(VIA_FIFO_CONFIG, 1, &bFIFOConfig) != Success)
-	{
-		KC::MDisplay().Message("\n\tFailed to Init VIA Controller", Display::WHITE_ON_BLACK()) ;
-		return ;
-	}
+  pIDE->ReadPCIConfig(VIA_IDE_ENABLE, 1, &bIDEEnabled);
+  pIDE->ReadPCIConfig(VIA_FIFO_CONFIG, 1, &bFIFOConfig);
 
 	if(pVIAIDE->usFlags & VIA_BAD_PREQ)
 		bFIFOConfig &= 0x7F ;
@@ -364,17 +308,12 @@ void ATAVIA_InitController(const PCIEntry* pPCIEntry, ATAController* pController
 		}
 	}	
 
-	if(pIDE->WritePCIConfig(VIA_FIFO_CONFIG, 1, bFIFOConfig) != Success)
-	{
-		KC::MDisplay().Message("\n\tFailed to Init VIA Controller", Display::WHITE_ON_BLACK()) ;
-		return ;
-	}
+  pIDE->WritePCIConfig(VIA_FIFO_CONFIG, 1, bFIFOConfig);
 
 	// Add Speeds
 	VIAIDEInfo* pVIAIDEInfo = (VIAIDEInfo*)DMM_AllocateForKernel(sizeof(VIAIDEInfo)) ;
 
-	MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&pVIAIDEInfo->pciEntry, MemUtil_GetDS(), (unsigned)pPCIEntry, 
-						sizeof(PCIEntry)) ;
+  memcpy(&pVIAIDEInfo->pciEntry, pPCIEntry, sizeof(PCIEntry));
 	pVIAIDEInfo->pVIAIDE = pVIAIDE ;
 
 	for(unsigned i = 0; i < pController->uiChannels * pController->uiPortsPerChannel; i++)

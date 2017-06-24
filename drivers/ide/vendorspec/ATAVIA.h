@@ -60,7 +60,7 @@ typedef struct
 	VIAIDE* pVIAIDE ;	
 } VIAIDEInfo ;
 
-byte ATAVIA_PortConfigure(ATAPort* pPort) ;
+void ATAVIA_PortConfigure(ATAPort* pPort) ;
 void ATAVIA_InitController(const PCIEntry* pPCIEntry, ATAController* pController) ;
 
 #endif

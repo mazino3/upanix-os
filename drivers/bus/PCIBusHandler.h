@@ -217,8 +217,8 @@ class PCIEntry
 		} CardBus;
 	} BusEntity;
 
-  ReturnCode ReadPCIConfig(unsigned uiPCIEntryOffset, unsigned uiPCIEntrySize, void* pValue) const;
-  ReturnCode WritePCIConfig(unsigned uiPCIEntryOffset, unsigned uiPCIEntrySize, unsigned uiValue) const;
+  void ReadPCIConfig(unsigned uiPCIEntryOffset, unsigned uiPCIEntrySize, void* pValue) const;
+  void WritePCIConfig(unsigned uiPCIEntryOffset, unsigned uiPCIEntrySize, unsigned uiValue) const;
   unsigned GetPCIMemSize(int iAddressIndex) const;
   unsigned PCISize(unsigned uiBase, unsigned uiMask) const;
   void EnableBusMaster() const;
@@ -241,8 +241,8 @@ class PCIEntry
   const ExtendedCapability* GetExtendedCapability(uint32_t capId) const;
 
   private:
-    ReturnCode ReadNonBridgePCIHeader();
-    ReturnCode ReadBridgePCIHeader();
+    void ReadNonBridgePCIHeader();
+    void ReadBridgePCIHeader();
     upan::list<ExtendedCapability> _extendCapabilities;
 }; 
 
@@ -257,16 +257,16 @@ class PCIBusHandler
       return instance;
     }
     void Initialize();
-    ReturnCode ReadPCIConfig(unsigned uiBusNumber, unsigned uiDeviceNumber, unsigned uiFunction, 
-                unsigned uiPCIEntryOffset, unsigned uiPCIEntrySize, void* pValue);
-    ReturnCode WritePCIConfig(unsigned uiBusNumber, unsigned uiDeviceNumber, unsigned uiFunction, 
-            unsigned uiPCIEntryOffset, unsigned uiPCIEntrySize, unsigned uiValue);
+    void ReadPCIConfig(unsigned uiBusNumber, unsigned uiDeviceNumber, unsigned uiFunction,
+                       unsigned uiPCIEntryOffset, unsigned uiPCIEntrySize, void* pValue);
+    void WritePCIConfig(unsigned uiBusNumber, unsigned uiDeviceNumber, unsigned uiFunction,
+                        unsigned uiPCIEntryOffset, unsigned uiPCIEntrySize, unsigned uiValue);
     const upan::list<PCIEntry*>& PCIEntries() const { return _pciEntries; }
     const upan::list<uint8_t>& IrqABCD() const { return _irqABCD; }
     const upan::list<uint8_t>& IrqEFGH() const { return _irqEFGH; }
   private:
-    ReturnCode Find();
-    ReturnCode ScanBus(unsigned uiBusNumber);
+    void Find();
+    void ScanBus(unsigned uiBusNumber);
 
     PCI_TYPE _type;
     unsigned _uiNoOfPCIBuses;

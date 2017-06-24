@@ -82,22 +82,19 @@ static void ATAIntel_PortConfigurePIO(ATAPort *pPort)
 	unsigned short usMasterData ;
 	byte bSlaveData ;
 
-	if(pPCIEntry->ReadPCIConfig(uiMasterPort, 2, &usMasterData) != Success)
-		return ;
+  pPCIEntry->ReadPCIConfig(uiMasterPort, 2, &usMasterData);
 
 	if(bIsSlave)
 	{
 		usMasterData |= 0x4000 ;
 
-	if(iPIO > 1) // Enable PPE, IE and TIME
-		usMasterData |= 0x0070 ;
+    if(iPIO > 1) // Enable PPE, IE and TIME
+      usMasterData |= 0x0070 ;
 
-	if(pPCIEntry->ReadPCIConfig(uiSlavePort, 1, &bSlaveData) != Success)
-		return ;
+    pPCIEntry->ReadPCIConfig(uiSlavePort, 1, &bSlaveData);
 
-	bSlaveData = bSlaveData & ( pPort->uiChannel ? 0x0F : 0xF0) ;
-	bSlaveData = bSlaveData | ( ( ( bTimings[iPIO][0] << 2 ) | 
-								bTimings[iPIO][1] ) << ( pPort->uiChannel ? 4 : 0 ) ) ;
+    bSlaveData = bSlaveData & ( pPort->uiChannel ? 0x0F : 0xF0) ;
+    bSlaveData = bSlaveData | ( ( ( bTimings[iPIO][0] << 2 ) | bTimings[iPIO][1] ) << ( pPort->uiChannel ? 4 : 0 ) ) ;
 	}
 	else
 	{
@@ -133,17 +130,12 @@ byte ATAIntel_PortConfigure(ATAPort* pPort)
 	unsigned short usReg4042, usReg44, usReg48, usReg4A, usReg54 ;
 	byte bReg55 ;
 
-	RETURN_X_IF_NOT(pPCIEntry->ReadPCIConfig(bMaSlave, 2, &usReg4042), Success, ATAIntel_FAILURE) ;
-
-	RETURN_X_IF_NOT(pPCIEntry->ReadPCIConfig(0x44, 2, &usReg44), Success, ATAIntel_FAILURE) ;
-
-	RETURN_X_IF_NOT(pPCIEntry->ReadPCIConfig(0x48, 2, &usReg48), Success, ATAIntel_FAILURE) ;
-	
-	RETURN_X_IF_NOT(pPCIEntry->ReadPCIConfig(0x4A, 2, &usReg4A), Success, ATAIntel_FAILURE) ;
-
-	RETURN_X_IF_NOT(pPCIEntry->ReadPCIConfig(0x54, 2, &usReg54), Success, ATAIntel_FAILURE) ;
-
-	RETURN_X_IF_NOT(pPCIEntry->ReadPCIConfig(0x55, 1, &bReg55), Success, ATAIntel_FAILURE) ;
+  pPCIEntry->ReadPCIConfig(bMaSlave, 2, &usReg4042);
+  pPCIEntry->ReadPCIConfig(0x44, 2, &usReg44);
+  pPCIEntry->ReadPCIConfig(0x48, 2, &usReg48);
+  pPCIEntry->ReadPCIConfig(0x4A, 2, &usReg4A);
+  pPCIEntry->ReadPCIConfig(0x54, 2, &usReg54);
+  pPCIEntry->ReadPCIConfig(0x55, 1, &bReg55);
 
 	switch(uiCurrentSpeed)
 	{
@@ -180,59 +172,42 @@ byte ATAIntel_PortConfigure(ATAPort* pPort)
 	if(uiCurrentSpeed >= ATA_SPEED_UDMA_0)
 	{
 		if(! ( usReg48 & uiFlagU) )
-		{
-			RETURN_X_IF_NOT(pPCIEntry->WritePCIConfig(0x48, 2, usReg48 | uiFlagU), Success, ATAIntel_FAILURE) ;
-		}
+      pPCIEntry->WritePCIConfig(0x48, 2, usReg48 | uiFlagU);
 
 		if(uiCurrentSpeed == ATA_SPEED_UDMA_5)
-		{
-			RETURN_X_IF_NOT(pPCIEntry->WritePCIConfig(0x55, 1, (byte) bReg55 | uiFlagW), Success, ATAIntel_FAILURE) ;
-		}
+      pPCIEntry->WritePCIConfig(0x55, 1, (byte) bReg55 | uiFlagW);
 		else
-		{
-			RETURN_X_IF_NOT(pPCIEntry->WritePCIConfig(0x55, 1, (byte) bReg55 & ~uiFlagW), Success, ATAIntel_FAILURE) ;
-		}
+      pPCIEntry->WritePCIConfig(0x55, 1, (byte) bReg55 & ~uiFlagW);
 
 		if(! ( usReg4A & uiSpeedU) )
 		{
-			RETURN_X_IF_NOT(pPCIEntry->WritePCIConfig(0x4A, 2, usReg4A & ~uiSpeedA), Success, ATAIntel_FAILURE) ;
-
-			RETURN_X_IF_NOT(pPCIEntry->WritePCIConfig(0x4A, 2, usReg4A | uiSpeedU), Success, ATAIntel_FAILURE) ;
+      pPCIEntry->WritePCIConfig(0x4A, 2, usReg4A & ~uiSpeedA);
+      pPCIEntry->WritePCIConfig(0x4A, 2, usReg4A | uiSpeedU);
 		}
 
 		if(uiCurrentSpeed > ATA_SPEED_UDMA_2)
 		{
 			if(! ( usReg54 & uiFlagV) )
-			{
-				RETURN_X_IF_NOT(pPCIEntry->WritePCIConfig(0x54, 2, usReg54 | uiFlagV), Success, ATAIntel_FAILURE) ;
-			}
+        pPCIEntry->WritePCIConfig(0x54, 2, usReg54 | uiFlagV);
 		}
 		else
 		{
-			RETURN_X_IF_NOT(pPCIEntry->WritePCIConfig(0x54, 2, usReg54 & ~uiFlagV), Success, ATAIntel_FAILURE) ;
+      pPCIEntry->WritePCIConfig(0x54, 2, usReg54 & ~uiFlagV);
 		}
 	}
 	else
 	{
 		if( usReg48 & uiFlagU)
-		{
-			RETURN_X_IF_NOT(pPCIEntry->WritePCIConfig(0x48, 2, usReg48 & ~uiFlagU), Success, ATAIntel_FAILURE) ;
-		}
+      pPCIEntry->WritePCIConfig(0x48, 2, usReg48 & ~uiFlagU);
 
 		if(usReg4A & uiSpeedA)
-		{
-			RETURN_X_IF_NOT(pPCIEntry->WritePCIConfig(0x4A, 2, usReg4A & ~uiSpeedA), Success, ATAIntel_FAILURE) ;
-		}
+      pPCIEntry->WritePCIConfig(0x4A, 2, usReg4A & ~uiSpeedA);
 
 		if(usReg54 & uiFlagV)
-		{
-			RETURN_X_IF_NOT(pPCIEntry->WritePCIConfig(0x54, 2, usReg54 & ~uiFlagV), Success, ATAIntel_FAILURE) ;
-		}
+      pPCIEntry->WritePCIConfig(0x54, 2, usReg54 & ~uiFlagV);
 	
 		if(bReg55 & uiFlagW)
-		{
-			RETURN_X_IF_NOT(pPCIEntry->WritePCIConfig(0x55, 2, bReg55 & ~uiFlagW), Success, ATAIntel_FAILURE) ;
-		}	
+      pPCIEntry->WritePCIConfig(0x55, 2, bReg55 & ~uiFlagW);
 	}
 
 	ATAIntel_PortConfigurePIO(pPort) ;
@@ -291,24 +266,13 @@ void ATAIntel_InitController(const PCIEntry* pPCIEntry, ATAController* pControll
 		return ;
 	}
 	
-	KC::MDisplay().Message("\n\tIntel ", Display::WHITE_ON_BLACK()) ;	
-	KC::MDisplay().Message(pIntelIDE->szName, Display::WHITE_ON_BLACK()) ;
-	KC::MDisplay().Message(" ATA Controller Detected", Display::WHITE_ON_BLACK()) ;
+  printf("\nIntel %s ATA Controller Detected", pIntelIDE->szName);
 
 	if(pIntelIDE->usFlags & INTEL_INIT)
 	{
 		unsigned uiExtra ;
-		if(pIDE->ReadPCIConfig(0x54, 4, &uiExtra) != Success)
-		{
-			KC::MDisplay().Message("\n\tFailed to Init Intel Controller", Display::WHITE_ON_BLACK()) ;
-			return ;
-		}
-
-		if(pIDE->WritePCIConfig(0x54, 4, uiExtra | 0x400) != Success)
-		{
-			KC::MDisplay().Message("\n\tFailed to Init Intel Controller", Display::WHITE_ON_BLACK()) ;
-			return ;
-		}
+    pIDE->ReadPCIConfig(0x54, 4, &uiExtra);
+    pIDE->WritePCIConfig(0x54, 4, uiExtra | 0x400);
 	}	
 
 	unsigned ui80W = 0 ;
@@ -316,17 +280,8 @@ void ATAIntel_InitController(const PCIEntry* pPCIEntry, ATAController* pControll
 	{
 		byte b54, b55 ;
 
-		if(pIDE->ReadPCIConfig(0x54, 1, &b54) != Success)
-		{
-			KC::MDisplay().Message("\n\tFailed to Init Intel Controller", Display::WHITE_ON_BLACK()) ;
-			return ;
-		}
-
-		if(pIDE->ReadPCIConfig(0x55, 1, &b55) != Success)
-		{
-			KC::MDisplay().Message("\n\tFailed to Init Intel Controller", Display::WHITE_ON_BLACK()) ;
-			return ;
-		}
+    pIDE->ReadPCIConfig(0x54, 1, &b54);
+    pIDE->ReadPCIConfig(0x55, 1, &b55);
 
 		if(b54 & 0x30)
 			ui80W |= 0x01 ;
@@ -335,14 +290,12 @@ void ATAIntel_InitController(const PCIEntry* pPCIEntry, ATAController* pControll
 			ui80W |= 0x02 ;
 	}
 
-	pController->pPort[0]->uiCable = pController->pPort[1]->uiCable = 
-		(ui80W & 0x01) ? ATA_CABLE_PATA80 : ATA_CABLE_PATA40 ;
-	pController->pPort[2]->uiCable = pController->pPort[3]->uiCable = 
-		(ui80W & 0x02) ? ATA_CABLE_PATA80 : ATA_CABLE_PATA40 ;
+  pController->pPort[0]->uiCable = pController->pPort[1]->uiCable =  (ui80W & 0x01) ? ATA_CABLE_PATA80 : ATA_CABLE_PATA40 ;
+  pController->pPort[2]->uiCable = pController->pPort[3]->uiCable = (ui80W & 0x02) ? ATA_CABLE_PATA80 : ATA_CABLE_PATA40 ;
 
 	IntelIDEInfo* pIntelIDEInfo = (IntelIDEInfo*)DMM_AllocateForKernel(sizeof(IntelIDEInfo)) ;
 
-	MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)pPCIEntry, MemUtil_GetDS(), (unsigned)&pIntelIDEInfo->pciEntry, sizeof(PCIEntry)) ;
+  memcpy(&pIntelIDEInfo->pciEntry, pPCIEntry, sizeof(PCIEntry));
 	
 	unsigned i ;
 	for(i = 0; i < pController->uiChannels * pController->uiPortsPerChannel; i++)

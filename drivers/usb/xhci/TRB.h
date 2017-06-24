@@ -228,7 +228,7 @@ class EventTRB : public TRB
         throw upan::exception(XLOC, "Command did not complete successfully - Completion Code: %u", CompletionCode());
     }
 
-    void ValidateTransferResult()
+    void ValidateTransferResult() const
     {
       if(Type() != 32)
         throw upan::exception(XLOC, "Got invalid Event TRB: %d", Type());

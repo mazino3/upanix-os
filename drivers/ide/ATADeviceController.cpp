@@ -36,7 +36,6 @@
 static unsigned ATADeviceController_uiHDDDeviceID ;
 static unsigned ATADeviceController_uiCDDeviceID ;
 
-static bool ATADeviceController_bInitStatus = false ;
 static const IRQ* HD_PRIMARY_IRQ ;
 static const IRQ* HD_SECONDARY_IRQ ;
 
@@ -164,31 +163,21 @@ static ATAPort* ATADeviceController_AllocatePort(ATAController* pController)
 	return pPort ;
 }
 
-static byte ATADeviceController_EnableDisabledController(const PCIEntry* pPCIEntry)
+static void ATADeviceController_EnableDisabledController(const PCIEntry* pPCIEntry)
 {
 	unsigned short usCommand ;
-
-	RETURN_X_IF_NOT(
-	pPCIEntry->ReadPCIConfig(PCI_COMMAND, 2, &usCommand), Success, ATADeviceController_FAILURE) ;
-
+  pPCIEntry->ReadPCIConfig(PCI_COMMAND, 2, &usCommand);
 	if((usCommand & (PCI_COMMAND_IO | PCI_COMMAND_MASTER)) != (PCI_COMMAND_IO | PCI_COMMAND_MASTER))
 	{
-		RETURN_X_IF_NOT(pPCIEntry->WritePCIConfig(PCI_COMMAND, 2, (usCommand | PCI_COMMAND_IO | PCI_COMMAND_MASTER)), Success, ATADeviceController_FAILURE) ;
-
-		RETURN_X_IF_NOT(pPCIEntry->ReadPCIConfig(PCI_COMMAND, 2, &usCommand), Success, ATADeviceController_FAILURE) ;
-
+    pPCIEntry->WritePCIConfig(PCI_COMMAND, 2, (usCommand | PCI_COMMAND_IO | PCI_COMMAND_MASTER));
+    pPCIEntry->ReadPCIConfig(PCI_COMMAND, 2, &usCommand);
 		if((usCommand & (PCI_COMMAND_IO | PCI_COMMAND_MASTER)) != (PCI_COMMAND_IO | PCI_COMMAND_MASTER))
-		{
-			KC::MDisplay().Message("\n\tFailed	to Enable Controller", ' ') ;
-			return ATADeviceController_ERR_ENABLE_CONTROLLER ;
-		}
-		KC::MDisplay().Message("\n\tController Enabled", Display::WHITE_ON_BLACK()) ;
+      throw upan::exception(XLOC, "\nFailed	to Enable Controller");
+    printf("\nController Enabled");
 	}
-
-	return ATADeviceController_SUCCESS ;
 }
 
-static byte ATADeviceController_CheckControllerMode(const PCIEntry* pPCIEntry, 
+static void ATADeviceController_CheckControllerMode(const PCIEntry* pPCIEntry,
 					VendorSpecificATAController_Initialize* pInitFunc, ATAController** pController)
 {
 	unsigned uiPrimaryCommand, uiSecondaryCommand ;
@@ -202,8 +191,7 @@ static byte ATADeviceController_CheckControllerMode(const PCIEntry* pPCIEntry,
 
 	byte bInterface ;
 
-	RETURN_X_IF_NOT(
-	pPCIEntry->ReadPCIConfig(PCI_INTERFACE, 1, &bInterface), Success, ATADeviceController_FAILURE) ;
+  pPCIEntry->ReadPCIConfig(PCI_INTERFACE, 1, &bInterface);
 	
 	bNativeMode = false ;
 	bDMAPossible = true ;
@@ -211,20 +199,16 @@ static byte ATADeviceController_CheckControllerMode(const PCIEntry* pPCIEntry,
 
 	if((bInterface & 0x05) == 0x00)
 	{
-		KC::MDisplay().Message("\n\tController is in Legacy Mode", Display::WHITE_ON_BLACK()) ;
+    printf("\nController is in Legacy Mode");
 
 		if(ATADeviceController_bLegacyControllerFound == true)
 		{
-			KC::MDisplay().Message("\n\tAlready a Controller is in Legacy Mode... \n\tTrying to Switch to Native Mode",
-								Display::WHITE_ON_BLACK()) ;
+      printf("\nAlready a Controller is in Legacy Mode... Trying to Switch to Native Mode");
 
 			if((bInterface & 0x0A) != 0x0A)
-			{
-				KC::MDisplay().Message("\n\tSwitch to Native Mode Failed...", Display::WHITE_ON_BLACK()) ;
-				return ATADeviceController_ERR_SWITCH_NATIVE_MODE ;
-			}
+        throw upan::exception(XLOC, "Switch to Native Mode Failed...");
 
-			RETURN_X_IF_NOT(pPCIEntry->WritePCIConfig(PCI_INTERFACE, 1, (bInterface | 0x05)), Success, ATADeviceController_FAILURE) ;
+      pPCIEntry->WritePCIConfig(PCI_INTERFACE, 1, (bInterface | 0x05));
 
 			bNativeMode = true ;
 		}
@@ -240,13 +224,12 @@ static byte ATADeviceController_CheckControllerMode(const PCIEntry* pPCIEntry,
 
 			uiPrimaryDMA = uiSecondaryDMA = 0 ;
 
-			RETURN_X_IF_NOT(
-			pPCIEntry->ReadPCIConfig(PCI_BASE_REGISTERS + 16, 4, &uiPrimaryDMA), Success, ATADeviceController_FAILURE) ;
+      pPCIEntry->ReadPCIConfig(PCI_BASE_REGISTERS + 16, 4, &uiPrimaryDMA);
 	
 			if(!((uiPrimaryDMA & 0x01) && (uiPrimaryDMA & PCI_ADDRESS_IO_MASK) ))
 			{
-				KC::MDisplay().Message("\n\tDMA Registers in MMIO Mode or Not Present", Display::WHITE_ON_BLACK()) ;
-				KC::MDisplay().Message("\n\tDisabling DMA...", Display::WHITE_ON_BLACK()) ;
+        printf("\nDMA Registers in MMIO Mode or Not Present");
+        printf("\nDisabling DMA...");
 				bDMAPossible = false ;
 				uiPrimaryDMA = 0 ;
 			}
@@ -266,44 +249,39 @@ static byte ATADeviceController_CheckControllerMode(const PCIEntry* pPCIEntry,
 
 	if(bNativeMode == true)
 	{
-		RETURN_X_IF_NOT(
-		pPCIEntry->ReadPCIConfig(PCI_BASE_REGISTERS + 0, 4, &uiPrimaryCommand), Success, ATADeviceController_FAILURE) ;
+    pPCIEntry->ReadPCIConfig(PCI_BASE_REGISTERS + 0, 4, &uiPrimaryCommand);
 
-		RETURN_X_IF_NOT(
-		pPCIEntry->ReadPCIConfig(PCI_BASE_REGISTERS + 4, 4, &uiPrimaryControl), Success, ATADeviceController_FAILURE) ;
+    pPCIEntry->ReadPCIConfig(PCI_BASE_REGISTERS + 4, 4, &uiPrimaryControl);
 
-		RETURN_X_IF_NOT(
-		pPCIEntry->ReadPCIConfig(PCI_BASE_REGISTERS + 8, 4, &uiSecondaryCommand), Success, ATADeviceController_FAILURE) ;
+    pPCIEntry->ReadPCIConfig(PCI_BASE_REGISTERS + 8, 4, &uiSecondaryCommand);
 
-		RETURN_X_IF_NOT(
-		pPCIEntry->ReadPCIConfig(PCI_BASE_REGISTERS + 12, 4, &uiSecondaryControl), Success, ATADeviceController_FAILURE) ;
+    pPCIEntry->ReadPCIConfig(PCI_BASE_REGISTERS + 12, 4, &uiSecondaryControl);
 
-		RETURN_X_IF_NOT(
-		pPCIEntry->ReadPCIConfig(PCI_INTERRUPT_LINE, 1, &bPrimaryIRQ), Success, ATADeviceController_FAILURE) ;
+    pPCIEntry->ReadPCIConfig(PCI_INTERRUPT_LINE, 1, &bPrimaryIRQ);
 		bSecondaryIRQ = bPrimaryIRQ;
 		
 		unsigned uiMask ;
 		if(!(uiPrimaryCommand & 0x01))
 		{
-			KC::MDisplay().Message("\n\tController uses MMIO registers", Display::WHITE_ON_BLACK()) ;
+      printf("\nController uses MMIO registers");
 			bMMIO = true ;
 			uiMask = PCI_ADDRESS_MEMORY_32_MASK ;
 		}
 		else
 		{
-			KC::MDisplay().Message("\n\tController uses PIO registers", Display::WHITE_ON_BLACK()) ;
+      printf("\nController uses PIO registers");
 			uiMask = PCI_ADDRESS_IO_MASK ;
 		}
 
 		if(bPrimaryIRQ != 14)
 		{
-			KC::MDisplay().Message("\n\tPrimary IRQ != 14. Disabling DMA", Display::WHITE_ON_BLACK()) ;
+      printf("Primary IRQ != 14. Disabling DMA");
 			bDMAPossible = false ;
 		}
 
 		if(bPrimaryIRQ < 5 || bPrimaryIRQ > 24 || bSecondaryIRQ < 5 || bSecondaryIRQ > 24)
 		{
-			KC::MDisplay().Message("\n\tInvalid IRQs. Disabling DMA", Display::WHITE_ON_BLACK()) ;
+      printf("\nInvalid IRQs. Disabling DMA");
 			bDMAPossible = false ;
 		}
 
@@ -314,12 +292,12 @@ static byte ATADeviceController_CheckControllerMode(const PCIEntry* pPCIEntry,
 
 		uiPrimaryDMA = uiSecondaryDMA = 0 ;
 
-		RETURN_X_IF_NOT(pPCIEntry->ReadPCIConfig(PCI_BASE_REGISTERS + 16, 4, &uiPrimaryDMA), Success, ATADeviceController_FAILURE) ;
+    pPCIEntry->ReadPCIConfig(PCI_BASE_REGISTERS + 16, 4, &uiPrimaryDMA);
 		
 		if( (!(uiPrimaryDMA & 0x01) != bMMIO) || !(uiPrimaryDMA & uiMask))
 		{
-			KC::MDisplay().Message("\n\t DMA registers in different mode than Base registers", Display::WHITE_ON_BLACK()) ;
-			KC::MDisplay().Message("\n\tDisabling DMA...", Display::WHITE_ON_BLACK()) ;
+      printf("\n DMA registers in different mode than Base registers");
+      printf("\nDisabling DMA...");
 			bDMAPossible = false ;
 			uiPrimaryDMA = 0 ;
 		}
@@ -389,30 +367,22 @@ static byte ATADeviceController_CheckControllerMode(const PCIEntry* pPCIEntry,
 	{
 		HD_PRIMARY_IRQ = IrqManager::Instance().RegisterIRQ(bPrimaryIRQ, (unsigned)&ATADeviceController_PrimaryIRQHandler) ;
 		if(!HD_PRIMARY_IRQ)
-		{
-			printf("\n Failed to register HD Primary IRQ %d", bPrimaryIRQ) ;
-			return ATADeviceController_FAILURE ;
-		}
+      throw upan::exception(XLOC, "Failed to register HD Primary IRQ %d", bPrimaryIRQ);
+
 		IrqManager::Instance().EnableIRQ(*HD_PRIMARY_IRQ);
 
 		if(bPrimaryIRQ != bSecondaryIRQ)
 		{
 			HD_SECONDARY_IRQ = IrqManager::Instance().RegisterIRQ(bSecondaryIRQ, (unsigned)&ATADeviceController_SecondaryIRQHandler) ;
 			if(!HD_SECONDARY_IRQ)
-			{
-				printf("\n Failed to register HD Secondary IRQ %d", bSecondaryIRQ) ;
-				return ATADeviceController_FAILURE ;
-			}
-			IrqManager::Instance().EnableIRQ(*HD_SECONDARY_IRQ);
+        throw upan::exception(XLOC, "Failed to register HD Secondary IRQ %d", bSecondaryIRQ);
+
+      IrqManager::Instance().EnableIRQ(*HD_SECONDARY_IRQ);
 		}
 	}
 
 	if(pInitFunc && bDMAPossible)
-	{
 		pInitFunc(pPCIEntry, *pController) ;
-	}
-
-	return ATADeviceController_SUCCESS ;
 }
 
 static void ATADeviceController_AddATADrive(RawDiskDrive* pDisk)
@@ -509,26 +479,24 @@ static void ATADeviceController_AddATAPIDrive(ATAPort* pPort)
     MEM_CD_FS_START, MEM_CD_FS_END);
 }
 
-static byte ATADeviceController_Add(ATAController* pController)
+static void ATADeviceController_Add(ATAController* pController)
 {
-	unsigned i, j ;
-	
-	for(i = 0; i < pController->uiChannels; i++)
+  for(uint32_t i = 0; i < pController->uiChannels; i++)
 	{
-		for(j = 0; j < pController->uiPortsPerChannel; j++)
+    for(uint32_t j = 0; j < pController->uiPortsPerChannel; j++)
 		{
 			ATAPort* pPort = pController->pPort[i * pController->uiPortsPerChannel + j] ;
 
 			if(pPort->portOperation.Reset == NULL)
 			{
-				KC::MDisplay().Message("\n\tNo Reset Function provided...", Display::WHITE_ON_BLACK()) ;
-				return ATADeviceController_SUCCESS ;
+        printf("\nNo Reset Function provided...");
+        return;
 			}
 
 			if(pPort->portOperation.Configure == NULL)
 			{
-				KC::MDisplay().Message("\n\tNo Configure Function provided...", Display::WHITE_ON_BLACK()) ;
-				return ATADeviceController_SUCCESS ;
+        printf("\nNo Configure Function provided...");
+        return;
 			}
 
 			pPort->uiID = ATADeviceController_GetNextPortID() ;
@@ -544,11 +512,11 @@ static byte ATADeviceController_Add(ATAController* pController)
 	ATADeviceController_pFirstController = pController ;
 
 	// Probe Ports
-	for(i = 0; i < pController->uiChannels * pController->uiPortsPerChannel; i++)
+  for(uint32_t i = 0; i < pController->uiChannels * pController->uiPortsPerChannel; i++)
 		ATAPortManager_Probe(pController->pPort[i]) ;
 
 	// Configure Ports
-	for(i = 0; i < pController->uiChannels * pController->uiPortsPerChannel; i++)
+  for(uint32_t i = 0; i < pController->uiChannels * pController->uiPortsPerChannel; i++)
 	{
 		ATAPortManager_ConfigureDrive(pController->pPort[i]) ;
 
@@ -562,7 +530,7 @@ static byte ATADeviceController_Add(ATAController* pController)
 	char szName[10] = "hddisk0" ;
 	int iCntIndex = 6 ;
 
-	for(i = 0; i < pController->uiChannels * pController->uiPortsPerChannel; i++)
+  for(uint32_t i = 0; i < pController->uiChannels * pController->uiPortsPerChannel; i++)
 	{	
 		if(pController->pPort[i]->uiDevice == ATA_DEV_ATA)
 		{
@@ -580,8 +548,6 @@ static byte ATADeviceController_Add(ATAController* pController)
 		else if(pController->pPort[i]->uiDevice == ATA_DEV_ATAPI)
 			ATADeviceController_AddATAPIDrive(pController->pPort[i]) ;
 	}
-
-	return ATADeviceController_SUCCESS ;
 }
 
 static byte ATADeviceController_InitController(const PCIEntry* pPCIEntry, VendorSpecificATAController_Initialize* pInitFunc)
@@ -593,15 +559,19 @@ static byte ATADeviceController_InitController(const PCIEntry* pPCIEntry, Vendor
 	KC::MDisplay().Address(" VendorID: ", pPCIEntry->usVendorID) ;
 	KC::MDisplay().Address(" DeviceID: ", pPCIEntry->usDeviceID) ;
 
-	byte bStatus ;
 	ATAController* pController ;
 
-	RETURN_IF_NOT(bStatus, ATADeviceController_EnableDisabledController(pPCIEntry), ATADeviceController_SUCCESS) ;
-
-	RETURN_IF_NOT(bStatus, ATADeviceController_CheckControllerMode(pPCIEntry, pInitFunc, &pController), ATADeviceController_SUCCESS) ;
-
-	RETURN_IF_NOT(bStatus, ATADeviceController_Add(pController), ATADeviceController_SUCCESS) ;
-
+  try
+  {
+    ATADeviceController_EnableDisabledController(pPCIEntry);
+    ATADeviceController_CheckControllerMode(pPCIEntry, pInitFunc, &pController);
+    ATADeviceController_Add(pController);
+  }
+  catch(const upan::exception& e)
+  {
+    e.Print();
+    return ATADeviceController_FAILURE;
+  }
 	return ATADeviceController_SUCCESS ;
 }
 
@@ -609,7 +579,14 @@ static byte ATADeviceController_InitController(const PCIEntry* pPCIEntry, Vendor
 
 void ATADeviceController_Initialize()
 {
-	ATADeviceController_bInitStatus = false ;
+  static bool ATADeviceController_bInitStatus = false;
+
+  if(ATADeviceController_bInitStatus)
+  {
+    printf("\n ATA Controller already initialized");
+    return;
+  }
+  ATADeviceController_bInitStatus = false;
 
 	ATADeviceController_uiHDDDeviceID = 0 ;
 	ATADeviceController_uiCDDeviceID = 0 ;
@@ -619,42 +596,43 @@ void ATADeviceController_Initialize()
 	ATADeviceController_pFirstController = NULL ;
 
 	byte bControllerFound = false ;
-	unsigned uiDeviceIndex ;
 
-	for(auto pPCIEntry : PCIBusHandler::Instance().PCIEntries())
-	{
-		if(pPCIEntry->bHeaderType & PCI_HEADER_BRIDGE)
-			continue ;
+  try
+  {
+    for(auto pPCIEntry : PCIBusHandler::Instance().PCIEntries())
+    {
+      if(pPCIEntry->bHeaderType & PCI_HEADER_BRIDGE)
+        continue ;
 
-		for(uiDeviceIndex = 0; 
-			uiDeviceIndex < (sizeof(ATADeviceController_Devices) / sizeof(ATAPCIDevice)); uiDeviceIndex++)
-		{
-			if(pPCIEntry->usVendorID == ATADeviceController_Devices[uiDeviceIndex].usVendorID
-				&& pPCIEntry->usDeviceID == ATADeviceController_Devices[uiDeviceIndex].usDeviceID)
-			{
-				if(ATADeviceController_InitController(pPCIEntry, ATADeviceController_Devices[uiDeviceIndex].InitFunc) == 
-					ATADeviceController_SUCCESS)
-				{
-					bControllerFound = true ;
-				}
-			}
-		}
+      for(uint32_t uiDeviceIndex = 0;
+          uiDeviceIndex < (sizeof(ATADeviceController_Devices) / sizeof(ATAPCIDevice)); uiDeviceIndex++)
+      {
+        if(pPCIEntry->usVendorID == ATADeviceController_Devices[uiDeviceIndex].usVendorID
+          && pPCIEntry->usDeviceID == ATADeviceController_Devices[uiDeviceIndex].usDeviceID)
+        {
+          if(ATADeviceController_InitController(pPCIEntry, ATADeviceController_Devices[uiDeviceIndex].InitFunc) == ATADeviceController_SUCCESS)
+          {
+            bControllerFound = true ;
+          }
+        }
+      }
 
-		if(bControllerFound == false && pPCIEntry->bClassCode == PCI_MASS_STORAGE 
-			&& pPCIEntry->bSubClass == PCI_IDE && pPCIEntry->usDeviceID != 0x3149)
-		{
-			if(ATADeviceController_InitController(pPCIEntry, NULL) == ATADeviceController_SUCCESS)
-				bControllerFound = true ;
-		}
-	}
+      if(bControllerFound == false && pPCIEntry->bClassCode == PCI_MASS_STORAGE
+        && pPCIEntry->bSubClass == PCI_IDE && pPCIEntry->usDeviceID != 0x3149)
+      {
+        if(ATADeviceController_InitController(pPCIEntry, NULL) == ATADeviceController_SUCCESS)
+          bControllerFound = true ;
+      }
+    }
+    ATADeviceController_bInitStatus = bControllerFound ;
+  }
+  catch(const upan::exception& e)
+  {
+    ATADeviceController_bInitStatus = false;
+    e.Print();
+  }
 
-	ATADeviceController_bInitStatus = bControllerFound ;
 	KC::MDisplay().LoadMessage("IDE Initialization", ATADeviceController_bInitStatus ? Success : Failure);
-}
-
-bool ATADeviceController_GetInitStatus()
-{
-	return ATADeviceController_bInitStatus ;
 }
 
 unsigned ATADeviceController_GetDeviceSectorLimit(ATAPort* pPort)

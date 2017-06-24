@@ -49,7 +49,7 @@ typedef struct
 	AMDIDE* pAMDIDE ;
 } AMDIDEInfo ;
 
-byte ATAAMD_PortConfigure(ATAPort* pPort) ;
+void ATAAMD_PortConfigure(ATAPort* pPort) ;
 void ATAAMD_InitController(const PCIEntry* pPCIEntry, ATAController* pController) ;
 
 #endif

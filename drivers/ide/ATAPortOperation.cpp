@@ -88,9 +88,8 @@ void ATAPortOperation_PortSelect(ATAPort* pPort, byte bAddress)
 //	KernelUtil::Wait(ATA_CMD_DELAY) ;
 }
 
-byte ATAPortOperation_PortConfigure(ATAPort* pPort)
+void ATAPortOperation_PortConfigure(ATAPort* pPort)
 {
-	return ATAPortOperation_SUCCESS ;
 }
 
 byte ATAPortOperation_PortPrepareDMARead(ATAPort* pPort, unsigned uiLength)

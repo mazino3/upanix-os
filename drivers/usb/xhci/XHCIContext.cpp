@@ -72,6 +72,8 @@ uint32_t InputContext::AddEndPoint(const USBStandardEndPt& endpoint)
     case USBStandardEndPt::INTERRUPT:
       endPoint = new InterruptInEndPoint(*this, endpoint);
       break;
+    default:
+      break;
     }
     break;
 
@@ -84,7 +86,12 @@ uint32_t InputContext::AddEndPoint(const USBStandardEndPt& endpoint)
     case USBStandardEndPt::INTERRUPT:
       endPoint = new InterruptOutEndPoint(*this, endpoint);
       break;
+    default:
+      break;
     }
+    break;
+
+  default:
     break;
   }
   if(endPoint)

@@ -55,13 +55,11 @@ static void ATATimingManager_Quantize(ATATiming* pATATimingS, ATATiming* pATATim
 static ATATiming* ATATimingManager_FindMode(int iSpeed)
 {
 	ATATiming* pATATiming ;
-
 	for(pATATiming = ATATimingManager_Timings; pATATiming->iMode != iSpeed; pATATiming++)
 	{
 		if(pATATiming->iMode < 0)
 			return NULL ;
 	}
-
 	return pATATiming ;
 }
 /********************************************************************************************************/
@@ -78,13 +76,13 @@ void ATATimingManager_Merge(ATATiming* pFirst, ATATiming* pSecond, ATATiming* pR
 	if(uiWhat & ATA_TIMING_UDMA) pResult->usUDMA = MAX(pFirst->usUDMA, pSecond->usUDMA) ;
 }
 
-byte ATATimingManager_Compute(ATAPort* pPort, int iSpeed, ATATiming* pATATiming, unsigned uiTiming, unsigned uiUDMATiming)
+void ATATimingManager_Compute(ATAPort* pPort, int iSpeed, ATATiming* pATATiming, unsigned uiTiming, unsigned uiUDMATiming)
 {
 	ATATiming* pATATimingS ;
 	ATATiming ataTimingP ;
 
 	if((pATATimingS = ATATimingManager_FindMode(iSpeed)) == NULL)
-		return ATATimingManager_FAILURE ;
+    throw upan::exception(XLOC, "No ATATime manager found for speed: %d", iSpeed);
 
 	if(pPort->id.usValid & 0x2) //EIDE Drive
 	{
@@ -118,10 +116,7 @@ byte ATATimingManager_Compute(ATAPort* pPort, int iSpeed, ATATiming* pATATiming,
 		}
 
 		if(iPIOMode < 0)
-		{
-			KC::MDisplay().Message("\n\tFailed to find a Supported PIO Mode", Display::WHITE_ON_BLACK()) ;
-			return ATATimingManager_FAILURE ;
-		}	
+      throw upan::exception(XLOC, "\nFailed to find a Supported PIO Mode");
 
 		ATATimingManager_Compute(pPort, iPIOMode, &ataTimingP, uiTiming, uiUDMATiming) ;
 		ATATimingManager_Merge(&ataTimingP, pATATiming, pATATiming, ATA_TIMING_ALL) ;
@@ -139,6 +134,4 @@ byte ATATimingManager_Compute(ATAPort* pPort, int iSpeed, ATATiming* pATATiming,
 		pATATiming->usAct += (pATATiming->usCyc - (pATATiming->usAct + pATATiming->usRec)) / 2 ;
 		pATATiming->usRec = pATATiming->usCyc - pATATiming->usAct ;
 	}
-
-	return ATATimingManager_SUCCESS ;
 }

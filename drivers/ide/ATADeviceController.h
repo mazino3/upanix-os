@@ -185,7 +185,7 @@ struct ATAController
 struct ATAPortOperations
 {
 	byte (*Reset)(ATAPort* pPort) ;
-	byte (*Configure)(ATAPort* pPort) ;
+  void (*Configure)(ATAPort* pPort) ;
 	void (*Select)(ATAPort* pPort, byte bAddress) ;
 	byte (*PrepareDMARead)(ATAPort* pPort, unsigned uiLength) ;
 	byte (*PrepareDMAWrite)(ATAPort* pPort, unsigned uiLength) ;

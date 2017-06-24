@@ -26,7 +26,7 @@
 #define ATAPortOperation_FAILURE			3
 
 void ATAPortOperation_PortSelect(ATAPort* pPort, byte bAddress) ;
-byte ATAPortOperation_PortConfigure(ATAPort* pPort) ;
+void ATAPortOperation_PortConfigure(ATAPort* pPort) ;
 byte ATAPortOperation_PortPrepareDMARead(ATAPort* pPort, unsigned uiLength) ;
 byte ATAPortOperation_PortPrepareDMAWrite(ATAPort* pPort, unsigned uiLength) ;
 byte ATAPortOperation_StartDMA(ATAPort* pPort) ;

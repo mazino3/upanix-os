@@ -48,7 +48,7 @@ typedef struct
 	unsigned uiSpeed ;
 } SISIDEInfo ;
 
-byte ATASIS_PortConfigure(ATAPort* pPort) ;
+void ATASIS_PortConfigure(ATAPort* pPort) ;
 void ATASIS_InitController(const PCIEntry* pPCIEntry, ATAController* pController) ;
 
 #endif

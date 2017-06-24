@@ -52,26 +52,23 @@ static byte AMDCYC2UDMA[] = {
 
 /******************************************** Static Functions ***********************************/
 
-static byte ATAAMD_SetPortSpeed(AMDIDE* pAMDIDE, PCIEntry* pPCIEntry, ATAPort* pPort, ATATiming* pATATiming)
+static void ATAAMD_SetPortSpeed(AMDIDE* pAMDIDE, PCIEntry* pPCIEntry, ATAPort* pPort, ATATiming* pATATiming)
 {
 	unsigned uiDriveNumber = pPort->uiChannel * pPort->pController->uiPortsPerChannel + pPort->uiPort ;
 
 	byte bTemp ;
 
-	RETURN_X_IF_NOT(pPCIEntry->ReadPCIConfig(AMD_ADDRESS_SETUP, 1, &bTemp), Success, ATAAMD_FAILURE) ;
+  pPCIEntry->ReadPCIConfig(AMD_ADDRESS_SETUP, 1, &bTemp);
 	
-	bTemp = (bTemp & ~(3 << ((3 - uiDriveNumber) << 1))) | 
-			((FIT(pATATiming->usSetup, 1, 4) - 1) << ((3 - uiDriveNumber) << 1)) ;
+  bTemp = (bTemp & ~(3 << ((3 - uiDriveNumber) << 1))) | ((FIT(pATATiming->usSetup, 1, 4) - 1) << ((3 - uiDriveNumber) << 1)) ;
 
-	RETURN_X_IF_NOT(pPCIEntry->WritePCIConfig(AMD_ADDRESS_SETUP, 1, bTemp), Success, ATAAMD_FAILURE) ;
+  pPCIEntry->WritePCIConfig(AMD_ADDRESS_SETUP, 1, bTemp);
 	
-	RETURN_X_IF_NOT(pPCIEntry->WritePCIConfig(AMD_8BIT_TIMING + (1 - (uiDriveNumber >> 1)), 1, 
-			((FIT(pATATiming->usAct8b, 1, 16) - 1) << 4) | 
-			(FIT(pATATiming->usRec8b, 1, 16) - 1)), Success, ATAAMD_FAILURE) ;
+  pPCIEntry->WritePCIConfig(AMD_8BIT_TIMING + (1 - (uiDriveNumber >> 1)), 1,
+                            ((FIT(pATATiming->usAct8b, 1, 16) - 1) << 4) | (FIT(pATATiming->usRec8b, 1, 16) - 1));
 
-	RETURN_X_IF_NOT(pPCIEntry->WritePCIConfig(AMD_DRIVE_TIMING + (3 - uiDriveNumber), 1, 
-			((FIT(pATATiming->usAct, 1, 16) - 1) << 4) | 
-			(FIT(pATATiming->usRec, 1, 16) - 1)), Success, ATAAMD_FAILURE) ;
+  pPCIEntry->WritePCIConfig(AMD_DRIVE_TIMING + (3 - uiDriveNumber), 1,
+                            ((FIT(pATATiming->usAct, 1, 16) - 1) << 4) | (FIT(pATATiming->usRec, 1, 16) - 1));
 
 	switch(pAMDIDE->usFlags & AMD_UDMA)
 	{
@@ -92,24 +89,21 @@ static byte ATAAMD_SetPortSpeed(AMDIDE* pAMDIDE, PCIEntry* pPCIEntry, ATAPort* p
 			break ;
 
 		default:
-			return ATAAMD_SUCCESS ;
+      return;
 	}
 	
-	RETURN_X_IF_NOT(pPCIEntry->WritePCIConfig(AMD_UDMA_TIMING + (3 - uiDriveNumber), 1, bTemp), Success, ATAAMD_FAILURE) ;		
-
-	return ATAAMD_SUCCESS ;
+  pPCIEntry->WritePCIConfig(AMD_UDMA_TIMING + (3 - uiDriveNumber), 1, bTemp);
 }
 
-byte ATAAMD_PortConfigure(ATAPort* pPort)
+void ATAAMD_PortConfigure(ATAPort* pPort)
 {
 	ATAController* pController = pPort->pController ;
 	
 	AMDIDEInfo* pAMDIDEInfo = (AMDIDEInfo*)pPort->pVendorSpecInfo ;
 	AMDIDE* pAMDIDE = pAMDIDEInfo->pAMDIDE ;
 
-	if(pPort->uiPort == 0 && !(pPort->uiDevice >= ATA_DEV_ATA 
-		&& pController->pPort[pPort->uiChannel * pController->uiPortsPerChannel + 1]->uiDevice < ATA_DEV_ATA))
-		return ATAAMD_SUCCESS ;
+  if(pPort->uiPort == 0 && !(pPort->uiDevice >= ATA_DEV_ATA && pController->pPort[pPort->uiChannel * pController->uiPortsPerChannel + 1]->uiDevice < ATA_DEV_ATA))
+    return;
 
 	ATAPort* pFirstPort = NULL ;
 	ATAPort* pSecondPort = NULL ;
@@ -120,7 +114,7 @@ byte ATAAMD_PortConfigure(ATAPort* pPort)
 	if(pPort->uiPort == 1)
 	{
 		if(pPort->uiDevice < ATA_DEV_ATA)
-			return ATAAMD_SUCCESS ;
+      return;
 
 		if(pController->pPort[pPort->uiChannel * pController->uiPortsPerChannel]->uiDevice < ATA_DEV_ATA)
 		{
@@ -162,15 +156,12 @@ byte ATAAMD_PortConfigure(ATAPort* pPort)
 	ATATiming ataTimingResult1, ataTimingResult2 ;
 
 	// Calculate Timing of First Port
-	RETURN_X_IF_NOT(ATATimingManager_Compute(pFirstPort, pFirstPort->uiCurrentSpeed, &ataTimingResult1, 
-			uiTiming, uiUDMATiming), ATATimingManager_SUCCESS, ATAAMD_FAILURE) ;
+  ATATimingManager_Compute(pFirstPort, pFirstPort->uiCurrentSpeed, &ataTimingResult1, uiTiming, uiUDMATiming);
 
 	// Calculate Timing of Second Port and Merge Both
 	if(pSecondPort)
 	{
-		RETURN_X_IF_NOT(ATATimingManager_Compute(pSecondPort, pSecondPort->uiCurrentSpeed, &ataTimingResult2, 
-				uiTiming, uiUDMATiming), ATATimingManager_SUCCESS, ATAAMD_FAILURE) ;
-		
+    ATATimingManager_Compute(pSecondPort, pSecondPort->uiCurrentSpeed, &ataTimingResult2, uiTiming, uiUDMATiming);
 		ATATimingManager_Merge(&ataTimingResult2, &ataTimingResult1, &ataTimingResult1, ATA_TIMING_8BIT) ;
 	}
 		
@@ -186,18 +177,10 @@ byte ATAAMD_PortConfigure(ATAPort* pPort)
 
 	// Set Port Speed
 	if(pSecondPort)
-	{
-		RETURN_X_IF_NOT(ATAAMD_SetPortSpeed(pAMDIDE, &pAMDIDEInfo->pciEntry, pSecondPort, &ataTimingResult2),
-			ATAAMD_SUCCESS, ATAAMD_FAILURE) ;
-	}
+    ATAAMD_SetPortSpeed(pAMDIDE, &pAMDIDEInfo->pciEntry, pSecondPort, &ataTimingResult2);
 
 	if(pFirstPort)
-	{
-		RETURN_X_IF_NOT(ATAAMD_SetPortSpeed(pAMDIDE, &pAMDIDEInfo->pciEntry, pFirstPort, &ataTimingResult1),
-			ATAAMD_SUCCESS, ATAAMD_FAILURE) ;
-	}
-
-	return ATAAMD_SUCCESS ;
+    ATAAMD_SetPortSpeed(pAMDIDE, &pAMDIDEInfo->pciEntry, pFirstPort, &ataTimingResult1);
 }
 
 void ATAAMD_InitController(const PCIEntry* pPCIEntry, ATAController* pController)
@@ -263,11 +246,7 @@ void ATAAMD_InitController(const PCIEntry* pPCIEntry, ATAController* pController
 	switch(pAMDIDE->usFlags & AMD_UDMA)
 	{
 		case AMD_UDMA_66:
-			if(pIDE->ReadPCIConfig(AMD_UDMA_TIMING, 4, &uiUDMATiming) != Success)
-			{
-				KC::MDisplay().Message("\n\tFailed to Init AMD Controller", Display::WHITE_ON_BLACK()) ;
-				return ;
-			}
+      pIDE->ReadPCIConfig(AMD_UDMA_TIMING, 4, &uiUDMATiming);
 
 			for(i = 24; i >= 0; i -= 8)
 			{
@@ -278,17 +257,8 @@ void ATAAMD_InitController(const PCIEntry* pPCIEntry, ATAController* pController
 
 		case AMD_UDMA_100:
 		case AMD_UDMA_133:
-			if(pIDE->ReadPCIConfig(AMD_CABLE_DETECT, 1, &bTemp) != Success)
-			{
-				KC::MDisplay().Message("\n\tFailed to Init AMD Controller", Display::WHITE_ON_BLACK()) ;
-				return ;
-			}
-
-			if(pIDE->ReadPCIConfig(AMD_UDMA_TIMING, 4, &uiUDMATiming) != Success)
-			{
-				KC::MDisplay().Message("\n\tFailed to Init AMD Controller", Display::WHITE_ON_BLACK()) ;
-				return ;
-			}
+      pIDE->ReadPCIConfig(AMD_CABLE_DETECT, 1, &bTemp);
+      pIDE->ReadPCIConfig(AMD_UDMA_TIMING, 4, &uiUDMATiming);
 			
 			ui80W = ((bTemp & 0x3) ? 1 : 0) | ((bTemp & 0xC) ? 2 : 0) ;
 		
@@ -300,28 +270,17 @@ void ATAAMD_InitController(const PCIEntry* pPCIEntry, ATAController* pController
 			break ;
 	}
 
-	pController->pPort[0]->uiCable = pController->pPort[1]->uiCable = 
-		(ui80W & 0x01) ? ATA_CABLE_PATA80 : ATA_CABLE_PATA40 ;
+  pController->pPort[0]->uiCable = pController->pPort[1]->uiCable = (ui80W & 0x01) ? ATA_CABLE_PATA80 : ATA_CABLE_PATA40 ;
 
-	pController->pPort[2]->uiCable = pController->pPort[3]->uiCable = 
-		(ui80W & 0x02) ? ATA_CABLE_PATA80 : ATA_CABLE_PATA40 ;
+  pController->pPort[2]->uiCable = pController->pPort[3]->uiCable = (ui80W & 0x02) ? ATA_CABLE_PATA80 : ATA_CABLE_PATA40 ;
 
-	if(pIDE->ReadPCIConfig(AMD_IDE_CONFIG, 1, &bTemp) != Success)
-	{
-		KC::MDisplay().Message("\n\tFailed to Init AMD Controller", Display::WHITE_ON_BLACK()) ;
-		return ;
-	}
+  pIDE->ReadPCIConfig(AMD_IDE_CONFIG, 1, &bTemp);
 
-	if(pIDE->WritePCIConfig(AMD_IDE_CONFIG, 1, (pAMDIDE->usFlags & AMD_BAD_FIFO) ? (bTemp & 0x0F) : (bTemp | 0xF0)) != Success)
-	{
-		KC::MDisplay().Message("\n\tFailed to Init AMD Controller", Display::WHITE_ON_BLACK()) ;
-		return ;
-	}
+  pIDE->WritePCIConfig(AMD_IDE_CONFIG, 1, (pAMDIDE->usFlags & AMD_BAD_FIFO) ? (bTemp & 0x0F) : (bTemp | 0xF0));
 
 	AMDIDEInfo* pAMDIDEInfo = (AMDIDEInfo*)DMM_AllocateForKernel(sizeof(AMDIDEInfo)) ;
 
-	MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&pAMDIDEInfo->pciEntry, MemUtil_GetDS(), (unsigned)pPCIEntry, 
-						sizeof(PCIEntry)) ;
+  memcpy(&pAMDIDEInfo->pciEntry, pPCIEntry, sizeof(PCIEntry));
 	pAMDIDEInfo->pAMDIDE = pAMDIDE ;	
 
 	for(i = 0; i < pController->uiChannels * pController->uiPortsPerChannel; i++)

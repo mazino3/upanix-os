@@ -52,6 +52,6 @@ typedef struct
 } ATATiming ;
 
 void ATATimingManager_Merge(ATATiming* pFirst, ATATiming* pSecond, ATATiming* pResult, unsigned uiWhat) ;
-byte ATATimingManager_Compute(ATAPort* pPort, int iSpeed, ATATiming* pATATiming, unsigned uiTiming, unsigned uiUDMATiming) ;
+void ATATimingManager_Compute(ATAPort* pPort, int iSpeed, ATATiming* pATATiming, unsigned uiTiming, unsigned uiUDMATiming) ;
 
 #endif 

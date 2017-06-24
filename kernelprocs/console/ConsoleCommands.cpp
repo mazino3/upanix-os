@@ -934,10 +934,7 @@ void ConsoleCommands_InitFloppyController()
 
 void ConsoleCommands_InitATAController()
 {
-	if(!ATADeviceController_GetInitStatus())
-		ATADeviceController_Initialize() ;
-	else
-		printf("\n ATA Controller already initialized") ;
+  ATADeviceController_Initialize() ;
 }
 
 void ConsoleCommands_InitMountManager()
