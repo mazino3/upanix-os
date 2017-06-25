@@ -24,6 +24,9 @@
 #include <IrqManager.h>
 #include <KBInputHandler.h>
 #include <KernelUtil.h>
+#include <MemManager.h>
+#include <Alloc.h>
+#include <Bit.h>
 
 static const byte Keyboard_USB_GENERIC_KEY_MAP[] =
 {
@@ -239,13 +242,41 @@ void USBKeyboardDriver::Process(byte rawKey)
   }
 }
 
-byte USBKeyboardDriver::Decode(byte rawKey)
+void USBKeyboardDriver::ProcessSpecialKeys(byte report)
 {
-  return Keyboard_USB_GENERIC_KEY_MAP[rawKey];
+  _isShiftKey = Bit::IsSet(report, 0x2) || Bit::IsSet(report, 0x20);
+  _isCtrlKey = Bit::IsSet(report, 0) || Bit::IsSet(report, 0x10);
 }
 
-USBKeyboard::USBKeyboard(USBDevice& device, int interfaceIndex) : _device(device), _report(new byte[STD_USB_KB_REPORT_LEN])
+byte USBKeyboardDriver::Decode(byte rawKey)
 {
+  byte mappedKey = Keyboard_USB_GENERIC_KEY_MAP[rawKey];
+
+  if(mappedKey == Keyboard_CAPS_LOCK)
+  {
+    _isCapsLock = !_isCapsLock;
+    return Keyboard_NA_CHAR;
+  }
+
+  if(_isShiftKey)
+  {
+    if(mappedKey >= 'a' && mappedKey <= 'z' && _isCapsLock)
+      return mappedKey;
+    return Keyboard_USB_SHIFTED_KEY_MAP[rawKey];
+  }
+  else
+  {
+    if(mappedKey >= 'a' && mappedKey <= 'z' && _isCapsLock)
+      return Keyboard_USB_SHIFTED_KEY_MAP[rawKey];
+    return mappedKey;
+  }
+}
+
+USBKeyboard::USBKeyboard(USBDevice& device, int interfaceIndex) : _device(device), _currentReportIndex(0)
+{
+  if (_device.GetInterruptQueueSize() * STD_USB_KB_REPORT_LEN > PAGE_SIZE)
+    throw upan::exception(XLOC, "The Interrupt Queue buffer size is larger than PAGE_SIZE");
+
   const USBStandardInterface& interface = _device._pArrConfigDesc[ _device._iConfigIndex ].pInterfaces[ interfaceIndex ];
   _device._iInterfaceIndex = interfaceIndex;
   _device._bInterfaceNumber = interface.bInterfaceNumber;
@@ -259,19 +290,25 @@ USBKeyboard::USBKeyboard(USBDevice& device, int interfaceIndex) : _device(device
     _device.SetupInterruptReceiveData((uint32_t)report, STD_USB_KB_REPORT_LEN, this);
   }
 
+  uint32_t reportAddress = KERNEL_VIRTUAL_ADDRESS(MemManager::Instance().AllocatePageForKernel() * PAGE_SIZE);
+  _reports = new ((void*)reportAddress) byte*[_device.GetInterruptQueueSize()];
+
+  reportAddress += sizeof(byte*) * _device.GetInterruptQueueSize();
+  for(uint32_t i = 0; i < _device.GetInterruptQueueSize(); ++i)
+    _reports[i] = new ((void*)(reportAddress + i * STD_USB_KB_REPORT_LEN)) byte[STD_USB_KB_REPORT_LEN];
+
   KernelUtil::ScheduleTimedTask("USB KB Poller", 50, *this);
 }
 
 USBKeyboard::~USBKeyboard()
 {
-  delete _report;
+  MemManager::Instance().DeAllocatePageForKernel(KERNEL_REAL_ADDRESS(_reports) / PAGE_SIZE);
 }
 
 bool USBKeyboard::TimerTrigger()
 {
-  //TODO: This is a memory leak - use a memory pool but after getting clarity on how TDs are processed on interrupt-in endpoint
-  byte* report = new byte[STD_USB_KB_REPORT_LEN];
-  _device.SetupInterruptReceiveData((uint32_t)report, STD_USB_KB_REPORT_LEN, this);
+  if(_device.SetupInterruptReceiveData((uint32_t)&_reports[_currentReportIndex], STD_USB_KB_REPORT_LEN, this))
+    _currentReportIndex = (_currentReportIndex + 1) % _device.GetInterruptQueueSize();
   return true;
 }
 
@@ -279,6 +316,8 @@ void USBKeyboard::Handle(uint32_t data)
 {
   byte* report = (byte*)data;
   //printf("\n%d %d %d %d %d %d", report[2], report[3], report[4], report[5], report[6], report[7]);
+
+  USBKeyboardDriver::Instance().ProcessSpecialKeys(report[0]);
 
   for(auto k = _pressedKeys.begin(); k != _pressedKeys.end();)
   {

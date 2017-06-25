@@ -38,8 +38,9 @@ class USBDevice
     virtual bool BulkRead(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen) = 0;
     virtual bool BulkWrite(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen) = 0;
     virtual void SetIdle() { throw upan::exception(XLOC, "SetIdle not supported"); }
-    virtual void SetupInterruptReceiveData(uint32_t bufferAddress, uint32_t len, USBInterruptDataHandler* handler) { throw upan::exception(XLOC, "SetupInterruptReceiveData not supported"); }
+    virtual bool SetupInterruptReceiveData(uint32_t addr, uint32_t len, USBInterruptDataHandler*) { throw upan::exception(XLOC, "SetupInterruptReceiveData not supported"); }
     virtual int GetInterruptInInterval() { throw upan::exception(XLOC, "SetupInterruptIntervalTrigger not supported"); }
+    virtual uint32_t GetInterruptQueueSize() { throw upan::exception(XLOC, "GetInterruptQueueSize not supported"); }
 
   protected:
     void SetLangId();

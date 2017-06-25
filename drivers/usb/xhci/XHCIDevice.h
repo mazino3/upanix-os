@@ -39,8 +39,9 @@ class XHCIDevice final : public USBDevice
     bool BulkRead(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen);
     bool BulkWrite(USBulkDisk* pDisk, void* pDataBuf, unsigned uiLen);
     void SetIdle();
-    void SetupInterruptReceiveData(uint32_t bufferAddress, uint32_t len, USBInterruptDataHandler* handler);
+    bool SetupInterruptReceiveData(uint32_t bufferAddress, uint32_t len, USBInterruptDataHandler* handler);
     int GetInterruptInInterval();
+    uint32_t GetInterruptQueueSize();
 
   private:
     void GetDeviceDescriptor();

@@ -38,9 +38,10 @@ private:
   virtual bool TimerTrigger();
 
   const int STD_USB_KB_REPORT_LEN = 8;
-  USBDevice& _device;
-  byte*      _report;
+  USBDevice&      _device;
   upan::set<byte> _pressedKeys;
+  byte**          _reports;
+  int             _currentReportIndex;
 };
 
 class USBKeyboardDriver final : public USBDriver
@@ -52,6 +53,7 @@ public:
   static void Register();
   static USBKeyboardDriver& Instance();
   void Process(byte rawKey);
+  void ProcessSpecialKeys(byte report);
 
 private:
   byte Decode(byte rawKey);

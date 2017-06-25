@@ -310,12 +310,13 @@ class DeviceContext
 class EndPoint
 {
   public:
+    static const int TRANSFER_RING_SIZE = 64;
+  public:
     uint32_t Id() const { return _id; }
     void UpdateDeEnQPtr(uint32_t dnqPtr) { _tRing->UpdateDeEnQPtr(dnqPtr); }
   protected:
     EndPoint(uint32_t maxPacketSize);
     virtual ~EndPoint();
-
   protected:
     uint32_t         _id;
     EndPointContext* _ep;
@@ -388,7 +389,7 @@ class InputContext
                      TransferType trt, void* dataBuffer);
     void SendData(uint32_t bufferAddress, uint32_t len);
     void ReceiveData(uint32_t bufferAddress, uint32_t len);
-    void ReceiveInterruptData(uint32_t bufferAddress, uint32_t len);
+    bool ReceiveInterruptData(uint32_t bufferAddress, uint32_t len);
     int GetInterruptInEPInterval() { return InterruptInEP().Interval(); }
 
     void SetInterruptDataHandler(USBInterruptDataHandler* handler)

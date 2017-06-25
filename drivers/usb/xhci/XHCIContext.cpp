@@ -125,16 +125,13 @@ void InputContext::ReceiveData(uint32_t bufferAddress, uint32_t len)
   BulkInEP().UpdateDeEnQPtr(result.TRBPointer());
 }
 
-void InputContext::ReceiveInterruptData(uint32_t bufferAddress, uint32_t len)
+bool InputContext::ReceiveInterruptData(uint32_t bufferAddress, uint32_t len)
 {
   const TRB::Result& trbResult = InterruptInEP().SetupTransfer(bufferAddress, len);
   if(trbResult.isBad())
-  {
-    //TODO: temp measure
-    delete[] (char*)bufferAddress;
-    return;
-  }
+    return false;
   _controller.InitiateInterruptTransfer(*this, trbResult.goodValue(), _slotID, InterruptInEP().Id(), bufferAddress);
+  return true;
 }
 
 void InputContext::OnInterrupt(const EventTRB& result, uint32_t interruptDataAddress)
@@ -188,7 +185,7 @@ DeviceContext::~DeviceContext()
   }
 }
 
-EndPoint::EndPoint(uint32_t maxPacketSize) : _id(0), _ep(nullptr), _tRing(new TransferRing(64)), _maxPacketSize(maxPacketSize)
+EndPoint::EndPoint(uint32_t maxPacketSize) : _id(0), _ep(nullptr), _tRing(new TransferRing(TRANSFER_RING_SIZE)), _maxPacketSize(maxPacketSize)
 {
 }
 
