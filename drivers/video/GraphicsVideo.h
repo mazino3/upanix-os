@@ -19,29 +19,42 @@
 #define _GRAPHICS_VIDEO_H_
 
 #include <MultiBoot.h>
+#include <KernelUtil.h>
 
-class GraphicsVideo
+class GraphicsVideo : protected KernelUtil::TimerTask
 {
   private:
     GraphicsVideo(const framebuffer_info_t&);
+
   public:
     static void Create();
     static GraphicsVideo* Instance() { return _instance; }
     unsigned FlatLFBAddress() const { return _flatLFBAddress; }
-    void MappedLFBAddress(unsigned a) { _mappedLFBAddress = a; }
+    void MappedLFBAddress(unsigned a)
+    {
+      _mappedLFBAddress = a;
+      _zBuffer = a;
+    }
     unsigned LFBSize() const { return _lfbSize; }
     void SetPixel(unsigned x, unsigned y, unsigned color);
     void FillRect(unsigned sx, unsigned sy, unsigned width, unsigned height, unsigned color);
     void DrawChar(byte ch, unsigned x, unsigned y, unsigned fg, unsigned bg);
     void ScrollDown();
+    void CreateRefreshTask();
+
   private:
+    virtual bool TimerTrigger();
+    void NeedRefresh();
+
     static GraphicsVideo* _instance;
     unsigned _flatLFBAddress;
     unsigned _mappedLFBAddress;
+    unsigned _zBuffer;
     unsigned _pitch;
     unsigned _width;
     unsigned _height;
     unsigned _lfbSize;
+    uint32_t _needRefresh;
     byte     _bpp;
     byte     _bytesPerPixel;
 };

@@ -64,7 +64,7 @@ echo $SUDO_PW | sudo -S qemu-system-x86_64 \
 -serial file:serial_debug.log \
 -L $UPANIX_HOME/ovmf.$OVMF_VERSION \
 -bios OVMF.fd \
--m 128 \
+-m 256 \
 -smp 1 \
 -net none \
 -usb \

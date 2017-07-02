@@ -19,6 +19,8 @@
 #include <MemManager.h>
 #include <GraphicsVideo.h>
 #include <GraphicsFont.h>
+#include <ProcessManager.h>
+#include <Atomic.h>
 
 GraphicsVideo* GraphicsVideo::_instance = nullptr;
 
@@ -37,25 +39,53 @@ void GraphicsVideo::Create()
   }
 }
 
-GraphicsVideo::GraphicsVideo(const framebuffer_info_t& fbinfo)
+GraphicsVideo::GraphicsVideo(const framebuffer_info_t& fbinfo) : _needRefresh(0)
 {
   _flatLFBAddress = fbinfo.framebuffer_addr;
   _mappedLFBAddress = fbinfo.framebuffer_addr;
+  _zBuffer = fbinfo.framebuffer_addr;
+
   _height = fbinfo.framebuffer_height;
   _width = fbinfo.framebuffer_width;
   _pitch = fbinfo.framebuffer_pitch;
   _bpp = fbinfo.framebuffer_bpp;
   _bytesPerPixel = _bpp / 8;
   _lfbSize = _height * _width * _bytesPerPixel;
+
   FillRect(0, 0, _width, _height, 0x0);
+}
+
+void GraphicsVideo::CreateRefreshTask()
+{
+  _zBuffer = KERNEL_VIRTUAL_ADDRESS(MEM_GRAPHICS_Z_BUFFER_START);
+  FillRect(0, 0, _width, _height, 0x0);
+  KernelUtil::ScheduleTimedTask("xgrefresh", 50, *this);
+}
+
+bool GraphicsVideo::TimerTrigger()
+{
+  if(_needRefresh)
+  {
+    ProcessSwitchLock p;
+    memcpy(_mappedLFBAddress, _zBuffer, _lfbSize);
+    Atomic::Swap(_needRefresh, 0);
+  }
+  return true;
+}
+
+void GraphicsVideo::NeedRefresh()
+{
+  Atomic::Swap(_needRefresh, 1);
 }
 
 void GraphicsVideo::SetPixel(unsigned x, unsigned y, unsigned color)
 {
   if(y >= _height || x >= _width)
     return;
-  unsigned* p = (unsigned*)(_mappedLFBAddress + y * _pitch + x * _bytesPerPixel);
+  unsigned* p = (unsigned*)(_zBuffer + y * _pitch + x * _bytesPerPixel);
   *p = (color | 0xFF000000);
+
+  NeedRefresh();
 }
 
 void GraphicsVideo::FillRect(unsigned sx, unsigned sy, unsigned width, unsigned height, unsigned color)
@@ -66,10 +96,12 @@ void GraphicsVideo::FillRect(unsigned sx, unsigned sy, unsigned width, unsigned 
     y_offset = y * _pitch;
     for(unsigned x = sx; x < (sx + width) && x < _width; ++x)
     {
-      unsigned* p = (unsigned*)(_mappedLFBAddress + y_offset + x * _bytesPerPixel);
+      unsigned* p = (unsigned*)(_zBuffer + y_offset + x * _bytesPerPixel);
       *p = (color | 0xFF000000);
     }
   }
+
+  NeedRefresh();
 }
 
 void GraphicsVideo::DrawChar(byte ch, unsigned x, unsigned y, unsigned fg, unsigned bg)
@@ -86,7 +118,7 @@ void GraphicsVideo::DrawChar(byte ch, unsigned x, unsigned y, unsigned fg, unsig
   unsigned yr = 0;
   for(unsigned f = 0; f < 8; ++y)
   {
-    unsigned lfbp = _mappedLFBAddress + y * _pitch + x * _bytesPerPixel;
+    unsigned lfbp = _zBuffer + y * _pitch + x * _bytesPerPixel;
     for(unsigned i = 0x80; i != 0; i >>= 1, lfbp += _bytesPerPixel)
       *(unsigned*)lfbp = font_data[f] & i ? fg : bg;
 
@@ -98,6 +130,8 @@ void GraphicsVideo::DrawChar(byte ch, unsigned x, unsigned y, unsigned fg, unsig
     else
       ++yr;
   }
+
+  NeedRefresh();
 }
 
 //TODO: this is assuming 4 bytes per pixel
@@ -108,9 +142,11 @@ void GraphicsVideo::ScrollDown()
   //1 line = 16 rows as we are scaling y axis by 16
   static const unsigned oneLine = _width * 16;
 
-  memcpy(_mappedLFBAddress, _mappedLFBAddress + oneLine * _bytesPerPixel, (maxSize - oneLine) * _bytesPerPixel);
+  memcpy(_zBuffer, _zBuffer + oneLine * _bytesPerPixel, (maxSize - oneLine) * _bytesPerPixel);
   unsigned i = maxSize - oneLine;
-  unsigned* lfb = (unsigned*)(_mappedLFBAddress);
+  unsigned* lfb = (unsigned*)(_zBuffer);
   for(; i < maxSize; ++i)
     lfb[i] = 0xFF000000;
+
+  NeedRefresh();
 }
