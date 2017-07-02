@@ -119,6 +119,9 @@ void BuiltInKeyboardDriver::Process(byte rawKey)
   if (kbKey == Keyboard_NA_CHAR)
     return;
 
+  if (_isCtrlKey)
+    kbKey += CTRL_VALUE;
+
   if(!KBInputHandler_Process(kbKey))
   {
     KeyboardHandler::Instance().PutToQueueBuffer(kbKey);

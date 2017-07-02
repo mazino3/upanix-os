@@ -235,6 +235,9 @@ void USBKeyboardDriver::Process(byte rawKey)
   if (kbKey == Keyboard_NA_CHAR)
     return;
 
+  if(_isCtrlKey)
+    kbKey += CTRL_VALUE;
+
   if(!KBInputHandler_Process(kbKey))
   {
     KeyboardHandler::Instance().PutToQueueBuffer(kbKey);
@@ -245,7 +248,7 @@ void USBKeyboardDriver::Process(byte rawKey)
 void USBKeyboardDriver::ProcessSpecialKeys(byte report)
 {
   _isShiftKey = Bit::IsSet(report, 0x2) || Bit::IsSet(report, 0x20);
-  _isCtrlKey = Bit::IsSet(report, 0) || Bit::IsSet(report, 0x10);
+  _isCtrlKey = Bit::IsSet(report, 0x1) || Bit::IsSet(report, 0x10);
 }
 
 byte USBKeyboardDriver::Decode(byte rawKey)
