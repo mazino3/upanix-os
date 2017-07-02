@@ -345,7 +345,9 @@ void EndPointContext::Init(uint32_t dqPtr, USBStandardEndPt::DirectionTypes dir,
 
   //Interval, MaxPStreams = 0, Mult = 0
   _context1 = (_context1 & 0xFF008000);
-  SetInterval(interval);
+
+  //SetInterval(interval);
+
   //Max packet size
   _context2 = (_context2 & ~(0xFFFF << 16)) | (maxPacketSize << 16);
   //Max Burst Size = 0

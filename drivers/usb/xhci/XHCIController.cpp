@@ -385,10 +385,10 @@ void XHCIController::SetDeviceContext(uint32_t slotID, SlotContext& slotContext)
 
 void XHCIController::RingDoorBell(unsigned index, unsigned value)
 {
-  __volatile__ uint32_t temp = _doorBellRegs[index];
-  _doorBellRegs[index] = value;
-  temp = _doorBellRegs[index];
-//	Atomic::Swap(_doorBellRegs[index], value);
+//  __volatile__ uint32_t temp = _doorBellRegs[index];
+//  _doorBellRegs[index] = value;
+//  temp = _doorBellRegs[index];
+  Atomic::Swap(_doorBellRegs[index], value);
 }
 
 EventTRB XHCIController::InitiateCommand()
@@ -506,6 +506,7 @@ void XHCIController::PublishEventResult(const EventTRB& result)
   {
     printf("\n No entry found in EventResults for TRB Id: %x, Event Type: %d CC: %d, TLen: %d\n",
            (uint32_t)result.TRBPointer(), result.Type(), result.CompletionCode(), result.TransferLength());
+    ((TRB*)KERNEL_VIRTUAL_ADDRESS(result.TRBPointer()))->Print();
     return;
   }
   it->second->Consume(result);

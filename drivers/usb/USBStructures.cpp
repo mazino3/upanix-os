@@ -18,6 +18,7 @@
 #include <DMM.h>
 #include <stdio.h>
 #include <string.h>
+#include <algorithm.h>
 #include <exception.h>
 #include <DeviceDrive.h>
 #include <USBStructures.h>
@@ -175,7 +176,7 @@ USBulkDisk::USBulkDisk(USBDevice* device,
 		printf("\n Max Bulk Write Size: %d", usOutMaxPacketSize) ;
 	}
 
-	pRawAlignedBuffer = (byte*)DMM_AllocateForKernel(US_BULK_MAX_TRANSFER_SIZE, 16) ;
+  pRawAlignedBuffer = (byte*)DMM_AllocateForKernel(US_BULK_MAX_TRANSFER_SIZE, upan::max(usInMaxPacketSize, usOutMaxPacketSize)) ;
 	pHostDevice = new USBMassBulkStorageDisk(this);
 }
 

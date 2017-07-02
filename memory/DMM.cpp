@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <exception.h>
 #include <ProcessManager.h>
+#include <Bit.h>
 
 unsigned DMM_uiTotalKernelAllocation = 0 ;
 
@@ -47,11 +48,11 @@ static unsigned DMM_GetByteStuffForAlign(unsigned uiAddress, unsigned uiAlignNum
 
 void DMM_CheckAlignNumber(unsigned uiAlignNumber)
 {
-	static unsigned ALIGN[] = { 0, 1, 2, 4, 8, 16, 32, 64, 99 } ;
-	for(unsigned i = 0; ALIGN[i] != 99; i++)
-		if(uiAlignNumber == ALIGN[i])
-			return;
-  throw upan::exception(XLOC, "%u is not aligned address", uiAlignNumber);
+  if(uiAlignNumber == 0)
+    return;
+  if(Bit::IsPowerOfTwo(uiAlignNumber))
+    return;
+  throw upan::exception(XLOC, "%u is not 2^ power aligned address", uiAlignNumber);
 }
 
 /***************************************************************/

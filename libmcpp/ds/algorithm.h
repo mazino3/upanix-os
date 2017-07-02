@@ -50,6 +50,18 @@ IT find_if(IT begin, IT end, MATCH match)
   return i;
 }
 
+template <typename N>
+const N& max(const N& n1, const N& n2)
+{
+  return n1 > n2 ? n1 : n2;
+}
+
+template <typename N>
+const N& min(const N& n1, const N& n2)
+{
+  return n1 < n2 ? n1 : n2;
+}
+
 }
 
 #endif

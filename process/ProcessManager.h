@@ -302,28 +302,15 @@ class ProcessManager
 class ProcessSwitchLock
 {
   public:
-    ProcessSwitchLock() : _locked(true)
+    ProcessSwitchLock()
     {
 	    ProcessManager::DisableTaskSwitch();
     }
 
     ~ProcessSwitchLock()
     {
-      UnLock();
+      ProcessManager::EnableTaskSwitch();
     }
-
-    void UnLock()
-    {
-      if(_locked)
-      {
-        ProcessManager::EnableTaskSwitch();
-        _locked = false;
-      }
-      else
-        printf("\n unlocking process switch which is already unlocked!!");
-    }
-  private:
-    bool _locked;
 };
 
 #endif
