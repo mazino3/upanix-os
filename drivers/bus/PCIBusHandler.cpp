@@ -309,7 +309,7 @@ PCIEntry::PCIEntry(unsigned uiBusNo, unsigned uiDeviceNo, unsigned uiFunc, byte 
   catch(const upan::exception& e)
   {
     throw upan::exception(XLOC, "failed to read PCI configuration for Bus:%u, Device:%u, Function:%u, HeaderType:%u - Reason:%s",
-                          uiBusNumber, uiDeviceNumber, uiFunction, bHeaderType, e.Msg().c_str());
+                          uiBusNumber, uiDeviceNumber, uiFunction, bHeaderType, e.ErrorMsg().c_str());
   }
 }
 

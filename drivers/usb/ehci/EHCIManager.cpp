@@ -38,7 +38,7 @@ EHCIManager::EHCIManager()
       }
       catch(const upan::exception& ex)
       {
-        printf("\n Failed to add EHCI controller - Reason: %s", ex.Error().c_str());
+        printf("\n Failed to add EHCI controller - Reason: %s", ex.ErrorMsg().c_str());
       }
 		}
 	}
@@ -59,7 +59,7 @@ void EHCIManager::ProbeDevice()
     }
     catch(const upan::exception& ex)
     {
-      printf("\n Error probing - %s", ex.Error().c_str());
+      printf("\n Error probing - %s", ex.ErrorMsg().c_str());
     }
   }
 }
@@ -75,7 +75,7 @@ void EHCIManager::RouteToCompanionController()
     }
     catch(const upan::exception& ex)
     {
-      printf("%s", ex.Error().c_str());
+      printf("%s", ex.ErrorMsg().c_str());
     }
 	}
 }

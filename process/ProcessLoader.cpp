@@ -225,9 +225,8 @@ byte ProcessLoader_LoadELFExe(const char* szProcessName, ProcessAddressSpace* pP
 	}
 
 	// Initialize BSS segment to 0
-	ELF32SectionHeader* pBSSSectionHeader = NULL ;
-	if(mELFParser.GetSectionHeaderByTypeAndName(ELFSectionHeader::SHT_NOBITS, BSS_SEC_NAME, &pBSSSectionHeader))
-	{
+  mELFParser.GetSectionHeaderByTypeAndName(ELFSectionHeader::SHT_NOBITS, BSS_SEC_NAME).goodMap([&] (ELF32SectionHeader* pBSSSectionHeader)
+  {
 		unsigned* pBSS = (unsigned*)(bProcessImage + pBSSSectionHeader->sh_addr - uiMinMemAddr) ;
 		unsigned uiBSSSize = pBSSSectionHeader->sh_size ;
 
@@ -246,7 +245,7 @@ byte ProcessLoader_LoadELFExe(const char* szProcessName, ProcessAddressSpace* pP
 			KC::MDisplay().Number("", (unsigned)((char*)pBSS)[ii]);
 		KC::MDisplay().NextLine() ;
 		*/
-	}
+  });
 
 	ProcessLoader_CopyElfImage(*uiPDEAddress, bProcessImage, uiMemImageSize, *uiProcessBase) ;
 
@@ -255,15 +254,12 @@ byte ProcessLoader_LoadELFExe(const char* szProcessName, ProcessAddressSpace* pP
 	unsigned uiInitRelocAddress = NULL ;
 	unsigned uiTermRelocAddress = NULL ;
 
-	ELF32SectionHeader* pRelocationSectionHeader = NULL ;
-	if(mELFParser.GetSectionHeaderByTypeAndName(ELFSectionHeader::SHT_REL, REL_PLT_SUB_NAME, &pRelocationSectionHeader))
-	{
-		ELF32SectionHeader* pDynamicSymSectiomHeader = NULL ;
-		if(mELFParser.GetSectionHeaderByIndex(pRelocationSectionHeader->sh_link, &pDynamicSymSectiomHeader))
-		{
-			ELF32SectionHeader* pDynamicSymStringSectionHeader = NULL ;
-			if(mELFParser.GetSectionHeaderByIndex(pDynamicSymSectiomHeader->sh_link, &pDynamicSymStringSectionHeader))
-			{
+  mELFParser.GetSectionHeaderByTypeAndName(ELFSectionHeader::SHT_REL, REL_PLT_SUB_NAME).goodMap([&] (ELF32SectionHeader* pRelocationSectionHeader)
+  {
+    mELFParser.GetSectionHeaderByIndex(pRelocationSectionHeader->sh_link).goodMap([&] (ELF32SectionHeader* pDynamicSymSectiomHeader)
+    {
+      mELFParser.GetSectionHeaderByIndex(pDynamicSymSectiomHeader->sh_link).goodMap([&] (ELF32SectionHeader* pDynamicSymStringSectionHeader)
+      {
 				ELFRelocSection::ELF32_Rel* pELFDynRelTable = 
 					(ELFRelocSection::ELF32_Rel*)((unsigned)bProcessImage + pRelocationSectionHeader->sh_addr - uiMinMemAddr) ;
 
@@ -274,13 +270,9 @@ byte ProcessLoader_LoadELFExe(const char* szProcessName, ProcessAddressSpace* pP
 
 				const char* pDynStrTable = (const char*)((unsigned)bProcessImage + pDynamicSymStringSectionHeader->sh_addr - uiMinMemAddr) ;
 
-				unsigned uiRelType ;
-
 				for(unsigned i = 0; i < uiNoOfDynRelEntries && (uiInitRelocAddress == NULL || uiTermRelocAddress == NULL); i++)
 				{
-					uiRelType = ELF32_R_TYPE(pELFDynRelTable[i].r_info) ;
-
-					if(uiRelType == ELFRelocSection::R_386_JMP_SLOT)
+          if(ELF32_R_TYPE(pELFDynRelTable[i].r_info) == ELFRelocSection::R_386_JMP_SLOT)
 					{
 						int iSymIndex = ELF32_R_SYM(pELFDynRelTable[i].r_info);
 						int iStrIndex = pELFDynSymTable[ iSymIndex ].st_name ;
@@ -292,9 +284,9 @@ byte ProcessLoader_LoadELFExe(const char* szProcessName, ProcessAddressSpace* pP
 							uiTermRelocAddress = pELFDynRelTable[i].r_offset ;
 					}
 				}
-			}
-		}
-	}
+      });
+    });
+  });
 
 	/* End of Find init and term stdio functions in libc if any */
 

@@ -380,27 +380,19 @@ bool ELFParser::GetSectionHeaderByType(unsigned uiType, ELF32SectionHeader** pSe
 	return false ;
 }
 
-bool ELFParser::GetSectionHeaderByTypeAndName(unsigned uiType, const char* szLikeName, ELF32SectionHeader** pSectionHeader)
+upan::result<ELF32SectionHeader*> ELFParser::GetSectionHeaderByTypeAndName(unsigned uiType, const char* szLikeName)
 {
 	for(int i = 0; i < m_pHeader->e_shnum; i++)
-	{
 		if(strstr((m_pSecHeaderStrTable + m_pSectionHeader[i].sh_name), szLikeName) && m_pSectionHeader[i].sh_type == uiType)
-		{
-			*pSectionHeader = &m_pSectionHeader[i] ;
-			return true ;	
-		}
-	}
-
-	return false ;
+      return upan::good(&m_pSectionHeader[i]);
+  return upan::result<ELF32SectionHeader*>::bad("Failed to find elf section header for type: %u, name: %s", uiType, szLikeName);
 }
 
-bool ELFParser::GetSectionHeaderByIndex(unsigned uiIndex, ELF32SectionHeader** pSectionHeader)
+upan::result<ELF32SectionHeader*> ELFParser::GetSectionHeaderByIndex(unsigned uiIndex)
 {
 	if(uiIndex >= m_pHeader->e_shnum)
-		return false ;
-
-	*pSectionHeader = &m_pSectionHeader[uiIndex] ;
-	return true ;
+    return upan::result<ELF32SectionHeader*>::bad("Failed to find elf section header for index: %u", uiIndex);
+  return upan::good(&m_pSectionHeader[uiIndex]);
 }
 
 bool ELFParser::CopyProcessImage(byte* bProcessImage, unsigned uiProcessBase, unsigned uiMaxImageSize)

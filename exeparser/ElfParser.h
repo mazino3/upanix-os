@@ -22,6 +22,7 @@
 #include <ElfProgHeader.h>
 #include <ElfSectionHeader.h>
 #include <ElfSymbolTable.h>
+#include <result.h>
 
 class BufferedReader ;
 using ELFHeader::ELF32Header ;
@@ -64,8 +65,8 @@ class ELFParser
 		unsigned GetProgramStartAddress() ;
 
 		bool GetSectionHeaderByType(unsigned uiType, ELF32SectionHeader** pSectionHeader) ;
-		bool GetSectionHeaderByTypeAndName(unsigned uiType, const char* szLikeName, ELF32SectionHeader** pSectionHeader) ;
-		bool GetSectionHeaderByIndex(unsigned uiIndex, ELF32SectionHeader** pSectionHeader) ;
+    upan::result<ELF32SectionHeader*> GetSectionHeaderByTypeAndName(unsigned uiType, const char* szLikeName);
+    upan::result<ELF32SectionHeader*> GetSectionHeaderByIndex(unsigned uiIndex);
 
 		inline const ELF32Header* GetHeader() const { return m_pHeader ; }
 		inline ELF32Header* GetHeader() { return m_pHeader ; }

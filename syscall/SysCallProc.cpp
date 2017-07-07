@@ -17,6 +17,7 @@
  */
 # include <SysCall.h>
 # include <SysCallDisplay.h>
+# include <exception.h>
 
 byte SysCallProc_IsPresent(unsigned uiSysCallID)
 {
@@ -42,16 +43,20 @@ __volatile__ unsigned uiP9)
 		case SYS_CALL_DLL_RELOCATE :
 			// P8 => Second Entry in GOT
 			// P9 => Relocation Table Offset
-			{
-				//ProcessManager_DisableTaskSwitch() ;
-
-				byte bStatus ;
+      try
+      {
+        //ProcessManager_DisableTaskSwitch() ;
+        byte bStatus;
         if((bStatus = DynamicLinkLoader_DoRelocation(&ProcessManager::Instance().GetCurrentPAS(), (int)uiP8, uiP9, piRetVal)) != DynamicLinkLoader_SUCCESS)
-				{
-					KC::MDisplay().Address("\n Dynamic Relocation Failed: ", bStatus) ;
-				}
-				//ProcessManager_EnableTaskSwitch() ;
-			}
+        {
+          KC::MDisplay().Address("\n Dynamic Relocation Failed: ", bStatus) ;
+        }
+        //ProcessManager_EnableTaskSwitch() ;
+      }
+      catch(const upan::exception& e)
+      {
+        printf("\n Dynamic Relocation Failed: %s", e.ErrorMsg().c_str());
+      }
 			break ;
 
 		case SYS_CALL_PROCESS_EXEC :

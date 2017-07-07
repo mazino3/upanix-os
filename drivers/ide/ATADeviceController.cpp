@@ -542,7 +542,7 @@ static void ATADeviceController_Add(ATAController* pController)
       }
       catch(const upan::exception& ex)
       {
-        printf("\n failed to read partition table - %s", ex.Error().c_str());
+        printf("\n failed to read partition table - %s", ex.ErrorMsg().c_str());
       }
 		}
 		else if(pController->pPort[i]->uiDevice == ATA_DEV_ATAPI)

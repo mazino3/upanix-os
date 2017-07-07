@@ -33,6 +33,7 @@
 # include <ElfSymbolTable.h>
 # include <ElfDynamicSection.h>
 # include <exception.h>
+# include <result.h>
 
 using namespace ELFSectionHeader ;
 using namespace ELFHeader ;
@@ -257,35 +258,33 @@ byte DLLLoader_LoadELFDLL(const char* szDLLName, const char* szJustDLLName, Proc
 
 /* Dynamic Relocation Entries are resolved here in Global Offset Table */
 
-	ELF32SectionHeader* pRelocationSectionHeader = NULL ;
-	if(mELFParser.GetSectionHeaderByTypeAndName(SHT_REL, REL_DYN_SUB_NAME, &pRelocationSectionHeader))
-	{
-		ELF32SectionHeader* pDynamicSymSectiomHeader = NULL ;
-		RETURN_X_IF_NOT(mELFParser.GetSectionHeaderByIndex(pRelocationSectionHeader->sh_link, &pDynamicSymSectiomHeader), true, DynamicLinkLoader_FAILURE) ;
+  mELFParser.GetSectionHeaderByTypeAndName(SHT_REL, REL_DYN_SUB_NAME).goodMap([&] (ELF32SectionHeader* pRelocationSectionHeader)
+  {
+    ELF32SectionHeader* pDynamicSymSectiomHeader = mELFParser.GetSectionHeaderByIndex(pRelocationSectionHeader->sh_link).goodValueOrThrow(XLOC);
 
-		ELF32_Rel* pELFDynRelTable = (ELF32_Rel*)((unsigned)bDLLImage + pRelocationSectionHeader->sh_addr) ;
-		unsigned uiNoOfDynRelEntries = pRelocationSectionHeader->sh_size / pRelocationSectionHeader->sh_entsize ;
+    ELF32_Rel* pELFDynRelTable = (ELF32_Rel*)((unsigned)bDLLImage + pRelocationSectionHeader->sh_addr) ;
+    unsigned uiNoOfDynRelEntries = pRelocationSectionHeader->sh_size / pRelocationSectionHeader->sh_entsize ;
 
-		ELF32SymbolEntry* pELFDynSymTable = (ELF32SymbolEntry*)((unsigned)bDLLImage + pDynamicSymSectiomHeader->sh_addr) ;
+    ELF32SymbolEntry* pELFDynSymTable = (ELF32SymbolEntry*)((unsigned)bDLLImage + pDynamicSymSectiomHeader->sh_addr) ;
 
-		unsigned i ;
-		unsigned uiRelType ;
+    unsigned i ;
+    unsigned uiRelType ;
 
-		for(i = 0; i < uiNoOfDynRelEntries; i++)
-		{
-			uiRelType = ELF32_R_TYPE(pELFDynRelTable[i].r_info) ;
+    for(i = 0; i < uiNoOfDynRelEntries; i++)
+    {
+      uiRelType = ELF32_R_TYPE(pELFDynRelTable[i].r_info) ;
 
-			if(uiRelType == R_386_RELATIVE)
-			{
-				((unsigned*)((unsigned)bDLLImage + pELFDynRelTable[i].r_offset))[0] += uiDLLLoadAddress ;
-			}
-			else if(uiRelType == R_386_GLOB_DAT)
-			{
-				((unsigned*)((unsigned)bDLLImage + pELFDynRelTable[i].r_offset))[0] = 
-					pELFDynSymTable[ELF32_R_SYM(pELFDynRelTable[i].r_info)].st_value + uiDLLLoadAddress ;
-			}
-		}
-	}
+      if(uiRelType == R_386_RELATIVE)
+      {
+        ((unsigned*)((unsigned)bDLLImage + pELFDynRelTable[i].r_offset))[0] += uiDLLLoadAddress ;
+      }
+      else if(uiRelType == R_386_GLOB_DAT)
+      {
+        ((unsigned*)((unsigned)bDLLImage + pELFDynRelTable[i].r_offset))[0] =
+          pELFDynSymTable[ELF32_R_SYM(pELFDynRelTable[i].r_info)].st_value + uiDLLLoadAddress ;
+      }
+    }
+  });
 
 /* Enf of Dynamic Relocation Entries resolution */
 

@@ -33,23 +33,50 @@ class uniq_ptr
     uniq_ptr(const uniq_ptr&) = delete;
     uniq_ptr& operator=(const uniq_ptr&) = delete;
     
+    void destroy()
+    {
+      if(_owner)
+      {
+        delete _ptr;
+        _ptr = nullptr;
+      }
+    }
+
   public:
-    uniq_ptr(T* ptr) : _ptr(ptr)
+    uniq_ptr(T* ptr) : _ptr(ptr), _owner(true)
     {
     }
 
     ~uniq_ptr()
     {
-      delete _ptr;
+      destroy();
     }
+
+    void disown() { _owner = false; }
 
     T* get() { return _ptr; }
     T* operator->() { return get(); }
     T& operator*() { return *get(); }
-    void release() { _ptr = nullptr; }
+
+    T* release()
+    {
+      auto r = _ptr;
+      _ptr = nullptr;
+      return r;
+    }
+
+    void reset(T* newPtr)
+    {
+      if(_ptr != newPtr)
+      {
+        destroy();
+        _ptr = newPtr;
+      }
+    }
 
   private:
     T* _ptr;
+    bool _owner;
 };
 
 template <typename T>
@@ -58,24 +85,51 @@ class uniq_ptr<T[]>
   private:
     uniq_ptr(const uniq_ptr&) = delete;
     uniq_ptr& operator=(const uniq_ptr&) = delete;
-    
+
+    void destroy()
+    {
+      if(_owner)
+      {
+        delete[] _ptr;
+        _ptr = nullptr;
+      }
+    }
+
   public:
-    uniq_ptr(T* ptr) : _ptr(ptr)
+    uniq_ptr(T* ptr) : _ptr(ptr), _owner(true)
     {
     }
 
     ~uniq_ptr()
     {
-      delete[] _ptr;
+      destroy();
     }
+
+    void disown() { _owner = false; }
 
     T* get() { return _ptr; }
     T& operator[](int index) { return _ptr[index]; }
     const T& operator[](int index) const { return _ptr[index]; }
-    void release() { _ptr = nullptr; }
+
+    T* release()
+    {
+      auto r = _ptr;
+      _ptr = nullptr;
+      return r;
+    }
+
+    void reset(T* newPtr)
+    {
+      if(_ptr != newPtr)
+      {
+        destroy();
+        _ptr = newPtr;
+      }
+    }
 
   private:
     T* _ptr;
+    bool _owner;
 };
 
 };

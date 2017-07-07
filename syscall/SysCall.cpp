@@ -123,7 +123,7 @@ __volatile__ unsigned uiP9)
       }
       catch(const upan::exception& ex)
       {
-        printf("\n SysCall %u failed with error: %s\n", uiSysCallID, ex.Error().c_str());
+        printf("\n SysCall %u failed with error: %s\n", uiSysCallID, ex.ErrorMsg().c_str());
         iRetVal = -1;
       }
 	  	break ;

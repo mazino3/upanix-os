@@ -83,7 +83,7 @@ void XHCIManager::Initialize()
       }
       catch(const upan::exception& ex)
       {
-        printf("\n Failed to add XHCI controller - Reason: %s", ex.Error().c_str());
+        printf("\n Failed to add XHCI controller - Reason: %s", ex.ErrorMsg().c_str());
       }
     }
   }
@@ -111,7 +111,7 @@ void XHCIManager::ProbeDevice()
     }
     catch(const upan::exception& ex)
     {
-      printf("\n Error probing XHCI controller ports - %s", ex.Error().c_str());
+      printf("\n Error probing XHCI controller ports - %s", ex.ErrorMsg().c_str());
     }
   }
 }

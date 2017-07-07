@@ -205,7 +205,7 @@ void Initialize()
   }
   catch(const upan::exception& ex)
   {
-    printf("%s\n", ex.Error().c_str());
+    printf("%s\n", ex.ErrorMsg().c_str());
     printf("KERNEL PANIC!\n");
     while(1);
   }

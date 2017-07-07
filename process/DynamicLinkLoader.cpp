@@ -36,6 +36,7 @@
 #include <ProcessEnv.h>
 #include <MountManager.h>
 #include <GenericUtil.h>
+#include <uniq_ptr.h>
 
 using namespace ELFSectionHeader ;
 using namespace ELFHeader ;
@@ -85,24 +86,21 @@ static byte DynamicLinkLoader_LoadDLL(const char* szJustDLLName, ProcessAddressS
 	return DynamicLinkLoader_SUCCESS ;
 }
 
-static byte DynamicLinkLoader_LoadDLLFileIntoMemory(ELFParser* pELFParser, byte** bDLLImage)
+static byte* DynamicLinkLoader_LoadDLLFileIntoMemory(const ELFParser& elfParser)
 {
 	unsigned uiMinMemAddr, uiMaxMemAddr ;
-	pELFParser->GetMemImageSize(&uiMinMemAddr, &uiMaxMemAddr) ;
+  elfParser.GetMemImageSize(&uiMinMemAddr, &uiMaxMemAddr) ;
 	if(uiMinMemAddr != 0)
-		return DynamicLinkLoader_ERR_NOT_PIC ;
+    throw upan::exception(XLOC, "Not a PIC");
 
 	unsigned uiMemImageSize = ProcessLoader_GetCeilAlignedAddress(uiMaxMemAddr - uiMinMemAddr, 4) ;
 
-	*bDLLImage = (byte*)DMM_AllocateForKernel(sizeof(char) * uiMemImageSize) ;
+  upan::uniq_ptr<byte[]> dllImage(new byte[uiMemImageSize]);
 
-	if(!pELFParser->CopyProcessImage(*bDLLImage, 0, uiMemImageSize))
-	{
-		DMM_DeAllocateForKernel((unsigned)(*bDLLImage)) ;
-		return DynamicLinkLoader_FAILURE ;
-	}
+  if(!elfParser.CopyProcessImage(dllImage.get(), 0, uiMemImageSize))
+    throw upan::exception(XLOC, "Failed to load/copy dll file into memory");
 
-	return DynamicLinkLoader_SUCCESS ;
+  return dllImage.release();
 }
 
 /**********************************************************************************************/
@@ -201,17 +199,10 @@ byte DynamicLinkLoader_DoRelocation(ProcessAddressSpace* processAddressSpace, in
 
 	ELFParser mELFParser(pELFHeader, pELFSectionHeader, pSecHeaderStrTable) ;
 
-	ELF32SectionHeader* pRelocationSectionHeader = NULL ;
-	RETURN_X_IF_NOT(mELFParser.GetSectionHeaderByTypeAndName(SHT_REL, REL_PLT_SUB_NAME, &pRelocationSectionHeader), true, DynamicLinkLoader_FAILURE);
-
-	ELF32SectionHeader* pDynamicSymSectionHeader = NULL ;
-	RETURN_X_IF_NOT(mELFParser.GetSectionHeaderByIndex(pRelocationSectionHeader->sh_link, &pDynamicSymSectionHeader), true, DynamicLinkLoader_FAILURE) ;
-
-	ELF32SectionHeader* pProcedureLinkSectionHeader = NULL ;
-	RETURN_X_IF_NOT(mELFParser.GetSectionHeaderByIndex(pRelocationSectionHeader->sh_info, &pProcedureLinkSectionHeader), true, DynamicLinkLoader_FAILURE) ;
-
-	ELF32SectionHeader* pDynamicSymStringSectionHeader = NULL ;
-	RETURN_X_IF_NOT(mELFParser.GetSectionHeaderByIndex(pDynamicSymSectionHeader->sh_link, &pDynamicSymStringSectionHeader), true, DynamicLinkLoader_FAILURE) ;
+  ELF32SectionHeader* pRelocationSectionHeader = mELFParser.GetSectionHeaderByTypeAndName(SHT_REL, REL_PLT_SUB_NAME).goodValueOrThrow(XLOC);
+  ELF32SectionHeader* pDynamicSymSectionHeader = mELFParser.GetSectionHeaderByIndex(pRelocationSectionHeader->sh_link).goodValueOrThrow(XLOC);
+  ELF32SectionHeader* pProcedureLinkSectionHeader = mELFParser.GetSectionHeaderByIndex(pRelocationSectionHeader->sh_info).goodValueOrThrow(XLOC);
+  ELF32SectionHeader* pDynamicSymStringSectionHeader = mELFParser.GetSectionHeaderByIndex(pDynamicSymSectionHeader->sh_link).goodValueOrThrow(XLOC);
 
 	ELF32_Rel* pELFRelTable = (ELF32_Rel*)(GLOBAL_REL_ADDR(pRelocationSectionHeader->sh_addr, uiBaseAddress)) ;
 
@@ -232,15 +223,9 @@ byte DynamicLinkLoader_DoRelocation(ProcessAddressSpace* processAddressSpace, in
 
 	if(iID >= 0)
 	{
-		ELF32SectionHeader* pProcRelocSectionHeader = NULL ;
-		RETURN_X_IF_NOT(mProgELFParser.GetSectionHeaderByTypeAndName(SHT_REL, REL_PLT_SUB_NAME, &pProcRelocSectionHeader), true, DynamicLinkLoader_FAILURE);
-
-		ELF32SectionHeader* pProcDynamicSymSecHeader = NULL ;
-		RETURN_X_IF_NOT(mProgELFParser.GetSectionHeaderByIndex(pProcRelocSectionHeader->sh_link, &pProcDynamicSymSecHeader), true, DynamicLinkLoader_FAILURE) ;
-
-		ELF32SectionHeader* pProcDynamicSymStringSecHeader = NULL ;
-		RETURN_X_IF_NOT(mProgELFParser.GetSectionHeaderByIndex(pProcDynamicSymSecHeader->sh_link, &pProcDynamicSymStringSecHeader), true, DynamicLinkLoader_FAILURE) ;
-
+    ELF32SectionHeader* pProcRelocSectionHeader = mProgELFParser.GetSectionHeaderByTypeAndName(SHT_REL, REL_PLT_SUB_NAME).goodValueOrThrow(XLOC);
+    ELF32SectionHeader* pProcDynamicSymSecHeader = mProgELFParser.GetSectionHeaderByIndex(pProcRelocSectionHeader->sh_link).goodValueOrThrow(XLOC);
+    ELF32SectionHeader* pProcDynamicSymStringSecHeader = mProgELFParser.GetSectionHeaderByIndex(pProcDynamicSymSecHeader->sh_link).goodValueOrThrow(XLOC);
 		pProcessDynStrTable = (const char*)(GLOBAL_REL_ADDR(pProcDynamicSymStringSecHeader->sh_addr, PROCESS_BASE)) ;
 	}
 	else
@@ -254,7 +239,7 @@ byte DynamicLinkLoader_DoRelocation(ProcessAddressSpace* processAddressSpace, in
 	unsigned uiIndex, uiNoOfEntries = pDynamicSectionHeader->sh_size / pDynamicSectionHeader->sh_entsize ;
 	Elf32_Dyn* pELFDynSection = (Elf32_Dyn*)(GLOBAL_REL_ADDR(pDynamicSectionHeader->sh_addr, PROCESS_BASE)) ;
 
-	for(uiIndex = 0; uiIndex < uiNoOfEntries; uiIndex++)
+  for(uiIndex = 0; uiIndex < uiNoOfEntries; uiIndex++)
 	{
 		if(pELFDynSection[uiIndex].d_tag == DT_NEEDED) // TODO: Maintain a Map of tagID and tagType
 		{
@@ -279,7 +264,7 @@ byte DynamicLinkLoader_DoRelocation(ProcessAddressSpace* processAddressSpace, in
 
 					uiGOTAddress[0] = uiDynSymAddress ;
 					*iDynamicSymAddress = uiDynSymAddress ;
-					return DynamicLinkLoader_SUCCESS ;
+          return DynamicLinkLoader_SUCCESS ;
 				}
 				else
 				{
@@ -302,9 +287,8 @@ byte DynamicLinkLoader_GetSymbolOffset(const char* szJustDLLName, const char* sz
 {
 	ProcessSharedObjectList* pProcessSharedObjectList = DLLLoader_GetProcessSharedObjectListByName(szJustDLLName) ;
 
-	byte* bDLLImage ;
-	ELFParser* pELFParser = NULL ;
-	bool bReleaseMem = true ;
+  upan::uniq_ptr<byte[]> dllImage(nullptr);
+  upan::uniq_ptr<ELFParser> pELFParser(nullptr);
 
 	if(pProcessSharedObjectList == NULL)
 	{
@@ -317,19 +301,11 @@ byte DynamicLinkLoader_GetSymbolOffset(const char* szJustDLLName, const char* sz
 		strcpy(szDLLFullName, szLibPath) ;
 		strcat(szDLLFullName, szJustDLLName) ;
 
-		pELFParser = new ELFParser(szDLLFullName) ;
+    pELFParser.reset(new ELFParser(szDLLFullName));
 		if(!pELFParser->GetState())
-		{
-			delete pELFParser ;
 			return DynamicLinkLoader_FAILURE ;
-		}
 
-		byte bStatus = DynamicLinkLoader_LoadDLLFileIntoMemory(pELFParser, &bDLLImage) ;
-		if(bStatus != DynamicLinkLoader_SUCCESS)
-		{
-			delete pELFParser ;
-			return bStatus ;
-		}
+    dllImage.reset(DynamicLinkLoader_LoadDLLFileIntoMemory(*pELFParser));
 	}
 	else
 	{
@@ -337,43 +313,27 @@ byte DynamicLinkLoader_GetSymbolOffset(const char* szJustDLLName, const char* sz
 		if(index == -1)
 			return DynamicLinkLoader_FAILURE ;
 
-		bDLLImage = (byte*)(DLLLoader_GetProcessDLLLoadAddress(processAddressSpace, index) - GLOBAL_DATA_SEGMENT_BASE) ;
+    dllImage.disown();
+    dllImage.reset((byte*)(DLLLoader_GetProcessDLLLoadAddress(processAddressSpace, index) - GLOBAL_DATA_SEGMENT_BASE));
 
-		ELF32Header* pELFHeader = (ELF32Header*)(bDLLImage) ;
-		ELF32SectionHeader* pELFSectionHeader = (ELF32SectionHeader*)(bDLLImage + (pProcessSharedObjectList->uiNoOfPages - 1) * PAGE_SIZE) ;
-		pELFParser = new ELFParser(pELFHeader, pELFSectionHeader, NULL) ;
-
-		bReleaseMem = false ;
+    ELF32Header* pELFHeader = (ELF32Header*)(dllImage.get()) ;
+    ELF32SectionHeader* pELFSectionHeader = (ELF32SectionHeader*)(dllImage.get() + (pProcessSharedObjectList->uiNoOfPages - 1) * PAGE_SIZE) ;
+    pELFParser.reset(new ELFParser(pELFHeader, pELFSectionHeader, NULL));
 	}
 
 	ELF32SectionHeader* pHashSectionHeader = NULL ;
 	if(!pELFParser->GetSectionHeaderByType(SHT_HASH, &pHashSectionHeader))
 	{
-		delete pELFParser ;
-		if(bReleaseMem) DMM_DeAllocateForKernel((unsigned)bDLLImage) ;
 		return DynamicLinkLoader_FAILURE ;
 	}
 
-	ELF32SectionHeader* pDynamicSymSectionHeader = NULL ;
-	if(!pELFParser->GetSectionHeaderByIndex(pHashSectionHeader->sh_link, &pDynamicSymSectionHeader))
-	{
-		delete pELFParser ;
-		if(bReleaseMem) DMM_DeAllocateForKernel((unsigned)bDLLImage) ;
-		return DynamicLinkLoader_FAILURE ;
-	}
+  ELF32SectionHeader* pDynamicSymSectionHeader = pELFParser->GetSectionHeaderByIndex(pHashSectionHeader->sh_link).goodValueOrThrow(XLOC);
+  ELF32SectionHeader* pDynamicSymStringSectionHeader = pELFParser->GetSectionHeaderByIndex(pDynamicSymSectionHeader->sh_link).goodValueOrThrow(XLOC);
 
-	ELF32SectionHeader* pDynamicSymStringSectionHeader = NULL ;
-	if(!pELFParser->GetSectionHeaderByIndex(pDynamicSymSectionHeader->sh_link, &pDynamicSymStringSectionHeader))
-	{
-		delete pELFParser ;
-		if(bReleaseMem) DMM_DeAllocateForKernel((unsigned)bDLLImage) ;
-		return DynamicLinkLoader_FAILURE ;
-	}
+  ELF32SymbolEntry* pELFDynSymTable = (ELF32SymbolEntry*)(dllImage.get() + pDynamicSymSectionHeader->sh_addr) ;
+  const char* pDynStrTable = (const char*)(dllImage.get() + pDynamicSymStringSectionHeader->sh_addr) ;
 
-	ELF32SymbolEntry* pELFDynSymTable = (ELF32SymbolEntry*)(bDLLImage + pDynamicSymSectionHeader->sh_addr) ;
-	const char* pDynStrTable = (const char*)(bDLLImage + pDynamicSymStringSectionHeader->sh_addr) ;
-
-	unsigned* pHashTable = (unsigned*)(bDLLImage + pHashSectionHeader->sh_addr) ;
+  unsigned* pHashTable = (unsigned*)(dllImage.get() + pHashSectionHeader->sh_addr) ;
 	unsigned uiNoOfBuckets = pHashTable[0] ;
 	__attribute__((unused)) unsigned uiNoOfChains = pHashTable[1] ;
 	unsigned* pBucket = (unsigned*)((unsigned*)pHashTable + 2) ;
@@ -391,19 +351,12 @@ byte DynamicLinkLoader_GetSymbolOffset(const char* szJustDLLName, const char* sz
 			if(pELFDynSymTable[uiSymTabIndex].st_value != 0)
 			{
 				*uiDynSymOffset = pELFDynSymTable[uiSymTabIndex].st_value ;
-
-				delete pELFParser ;
-				if(bReleaseMem) DMM_DeAllocateForKernel((unsigned)bDLLImage) ;
-
 				return DynamicLinkLoader_SUCCESS ;
 			}
 		}
 
 		uiSymTabIndex = pChain[uiSymTabIndex] ;
 	}
-	
-	delete pELFParser ;
-	if(bReleaseMem) DMM_DeAllocateForKernel((unsigned)bDLLImage) ;
 
 	return DynamicLinkLoader_ERR_SYM_NOT_FOUND ;
 }

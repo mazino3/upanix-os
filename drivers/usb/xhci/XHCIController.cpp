@@ -211,7 +211,7 @@ void XHCIController::NotifyEvent()
   }
   catch(const upan::exception& e)
   {
-    printf("\n Exception while handling XHCI event - %s", e.Error().c_str());
+    printf("\n Exception while handling XHCI event - %s", e.ErrorMsg().c_str());
   }
 
   _opReg->Clear();
@@ -361,7 +361,7 @@ void XHCIController::Probe()
       }
       catch(const upan::exception& ex)
       {
-        printf("\n%s", ex.Error().c_str());
+        printf("\n%s", ex.ErrorMsg().c_str());
       }
     }
 

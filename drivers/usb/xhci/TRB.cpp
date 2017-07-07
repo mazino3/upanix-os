@@ -151,7 +151,7 @@ TRB::Result TransferRing::AddDataTRB(uint32_t dataBufferAddr, uint32_t len, Data
     ++requiredSlots;
 
   if(requiredSlots > _freeSlots)
-    return TRB::Result(upan::error<bool>(false, "Transfer Ring is Full!"));
+    return TRB::Result::bad("Transfer Ring is Full!");
 
   while(remainingBytesToTransfer > 0)
   {

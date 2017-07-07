@@ -49,11 +49,13 @@ namespace upan {
 
 #define XLOC __FILE__, __LINE__
 
-class exception
+class error
 {
+  private:
+    error() {}
+
   public:
-    exception(const upan::string& fileName, unsigned lineNo, const char * __restrict fmsg, ...) :
-      _fileName(fileName), _lineNo(lineNo)
+    error(const char * __restrict fmsg, ...)
     {
       va_list arg;
 
@@ -64,27 +66,57 @@ class exception
 
       vsnprintf(buf, BSIZE, fmsg, arg);
       _msg = buf;
-      _error = _fileName + ":" + ToString(_lineNo) + " " + _msg;
 
       va_end(arg);
     }
 
+    error(const char * __restrict fmsg, va_list arg)
+    {
+      const int BSIZE = 1024;
+      char buf[BSIZE];
+      vsnprintf(buf, BSIZE, fmsg, arg);
+    }
+
+    error(upan::string& msg) : _msg(msg) {}
+
+    const upan::string& Msg() const { return _msg; }
+
+  private:
+    upan::string _msg;
+
+    template<typename Good> friend class result;
+    friend class exception;
+};
+
+class exception
+{
+  public:
+    exception(const upan::string& fileName, unsigned lineNo, const char * __restrict fmsg, ...) :
+      _fileName(fileName), _lineNo(lineNo)
+    {
+      va_list arg;
+      va_start(arg, fmsg);
+      _error = upan::error(fmsg, arg);
+      _msg = _fileName + ":" + ToString(_lineNo) + " " + _error.Msg();
+      va_end(arg);
+    }
+
+    exception(const upan::string& fileName, unsigned lineNo, const upan::error& err) :
+      _fileName(fileName), _lineNo(lineNo), _error(err)
+    {
+    }
+
     const upan::string& File() const { return _fileName; }
     unsigned LineNo() const { return _lineNo; }
-    const upan::string& Msg() const { return _msg; }
-    const upan::string& Error() const 
-    {
-      return _error;
-    }
-    void Print() const
-    {
-      printf("\n%s\n", _error.c_str());
-    }
+    const error& Error() const { return _error; }
+    const upan::string& ErrorMsg() const { return _error.Msg(); }
+    void Print() const { printf("\n%s\n", _msg.c_str()); }
+
   private:
     const upan::string _fileName;
     const unsigned _lineNo;
+    upan::error _error;
     upan::string _msg;
-    upan::string _error;
 };
 
 };
