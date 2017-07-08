@@ -37,6 +37,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <exception.h>
+#include <uniq_ptr.h>
+#include <try.h>
 
 #define INIT_NAME "_stdio_init-NOTINUSE"
 #define TERM_NAME "_stdio_term-NOTINUSE"
@@ -58,31 +60,24 @@ byte* ProcessLoader::LoadInitSection(ProcessAddressSpace& pas, unsigned& uiSecti
     throw upan::exception(XLOC, "%s is a directory!", szSectionName.c_str());
 
 	uiSectionSize = DirEntry.uiSize ;
-	byte* bSectionImage = (byte*)DMM_AllocateForKernel(sizeof(char) * (uiSectionSize));
+  upan::uniq_ptr<byte[]> bSectionImage(new byte[sizeof(char) * uiSectionSize]);
 
-  try
-  {
-    int fd;
-    unsigned n;
+  int fd;
+  unsigned n;
 
-    if(FileOperations_Open(&fd, szSectionName.c_str(), O_RDONLY) != FileOperations_SUCCESS)
-      throw upan::exception(XLOC, "failed to open file: %s", szSectionName.c_str());
+  if(FileOperations_Open(&fd, szSectionName.c_str(), O_RDONLY) != FileOperations_SUCCESS)
+    throw upan::exception(XLOC, "failed to open file: %s", szSectionName.c_str());
 
-    if(FileOperations_Read(fd, (char*)bSectionImage, 0, &n) != FileOperations_SUCCESS)
-      throw upan::exception(XLOC, "error reading file: %s", szSectionName.c_str());
+  if(FileOperations_Read(fd, (char*)bSectionImage.get(), 0, &n) != FileOperations_SUCCESS)
+    throw upan::exception(XLOC, "error reading file: %s", szSectionName.c_str());
 
-    if(FileOperations_Close(fd) != FileOperations_SUCCESS)
-      throw upan::exception(XLOC, "error closing file: %s", szSectionName.c_str());
+  if(FileOperations_Close(fd) != FileOperations_SUCCESS)
+    throw upan::exception(XLOC, "error closing file: %s", szSectionName.c_str());
 
-    if(n != uiSectionSize)
-      throw upan::exception(XLOC, "could read only %u of %u bytes of %s section", n, uiSectionSize, szSectionName.c_str());
-  }
-  catch(...)
-  {
-    DMM_DeAllocateForKernel((unsigned)bSectionImage);
-    throw;
-  }
-  return bSectionImage;
+  if(n != uiSectionSize)
+    throw upan::exception(XLOC, "could read only %u of %u bytes of %s section", n, uiSectionSize, szSectionName.c_str());
+
+  return bSectionImage.release();
 }
 
 byte* ProcessLoader::LoadDLLInitSection(ProcessAddressSpace& pas, unsigned& uiSectionSize)
@@ -121,21 +116,10 @@ unsigned ProcessLoader_GetFloorAlignedAddress(unsigned uiAddress, unsigned uiAli
 	return 0 ;
 }
 
-byte ProcessLoader_Load(const char* szProcessName, ProcessAddressSpace* pProcessAddressSpace, unsigned *uiPDEAddress,
-		unsigned* uiEntryAdddress, unsigned* uiProcessEntryStackSize, int iNumberOfParameters,
-		char** szArgumentList)
-{
-	return ProcessLoader_LoadELFExe(szProcessName, pProcessAddressSpace, uiPDEAddress, uiEntryAdddress, uiProcessEntryStackSize, iNumberOfParameters, szArgumentList) ;
-}
-
-byte ProcessLoader_LoadELFExe(const char* szProcessName, ProcessAddressSpace* pProcessAddressSpace, unsigned *uiPDEAddress,
-	   	unsigned *uiEntryAdddress, unsigned* uiProcessEntryStackSize, int iNumberOfParameters, 
-		char** szArgumentList)
+void ProcessLoader::Load(const char* szProcessName, ProcessAddressSpace* pProcessAddressSpace, unsigned *uiPDEAddress,
+                         unsigned* uiEntryAdddress, unsigned* uiProcessEntryStackSize, int iNumberOfParameters, char** szArgumentList)
 {
 	ELFParser mELFParser(szProcessName) ;
-
-	if(!mELFParser.GetState())
-		return ProcessLoader_FAILURE ;
 
 	unsigned* uiNoOfPagesForProcess = &pProcessAddressSpace->uiNoOfPagesForProcess ;
 	unsigned* uiNoOfPagesForPTE = &pProcessAddressSpace->uiNoOfPagesForPTE ;
@@ -146,26 +130,16 @@ byte ProcessLoader_LoadELFExe(const char* szProcessName, ProcessAddressSpace* pP
 
 	mELFParser.GetMemImageSize(&uiMinMemAddr, &uiMaxMemAddr) ;
 	if(uiMinMemAddr < PROCESS_BASE)
-		return ProcessLoader_ERR_TEXT_ADDR_LESS_THAN_LIMIT ;
+    throw upan::exception(XLOC, "process min load address %x is less than PROCESS_BASE %x", uiMinMemAddr, PROCESS_BASE);
 
 	if((uiMinMemAddr % PAGE_SIZE) != 0)
-		return ProcessLoader_ERR_NOT_ALIGNED_TO_PAGE ;
+    throw upan::exception(XLOC, "process min load address %x is not page aligned", uiMinMemAddr);
 
 	unsigned uiStartUpSectionSize ;
-	byte* bStartUpSectionImage = NULL ;
 	unsigned uiDLLSectionSize ;
-	byte* bDLLSectionImage = NULL ;
 
-  try
-  {
-    bStartUpSectionImage = ProcessLoader::Instance().LoadStartUpInitSection(*pProcessAddressSpace, uiStartUpSectionSize);
-    bDLLSectionImage = ProcessLoader::Instance().LoadDLLInitSection(*pProcessAddressSpace, uiDLLSectionSize);
-  }
-  catch(const upan::exception& ex)
-  {
-    ex.Print();
-    return ProcessLoader_FAILURE;
-  }
+  upan::uniq_ptr<byte[]> bStartUpSectionImage(ProcessLoader::Instance().LoadStartUpInitSection(*pProcessAddressSpace, uiStartUpSectionSize));
+  upan::uniq_ptr<byte[]> bDLLSectionImage(ProcessLoader::Instance().LoadDLLInitSection(*pProcessAddressSpace, uiDLLSectionSize));
 
 	unsigned uiProcessImageSize = ProcessLoader_GetCeilAlignedAddress(uiMaxMemAddr - uiMinMemAddr, 4) ;
 	unsigned uiMemImageSize = uiProcessImageSize + uiStartUpSectionSize	+ uiDLLSectionSize ;
@@ -173,7 +147,7 @@ byte ProcessLoader_LoadELFExe(const char* szProcessName, ProcessAddressSpace* pP
 	*uiNoOfPagesForProcess = MemManager::Instance().GetProcessSizeInPages(uiMemImageSize) + PROCESS_STACK_PAGES + PROCESS_CG_STACK_PAGES ;
 
 	if(*uiNoOfPagesForProcess > MAX_PAGES_PER_PROCESS)
-		return ProcessLoader_ERR_HUGE_PROCESS_SIZE ;
+    throw upan::exception(XLOC, "process requires %u pages that's larger than supported %u", *uiNoOfPagesForProcess, MAX_PAGES_PER_PROCESS);
 
 	*uiProcessBase = uiMinMemAddr ;
 	unsigned uiPageOverlapForProcessBase = ((*uiProcessBase / PAGE_SIZE) % PAGE_TABLE_ENTRIES) ;
@@ -183,41 +157,26 @@ byte ProcessLoader_LoadELFExe(const char* szProcessName, ProcessAddressSpace* pP
 	{
 		//TODO
 		// Crash the Process..... With SegFault Or OutOfMemeory Error
-		KC::MDisplay().Message("\n Out Of Memory1\n", Display::WHITE_ON_BLACK()) ;
+    printf("\n OUT OF MEMORY \n");
 		__asm__ __volatile__("HLT") ;
 	}
 
-	unsigned pRealELFSectionHeadeAddr ;
-	if(DynamicLinkLoader_Initialize(&pRealELFSectionHeadeAddr, *uiPDEAddress) != DynamicLinkLoader_SUCCESS)
-	{
-		DMM_DeAllocateForKernel((unsigned)bDLLSectionImage) ;
-		DMM_DeAllocateForKernel((unsigned)bStartUpSectionImage) ;
-
-		ProcessAllocator_DeAllocateAddressSpace(pProcessAddressSpace) ;
-		return ProcessLoader_FAILURE ;	
-	}
-	
+  unsigned pRealELFSectionHeadeAddr = DynamicLinkLoader_Initialize(*uiPDEAddress);
 	unsigned uiCopySize = mELFParser.CopyELFSectionHeader((ELF32SectionHeader*)pRealELFSectionHeadeAddr) ;
 	mELFParser.CopyELFSecStrTable((char*)(pRealELFSectionHeadeAddr + uiCopySize)) ;
 
-	byte* bProcessImage = (byte*)DMM_AllocateForKernel(sizeof(char) * uiMemImageSize) ;
+  upan::uniq_ptr<byte[]> bProcessImage(new byte[sizeof(char) * uiMemImageSize]);
 
-	if(!mELFParser.CopyProcessImage(bProcessImage, *uiProcessBase, uiMemImageSize))
-	{
-		DMM_DeAllocateForKernel((unsigned)bDLLSectionImage) ;
-		DMM_DeAllocateForKernel((unsigned)bStartUpSectionImage) ;
-		DMM_DeAllocateForKernel((unsigned)bProcessImage) ;
+  upan::tryresult([&] { mELFParser.CopyProcessImage(bProcessImage.get(), *uiProcessBase, uiMemImageSize); }).badMap([&] (const upan::error& err) {
+    ProcessAllocator_DeAllocateAddressSpace(pProcessAddressSpace) ;
+    throw upan::exception(XLOC, err);
+  });
 
-		ProcessAllocator_DeAllocateAddressSpace(pProcessAddressSpace) ;
-
-		return ProcessLoader_FAILURE ;
-	}
-
-	memcpy((void*)(bProcessImage + uiProcessImageSize), (void*)bStartUpSectionImage, uiStartUpSectionSize) ;
-	memcpy((void*)(bProcessImage + uiProcessImageSize + uiStartUpSectionSize), (void*)bDLLSectionImage, uiDLLSectionSize) ;
+  memcpy((void*)(bProcessImage.get() + uiProcessImageSize), (void*)bStartUpSectionImage.get(), uiStartUpSectionSize) ;
+  memcpy((void*)(bProcessImage.get() + uiProcessImageSize + uiStartUpSectionSize), (void*)bDLLSectionImage.get(), uiDLLSectionSize) ;
 
 	// Setting the Dynamic Link Loader Address in GOT
-	unsigned* uiGOT = mELFParser.GetGOTAddress(bProcessImage, uiMinMemAddr) ;
+  unsigned* uiGOT = mELFParser.GetGOTAddress(bProcessImage.get(), uiMinMemAddr) ;
 	if(uiGOT != NULL)
 	{
 		uiGOT[1] = -1 ;
@@ -227,7 +186,7 @@ byte ProcessLoader_LoadELFExe(const char* szProcessName, ProcessAddressSpace* pP
 	// Initialize BSS segment to 0
   mELFParser.GetSectionHeaderByTypeAndName(ELFSectionHeader::SHT_NOBITS, BSS_SEC_NAME).goodMap([&] (ELF32SectionHeader* pBSSSectionHeader)
   {
-		unsigned* pBSS = (unsigned*)(bProcessImage + pBSSSectionHeader->sh_addr - uiMinMemAddr) ;
+    unsigned* pBSS = (unsigned*)(bProcessImage.get() + pBSSSectionHeader->sh_addr - uiMinMemAddr) ;
 		unsigned uiBSSSize = pBSSSectionHeader->sh_size ;
 
 		unsigned q ;
@@ -235,25 +194,13 @@ byte ProcessLoader_LoadELFExe(const char* szProcessName, ProcessAddressSpace* pP
 
 		unsigned r ;
 		for(r = q * sizeof(unsigned); r < uiBSSSize; r++) ((char*)pBSS)[r] = 0 ;
-
-		/*
-		int size = (uiBSSSize > 200) ? 200 : uiBSSSize ;
-
-		int ii ;
-		KC::MDisplay().Message("\n BSS:- ", ' ');
-		for(ii = 0; ii < size; ii++)
-			KC::MDisplay().Number("", (unsigned)((char*)pBSS)[ii]);
-		KC::MDisplay().NextLine() ;
-		*/
   });
 
-	ProcessLoader_CopyElfImage(*uiPDEAddress, bProcessImage, uiMemImageSize, *uiProcessBase) ;
+  ProcessLoader_CopyElfImage(*uiPDEAddress, bProcessImage.get(), uiMemImageSize, *uiProcessBase) ;
 
 	/* Find init and term stdio functions in libc if any */
-
-	unsigned uiInitRelocAddress = NULL ;
-	unsigned uiTermRelocAddress = NULL ;
-
+  unsigned uiInitRelocAddress = NULL ;
+  unsigned uiTermRelocAddress = NULL ;
   mELFParser.GetSectionHeaderByTypeAndName(ELFSectionHeader::SHT_REL, REL_PLT_SUB_NAME).goodMap([&] (ELF32SectionHeader* pRelocationSectionHeader)
   {
     mELFParser.GetSectionHeaderByIndex(pRelocationSectionHeader->sh_link).goodMap([&] (ELF32SectionHeader* pDynamicSymSectiomHeader)
@@ -261,14 +208,14 @@ byte ProcessLoader_LoadELFExe(const char* szProcessName, ProcessAddressSpace* pP
       mELFParser.GetSectionHeaderByIndex(pDynamicSymSectiomHeader->sh_link).goodMap([&] (ELF32SectionHeader* pDynamicSymStringSectionHeader)
       {
 				ELFRelocSection::ELF32_Rel* pELFDynRelTable = 
-					(ELFRelocSection::ELF32_Rel*)((unsigned)bProcessImage + pRelocationSectionHeader->sh_addr - uiMinMemAddr) ;
+          (ELFRelocSection::ELF32_Rel*)((unsigned)bProcessImage.get() + pRelocationSectionHeader->sh_addr - uiMinMemAddr) ;
 
 				unsigned uiNoOfDynRelEntries = pRelocationSectionHeader->sh_size / pRelocationSectionHeader->sh_entsize ;
 
 				ELFSymbolTable::ELF32SymbolEntry* pELFDynSymTable = 
-					(ELFSymbolTable::ELF32SymbolEntry*)((unsigned)bProcessImage + pDynamicSymSectiomHeader->sh_addr - uiMinMemAddr) ;
+          (ELFSymbolTable::ELF32SymbolEntry*)((unsigned)bProcessImage.get() + pDynamicSymSectiomHeader->sh_addr - uiMinMemAddr) ;
 
-				const char* pDynStrTable = (const char*)((unsigned)bProcessImage + pDynamicSymStringSectionHeader->sh_addr - uiMinMemAddr) ;
+        const char* pDynStrTable = (const char*)((unsigned)bProcessImage.get() + pDynamicSymStringSectionHeader->sh_addr - uiMinMemAddr) ;
 
 				for(unsigned i = 0; i < uiNoOfDynRelEntries && (uiInitRelocAddress == NULL || uiTermRelocAddress == NULL); i++)
 				{
@@ -295,12 +242,6 @@ byte ProcessLoader_LoadELFExe(const char* szProcessName, ProcessAddressSpace* pP
 				iNumberOfParameters, szArgumentList) ;
 
 	*uiEntryAdddress = uiMinMemAddr + uiProcessImageSize ;
-
-	DMM_DeAllocateForKernel((unsigned)bDLLSectionImage) ;
-	DMM_DeAllocateForKernel((unsigned)bStartUpSectionImage) ;
-	DMM_DeAllocateForKernel((unsigned)bProcessImage) ;
-
-	return ProcessLoader_SUCCESS ;
 }
 
 void ProcessLoader_CopyElfImage(unsigned uiPDEAddr, byte* bProcessImage, unsigned uiMemImageSize, unsigned uiProcessBase)

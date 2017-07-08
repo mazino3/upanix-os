@@ -76,6 +76,15 @@ class result
         throw exception(XLOC, "result is Good - can't get Error");
       return _error;
     }
+
+    template <typename LAMBDA>
+    bool badMap(const LAMBDA& lambdaf)
+    {
+      if(isGood())
+        return false;
+      lambdaf(_error);
+      return true;
+    }
 };
 
 template <typename Good>

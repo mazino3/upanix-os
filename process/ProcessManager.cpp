@@ -746,100 +746,103 @@ byte ProcessManager::CreateKernelImage(const unsigned uiTaskAddress, int iParent
 
 byte ProcessManager::Create(const char* szProcessName, int iParentProcessID, byte bIsFGProcess, int* iProcessID, int iUserID, int iNumberOfParameters, char** szArgumentList)
 {
-	//MemManager::Instance().DisplayNoOfFreePages();
-	int iNewProcessID = FindFreePAS();
-  ProcessAddressSpace& newPAS = GetAddressSpace(iNewProcessID);
+  try
+  {
+    int iNewProcessID = FindFreePAS();
+    ProcessAddressSpace& newPAS = GetAddressSpace(iNewProcessID);
 
-	unsigned uiEntryAdddress;
-	unsigned uiProcessEntryStackSize;
-	unsigned uiPDEAddress;
-	
-	if(ProcessLoader_Load(szProcessName, &newPAS, &uiPDEAddress,
-		 &uiEntryAdddress, &uiProcessEntryStackSize, iNumberOfParameters, szArgumentList) != ProcessLoader_SUCCESS)
-	{
-		return ProcessManager_FAILURE ;
-	}
+    unsigned uiEntryAdddress;
+    unsigned uiProcessEntryStackSize;
+    unsigned uiPDEAddress;
 
-	if(iParentProcessID != NO_PROCESS_ID)
-	{
-    ProcessAddressSpace& parentPAS = GetAddressSpace(iParentProcessID);
-		newPAS.iDriveID = parentPAS.iDriveID ;
+    ProcessLoader::Instance().Load(szProcessName, &newPAS, &uiPDEAddress, &uiEntryAdddress, &uiProcessEntryStackSize, iNumberOfParameters, szArgumentList);
 
-		MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&(parentPAS.processPWD),
-		MemUtil_GetDS(), (unsigned)&(newPAS.processPWD), 
-		sizeof(FileSystem_PresentWorkingDirectory)) ;
-	}
-	else
-	{
-		int iDriveID = ROOT_DRIVE_ID ;
-		newPAS.iDriveID = iDriveID ;
+    if(iParentProcessID != NO_PROCESS_ID)
+    {
+      ProcessAddressSpace& parentPAS = GetAddressSpace(iParentProcessID);
+      newPAS.iDriveID = parentPAS.iDriveID ;
 
-		if(iDriveID != CURRENT_DRIVE)
-		{
-			DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByID(iDriveID, false) ;
-			if(pDiskDrive == NULL)
-				return ProcessManager_FAILURE ;
+      MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&(parentPAS.processPWD),
+      MemUtil_GetDS(), (unsigned)&(newPAS.processPWD),
+      sizeof(FileSystem_PresentWorkingDirectory)) ;
+    }
+    else
+    {
+      int iDriveID = ROOT_DRIVE_ID ;
+      newPAS.iDriveID = iDriveID ;
 
-			if(pDiskDrive->Mounted())
-			{
-				MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&(pDiskDrive->FSMountInfo.FSpwd), MemUtil_GetDS(), 
-						(unsigned)&newPAS.processPWD, sizeof(FileSystem_PresentWorkingDirectory)) ;
-			}
-		}
-	}
+      if(iDriveID != CURRENT_DRIVE)
+      {
+        DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByID(iDriveID, false) ;
+        if(pDiskDrive == NULL)
+          return ProcessManager_FAILURE ;
 
-	RETURN_X_IF_NOT(ProcessEnv_Initialize(uiPDEAddress, iParentProcessID), ProcessEnv_SUCCESS, ProcessManager_FAILURE) ;
+        if(pDiskDrive->Mounted())
+        {
+          MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&(pDiskDrive->FSMountInfo.FSpwd), MemUtil_GetDS(),
+              (unsigned)&newPAS.processPWD, sizeof(FileSystem_PresentWorkingDirectory)) ;
+        }
+      }
+    }
 
-	RETURN_X_IF_NOT(ProcFileManager_Initialize(uiPDEAddress, iParentProcessID), ProcessEnv_SUCCESS, ProcessManager_FAILURE) ;
+    RETURN_X_IF_NOT(ProcessEnv_Initialize(uiPDEAddress, iParentProcessID), ProcessEnv_SUCCESS, ProcessManager_FAILURE) ;
 
-	newPAS.bIsKernelProcess = false ;
-	newPAS.uiNoOfPagesForDLLPTE = 0 ;
+    RETURN_X_IF_NOT(ProcFileManager_Initialize(uiPDEAddress, iParentProcessID), ProcessEnv_SUCCESS, ProcessManager_FAILURE) ;
 
-	BuildLDT(&GetAddressSpace(iNewProcessID).processLDT) ;
-	BuildTaskState(&GetAddressSpace(iNewProcessID), uiPDEAddress, uiEntryAdddress, uiProcessEntryStackSize) ;
+    newPAS.bIsKernelProcess = false ;
+    newPAS.uiNoOfPagesForDLLPTE = 0 ;
 
-	if(iUserID == DERIVE_FROM_PARENT)
-	{
-		newPAS.iUserID = GetCurrentPAS().iUserID ;
-	}
-	else
-	{ 
-		newPAS.iUserID = iUserID;
-	}
+    BuildLDT(&GetAddressSpace(iNewProcessID).processLDT) ;
+    BuildTaskState(&GetAddressSpace(iNewProcessID), uiPDEAddress, uiEntryAdddress, uiProcessEntryStackSize) ;
 
-	*iProcessID = iNewProcessID ;
+    if(iUserID == DERIVE_FROM_PARENT)
+    {
+      newPAS.iUserID = GetCurrentPAS().iUserID ;
+    }
+    else
+    {
+      newPAS.iUserID = iUserID;
+    }
 
-	newPAS.iParentProcessID = iParentProcessID ;
+    *iProcessID = iNewProcessID ;
 
-	if(iParentProcessID == NO_PROCESS_ID)
-	{
-    newPAS._processGroup = new ProcessGroup(bIsFGProcess);
-	}
-	else
-	{
-    ProcessAddressSpace& parentPAS = GetAddressSpace(iParentProcessID);
-		newPAS.iDriveID = parentPAS.iDriveID ;
-		newPAS._processGroup = parentPAS._processGroup;
-	}
+    newPAS.iParentProcessID = iParentProcessID ;
 
-  newPAS._processGroup->AddProcess();
+    if(iParentProcessID == NO_PROCESS_ID)
+    {
+      newPAS._processGroup = new ProcessGroup(bIsFGProcess);
+    }
+    else
+    {
+      ProcessAddressSpace& parentPAS = GetAddressSpace(iParentProcessID);
+      newPAS.iDriveID = parentPAS.iDriveID ;
+      newPAS._processGroup = parentPAS._processGroup;
+    }
 
-	*iProcessID = iNewProcessID ;
+    newPAS._processGroup->AddProcess();
 
-	if(bIsFGProcess)
-    newPAS._processGroup->PutOnFGProcessList(iNewProcessID);
+    *iProcessID = iNewProcessID ;
 
-	newPAS.pname = (char*)DMM_AllocateForKernel(strlen(szProcessName) + 1) ;
-	strcpy(newPAS.pname, szProcessName) ;
+    if(bIsFGProcess)
+      newPAS._processGroup->PutOnFGProcessList(iNewProcessID);
 
-	// Init Process State Info
-	newPAS.pProcessStateInfo = new ProcessStateInfo();
-	newPAS.status = RUN ;
+    newPAS.pname = (char*)DMM_AllocateForKernel(strlen(szProcessName) + 1) ;
+    strcpy(newPAS.pname, szProcessName) ;
 
-	AddToSchedulerList(iNewProcessID) ;
+    // Init Process State Info
+    newPAS.pProcessStateInfo = new ProcessStateInfo();
+    newPAS.status = RUN ;
 
-	//MemManager::Instance().DisplayNoOfFreePages() ;
-	return ProcessManager_SUCCESS ;
+    AddToSchedulerList(iNewProcessID) ;
+
+    //MemManager::Instance().DisplayNoOfFreePages() ;
+    return ProcessManager_SUCCESS ;
+  }
+  catch(const upan::exception& e)
+  {
+    e.Print();
+    return ProcessManager_FAILURE;
+  }
 }
 
 PS* ProcessManager::GetProcListASync()

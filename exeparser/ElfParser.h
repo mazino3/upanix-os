@@ -33,11 +33,9 @@ using ELFProgramHeader::ELF32ProgramHeader ;
 class ELFParser
 {
 	private:
-		const bool m_bReleaseMem ;
-		bool m_bObjectState ;
 		unsigned m_uiSymTabCount ;
 
-		BufferedReader* m_pBR ;
+    BufferedReader* m_pBR ;
 
 		ELF32Header* m_pHeader ;
 		ELF32SectionHeader* m_pSectionHeader ;
@@ -52,19 +50,17 @@ class ELFParser
 		ELFParser(const char* szFileName) ;
 		~ELFParser() ;
 
-		inline bool GetState() { return m_bObjectState ; }
-
-		bool CopyProcessImage(byte* bProcessImage, unsigned uiProcessBase, unsigned uiMaxImageSize) ;
+    void CopyProcessImage(byte* bProcessImage, unsigned uiProcessBase, unsigned uiMaxImageSize) const;
 		unsigned CopyELFSecStrTable(char* szSecStrTable) ;
 		unsigned CopyELFSectionHeader(ELF32SectionHeader* pSectionHeader) ;
 
 		unsigned* GetGOTAddress(byte* bProcessImage, unsigned uiMinMemAddr) ;
 		bool GetNoOfGOTEntries(unsigned* uiNoOfGOTEntries) ;
 
-		void GetMemImageSize(unsigned* uiMinMemAddr, unsigned* uiMaxMemAddr) ;
+    void GetMemImageSize(unsigned* uiMinMemAddr, unsigned* uiMaxMemAddr) const;
 		unsigned GetProgramStartAddress() ;
 
-		bool GetSectionHeaderByType(unsigned uiType, ELF32SectionHeader** pSectionHeader) ;
+    upan::result<ELF32SectionHeader*> GetSectionHeaderByType(unsigned uiType);
     upan::result<ELF32SectionHeader*> GetSectionHeaderByTypeAndName(unsigned uiType, const char* szLikeName);
     upan::result<ELF32SectionHeader*> GetSectionHeaderByIndex(unsigned uiIndex);
 
@@ -89,13 +85,11 @@ class ELFParser
 		void AllocateSymbolTable() ;
 		void DeAllocateSymbolTable() ;
 
-		void ReleaseMemory() ;
-
-		bool ReadHeader() ;
-		bool ReadProgramHeaders() ;
-		bool ReadSectionHeaders() ;
-		bool ReadSecHeaderStrTable() ;
-		bool ReadSymbolTables() ;
+    void ReadHeader() ;
+    void ReadProgramHeaders() ;
+    void ReadSectionHeaders() ;
+    void ReadSecHeaderStrTable() ;
+    void ReadSymbolTables() ;
 
 		unsigned* GetAddressBySectionName(byte* bProcessImage, unsigned uiMinMemAddr, const char* szSectionName) ;
 		bool GetNoOfGOTEntriesBySectionName(unsigned* uiNoOfGOTEntries, const char* szSectionName) ;

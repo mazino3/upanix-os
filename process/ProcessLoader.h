@@ -35,12 +35,6 @@
 #define __PROCESS_START_UP_FILE	".procinit"
 #define __PROCESS_DLL_FILE		".dll"
 
-byte ProcessLoader_Load(const char* szProcessName, ProcessAddressSpace* pProcessAddressSpace, unsigned *uiPDEAddress,
-		unsigned* uiEntryAdddress, unsigned* uiProcessEntryStackSize, int iNumberOfParameters,
-		char** szArgumentList) ;
-byte ProcessLoader_LoadELFExe(const char* szProcessName, ProcessAddressSpace* pProcessAddressSpace, unsigned *uiPDEAddress,
-		unsigned *uiEntryAdddress, unsigned* uiProcessEntryStackSize, 
-		int iNumberOfParameters, char** szArgumentList) ;
 byte ProcessLoader_CopyImage(const char* szProcessName, unsigned uiPDEAddr, unsigned uiNoOfPagesForProcess) ;
 byte ProcessLoader_CopyProcessPage(const char* szProcessName, unsigned uiProcessAddress, unsigned uiOffset) ;
 void ProcessLoader_CopyElfImage(unsigned uiPDEAddr, byte* bProcessImage, unsigned uiMemImageSize, unsigned uiMinMemAddr) ;
@@ -63,6 +57,9 @@ class ProcessLoader
       static ProcessLoader instance;
       return instance;
     }
+    void Load(const char* szProcessName, ProcessAddressSpace* pProcessAddressSpace, unsigned *uiPDEAddress,
+              unsigned* uiEntryAdddress, unsigned* uiProcessEntryStackSize, int iNumberOfParameters,
+              char** szArgumentList);
     byte* LoadDLLInitSection(ProcessAddressSpace& pas, unsigned& uiSectionSize);
     byte* LoadStartUpInitSection(ProcessAddressSpace& pas, unsigned& uiSectionSize);
   private:

@@ -574,3 +574,4 @@ drivers/usb/devices/Makefile
 drivers/usb/devices/USBKeyboard.cpp
 drivers/usb/devices/USBKeyboard.h
 libmcpp/infra/result.h
+libmcpp/infra/try.h

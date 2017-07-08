@@ -46,11 +46,7 @@ __volatile__ unsigned uiP9)
       try
       {
         //ProcessManager_DisableTaskSwitch() ;
-        byte bStatus;
-        if((bStatus = DynamicLinkLoader_DoRelocation(&ProcessManager::Instance().GetCurrentPAS(), (int)uiP8, uiP9, piRetVal)) != DynamicLinkLoader_SUCCESS)
-        {
-          KC::MDisplay().Address("\n Dynamic Relocation Failed: ", bStatus) ;
-        }
+        DynamicLinkLoader_DoRelocation(&ProcessManager::Instance().GetCurrentPAS(), (int)uiP8, uiP9, piRetVal);
         //ProcessManager_EnableTaskSwitch() ;
       }
       catch(const upan::exception& e)

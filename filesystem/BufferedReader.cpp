@@ -21,6 +21,7 @@
 # include <ProcFileManager.h>
 # include <MemUtil.h>
 # include <Display.h>
+# include <uniq_ptr.h>
 
 /* This is used in case UnBuffered Data comes after Buffered Data. If the unbuffered data offset is beyond file size
 file op will return error which causes buffered reader to return error... which shouldn't happen because the request
@@ -28,65 +29,51 @@ is not completely beyond file size. So, to avoid this, request to file op is sen
 to ensure some non zero byte request is there within file size limit*/
 #define OVERFLOW_ADJUST 2
 
-BufferedReader::BufferedReader(const char* szFileName, unsigned uiOffSet, unsigned uiBufferSize) : m_bObjectState(false)
+BufferedReader::BufferedReader(const char* szFileName, unsigned uiOffSet, unsigned uiBufferSize) : m_uiOffSet(uiOffSet), m_szBuffer(nullptr)
 {
-	m_uiOffSet = uiOffSet ;
-
 	if(FileOperations_Open(&m_iFD, szFileName, O_RDONLY) != FileOperations_SUCCESS)
-	{
-		printf("\n Failed to open File: %s", szFileName) ;
-		return ;
-	}
+    throw upan::exception(XLOC, "Failed to open File: %s", szFileName);
 
 	if(FileOperations_Seek(m_iFD, uiOffSet, SEEK_SET) != FileOperations_SUCCESS)
-	{
-		FileOperations_Close(m_iFD) ;
-		printf("\n Seek failed. ") ;
-		return ;
+  {
+    FileOperations_Close(m_iFD);
+    throw upan::exception(XLOC, "Seek failed");
 	}
 
-	m_szBuffer = new char[uiBufferSize] ;
-	if(m_szBuffer == NULL)
+  upan::uniq_ptr<char[]> buffer(new char[uiBufferSize]);
+
+  if(FileOperations_Read(m_iFD, buffer.get(), uiBufferSize, &m_uiBufferSize) != FileOperations_SUCCESS)
 	{
-		FileOperations_Close(m_iFD) ;
-		printf("\n Failed to alloc memory for Buffer - in BufferedReader\n") ;
-		return ;
+    FileOperations_Close(m_iFD);
+    throw upan::exception(XLOC, "Failed to Read from file: %s", szFileName);
 	}
 
-	if(FileOperations_Read(m_iFD, m_szBuffer, uiBufferSize, &m_uiBufferSize) != FileOperations_SUCCESS) 
-	{
-		FileOperations_Close(m_iFD) ;
-		printf("\n Failed to Read from file: %s", szFileName) ;
-		delete []m_szBuffer ;
-	}
-
-	m_bObjectState = true ;
+  m_szBuffer = buffer.release();
 }
 
 BufferedReader::~BufferedReader()
 {
-	if(!m_bObjectState)
-		return ;
-
-	delete []m_szBuffer ;
-
+  delete[] m_szBuffer;
 	FileOperations_Close(m_iFD) ;
 }
 
-bool BufferedReader::Seek(unsigned uiOffSet)
+void BufferedReader::Seek(unsigned uiOffSet)
 {
-	return (FileOperations_Seek(m_iFD, uiOffSet, SEEK_SET) == FileOperations_SUCCESS) ;
+  if(FileOperations_Seek(m_iFD, uiOffSet, SEEK_SET) != FileOperations_SUCCESS)
+    throw upan::exception(XLOC, "Buffered Reader: Failed to seek");
 }
 
-bool BufferedReader::Read(char* szBuffer, int iLen, unsigned* pReadLen)
+uint32_t BufferedReader::Read(char* szBuffer, int iLen)
 {
-	if(!m_bObjectState)
-	{
-		printf("\n BufferedReader initialization has failed!") ;
-		return false ;
-	}
+  uint32_t n;
+  if(!DoRead(szBuffer, iLen, &n))
+    throw upan::exception(XLOC, "Buffered Readeer: Failed to read %d bytes", iLen);
+  return n;
+}
 
-	unsigned uiCurrentOffset ;
+bool BufferedReader::DoRead(char* szBuffer, int iLen, unsigned* pReadLen)
+{
+  unsigned uiCurrentOffset;
 	RETURN_X_IF_NOT(FileOperations_GetOffset(m_iFD, &uiCurrentOffset), FileOperations_SUCCESS, false) ;
 
 	if(uiCurrentOffset >= m_uiOffSet && (uiCurrentOffset + iLen) <= (m_uiOffSet + m_uiBufferSize))

@@ -45,7 +45,7 @@ typedef struct
 extern int DLLLoader_iNoOfProcessSharedObjectList ;
 
 void DLLLoader_Initialize() ;
-byte DLLLoader_LoadELFDLL(const char* szDLLName, const char* szJustDLLName, ProcessAddressSpace* processAddressSpace) ;
+void DLLLoader_LoadELFDLL(const char* szDLLName, const char* szJustDLLName, ProcessAddressSpace* processAddressSpace) ;
 void DLLLoader_DeAllocateProcessDLLPTEPages(ProcessAddressSpace* processAddressSpace) ;
 int DLLLoader_GetProcessSharedObjectListIndexByName(const char* szDLLName) ;
 ProcessSharedObjectList* DLLLoader_GetProcessSharedObjectListByName(const char* szDLLName) ;

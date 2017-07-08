@@ -75,6 +75,7 @@ class error
       const int BSIZE = 1024;
       char buf[BSIZE];
       vsnprintf(buf, BSIZE, fmsg, arg);
+      _msg = buf;
     }
 
     error(upan::string& msg) : _msg(msg) {}

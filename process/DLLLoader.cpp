@@ -34,6 +34,8 @@
 # include <ElfDynamicSection.h>
 # include <exception.h>
 # include <result.h>
+# include <uniq_ptr.h>
+# include <try.h>
 
 using namespace ELFSectionHeader ;
 using namespace ELFHeader ;
@@ -49,12 +51,10 @@ static int DLLLoader_GetFreeProcessDLLEntry()
 	ProcessSharedObjectList* pProcessSharedObjectList = (ProcessSharedObjectList*)(PROCESS_DLL_PAGE_ADDR - GLOBAL_DATA_SEGMENT_BASE) ;
 
 	for(int i = 0; i < DLLLoader_iNoOfProcessSharedObjectList; i++)
-	{
 		if(pProcessSharedObjectList[i].szName[0] == '\0')
 			return i ;
-	}
 
-	return -1 ;
+  throw upan::exception(XLOC, "out of memory for process dll entries");
 }
 
 static unsigned DLLLoader_GetNoOfPagesAllocated()
@@ -104,14 +104,10 @@ static void DLLLoader_CopyElfDLLImage(ProcessAddressSpace* processAddressSpace, 
 int DLLLoader_GetProcessSharedObjectListIndexByName(const char* szDLLName)
 {
 	ProcessSharedObjectList* pProcessSharedObjectList = (ProcessSharedObjectList*)(PROCESS_DLL_PAGE_ADDR - GLOBAL_DATA_SEGMENT_BASE) ;
-
 	for(int i = 0; i < DLLLoader_iNoOfProcessSharedObjectList; i++)
-	{
 		if(strcmp(pProcessSharedObjectList[i].szName, szDLLName) == 0)
-			return i ;
-	}
-
-	return -1 ;
+      return i;
+  throw upan::exception(XLOC, "Failed to find entry for shared object (.so) file: %s", szDLLName);
 }
 
 ProcessSharedObjectList* DLLLoader_GetProcessSharedObjectListByName(const char* szDLLName)
@@ -158,17 +154,11 @@ void DLLLoader_Initialize()
 	DLLLoader_iNoOfProcessSharedObjectList = PAGE_SIZE / sizeof(ProcessSharedObjectList) ;
 }
 
-byte DLLLoader_LoadELFDLL(const char* szDLLName, const char* szJustDLLName, ProcessAddressSpace* processAddressSpace)
+void DLLLoader_LoadELFDLL(const char* szDLLName, const char* szJustDLLName, ProcessAddressSpace* processAddressSpace)
 {
 	ELFParser mELFParser(szDLLName) ;
 
-	if(!mELFParser.GetState())
-		return DLLLoader_FAILURE ;
-
-	int iProcessDLLEntryIndex = 0 ;
-
-	if((iProcessDLLEntryIndex = DLLLoader_GetFreeProcessDLLEntry()) == -1)
-		return DLLLoader_ERR_PROCESS_DLL_LIMIT_EXCEEDED ;
+  const int iProcessDLLEntryIndex = DLLLoader_GetFreeProcessDLLEntry();
 
 	ProcessSharedObjectList* pProcessSharedObjectList = (ProcessSharedObjectList*)(PROCESS_DLL_PAGE_ADDR - GLOBAL_DATA_SEGMENT_BASE) ;
 		
@@ -176,42 +166,25 @@ byte DLLLoader_LoadELFDLL(const char* szDLLName, const char* szJustDLLName, Proc
 
 	mELFParser.GetMemImageSize(&uiMinMemAddr, &uiMaxMemAddr) ;
 	if(uiMinMemAddr != 0)
-		return DLLLoader_ERR_NOT_PIC ;
+    throw upan::exception(XLOC, "Not a PIC - DLL Min Address: %x", uiMinMemAddr);
 
 	unsigned uiDLLSectionSize ;
-	byte* bDLLSectionImage = NULL ;
-
-  try
-  {
-	  bDLLSectionImage = ProcessLoader::Instance().LoadDLLInitSection(*processAddressSpace, uiDLLSectionSize);
-  }
-  catch(const upan::exception& ex)
-  {
-    ex.Print();
-    return DLLLoader_FAILURE;
-  }
+  upan::uniq_ptr<byte[]> bDLLSectionImage(ProcessLoader::Instance().LoadDLLInitSection(*processAddressSpace, uiDLLSectionSize));
 
 	unsigned uiDLLImageSize = ProcessLoader_GetCeilAlignedAddress(uiMaxMemAddr - uiMinMemAddr, 4) ;
 	unsigned uiMemImageSize = uiDLLImageSize + uiDLLSectionSize ;
 	unsigned uiNoOfPagesForDLL = MemManager::Instance().GetProcessSizeInPages(uiMemImageSize) + DLL_ELF_SEC_HEADER_PAGE ;
 
 	if(uiNoOfPagesForDLL > MAX_PAGES_PER_PROCESS)
-	{
-		DMM_DeAllocateForKernel((unsigned)bDLLSectionImage) ;
-		return DLLLoader_ERR_HUGE_DLL_SIZE ;
-	}
+    throw upan::exception(XLOC, "No. of pages for DLL %u exceeds max limit per dll %u", uiNoOfPagesForDLL, MAX_PAGES_PER_PROCESS);
 
 	unsigned uiNoOfPagesAllocatedForOtherDLLs = DLLLoader_GetNoOfPagesAllocated() ;
 
 	if(!KC::MKernelService().RequestDLLAlloCopy(iProcessDLLEntryIndex, uiNoOfPagesAllocatedForOtherDLLs, uiNoOfPagesForDLL))
 	{
-		DMM_DeAllocateForKernel((unsigned)bDLLSectionImage) ;
-
-		unsigned i ;
-		for(i = 0; i < pProcessSharedObjectList[iProcessDLLEntryIndex].uiNoOfPages; i++)
+    for(uint32_t i = 0; i < pProcessSharedObjectList[iProcessDLLEntryIndex].uiNoOfPages; i++)
 			MemManager::Instance().DeAllocatePhysicalPage(pProcessSharedObjectList[iProcessDLLEntryIndex].uiAllocatedPageNumbers[i]) ;
-
-		return DLLLoader_FAILURE ;
+    throw upan::exception(XLOC, "Failed to allocate memory for DLL via kernal service");
 	}
 
 	unsigned uiDLLLoadAddress = (processAddressSpace->uiStartPDEForDLL * PAGE_SIZE * PAGE_TABLE_ENTRIES) + uiNoOfPagesAllocatedForOtherDLLs * PAGE_SIZE - PROCESS_BASE ;
@@ -225,23 +198,18 @@ byte DLLLoader_LoadELFDLL(const char* szDLLName, const char* szJustDLLName, Proc
 	unsigned uiCopySize = mELFParser.CopyELFSectionHeader((ELF32SectionHeader*)pRealELFSectionHeaderAddr) ;
 	mELFParser.CopyELFSecStrTable((char*)(pRealELFSectionHeaderAddr + uiCopySize)) ;
 
-	byte* bDLLImage = (byte*)DMM_AllocateForKernel(sizeof(char) * uiMemImageSize) ;
+  upan::uniq_ptr<byte[]> bDLLImage(new byte[sizeof(char) * uiMemImageSize]);
 
-	if(!mELFParser.CopyProcessImage(bDLLImage, 0, uiMemImageSize))
-	{
-		DMM_DeAllocateForKernel((unsigned)bDLLImage) ;
-		DMM_DeAllocateForKernel((unsigned)bDLLSectionImage) ;
+  upan::tryresult([&] () { mELFParser.CopyProcessImage(bDLLImage.get(), 0, uiMemImageSize); }).badMap([&] (const upan::error& err) {
+    for(unsigned i = 0; i < pProcessSharedObjectList[iProcessDLLEntryIndex].uiNoOfPages; i++)
+      MemManager::Instance().DeAllocatePhysicalPage(pProcessSharedObjectList[iProcessDLLEntryIndex].uiAllocatedPageNumbers[i]) ;
+    throw upan::exception(XLOC, err);
+  });
 
-		for(unsigned i = 0; i < pProcessSharedObjectList[iProcessDLLEntryIndex].uiNoOfPages; i++)
-			MemManager::Instance().DeAllocatePhysicalPage(pProcessSharedObjectList[iProcessDLLEntryIndex].uiAllocatedPageNumbers[i]) ;
-
-		return DLLLoader_FAILURE ;
-	}
-
-	MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)bDLLSectionImage, MemUtil_GetDS(), (unsigned)(bDLLImage + uiDLLImageSize), uiDLLSectionSize) ;
+  MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)bDLLSectionImage.get(), MemUtil_GetDS(), (unsigned)(bDLLImage.get() + uiDLLImageSize), uiDLLSectionSize) ;
 
 	// Setting the Dynamic Link Loader Address in GOT
-	unsigned* uiGOT = mELFParser.GetGOTAddress(bDLLImage, uiMinMemAddr) ;
+  unsigned* uiGOT = mELFParser.GetGOTAddress(bDLLImage.get(), uiMinMemAddr) ;
 	if(uiGOT != NULL)
 	{
 		uiGOT[1] = iProcessDLLEntryIndex ;
@@ -251,21 +219,19 @@ byte DLLLoader_LoadELFDLL(const char* szDLLName, const char* szJustDLLName, Proc
 	unsigned uiNoOfGOTEntries ;
 	if(mELFParser.GetNoOfGOTEntries(&uiNoOfGOTEntries))
 	{
-		unsigned i ;
-		for(i = 3; i < uiNoOfGOTEntries; i++)
+    for(uint32_t i = 3; i < uiNoOfGOTEntries; i++)
 			uiGOT[i] += uiDLLLoadAddress ;
 	}
 
 /* Dynamic Relocation Entries are resolved here in Global Offset Table */
-
   mELFParser.GetSectionHeaderByTypeAndName(SHT_REL, REL_DYN_SUB_NAME).goodMap([&] (ELF32SectionHeader* pRelocationSectionHeader)
   {
     ELF32SectionHeader* pDynamicSymSectiomHeader = mELFParser.GetSectionHeaderByIndex(pRelocationSectionHeader->sh_link).goodValueOrThrow(XLOC);
 
-    ELF32_Rel* pELFDynRelTable = (ELF32_Rel*)((unsigned)bDLLImage + pRelocationSectionHeader->sh_addr) ;
+    ELF32_Rel* pELFDynRelTable = (ELF32_Rel*)((unsigned)bDLLImage.get() + pRelocationSectionHeader->sh_addr) ;
     unsigned uiNoOfDynRelEntries = pRelocationSectionHeader->sh_size / pRelocationSectionHeader->sh_entsize ;
 
-    ELF32SymbolEntry* pELFDynSymTable = (ELF32SymbolEntry*)((unsigned)bDLLImage + pDynamicSymSectiomHeader->sh_addr) ;
+    ELF32SymbolEntry* pELFDynSymTable = (ELF32SymbolEntry*)((unsigned)bDLLImage.get() + pDynamicSymSectiomHeader->sh_addr) ;
 
     unsigned i ;
     unsigned uiRelType ;
@@ -276,26 +242,19 @@ byte DLLLoader_LoadELFDLL(const char* szDLLName, const char* szJustDLLName, Proc
 
       if(uiRelType == R_386_RELATIVE)
       {
-        ((unsigned*)((unsigned)bDLLImage + pELFDynRelTable[i].r_offset))[0] += uiDLLLoadAddress ;
+        ((unsigned*)((unsigned)bDLLImage.get() + pELFDynRelTable[i].r_offset))[0] += uiDLLLoadAddress ;
       }
       else if(uiRelType == R_386_GLOB_DAT)
       {
-        ((unsigned*)((unsigned)bDLLImage + pELFDynRelTable[i].r_offset))[0] =
+        ((unsigned*)((unsigned)bDLLImage.get() + pELFDynRelTable[i].r_offset))[0] =
           pELFDynSymTable[ELF32_R_SYM(pELFDynRelTable[i].r_info)].st_value + uiDLLLoadAddress ;
       }
     }
   });
 
 /* Enf of Dynamic Relocation Entries resolution */
-
-	DLLLoader_CopyElfDLLImage(processAddressSpace, pProcessSharedObjectList[iProcessDLLEntryIndex].uiNoOfPages, bDLLImage, uiMemImageSize) ;
-
+  DLLLoader_CopyElfDLLImage(processAddressSpace, pProcessSharedObjectList[iProcessDLLEntryIndex].uiNoOfPages, bDLLImage.get(), uiMemImageSize) ;
 	strcpy(pProcessSharedObjectList[iProcessDLLEntryIndex].szName, szJustDLLName) ;
-
-	DMM_DeAllocateForKernel((unsigned)bDLLImage) ;
-	DMM_DeAllocateForKernel((unsigned)bDLLSectionImage) ;
-
-	return DLLLoader_SUCCESS ;
 }
 
 void DLLLoader_DeAllocateProcessDLLPTEPages(ProcessAddressSpace* processAddressSpace)

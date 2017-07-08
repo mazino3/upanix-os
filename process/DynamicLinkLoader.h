@@ -28,9 +28,9 @@
 #define DynamicLinkLoader_ERR_LIB_EFOUND				4
 #define DynamicLinkLoader_FAILURE						5
 
-byte DynamicLinkLoader_Initialize(unsigned* pRealELFSectionHeadeAddr, unsigned uiPDEAddress) ;
+uint32_t DynamicLinkLoader_Initialize(unsigned uiPDEAddress) ;
 void DynamicLinkLoader_UnInitialize(ProcessAddressSpace* processAddressSpace) ;
-byte DynamicLinkLoader_GetSymbolOffset(const char* szJustDLLName, const char* szSymName, unsigned* uiDynSymOffset, ProcessAddressSpace* processAddressSpace) ;
-byte DynamicLinkLoader_DoRelocation(ProcessAddressSpace* processAddressSpace, int iID, unsigned uiRelocationOffset, __volatile__ int* iDynamicSymAddress) ;
+bool DynamicLinkLoader_GetSymbolOffset(const char* szJustDLLName, const char* szSymName, unsigned* uiDynSymOffset, ProcessAddressSpace* processAddressSpace) ;
+void DynamicLinkLoader_DoRelocation(ProcessAddressSpace* processAddressSpace, int iID, unsigned uiRelocationOffset, __volatile__ int* iDynamicSymAddress) ;
 
 #endif
