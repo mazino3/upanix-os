@@ -505,8 +505,6 @@ util/KernelUtil.cpp
 util/KernelUtil.h
 util/Makefile
 util/ReturnHandler.h
-util/SimAlgos.cpp
-util/SimAlgos.h
 util/StringUtil.cpp
 util/StringUtil.h
 util/SystemUtil.cpp

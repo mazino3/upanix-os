@@ -42,14 +42,6 @@ typedef unsigned			DWORD ;
 #define KERNEL_REAL_ADDRESS(ADDR) ((unsigned)ADDR + GLOBAL_DATA_SEGMENT_BASE)
 #define KERNEL_VIRTUAL_ADDRESS(ADDR) ((unsigned)ADDR - GLOBAL_DATA_SEGMENT_BASE) 
 
-#define RETURN_MSG_IF_NOT(RetVal, Func, CheckVal, Msg) \
-RetVal = Func ;\
-if(RetVal != CheckVal) \
-{ \
-printf("\n%s", Msg) ; \
-return RetVal ; \
-} 
-
 #define RETURN_IF_NOT(RetVal, Func, CheckVal) \
 RetVal = Func ;\
 if(RetVal != CheckVal) \
@@ -72,18 +64,12 @@ extern byte KERNEL_MODE ;
 extern byte SPECIAL_TASK ;
 extern int debug_point ;
 
-//#define LIB_PATH "/lib/"
-//#define BIN_PATH "/bin/"
-//#define OSIN_PATH "/osin/"
-
 #define LIB_PATH ":ROOT@/lib:ROOT@/usr/lib:"
 #define BIN_PATH "ROOT@/bin/"
 #define OSIN_PATH "ROOT@/osin/"
 
 #define MIN( a, b ) ( ( a ) < ( b ) ? ( a ) : ( b ) )
 #define MAX( a, b ) ( ( a ) > ( b ) ? ( a ) : ( b ) )
-
-#define ARRAY_LEN(x) (sizeof(x) / sizeof((x)[0]))
 
 bool UpanixMain_IsKernelDebugOn() ;
 

@@ -41,8 +41,7 @@ EHCIDevice::EHCIDevice(EHCIController& controller)
     throw upan::exception(XLOC, "GetConfigVal Failed") ;
 	printf("\n ConfifValue: %d", bConfigValue) ;
 
-  if(!CheckConfiguration(bConfigValue))
-    throw upan::exception(XLOC, "CheckConfig Failed");
+  CheckConfiguration(bConfigValue);
 
   if(!GetConfigDescriptor(&_pArrConfigDesc))
     throw upan::exception(XLOC, "GeConfigDesc Failed");
@@ -101,24 +100,20 @@ bool EHCIDevice::SetConfiguration(byte bConfigValue)
 	return true;
 }
 
-bool EHCIDevice::CheckConfiguration(byte& bConfigValue)
+void EHCIDevice::CheckConfiguration(byte& bConfigValue)
 {
 	if(_deviceDesc.bNumConfigs <= 0)
-	{
-		printf("\n Invalid NumConfigs: %d", _deviceDesc.bNumConfigs) ;
-    return false;
-	}
+    throw upan::exception(XLOC, "Invalid NumConfigs: %d", _deviceDesc.bNumConfigs);
 
 	if(bConfigValue <= 0 || bConfigValue > _deviceDesc.bNumConfigs)
 	{
-		bool bStatus ;
 		printf("\n Current Configuration %d -> Invalid. Setting to Configuration 1", bConfigValue) ;
-		RETURN_MSG_IF_NOT(bStatus, SetConfiguration(1), true, "SetConfiguration Failed") ;
+    if(!SetConfiguration(1))
+      throw upan::exception(XLOC, "SetConfiguration Failed");
 		bConfigValue = 1 ;
 	}
 
   SetConfigIndex(bConfigValue);
-	return true;
 }
 
 bool EHCIDevice::GetConfigDescriptor(USBStandardConfigDesc** pConfigDesc)

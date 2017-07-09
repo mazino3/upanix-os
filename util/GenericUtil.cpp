@@ -135,17 +135,6 @@ void GenericUtil_ReadInput(char* szInputBuffer, const int iMaxReadLength, byte b
 	}
 }
 
-unsigned GenericUtil_Power(unsigned uiNum, unsigned uiPow)
-{
-	unsigned uiRes = 1 ;
-	unsigned i ;
-
-	for(i = 0; i < uiPow; i++)
-		uiRes *= uiNum ;
-
-	return uiRes ;
-}
-
 byte GenericUtil_GetFullFilePathFromEnv(const char* szPathEnvVar, const char* szPathEnvDefVal, const char* szFileName, char* szFullFilePath)
 {
 	char* s = ProcessEnv_Get(szPathEnvVar) ;

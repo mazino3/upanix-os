@@ -66,24 +66,6 @@ upan::string ToString(unsigned uiNumber)
   return strNumber;
 }
 
-byte String_ConvertStringToNumber(unsigned* uiNumber, char* strNumber)
-{
-	__volatile__ int i, pow ;
-
-	*uiNumber = 0 ;
-	pow = 0 ;
-
-	for(i = strlen(strNumber) - 1; i >= 0; i--)
-	{
-		if(!isdigit(strNumber[i]))
-			return false ;
-
-		*uiNumber += (strNumber[i] - 0x30) * GenericUtil_Power(10, pow++) ;
-	}
-
-	return true ;
-}
-
 int String_Chr(const char* szStr, char ch)
 {
 	int len = strlen(szStr) ;

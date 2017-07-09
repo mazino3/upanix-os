@@ -590,19 +590,19 @@ void ConsoleCommands_CreatePrimaryPartition()
 	PartitionTable partitionTable(*pDisk);
 
 	char szSizeInSectors[11] ;
-	unsigned uiSizeInSectors ;
 
 	KC::MDisplay().Message("\n Size in Sector = ", Display::WHITE_ON_BLACK()) ;
 	GenericUtil_ReadInput(szSizeInSectors, 10, true) ;
 
-	if(!String_ConvertStringToNumber(&uiSizeInSectors, szSizeInSectors))
+  int sizeInSectors = atoi(szSizeInSectors);
+  if(sizeInSectors <= 0)
 	{
-		KC::MDisplay().Message("\n Invalid Number", ' ') ;
+    printf("\n Invalid sector size: %d", sizeInSectors);
 		return ;
 	}
 
-	partitionTable.CreatePrimaryPartitionEntry(uiSizeInSectors, MBRPartitionInfo::NORMAL);
-	KC::MDisplay().Message("\n Partition Created", ' ') ;
+  partitionTable.CreatePrimaryPartitionEntry(sizeInSectors, MBRPartitionInfo::NORMAL);
+  printf("\n Partition Created!");
 }
 
 void ConsoleCommands_CreateExtendedPartitionEntry()
@@ -620,18 +620,18 @@ void ConsoleCommands_CreateExtendedPartitionEntry()
 	}
 
 	char szSizeInSectors[11] ;
-	unsigned uiSizeInSectors ;
 
 	KC::MDisplay().Message("\n Size in Sector = ", Display::WHITE_ON_BLACK()) ;
 	GenericUtil_ReadInput(szSizeInSectors, 10, true) ;
 
-	if(!String_ConvertStringToNumber(&uiSizeInSectors, szSizeInSectors))
+  int sizeInSectors = atoi(szSizeInSectors);
+  if(sizeInSectors <= 0)
 	{
-		KC::MDisplay().Message("\n Invalid Number", ' ') ;
+    printf("\n Invalid sector size %d", sizeInSectors);
 		return ;
 	}
-	partitionTable.CreatePrimaryPartitionEntry(uiSizeInSectors, MBRPartitionInfo::EXTENEDED);
-	printf("\n Partition Created");
+  partitionTable.CreatePrimaryPartitionEntry(sizeInSectors, MBRPartitionInfo::EXTENEDED);
+  printf("\n Partition Created!");
 }
 
 void ConsoleCommands_CreateExtendedPartition()
@@ -649,19 +649,17 @@ void ConsoleCommands_CreateExtendedPartition()
 	}
 
 	char szSizeInSectors[11] ;
-	unsigned uiSizeInSectors ;
-
 	KC::MDisplay().Message("\n Size in Sector = ", Display::WHITE_ON_BLACK()) ;
 	GenericUtil_ReadInput(szSizeInSectors, 10, true) ;
 
-	if(!String_ConvertStringToNumber(&uiSizeInSectors, szSizeInSectors))
+  int sizeInSectors = atoi(szSizeInSectors);
+  if(sizeInSectors <= 0)
 	{
-		KC::MDisplay().Message("\n Invalid Number", ' ') ;
+    printf("\n Invalid sector size: %d", sizeInSectors);
 		return ;
 	}
 
-	partitionTable.CreateExtPartitionEntry(uiSizeInSectors) ;
-
+  partitionTable.CreateExtPartitionEntry(sizeInSectors) ;
 	printf("\n Partition Created");
 }
 
@@ -725,11 +723,11 @@ void ConsoleCommands_LoadExe()
 
 void ConsoleCommands_WaitPID()
 {
-	unsigned pid ;
-
-	String_ConvertStringToNumber(&pid, CommandLineParser_GetParameterAt(0)) ;
-
-	ProcessManager::Instance().WaitOnChild(pid);
+  int pid = atoi(CommandLineParser_GetParameterAt(0));
+  if(pid <= 0)
+    printf("\n Invalid PID : %d", pid);
+  else
+    ProcessManager::Instance().WaitOnChild(pid);
 }
 
 void ConsoleCommands_Exit()
@@ -948,7 +946,7 @@ void ConsoleCommands_InitMountManager()
 void ConsoleCommands_Test()
 {
 	TestSuite t ;
-	t.Run() ;
+  t.Run() ;
 }
 
 extern void TestMTerm() ;
