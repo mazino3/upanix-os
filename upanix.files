@@ -509,7 +509,6 @@ util/StringUtil.cpp
 util/StringUtil.h
 util/SystemUtil.cpp
 util/SystemUtil.h
-util/TimerTask.h
 build_load.sh
 build_umount.sh
 build_upanix.sh

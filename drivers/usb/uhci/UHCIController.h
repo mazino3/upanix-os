@@ -25,6 +25,7 @@
 #include <UHCIStructures.h>
 #include <USBController.h>
 #include <USBMassBulkStorageDisk.h>
+#include <KernelUtil.h>
 
 #define UHCIController_SUCCESS				0
 #define UHCIController_FAILURE				1
@@ -43,16 +44,16 @@
 
 class PCIEntry;
 
-class UHCIController
+class UHCIController : public KernelUtil::TimerTask
 {
   public:
     UHCIController(PCIEntry*, unsigned uiIOBase, unsigned uiIOSize);
     bool Probe();
   private:
-    void StartFrameCleaner();
+    virtual bool TimerTrigger();
+
     bool GetNextFrameToClean(unsigned& uiFrameNumber);
     bool CleanFrame(unsigned uiFrameNumber);
-    bool FrameCleaner();
     void CreateFrameList();
     unsigned GetFrameListEntry(unsigned uiFrameNumber);
     void SetFrameListEntry(unsigned uiFrameNumber, unsigned uiValue, bool bCleanBuffer, bool bCleanDescs);

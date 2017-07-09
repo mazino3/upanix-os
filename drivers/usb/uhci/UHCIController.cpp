@@ -32,8 +32,7 @@
 #include <UHCIController.h>
 #include <USBDataHandler.h>
 #include <UHCIDevice.h>
-#include <TimerTask.h>
-
+#include <ProcessManager.h>
 #include <stdio.h>
 
 static const IRQ* UHCI_USB_IRQ ;
@@ -246,15 +245,10 @@ bool UHCIController::Probe()
     }
 	}
 
-	StartFrameCleaner() ;
+  _frameQueue.clear();
+  KernelUtil::ScheduleTimedTask("UHCIFrmCleaner", 100, *this);
 
 	return true;
-}
-
-void UHCIController::StartFrameCleaner()
-{
-  _frameQueue.clear();
-  TimerTask<UHCIController>::Start("UHCIFrmCleaner", 100, *this, &UHCIController::FrameCleaner);
 }
 
 bool UHCIController::GetNextFrameToClean(unsigned& uiFrameNumber)
@@ -282,7 +276,7 @@ bool UHCIController::CleanFrame(unsigned uiFrameNumber)
 	return false;
 }
 
-bool UHCIController::FrameCleaner()
+bool UHCIController::TimerTrigger()
 {
 	unsigned uiFrameNumber ;
 	while(GetNextFrameToClean(uiFrameNumber))
