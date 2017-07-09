@@ -25,16 +25,20 @@ else
   exit 1
 fi
 
-echo $SUDO_PW | sudo -S mount floppy/GrubFloppy_ext.img floppy/MntFloppy -o loop 
-
-if [ $? -ne 0 ]
+#BOOT_FLOPPY_IMG=GrubFloppy_ext.img
+if [ "$BOOT_FLOPPY_IMG" != "" ]
 then
-exit 100
+  echo $SUDO_PW | sudo -S mount floppy/${BOOT_FLOPPY_IMG} floppy/MntFloppy -o loop 
+
+  if [ $? -ne 0 ]
+  then
+  exit 100
+  fi
+
+  echo $SUDO_PW | sudo -S cp -f bin/upanix.elf floppy/MntFloppy/boot
+
+  echo $SUDO_PW | sudo -S umount floppy/MntFloppy 
 fi
-
-echo $SUDO_PW | sudo -S cp -f bin/upanix.elf floppy/MntFloppy/boot
-
-echo $SUDO_PW | sudo -S umount floppy/MntFloppy 
 
 if [ "$BOOT_USB_DEVICE_NAME" = "" -a "$BOOT_USB_DEVICE_ID" != "" ]
 then
