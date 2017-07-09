@@ -37,9 +37,9 @@
 
 typedef struct
 {
-	char szName[56] ;
-	unsigned uiNoOfPages ;
-	unsigned* uiAllocatedPageNumbers ;
+  char szName[56] ;
+  unsigned uiNoOfPages ;
+  unsigned* uiAllocatedPageNumbers ;
 } PACKED ProcessSharedObjectList ;
 
 extern int DLLLoader_iNoOfProcessSharedObjectList ;

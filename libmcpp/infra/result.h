@@ -61,6 +61,13 @@ class result
       return _value;
     }
 
+    const Good& goodValueOrElse(const Good& defaultValue) const
+    {
+      if(_isBad)
+        return defaultValue;
+      return _value;
+    }
+
     template <typename LAMBDA>
     bool goodMap(const LAMBDA& lambdaf)
     {

@@ -69,56 +69,12 @@ ELFParser::~ELFParser()
   {
     delete m_pBR ;
     DeAllocateSymbolTable() ;
-    DeAllocateSecHeaderStrTable() ;
-    DeAllocateSectionHeader() ;
-    DeAllocateProgramHeader() ;
-    DeAllocateHeader() ;
+    delete[] m_pSecHeaderStrTable;
+    delete[] m_pSectionHeader;
+    delete[] m_pSectionTableMap;
+    delete[] m_pProgramHeader;
+    delete m_pHeader;
   }
-}
-
-void ELFParser::AllocateHeader()
-{
-	m_pHeader = new ELF32Header ;
-}
-
-void ELFParser::DeAllocateHeader()
-{
-	delete m_pHeader ;
-}
-
-void ELFParser::AllocateProgramHeader()
-{
-	m_pProgramHeader = new ELF32ProgramHeader[ m_pHeader->e_phnum ] ;
-}
-
-void ELFParser::DeAllocateProgramHeader()
-{
-	delete[] m_pProgramHeader ;
-}
-
-void ELFParser::AllocateSectionHeader()
-{
-	m_pSectionHeader = new ELF32SectionHeader[ m_pHeader->e_shnum ] ;
-	m_pSectionTableMap = new int[ m_pHeader->e_shnum ] ;
-	
-	for(int i = 0; i < m_pHeader->e_shnum; i++)
-		m_pSectionTableMap[i] = -1 ;
-}
-
-void ELFParser::DeAllocateSectionHeader()
-{
-	delete[] m_pSectionHeader ;
-	delete[] m_pSectionTableMap ;
-}
-
-void ELFParser::AllocateSecHeaderStrTable(int iSecSize)
-{
-	m_pSecHeaderStrTable = new char[ iSecSize ] ;
-}
-
-void ELFParser::DeAllocateSecHeaderStrTable()
-{
-	delete[] m_pSecHeaderStrTable ;
 }
 
 void ELFParser::AllocateSymbolTable()
@@ -157,7 +113,7 @@ void ELFParser::DeAllocateSymbolTable()
 
 void ELFParser::ReadHeader()
 {
-	AllocateHeader() ;
+  m_pHeader = new ELF32Header;
   m_pBR->Seek(0);
   const unsigned n = m_pBR->Read((char*)m_pHeader, sizeof(ELF32Header));
 
@@ -173,7 +129,7 @@ void ELFParser::ReadProgramHeaders()
 	/* e_phentsize is not used as this Parser is only for 32 bit elf files.
 	   and ElfProgHeader size is 32 bytes */
 
-	AllocateProgramHeader() ;
+  m_pProgramHeader = new ELF32ProgramHeader[ m_pHeader->e_phnum ] ;
 
   m_pBR->Seek(m_pHeader->e_phoff);
 
@@ -188,7 +144,12 @@ void ELFParser::ReadSectionHeaders()
 	/* e_shentsize if not used as this Parser is only for 32 bit elf files.
 	   and ElfSectionHeader size is 40 bytes */
 	   
-	AllocateSectionHeader() ;
+  m_pSectionHeader = new ELF32SectionHeader[ m_pHeader->e_shnum ] ;
+  m_pSectionTableMap = new int[ m_pHeader->e_shnum ] ;
+
+  for(int i = 0; i < m_pHeader->e_shnum; i++)
+    m_pSectionTableMap[i] = -1 ;
+
 
   m_pBR->Seek(m_pHeader->e_shoff);
 
@@ -200,10 +161,10 @@ void ELFParser::ReadSectionHeaders()
 
 void ELFParser::ReadSecHeaderStrTable()
 {
-	unsigned uiSecSize = m_pSectionHeader[m_pHeader->e_shstrndx].sh_size ;
-	unsigned uiSecOffset = m_pSectionHeader[m_pHeader->e_shstrndx].sh_offset ;
+  const unsigned uiSecSize = m_pSectionHeader[m_pHeader->e_shstrndx].sh_size ;
+  const unsigned uiSecOffset = m_pSectionHeader[m_pHeader->e_shstrndx].sh_offset ;
 
-	AllocateSecHeaderStrTable(uiSecSize) ;
+  m_pSecHeaderStrTable = new char[ uiSecSize ] ;
 
   m_pBR->Seek(uiSecOffset);
 
@@ -234,31 +195,21 @@ void ELFParser::ReadSymbolTables()
 	}
 }
 
-unsigned* ELFParser::GetAddressBySectionName(byte* bProcessImage, unsigned uiMinMemAddr, const char* szSectionName)
+upan::result<uint32_t*> ELFParser::GetAddressBySectionName(byte* bProcessImage, unsigned uiMinMemAddr, const char* szSectionName)
 {
 	for(int i = 0; i < m_pHeader->e_shnum; i++)
-	{
 		if(strcmp(ELFSectionHeader::GetSectionName(m_pSecHeaderStrTable, m_pSectionHeader[i].sh_name), szSectionName) == 0)
-		{
-			return (unsigned*)(bProcessImage + m_pSectionHeader[i].sh_addr - uiMinMemAddr) ;
-		}
-	}
+      return upan::good((uint32_t*)(bProcessImage + m_pSectionHeader[i].sh_addr - uiMinMemAddr));
 
-	return NULL ;
+  return upan::result<uint32_t*>::bad("%s section not found in process image", szSectionName);
 }
 
-bool ELFParser::GetNoOfGOTEntriesBySectionName(unsigned* uiNoOfGOTEntries, const char* szSectionName)
+upan::result<uint32_t> ELFParser::GetNoOfGOTEntriesBySectionName(const char* szSectionName)
 {
 	for(int i = 0; i < m_pHeader->e_shnum; i++)
-	{
 		if(strcmp(ELFSectionHeader::GetSectionName(m_pSecHeaderStrTable, m_pSectionHeader[i].sh_name), szSectionName) == 0)
-		{
-			*uiNoOfGOTEntries = (m_pSectionHeader[i].sh_size / m_pSectionHeader[i].sh_entsize) ;
-			return true ;
-		}
-	}
-
-	return false ;
+      return upan::good(m_pSectionHeader[i].sh_size / m_pSectionHeader[i].sh_entsize);
+  return upan::result<uint32_t>::bad("no GOT entries found for %s section", szSectionName);
 }
 
 void ELFParser::GetMemImageSize(unsigned* uiMinMemAddr, unsigned* uiMaxMemAddr) const
@@ -288,22 +239,20 @@ unsigned ELFParser::GetProgramStartAddress()
 	return m_pHeader->e_entry ;
 }
 
-unsigned* ELFParser::GetGOTAddress(byte* bProcessImage, unsigned uiMinMemAddr)
+upan::result<uint32_t*> ELFParser::GetGOTAddress(byte* bProcessImage, unsigned uiMinMemAddr)
 {
-	unsigned* uiValue = GetAddressBySectionName(bProcessImage, uiMinMemAddr, ".got.plt") ;
-
-	if(uiValue == NULL)
-		uiValue = GetAddressBySectionName(bProcessImage, uiMinMemAddr, ".got") ;
-
-	return uiValue ;
+  auto res = GetAddressBySectionName(bProcessImage, uiMinMemAddr, ".got.plt");
+  if(res.isBad())
+    res = GetAddressBySectionName(bProcessImage, uiMinMemAddr, ".got") ;
+  return res;
 }
 
-bool ELFParser::GetNoOfGOTEntries(unsigned* uiNoOfGOTEntries)
+upan::result<uint32_t> ELFParser::GetNoOfGOTEntries()
 {
-	if(!GetNoOfGOTEntriesBySectionName(uiNoOfGOTEntries, ".got.plt"))
-		return GetNoOfGOTEntriesBySectionName(uiNoOfGOTEntries, ".got") ;
-
-	return true ;
+  auto res = GetNoOfGOTEntriesBySectionName(".got.plt");
+  if(res.isBad())
+    res = GetNoOfGOTEntriesBySectionName(".got");
+  return res;
 }
 
 upan::result<ELF32SectionHeader*> ELFParser::GetSectionHeaderByType(unsigned uiType)

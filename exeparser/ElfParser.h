@@ -54,8 +54,8 @@ class ELFParser
 		unsigned CopyELFSecStrTable(char* szSecStrTable) ;
 		unsigned CopyELFSectionHeader(ELF32SectionHeader* pSectionHeader) ;
 
-		unsigned* GetGOTAddress(byte* bProcessImage, unsigned uiMinMemAddr) ;
-		bool GetNoOfGOTEntries(unsigned* uiNoOfGOTEntries) ;
+    upan::result<uint32_t*> GetGOTAddress(byte* bProcessImage, unsigned uiMinMemAddr);
+    upan::result<uint32_t> GetNoOfGOTEntries();
 
     void GetMemImageSize(unsigned* uiMinMemAddr, unsigned* uiMaxMemAddr) const;
 		unsigned GetProgramStartAddress() ;
@@ -74,14 +74,6 @@ class ELFParser
 		inline char* GetSecHeaderStrTable() { return m_pSecHeaderStrTable ; }
 
 	private:
-		void AllocateHeader() ;
-		void DeAllocateHeader() ;
-		void AllocateProgramHeader() ;
-		void DeAllocateProgramHeader() ;
-		void AllocateSectionHeader() ;
-		void DeAllocateSectionHeader() ;
-		void AllocateSecHeaderStrTable(int iSecSize) ;
-		void DeAllocateSecHeaderStrTable() ;
 		void AllocateSymbolTable() ;
 		void DeAllocateSymbolTable() ;
 
@@ -91,8 +83,8 @@ class ELFParser
     void ReadSecHeaderStrTable() ;
     void ReadSymbolTables() ;
 
-		unsigned* GetAddressBySectionName(byte* bProcessImage, unsigned uiMinMemAddr, const char* szSectionName) ;
-		bool GetNoOfGOTEntriesBySectionName(unsigned* uiNoOfGOTEntries, const char* szSectionName) ;
+    upan::result<uint32_t*> GetAddressBySectionName(byte* bProcessImage, unsigned uiMinMemAddr, const char* szSectionName);
+    upan::result<uint32_t> GetNoOfGOTEntriesBySectionName(const char* szSectionName);
 
 		bool CheckMagicSignature(const ELF32Header* pELFHeader) ;
 } ;

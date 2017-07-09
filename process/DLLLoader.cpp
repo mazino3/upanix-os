@@ -59,11 +59,10 @@ static int DLLLoader_GetFreeProcessDLLEntry()
 
 static unsigned DLLLoader_GetNoOfPagesAllocated()
 {
-	unsigned uiNoOfPagesAllocated = 0 ;
-	unsigned i = 0 ;
 	ProcessSharedObjectList* pProcessSharedObjectList = (ProcessSharedObjectList*)(PROCESS_DLL_PAGE_ADDR - GLOBAL_DATA_SEGMENT_BASE) ;
 
-	for(i = 0; pProcessSharedObjectList[i].szName[0] != '\0'; i++)
+  unsigned uiNoOfPagesAllocated = 0;
+  for(uint32_t i = 0; pProcessSharedObjectList[i].szName[0] != '\0'; i++)
 		uiNoOfPagesAllocated += pProcessSharedObjectList[i].uiNoOfPages ;
 
 	return uiNoOfPagesAllocated ;
@@ -71,7 +70,6 @@ static unsigned DLLLoader_GetNoOfPagesAllocated()
 
 static void DLLLoader_CopyElfDLLImage(ProcessAddressSpace* processAddressSpace, unsigned uiNoOfPagesForDLL, byte* bDLLImage, unsigned uiMemImageSize)
 {
-	unsigned i ;
 	unsigned uiOffset = 0 ;
 	unsigned uiAllocatedPagesCount = DLLLoader_GetNoOfPagesAllocated() ;
 	unsigned uiCopySize = uiMemImageSize ;
@@ -79,7 +77,7 @@ static void DLLLoader_CopyElfDLLImage(ProcessAddressSpace* processAddressSpace, 
 	unsigned uiStartAddress = processAddressSpace->uiStartPDEForDLL * PAGE_TABLE_ENTRIES * PAGE_SIZE + 
 								uiAllocatedPagesCount * PAGE_SIZE - GLOBAL_DATA_SEGMENT_BASE ;
 
-	for(i = 0; i < uiNoOfPagesForDLL; i++)
+  for(uint32_t i = 0; i < uiNoOfPagesForDLL; i++)
 	{
 		if(uiCopySize <= PAGE_SIZE)
 		{
@@ -209,19 +207,15 @@ void DLLLoader_LoadELFDLL(const char* szDLLName, const char* szJustDLLName, Proc
   MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)bDLLSectionImage.get(), MemUtil_GetDS(), (unsigned)(bDLLImage.get() + uiDLLImageSize), uiDLLSectionSize) ;
 
 	// Setting the Dynamic Link Loader Address in GOT
-  unsigned* uiGOT = mELFParser.GetGOTAddress(bDLLImage.get(), uiMinMemAddr) ;
-	if(uiGOT != NULL)
-	{
-		uiGOT[1] = iProcessDLLEntryIndex ;
-		uiGOT[2] = uiDLLImageSize + uiDLLLoadAddress ;
-	}
+  mELFParser.GetGOTAddress(bDLLImage.get(), uiMinMemAddr).goodMap([&](uint32_t* uiGOT) {
+    uiGOT[1] = iProcessDLLEntryIndex ;
+    uiGOT[2] = uiDLLImageSize + uiDLLLoadAddress ;
 
-	unsigned uiNoOfGOTEntries ;
-	if(mELFParser.GetNoOfGOTEntries(&uiNoOfGOTEntries))
-	{
-    for(uint32_t i = 3; i < uiNoOfGOTEntries; i++)
-			uiGOT[i] += uiDLLLoadAddress ;
-	}
+    mELFParser.GetNoOfGOTEntries().goodMap([&](uint32_t uiNoOfGOTEntries) {
+      for(uint32_t i = 3; i < uiNoOfGOTEntries; i++)
+        uiGOT[i] += uiDLLLoadAddress ;
+    });
+  });
 
 /* Dynamic Relocation Entries are resolved here in Global Offset Table */
   mELFParser.GetSectionHeaderByTypeAndName(SHT_REL, REL_DYN_SUB_NAME).goodMap([&] (ELF32SectionHeader* pRelocationSectionHeader)

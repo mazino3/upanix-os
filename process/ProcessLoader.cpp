@@ -176,12 +176,10 @@ void ProcessLoader::Load(const char* szProcessName, ProcessAddressSpace* pProces
   memcpy((void*)(bProcessImage.get() + uiProcessImageSize + uiStartUpSectionSize), (void*)bDLLSectionImage.get(), uiDLLSectionSize) ;
 
 	// Setting the Dynamic Link Loader Address in GOT
-  unsigned* uiGOT = mELFParser.GetGOTAddress(bProcessImage.get(), uiMinMemAddr) ;
-	if(uiGOT != NULL)
-	{
+  mELFParser.GetGOTAddress(bProcessImage.get(), uiMinMemAddr).goodMap([&](uint32_t* uiGOT) {
 		uiGOT[1] = -1 ;
 		uiGOT[2] = uiMinMemAddr + uiProcessImageSize + uiStartUpSectionSize ;
-	}
+  });
 
 	// Initialize BSS segment to 0
   mELFParser.GetSectionHeaderByTypeAndName(ELFSectionHeader::SHT_NOBITS, BSS_SEC_NAME).goodMap([&] (ELF32SectionHeader* pBSSSectionHeader)
