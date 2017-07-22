@@ -90,13 +90,26 @@ typedef struct
 	byte bSectorEntryPosition ;
 } PACKED FileSystem_CWD ;
 
-typedef struct
+class DiskDrive;
+
+class SectorBlockEntry
 {
-	unsigned uiSectorBlock[ENTRIES_PER_TABLE_SECTOR] ;
-	unsigned uiBlockID ;
-	unsigned uiReadCount ;
-	unsigned uiWriteCount ;
-} PACKED SectorBlockEntry ;
+public:
+  uint32_t* SectorBlock() { return _sectorBlock; }
+  const uint32_t BlockId() const { return _blockId; }
+  const uint32_t ReadCount() const { return _readCount; }
+  const uint32_t WriteCount() const { return _writeCount; }
+
+  void UpdateReadCount() { ++_readCount; }
+  void UpdateWriteCount() { ++_writeCount; }
+  byte Load(DiskDrive& diskDrive, uint32_t sectortId);
+
+private:
+  uint32_t _sectorBlock[ENTRIES_PER_TABLE_SECTOR];
+  uint32_t _blockId;
+  uint32_t _readCount;
+  uint32_t _writeCount;
+} PACKED;
 
 typedef struct
 {

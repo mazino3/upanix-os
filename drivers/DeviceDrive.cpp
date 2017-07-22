@@ -253,12 +253,12 @@ byte DiskDrive::LoadFreeSectors()
 		{
 			if(bStop)
 				break;
-			unsigned* uiSectorBlock = pSectorBlockEntryList[i].uiSectorBlock;
+      unsigned* uiSectorBlock = pSectorBlockEntryList[i].SectorBlock();
 			for(int j = 0; j < ENTRIES_PER_TABLE_SECTOR; j++)
 			{
 				if(!(uiSectorBlock[j] & EOC))
 				{
-					unsigned uiSectorID = pSectorBlockEntryList[i].uiBlockID * ENTRIES_PER_TABLE_SECTOR + j;
+          unsigned uiSectorID = pSectorBlockEntryList[i].BlockId() * ENTRIES_PER_TABLE_SECTOR + j;
           if(!freePoolQueue.push_back(uiSectorID))
 					{
 						bStop = true;
@@ -617,13 +617,12 @@ byte DiskDrive::FlushTableCache(int iFlushSize)
 	
 	for(int i = 0; i < iFlushSize; i++)
 	{
-		SectorBlockEntry* pBlock = &(pSectorBlockEntryList[i]);
+    auto& block = pSectorBlockEntryList[i];
 
-		if(pBlock->uiWriteCount == 0)
-			continue ;
+    if(block.WriteCount() == 0)
+      continue;
 
-		RETURN_IF_NOT(bStatus, Write(pBlock->uiBlockID + fsBootBlock.BPB_RsvdSecCnt + 1, 1, 
-						(byte*)(pBlock->uiSectorBlock)), DeviceDrive_SUCCESS) ;
+    RETURN_IF_NOT(bStatus, Write(block.BlockId() + fsBootBlock.BPB_RsvdSecCnt + 1, 1, (byte*)(block.SectorBlock())), DeviceDrive_SUCCESS) ;
 	}
 
 	if(iFlushSize < iSize)
