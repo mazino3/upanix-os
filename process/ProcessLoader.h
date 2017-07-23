@@ -23,20 +23,8 @@
 #include <DLLLoader.h>
 #include <BufferedReader.h>
 
-#define ProcessLoader_SUCCESS							0
-#define ProcessLoader_ERR_ZERO_PROCESS_SIZE				1
-#define ProcessLoader_ERR_COPY_IMAGE					2
-#define ProcessLoader_ERR_HUGE_PROCESS_SIZE				3
-#define ProcessLoader_ERR_TEXT_ADDR_LESS_THAN_LIMIT		4
-#define ProcessLoader_ERR_NOT_ALIGNED_TO_PAGE			5
-#define ProcessLoader_ERR_NO_PROC_INIT					6
-#define ProcessLoader_FAILURE							7
-
 #define __PROCESS_START_UP_FILE	".procinit"
 #define __PROCESS_DLL_FILE		".dll"
-
-byte ProcessLoader_CopyImage(const char* szProcessName, unsigned uiPDEAddr, unsigned uiNoOfPagesForProcess) ;
-byte ProcessLoader_CopyProcessPage(const char* szProcessName, unsigned uiProcessAddress, unsigned uiOffset) ;
 
 unsigned ProcessLoader_GetCeilAlignedAddress(unsigned uiAddress, unsigned uiAlign) ;
 unsigned ProcessLoader_GetFloorAlignedAddress(unsigned uiAddress, unsigned uiAlign) ;

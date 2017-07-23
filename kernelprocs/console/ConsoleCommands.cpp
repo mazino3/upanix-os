@@ -49,7 +49,6 @@
 #include <BTree.h>
 #include <TestSuite.h>
 #include <video.h>
-#include <VM86.h>
 #include <MouseDriver.h>
 #include <exception.h>
 #include <stdio.h>

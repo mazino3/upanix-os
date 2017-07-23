@@ -179,8 +179,6 @@ kernel/UpanixMain.cpp
 kernel/UpanixMain.h
 kernel/video.cpp
 kernel/video.h
-kernel/VM86.cpp
-kernel/VM86.h
 kernelprocs/console/CommandLineParser.cpp
 kernelprocs/console/CommandLineParser.h
 kernelprocs/console/Console.cpp

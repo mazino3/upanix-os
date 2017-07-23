@@ -228,7 +228,6 @@ byte* GetArea()
 	return area ;
 }
 
-extern void VM86_Test() ;
 void UpanixMain()
 {
 	byte* bios = (byte*)(0 - GLOBAL_DATA_SEGMENT_BASE) ;
