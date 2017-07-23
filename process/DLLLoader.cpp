@@ -74,7 +74,7 @@ static void DLLLoader_CopyElfDLLImage(Process* processAddressSpace, unsigned uiN
 	unsigned uiAllocatedPagesCount = DLLLoader_GetNoOfPagesAllocated() ;
 	unsigned uiCopySize = uiMemImageSize ;
 
-	unsigned uiStartAddress = processAddressSpace->uiStartPDEForDLL * PAGE_TABLE_ENTRIES * PAGE_SIZE + 
+  unsigned uiStartAddress = processAddressSpace->_startPDEForDLL * PAGE_TABLE_ENTRIES * PAGE_SIZE +
 								uiAllocatedPagesCount * PAGE_SIZE - GLOBAL_DATA_SEGMENT_BASE ;
 
   for(uint32_t i = 0; i < uiNoOfPagesForDLL; i++)
@@ -185,12 +185,12 @@ void DLLLoader_LoadELFDLL(const char* szDLLName, const char* szJustDLLName, Proc
     throw upan::exception(XLOC, "Failed to allocate memory for DLL via kernal service");
 	}
 
-	unsigned uiDLLLoadAddress = (processAddressSpace->uiStartPDEForDLL * PAGE_SIZE * PAGE_TABLE_ENTRIES) + uiNoOfPagesAllocatedForOtherDLLs * PAGE_SIZE - PROCESS_BASE ;
+  unsigned uiDLLLoadAddress = (processAddressSpace->_startPDEForDLL * PAGE_SIZE * PAGE_TABLE_ENTRIES) + uiNoOfPagesAllocatedForOtherDLLs * PAGE_SIZE - PROCESS_BASE ;
 
 	// Last Page is for Elf Section Header
 	unsigned a = (pProcessSharedObjectList[iProcessDLLEntryIndex].uiNoOfPages - 1) * PAGE_SIZE ;
 	unsigned b = uiNoOfPagesAllocatedForOtherDLLs * PAGE_SIZE ;
-	unsigned c = processAddressSpace->uiStartPDEForDLL * PAGE_TABLE_ENTRIES * PAGE_SIZE ;
+  unsigned c = processAddressSpace->_startPDEForDLL * PAGE_TABLE_ENTRIES * PAGE_SIZE ;
 	unsigned pRealELFSectionHeaderAddr = a + b + c - GLOBAL_DATA_SEGMENT_BASE ;
 
 	unsigned uiCopySize = mELFParser.CopyELFSectionHeader((ELF32SectionHeader*)pRealELFSectionHeaderAddr) ;
@@ -258,8 +258,8 @@ void DLLLoader_DeAllocateProcessDLLPTEPages(Process* processAddressSpace)
 
 	for(i = 0; i < processAddressSpace->uiNoOfPagesForDLLPTE; i++)
 	{
-		uiPresentBit = uiPDEAddress[i + processAddressSpace->uiStartPDEForDLL] & 0x1 ;
-		uiPTEAddress = uiPDEAddress[i + processAddressSpace->uiStartPDEForDLL] & 0xFFFFF000 ;
+    uiPresentBit = uiPDEAddress[i + processAddressSpace->_startPDEForDLL] & 0x1 ;
+    uiPTEAddress = uiPDEAddress[i + processAddressSpace->_startPDEForDLL] & 0xFFFFF000 ;
 
 		if(uiPresentBit && uiPDEAddress != 0)
 			MemManager::Instance().DeAllocatePhysicalPage(uiPTEAddress / PAGE_SIZE) ;
@@ -275,7 +275,7 @@ unsigned DLLLoader_GetProcessDLLLoadAddress(Process* processAddressSpace, int iI
 	for(i = 0; i < iIndex; i++)
 		uiAllocatedPagesCount += pProcessSharedObjectList[i].uiNoOfPages ;
 
-	return (processAddressSpace->uiStartPDEForDLL * PAGE_SIZE * PAGE_TABLE_ENTRIES) + (uiAllocatedPagesCount * PAGE_SIZE) ;
+  return (processAddressSpace->_startPDEForDLL * PAGE_SIZE * PAGE_TABLE_ENTRIES) + (uiAllocatedPagesCount * PAGE_SIZE) ;
 }
 
 byte DLLLoader_MapDLLPagesToProcess(Process* processAddressSpace,
@@ -293,7 +293,7 @@ byte DLLLoader_MapDLLPagesToProcess(Process* processAddressSpace,
 		for(i = processAddressSpace->uiNoOfPagesForDLLPTE; i < uiNoOfPagesForDLLPTE; i++)
 		{
       uiFreePageNo = MemManager::Instance().AllocatePhysicalPage();
-			uiPDEIndex = processAddressSpace->uiStartPDEForDLL + i ;
+      uiPDEIndex = processAddressSpace->_startPDEForDLL + i ;
 			((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPDEIndex] = 
 															((uiFreePageNo * PAGE_SIZE) & 0xFFFFF000) | 0x7 ;
 		}
@@ -302,7 +302,7 @@ byte DLLLoader_MapDLLPagesToProcess(Process* processAddressSpace,
 	unsigned uiPTEAddress ;
 	for(i = 0; i < pProcessSharedObjectList->uiNoOfPages; i++)
 	{
-		uiPDEIndex = (i + uiAllocatedPagesCount) / PAGE_TABLE_ENTRIES + processAddressSpace->uiStartPDEForDLL ;
+    uiPDEIndex = (i + uiAllocatedPagesCount) / PAGE_TABLE_ENTRIES + processAddressSpace->_startPDEForDLL ;
 		uiPTEIndex = (i + uiAllocatedPagesCount) % PAGE_TABLE_ENTRIES ;
 
 		uiPTEAddress = (((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPDEIndex]) & 0xFFFFF000 ;

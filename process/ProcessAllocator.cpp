@@ -187,13 +187,13 @@ ProcessAllocator_DeAllocatePTE(unsigned uiNoOfPagesForPTE, unsigned uiPDEAddress
 void
 ProcessAllocator_DeAllocateAddressSpace(Process* processAddressSpace)
 {
-	ProcessAllocator_DeAllocateProcessSpace(processAddressSpace->uiNoOfPagesForProcess, 
+	ProcessAllocator_DeAllocateProcessSpace(processAddressSpace->_noOfPagesForProcess, 
 					processAddressSpace->taskState.CR3_PDBR,
-					processAddressSpace->uiProcessBase) ;
+					processAddressSpace->_processBase) ;
 
-	ProcessAllocator_DeAllocatePTE(processAddressSpace->uiNoOfPagesForPTE, 
+	ProcessAllocator_DeAllocatePTE(processAddressSpace->_noOfPagesForPTE, 
 					processAddressSpace->taskState.CR3_PDBR,
-					processAddressSpace->uiProcessBase) ;
+					processAddressSpace->_processBase) ;
 
 	MemManager::Instance().DeAllocatePhysicalPage(processAddressSpace->taskState.CR3_PDBR / PAGE_SIZE) ;
 }

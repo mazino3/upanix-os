@@ -1,6 +1,7 @@
 #ifndef TASKSTRUCTURES_H
 #define TASKSTRUCTURES_H
 
+#include <Global.h>
 
 typedef struct
 {

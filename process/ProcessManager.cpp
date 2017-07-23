@@ -240,7 +240,7 @@ void ProcessManager::BuildTaskState(Process* pProcessAddressSpace, unsigned uiPD
 
 	taskState->CR3_PDBR = uiPDEAddress ;
 	taskState->EIP = uiEntryAdddress ;
-	taskState->ESP = pProcessAddressSpace->uiProcessBase + (pProcessAddressSpace->uiNoOfPagesForProcess - PROCESS_CG_STACK_PAGES) * PAGE_SIZE - uiProcessEntryStackSize ;
+  taskState->ESP = pProcessAddressSpace->_processBase + (pProcessAddressSpace->_noOfPagesForProcess - PROCESS_CG_STACK_PAGES) * PAGE_SIZE - uiProcessEntryStackSize ;
 
 	if(pr == 1) //GDT - Low Priority
 	{
@@ -279,7 +279,7 @@ void ProcessManager::BuildTaskState(Process* pProcessAddressSpace, unsigned uiPD
 		taskState->SS = 0x20 | 0x7 ;
 
 		taskState->SS0 = 0x28 | 0x4 ;
-		taskState->ESP0 = PROCESS_BASE + pProcessAddressSpace->uiProcessBase + (pProcessAddressSpace->uiNoOfPagesForProcess) * PAGE_SIZE - GLOBAL_DATA_SEGMENT_BASE ;
+    taskState->ESP0 = PROCESS_BASE + pProcessAddressSpace->_processBase + (pProcessAddressSpace->_noOfPagesForProcess) * PAGE_SIZE - GLOBAL_DATA_SEGMENT_BASE ;
 		taskState->LDT = 0x50 ;
 	}
 	taskState->EFLAGS = 0x202 ;
@@ -757,7 +757,7 @@ byte ProcessManager::Create(const char* szProcessName, int iParentProcessID, byt
     unsigned uiProcessEntryStackSize;
     unsigned uiPDEAddress;
 
-    ProcessLoader::Instance().Load(szProcessName, &newPAS, &uiPDEAddress, &uiEntryAdddress, &uiProcessEntryStackSize, iNumberOfParameters, szArgumentList);
+    newPAS.Load(szProcessName, &uiPDEAddress, &uiEntryAdddress, &uiProcessEntryStackSize, iNumberOfParameters, szArgumentList);
 
     if(iParentProcessID != NO_PROCESS_ID)
     {

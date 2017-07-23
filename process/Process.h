@@ -1,9 +1,12 @@
 #ifndef _PROCESS_H
 #define _PROCESS_H
 
+#include <Atomic.h>
 #include <TaskStructures.h>
+#include <FSStructures.h>
 
 class ProcessGroup;
+class IRQ;
 
 typedef enum
 {
@@ -32,10 +35,14 @@ class ProcessStateInfo
 
 class Process
 {
+public:
+  void Load(const char* szProcessName, unsigned *uiPDEAddress,
+            unsigned* uiEntryAdddress, unsigned* uiProcessEntryStackSize, int iNumberOfParameters, char** szArgumentList);
+
   public:
   TaskState taskState ;
   ProcessLDT processLDT ;
-  byte bFree ;
+  bool bFree ;
   PROCESS_STATUS status ;
   ProcessStateInfo* pProcessStateInfo ;
 
@@ -43,20 +50,20 @@ class Process
   int iNextProcessID ;
   int iPrevProcessID ;
 
-  unsigned uiNoOfPagesForPTE ;
-  unsigned uiNoOfPagesForProcess ;
+  unsigned _noOfPagesForPTE ;
+  unsigned _noOfPagesForProcess ;
 
   byte bIsKernelProcess ;
   int iKernelStackBlockID ;
 
   unsigned uiAUTAddress ;
-  unsigned uiProcessBase ;
+  unsigned _processBase ;
 
   int iDriveID ;
   FileSystem_PresentWorkingDirectory processPWD ;
 
   unsigned uiNoOfPagesForDLLPTE ;
-  unsigned uiStartPDEForDLL ;
+  unsigned _startPDEForDLL ;
 
   ProcessGroup* _processGroup;
 
