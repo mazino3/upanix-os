@@ -19,12 +19,35 @@
 #define _UPANIX_SHELL_H_
 
 # include <Global.h>
+# include <string.h>
 
-void Console_Initialize() ;
-void Console_StartUpanixConsole() ;
-void Console_DisplayCommandLine() ;
-void Console_BuildCommand() ;
-void Console_ProcessCommand() ;
-void Console_ExecuteCommand(const char* szCommandLine) ;
+void Console_StartUpanixConsole();
+
+class Console
+{
+private:
+  Console();
+  Console(const Console&) = delete;
+  Console& operator=(const Console&) = delete;
+
+public:
+  static Console& Instance()
+  {
+    static Console _instance;
+    return _instance;
+  }
+  void Start();
+
+private:
+  void ClearCommandLine();
+  void DisplayCommandLine();
+  void BuildCommand();
+  void ProcessCommand();
+  void ExecuteCommand(const char* szCommandLine);
+
+  const upan::string _prompt;
+  uint32_t _currentCommandPos ;
+  char* _commandLine;
+};
 
 #endif

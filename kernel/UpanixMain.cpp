@@ -201,7 +201,7 @@ void Initialize()
 
     SessionManager_Initialize() ;
 
-    Console_Initialize() ;
+    Console::Instance();
   }
   catch(const upan::exception& ex)
   {

@@ -31,36 +31,32 @@
 #include <stdio.h>
 #include <cstring.h>
 
-char Console_PROMPT[10] ;
-char Console_commandLine[COMMAND_LINE_SIZE] ;
-unsigned int Console_currentCommandPos ;
-
-void Console_Initialize()
+void Console_StartUpanixConsole()
 {
-	strcpy(Console_PROMPT, "\nupanix:") ;
-	Console_currentCommandPos = 0 ;
+  Console::Instance().Start();
+}
+
+Console::Console() : _currentCommandPos(0)
+{
+  _commandLine = new char[COMMAND_LINE_SIZE];
 	ConsoleCommands_Init() ;
 	KC::MDisplay().LoadMessage("Console Initialization", Success);
 }
 
-void Console_ClearCommandLine()
+void Console::ClearCommandLine()
 {
-	memset(Console_commandLine, 0, COMMAND_LINE_SIZE) ;
+  memset(_commandLine, 0, COMMAND_LINE_SIZE) ;
 }
 
-void Console_DisplayCommandLine()
+void Console::DisplayCommandLine()
 {
 	char* szPWD ;
 	Directory_PresentWorkingDirectory( &ProcessManager::Instance().GetCurrentPAS(), &szPWD) ;
-
-	KC::MDisplay().Message(Console_PROMPT, Display::WHITE_ON_BLACK()) ;
-	KC::MDisplay().Message(szPWD, Display::WHITE_ON_BLACK()) ;
-	KC::MDisplay().Message(" > ", Display::WHITE_ON_BLACK()) ;
-
+  printf("\nupanix:%s > ", szPWD);
 	DMM_DeAllocateForKernel((unsigned)szPWD) ;
 }
 
-void Console_StartUpanixConsole()
+void Console::Start()
 {
   KC::MDisplay().RefreshScreen() ;
 	
@@ -72,7 +68,7 @@ void Console_StartUpanixConsole()
 //		KC::MDisplay().Address("\n Directory Change Failed: ", bStatus) ;	
 //	}
 
-	Console_DisplayCommandLine() ;
+  DisplayCommandLine() ;
 
 	//Default init code
 /*	Console_ProcessCommand("eusbprobe");
@@ -106,10 +102,10 @@ void Console_StartUpanixConsole()
 			case Keyboard_CAPS_LOCK:
 				break ;
 			case Keyboard_BACKSPACE:
-				if(Console_currentCommandPos > 0)
+        if(_currentCommandPos > 0)
 				{
-					Console_currentCommandPos-- ;
-					int x = Console_commandLine[Console_currentCommandPos] == '\t' ? 4 : 1 ;
+          _currentCommandPos-- ;
+          int x = _commandLine[_currentCommandPos] == '\t' ? 4 : 1 ;
 					KC::MDisplay().MoveCursor(-x) ;
 					KC::MDisplay().ClearLine(Display::START_CURSOR_POS) ;
 				}
@@ -123,30 +119,30 @@ void Console_StartUpanixConsole()
 				break ;
 
 			case Keyboard_ENTER:
-				Console_ProcessCommand() ;
-				Console_DisplayCommandLine() ;
+        ProcessCommand() ;
+        DisplayCommandLine() ;
 				break ;
 
 			default:
 
-				if(Console_currentCommandPos != COMMAND_LINE_SIZE)
+        if(_currentCommandPos != COMMAND_LINE_SIZE)
 				{
 					KC::MDisplay().Character(ch, Display::WHITE_ON_BLACK()) ;
-					Console_commandLine[Console_currentCommandPos++] = ch ;
+          _commandLine[_currentCommandPos++] = ch ;
 				}
 		}
 	}
 }
 
-void Console_ProcessCommand()
+void Console::ProcessCommand()
 {
-	Console_commandLine[Console_currentCommandPos] = '\0' ;
-	Console_currentCommandPos = 0 ;
-	Console_ExecuteCommand(Console_commandLine);
-	Console_ClearCommandLine() ;
+  _commandLine[_currentCommandPos] = '\0' ;
+  _currentCommandPos = 0 ;
+  ExecuteCommand(_commandLine);
+  ClearCommandLine() ;
 }
 
-void Console_ExecuteCommand(const char* szCommandLine)
+void Console::ExecuteCommand(const char* szCommandLine)
 {
 	CommandLineParser_Parse(szCommandLine) ;
 	if(CommandLineParser_GetNoOfCommandLineEntries() != 0)
