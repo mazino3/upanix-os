@@ -74,7 +74,7 @@ typedef struct
 byte ProcFileManager_Initialize(__volatile__ unsigned uiPDEAddress, __volatile__ int iParentProcessID) ;
 void ProcFileManager_InitForKernel() ;
 
-void ProcFileManager_UnInitialize(ProcessAddressSpace* processAddressSpace) ;
+void ProcFileManager_UnInitialize(Process* processAddressSpace) ;
 
 byte ProcFileManager_GetFD(int* fd) ;
 byte ProcFileManager_AllocateFD(int* fd, const char* szFileName, const byte mode, int iDriveID, const unsigned uiFileSize, unsigned uiStartSectorID) ;

@@ -56,7 +56,7 @@ static void ProcFileManager_FDTableUnLock()
 		ProcFileManager_GetFDMutex().UnLock() ;
 }
 
-static unsigned ProcFileManager_GetPage(ProcessAddressSpace* processAddressSpace)
+static unsigned ProcFileManager_GetPage(Process* processAddressSpace)
 {
 	unsigned uiPDEAddress = processAddressSpace->taskState.CR3_PDBR ;
 	unsigned uiPDEIndex = ((PROCESS_FD_PAGE >> 22) & 0x3FF) ;
@@ -116,7 +116,7 @@ byte ProcFileManager_Initialize(__volatile__ unsigned uiPDEAddress, __volatile__
 	return ProcFileManager_SUCCESS ;
 }
 
-void ProcFileManager_UnInitialize(ProcessAddressSpace* processAddressSpace)
+void ProcFileManager_UnInitialize(Process* processAddressSpace)
 {
 	unsigned uiPageNumber = ProcFileManager_GetPage(processAddressSpace);
 

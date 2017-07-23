@@ -57,7 +57,7 @@ void DMM_CheckAlignNumber(unsigned uiAlignNumber)
 
 /***************************************************************/
 
-unsigned DMM_Allocate(ProcessAddressSpace* processAddressSpace, unsigned uiSizeInBytes, unsigned uiAlignNumber)
+unsigned DMM_Allocate(Process* processAddressSpace, unsigned uiSizeInBytes, unsigned uiAlignNumber)
 {
 	DMM_CheckAlignNumber(uiAlignNumber);
 	
@@ -225,7 +225,7 @@ unsigned DMM_AllocateForKernel(unsigned uiSizeInBytes, unsigned uiAlignNumber)
   throw upan::exception(XLOC, "out of memory!");
 }
 
-byte DMM_DeAllocate(ProcessAddressSpace* processAddressSpace, unsigned uiAddress)
+byte DMM_DeAllocate(Process* processAddressSpace, unsigned uiAddress)
 {
 	uiAddress = REAL_ALLOCATED_ADDRESS(uiAddress) ;
 	unsigned uiHeapStartAddress = PROCESS_HEAP_START_ADDRESS - GLOBAL_DATA_SEGMENT_BASE ;
@@ -258,7 +258,7 @@ byte DMM_DeAllocate(ProcessAddressSpace* processAddressSpace, unsigned uiAddress
 	return DMM_BAD_DEALLOC ;
 }
 
-byte DMM_GetAllocSize(ProcessAddressSpace* processAddressSpace, unsigned uiAddress, int* iSize)
+byte DMM_GetAllocSize(Process* processAddressSpace, unsigned uiAddress, int* iSize)
 {
 	uiAddress = REAL_ALLOCATED_ADDRESS(uiAddress) ;
 
@@ -323,7 +323,7 @@ byte DMM_DeAllocateForKernel(unsigned uiAddress)
   return DMM_SUCCESS;
 }
 	
-void DMM_DeAllocatePhysicalPages(ProcessAddressSpace* processAddressSpace)
+void DMM_DeAllocatePhysicalPages(Process* processAddressSpace)
 {
 	unsigned uiPDEAddress = processAddressSpace->taskState.CR3_PDBR ;
 	unsigned uiPDEIndex = ((PROCESS_HEAP_START_ADDRESS >> 22) & 0x3FF) ;

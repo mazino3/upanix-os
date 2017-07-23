@@ -49,7 +49,7 @@ ProcessLoader::ProcessLoader() :
 {
 }
 
-byte* ProcessLoader::LoadInitSection(ProcessAddressSpace& pas, unsigned& uiSectionSize, const upan::string& szSectionName)
+byte* ProcessLoader::LoadInitSection(unsigned& uiSectionSize, const upan::string& szSectionName)
 {
 	FileSystem_DIR_Entry DirEntry ;
 
@@ -80,14 +80,14 @@ byte* ProcessLoader::LoadInitSection(ProcessAddressSpace& pas, unsigned& uiSecti
   return bSectionImage.release();
 }
 
-byte* ProcessLoader::LoadDLLInitSection(ProcessAddressSpace& pas, unsigned& uiSectionSize)
+byte* ProcessLoader::LoadDLLInitSection(unsigned& uiSectionSize)
 {
-  return LoadInitSection(pas, uiSectionSize, PROCESS_DLL_FILE);
+  return LoadInitSection(uiSectionSize, PROCESS_DLL_FILE);
 }
 
-byte* ProcessLoader::LoadStartUpInitSection(ProcessAddressSpace& pas, unsigned& uiSectionSize)
+byte* ProcessLoader::LoadStartUpInitSection(unsigned& uiSectionSize)
 {
-  return LoadInitSection(pas, uiSectionSize, PROCESS_START_UP_FILE);
+  return LoadInitSection(uiSectionSize, PROCESS_START_UP_FILE);
 }
 
 using namespace ELFSectionHeader ;
@@ -116,7 +116,7 @@ unsigned ProcessLoader_GetFloorAlignedAddress(unsigned uiAddress, unsigned uiAli
 	return 0 ;
 }
 
-void ProcessLoader::Load(const char* szProcessName, ProcessAddressSpace* pProcessAddressSpace, unsigned *uiPDEAddress,
+void ProcessLoader::Load(const char* szProcessName, Process* pProcessAddressSpace, unsigned *uiPDEAddress,
                          unsigned* uiEntryAdddress, unsigned* uiProcessEntryStackSize, int iNumberOfParameters, char** szArgumentList)
 {
 	ELFParser mELFParser(szProcessName) ;
@@ -138,8 +138,8 @@ void ProcessLoader::Load(const char* szProcessName, ProcessAddressSpace* pProces
 	unsigned uiStartUpSectionSize ;
 	unsigned uiDLLSectionSize ;
 
-  upan::uniq_ptr<byte[]> bStartUpSectionImage(ProcessLoader::Instance().LoadStartUpInitSection(*pProcessAddressSpace, uiStartUpSectionSize));
-  upan::uniq_ptr<byte[]> bDLLSectionImage(ProcessLoader::Instance().LoadDLLInitSection(*pProcessAddressSpace, uiDLLSectionSize));
+  upan::uniq_ptr<byte[]> bStartUpSectionImage(ProcessLoader::Instance().LoadStartUpInitSection(uiStartUpSectionSize));
+  upan::uniq_ptr<byte[]> bDLLSectionImage(ProcessLoader::Instance().LoadDLLInitSection(uiDLLSectionSize));
 
 	unsigned uiProcessImageSize = ProcessLoader_GetCeilAlignedAddress(uiMaxMemAddr - uiMinMemAddr, 4) ;
 	unsigned uiMemImageSize = uiProcessImageSize + uiStartUpSectionSize	+ uiDLLSectionSize ;

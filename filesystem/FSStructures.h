@@ -100,9 +100,9 @@ public:
   const uint32_t ReadCount() const { return _readCount; }
   const uint32_t WriteCount() const { return _writeCount; }
 
-  void UpdateReadCount() { ++_readCount; }
-  void UpdateWriteCount() { ++_writeCount; }
   byte Load(DiskDrive& diskDrive, uint32_t sectortId);
+  uint32_t Read(uint32_t sectorId);
+  void Write(uint32_t sectorId, uint32_t value);
 
 private:
   uint32_t _sectorBlock[ENTRIES_PER_TABLE_SECTOR];

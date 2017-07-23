@@ -68,7 +68,7 @@ static unsigned DLLLoader_GetNoOfPagesAllocated()
 	return uiNoOfPagesAllocated ;
 }
 
-static void DLLLoader_CopyElfDLLImage(ProcessAddressSpace* processAddressSpace, unsigned uiNoOfPagesForDLL, byte* bDLLImage, unsigned uiMemImageSize)
+static void DLLLoader_CopyElfDLLImage(Process* processAddressSpace, unsigned uiNoOfPagesForDLL, byte* bDLLImage, unsigned uiMemImageSize)
 {
 	unsigned uiOffset = 0 ;
 	unsigned uiAllocatedPagesCount = DLLLoader_GetNoOfPagesAllocated() ;
@@ -152,7 +152,7 @@ void DLLLoader_Initialize()
 	DLLLoader_iNoOfProcessSharedObjectList = PAGE_SIZE / sizeof(ProcessSharedObjectList) ;
 }
 
-void DLLLoader_LoadELFDLL(const char* szDLLName, const char* szJustDLLName, ProcessAddressSpace* processAddressSpace)
+void DLLLoader_LoadELFDLL(const char* szDLLName, const char* szJustDLLName, Process* processAddressSpace)
 {
 	ELFParser mELFParser(szDLLName) ;
 
@@ -167,7 +167,7 @@ void DLLLoader_LoadELFDLL(const char* szDLLName, const char* szJustDLLName, Proc
     throw upan::exception(XLOC, "Not a PIC - DLL Min Address: %x", uiMinMemAddr);
 
 	unsigned uiDLLSectionSize ;
-  upan::uniq_ptr<byte[]> bDLLSectionImage(ProcessLoader::Instance().LoadDLLInitSection(*processAddressSpace, uiDLLSectionSize));
+  upan::uniq_ptr<byte[]> bDLLSectionImage(ProcessLoader::Instance().LoadDLLInitSection(uiDLLSectionSize));
 
 	unsigned uiDLLImageSize = ProcessLoader_GetCeilAlignedAddress(uiMaxMemAddr - uiMinMemAddr, 4) ;
 	unsigned uiMemImageSize = uiDLLImageSize + uiDLLSectionSize ;
@@ -251,7 +251,7 @@ void DLLLoader_LoadELFDLL(const char* szDLLName, const char* szJustDLLName, Proc
 	strcpy(pProcessSharedObjectList[iProcessDLLEntryIndex].szName, szJustDLLName) ;
 }
 
-void DLLLoader_DeAllocateProcessDLLPTEPages(ProcessAddressSpace* processAddressSpace)
+void DLLLoader_DeAllocateProcessDLLPTEPages(Process* processAddressSpace)
 {
 	unsigned i, uiPTEAddress, uiPresentBit;
 	unsigned* uiPDEAddress = ((unsigned*)(processAddressSpace->taskState.CR3_PDBR - GLOBAL_DATA_SEGMENT_BASE));
@@ -266,7 +266,7 @@ void DLLLoader_DeAllocateProcessDLLPTEPages(ProcessAddressSpace* processAddressS
 	}
 }
 
-unsigned DLLLoader_GetProcessDLLLoadAddress(ProcessAddressSpace* processAddressSpace, int iIndex)
+unsigned DLLLoader_GetProcessDLLLoadAddress(Process* processAddressSpace, int iIndex)
 {
 	ProcessSharedObjectList* pProcessSharedObjectList = (ProcessSharedObjectList*)(PROCESS_DLL_PAGE_ADDR - GLOBAL_DATA_SEGMENT_BASE) ;
 
@@ -278,7 +278,7 @@ unsigned DLLLoader_GetProcessDLLLoadAddress(ProcessAddressSpace* processAddressS
 	return (processAddressSpace->uiStartPDEForDLL * PAGE_SIZE * PAGE_TABLE_ENTRIES) + (uiAllocatedPagesCount * PAGE_SIZE) ;
 }
 
-byte DLLLoader_MapDLLPagesToProcess(ProcessAddressSpace* processAddressSpace, 
+byte DLLLoader_MapDLLPagesToProcess(Process* processAddressSpace,
 												ProcessSharedObjectList* pProcessSharedObjectList,
 												unsigned uiAllocatedPagesCount)
 {
@@ -315,7 +315,7 @@ byte DLLLoader_MapDLLPagesToProcess(ProcessAddressSpace* processAddressSpace,
 	return DLLLoader_SUCCESS ;
 }
 
-unsigned DLLLoader_GetProcessDLLPageAdrressForKernel(ProcessAddressSpace* processAddressSpace)
+unsigned DLLLoader_GetProcessDLLPageAdrressForKernel(Process* processAddressSpace)
 {
 	unsigned uiPDEAddress = processAddressSpace->taskState.CR3_PDBR ;
 	unsigned uiPDEIndex = ((PROCESS_DLL_PAGE_ADDR >> 22) & 0x3FF) ;

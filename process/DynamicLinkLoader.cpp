@@ -62,7 +62,7 @@ static unsigned DynamicLinkLoader_GetHashValue(const char* name)
     return h ;
 }
 
-static void DynamicLinkLoader_LoadDLL(const char* szJustDLLName, ProcessAddressSpace* processAddressSpace)
+static void DynamicLinkLoader_LoadDLL(const char* szJustDLLName, Process* processAddressSpace)
 {
 	ProcessSharedObjectList* pProcessSharedObjectList = DLLLoader_GetProcessSharedObjectListByName(szJustDLLName) ;
 
@@ -131,7 +131,7 @@ uint32_t DynamicLinkLoader_Initialize(unsigned uiPDEAddress)
   return realELFSectionHeadeAddr;
 }
 
-void DynamicLinkLoader_UnInitialize(ProcessAddressSpace* processAddressSpace)
+void DynamicLinkLoader_UnInitialize(Process* processAddressSpace)
 {
 	unsigned uiPDEAddress = processAddressSpace->taskState.CR3_PDBR ;
 	unsigned uiPDEIndex = ((PROCESS_DLL_PAGE_ADDR >> 22) & 0x3FF) ;
@@ -163,7 +163,7 @@ void DynamicLinkLoader_UnInitialize(ProcessAddressSpace* processAddressSpace)
 	MemManager::Instance().DeAllocatePhysicalPage(uiPageNumber) ;
 }
 
-void DynamicLinkLoader_DoRelocation(ProcessAddressSpace* processAddressSpace, int iID, unsigned uiRelocationOffset, __volatile__ int* iDynamicSymAddress)
+void DynamicLinkLoader_DoRelocation(Process* processAddressSpace, int iID, unsigned uiRelocationOffset, __volatile__ int* iDynamicSymAddress)
 {
 	ELF32Header* pELFHeader ;
 	ELF32SectionHeader* pELFSectionHeader ;
@@ -259,7 +259,7 @@ void DynamicLinkLoader_DoRelocation(ProcessAddressSpace* processAddressSpace, in
   throw upan::exception(XLOC, "Dynamic Symbol Look Up Failed: %s", szSymName);
 }
 
-bool DynamicLinkLoader_GetSymbolOffset(const char* szJustDLLName, const char* szSymName, unsigned* uiDynSymOffset, ProcessAddressSpace* processAddressSpace)
+bool DynamicLinkLoader_GetSymbolOffset(const char* szJustDLLName, const char* szSymName, unsigned* uiDynSymOffset, Process* processAddressSpace)
 {
 	ProcessSharedObjectList* pProcessSharedObjectList = DLLLoader_GetProcessSharedObjectListByName(szJustDLLName) ;
 

@@ -169,10 +169,10 @@ class ProcessStateInfo
 	bool bKernelServiceComplete ;
 };
 
-class ProcessAddressSpace
+class Process
 {
   public:
-	TaskState taskState ;
+  TaskState taskState ;
 	ProcessLDT processLDT ;
 	byte bFree ;
 	PROCESS_STATUS status ;
@@ -233,10 +233,10 @@ class ProcessManager
       static ProcessManager instance;
       return instance;
     }
-    ProcessAddressSpace& GetAddressSpace(int pid);
+    Process& GetAddressSpace(int pid);
     PS* GetProcList(unsigned& uiListSize);
     void FreeProcListMem(PS* pProcList, unsigned uiListSize);
-    ProcessAddressSpace& GetCurrentPAS() { return _processAddressSpace[_iCurrentProcessID]; }
+    Process& GetCurrentPAS() { return _processAddressSpace[_iCurrentProcessID]; }
     int FindFreePAS();
     void StartScheduler();
     void DeleteFromSchedulerList(int iDeleteProcessID);
@@ -275,7 +275,7 @@ class ProcessManager
     PS* GetProcListASync();
     void Load(int iProcessID);
     void Store(int iProcessID);
-    void DeAllocateProcessInitDockMem(ProcessAddressSpace& pas);
+    void DeAllocateProcessInitDockMem(Process& pas);
     void DeAllocateResources(int iProcessID);
     void Release(int iProcessID);
     bool DoPollWait();
@@ -283,7 +283,7 @@ class ProcessManager
     void BuildLDT(ProcessLDT* processLDT);
     void BuildKernelTaskLDT(int iProcessID);
     void BuildIntTaskState(const unsigned uiTaskAddress, const unsigned uiTSSAddress, const int stack);
-    void BuildTaskState(ProcessAddressSpace* pProcessAddressSpace, unsigned uiPDEAddress, unsigned uiEntryAdddress, unsigned uiProcessEntryStackSize);
+    void BuildTaskState(Process* pProcessAddressSpace, unsigned uiPDEAddress, unsigned uiEntryAdddress, unsigned uiProcessEntryStackSize);
     void BuildKernelTaskState(const unsigned uiTaskAddress, const int iProcessID, const unsigned uiStackTop, unsigned uiParam1, unsigned uiParam2);
     void BuildIntGate(unsigned short usGateSelector, unsigned uiOffset, unsigned short usSelector, byte bParameterCount);
     bool IsEventCompleted(int pid);
@@ -296,7 +296,7 @@ class ProcessManager
 
     unsigned _uiProcessCount;
     ProcessStateInfo _kernelModeStateInfo;
-    ProcessAddressSpace* _processAddressSpace;
+    Process* _processAddressSpace;
 };
 
 class ProcessSwitchLock

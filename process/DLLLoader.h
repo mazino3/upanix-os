@@ -45,15 +45,15 @@ typedef struct
 extern int DLLLoader_iNoOfProcessSharedObjectList ;
 
 void DLLLoader_Initialize() ;
-void DLLLoader_LoadELFDLL(const char* szDLLName, const char* szJustDLLName, ProcessAddressSpace* processAddressSpace) ;
-void DLLLoader_DeAllocateProcessDLLPTEPages(ProcessAddressSpace* processAddressSpace) ;
+void DLLLoader_LoadELFDLL(const char* szDLLName, const char* szJustDLLName, Process* processAddressSpace) ;
+void DLLLoader_DeAllocateProcessDLLPTEPages(Process* processAddressSpace) ;
 int DLLLoader_GetProcessSharedObjectListIndexByName(const char* szDLLName) ;
 ProcessSharedObjectList* DLLLoader_GetProcessSharedObjectListByName(const char* szDLLName) ;
 ProcessSharedObjectList* DLLLoader_GetProcessSharedObjectListByIndex(int iIndex) ;
 int DLLLoader_GetRelativeDLLStartAddress(const char* szDLLName) ;
-unsigned DLLLoader_GetProcessDLLLoadAddress(ProcessAddressSpace* processAddressSpace, int iIndex) ;
-byte DLLLoader_MapDLLPagesToProcess(ProcessAddressSpace* processAddressSpace, 
+unsigned DLLLoader_GetProcessDLLLoadAddress(Process* processAddressSpace, int iIndex) ;
+byte DLLLoader_MapDLLPagesToProcess(Process* processAddressSpace, 
 		ProcessSharedObjectList* pProcessSharedObjectList, unsigned uiAllocatedPagesCount) ;
 
-unsigned DLLLoader_GetProcessDLLPageAdrressForKernel(ProcessAddressSpace* processAddressSpace) ;
+unsigned DLLLoader_GetProcessDLLPageAdrressForKernel(Process* processAddressSpace) ;
 #endif

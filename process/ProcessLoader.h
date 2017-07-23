@@ -57,13 +57,13 @@ class ProcessLoader
       static ProcessLoader instance;
       return instance;
     }
-    void Load(const char* szProcessName, ProcessAddressSpace* pProcessAddressSpace, unsigned *uiPDEAddress,
+    void Load(const char* szProcessName, Process* pProcessAddressSpace, unsigned *uiPDEAddress,
               unsigned* uiEntryAdddress, unsigned* uiProcessEntryStackSize, int iNumberOfParameters,
               char** szArgumentList);
-    byte* LoadDLLInitSection(ProcessAddressSpace& pas, unsigned& uiSectionSize);
-    byte* LoadStartUpInitSection(ProcessAddressSpace& pas, unsigned& uiSectionSize);
+    byte* LoadDLLInitSection(unsigned& uiSectionSize);
+    byte* LoadStartUpInitSection(unsigned& uiSectionSize);
   private:
-    byte* LoadInitSection(ProcessAddressSpace& pas, unsigned& uiSectionSize, const upan::string& szSectionName);
+    byte* LoadInitSection(unsigned& uiSectionSize, const upan::string& szSectionName);
 
     const upan::string PROCESS_DLL_FILE;
     const upan::string PROCESS_START_UP_FILE;

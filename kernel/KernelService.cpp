@@ -34,9 +34,9 @@ KernelService::DLLAllocCopy::DLLAllocCopy(int iDLLEntryIndex, unsigned uiAllocPa
 {
 }
 
-void KernelService::DLLAllocCopy::Process()
+void KernelService::DLLAllocCopy::Execute()
 {
-	ProcessAddressSpace* pPAS = &ProcessManager::Instance().GetAddressSpace( GetRequestProcessID() ) ;
+  Process* pPAS = &ProcessManager::Instance().GetAddressSpace( GetRequestProcessID() ) ;
 
 	ProcessSharedObjectList* pPSOList = (ProcessSharedObjectList*)DLLLoader_GetProcessDLLPageAdrressForKernel(pPAS) ;
 	ProcessSharedObjectList* pPSO = &pPSOList[ m_iProcessDLLEntryIndex ] ;
@@ -62,7 +62,7 @@ KernelService::FlatAddress::FlatAddress(unsigned uiVirtualAddress) : m_uiAddress
 { 
 }
 
-void KernelService::FlatAddress::Process()
+void KernelService::FlatAddress::Execute()
 {
 	m_uiFlatAddress = MemManager::Instance().GetFlatAddress(m_uiAddress) ;
 }
@@ -71,7 +71,7 @@ KernelService::PageFault::PageFault(unsigned uiFaultyAddress) : m_uiFaultyAddres
 {
 }
 
-void KernelService::PageFault::Process()
+void KernelService::PageFault::Execute()
 {
 	if(MemManager::Instance().AllocatePage(GetRequestProcessID(), m_uiFaultyAddress) == Failure)
 	{
@@ -102,7 +102,7 @@ KernelService::ProcessExec::~ProcessExec()
 	delete[] m_szArgs ;
 }
 
-void KernelService::ProcessExec::Process()
+void KernelService::ProcessExec::Execute()
 {
 	int iOldDDriveID ;
 	FileSystem_PresentWorkingDirectory mOldPWD ;
@@ -221,10 +221,10 @@ void KernelService::Server(KernelService* pService)
 			continue ;
 		}
 
-		ProcessAddressSpace* pPAS = &ProcessManager::Instance().GetCurrentPAS();
+		Process* pPAS = &ProcessManager::Instance().GetCurrentPAS();
 		auto ksProcessGroupID = pPAS->_processGroup;
 		pPAS->_processGroup = ProcessManager::Instance().GetAddressSpace( pRequest->GetRequestProcessID() )._processGroup;
-		pRequest->Process() ;
+    pRequest->Execute() ;
 		pPAS->_processGroup = ksProcessGroupID ;
     
 		ProcessManager::Instance().WakeUpFromKSWait(pRequest->GetRequestProcessID()) ;

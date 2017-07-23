@@ -36,7 +36,7 @@ class KernelService
 			public:
 				Request() : m_iRequestProcessID(ProcessManager::Instance().GetCurProcId()) { }
 				virtual ~Request() { }
-				virtual void Process() = 0 ;
+        virtual void Execute() = 0 ;
 
 				inline int GetRequestProcessID() { return m_iRequestProcessID ; }	
 		} ;
@@ -79,7 +79,7 @@ class KernelService
 
 			public:
 				DLLAllocCopy(int iDLLEntryIndex, unsigned uiAllocPageCnt, unsigned uiNoOfPages) ;
-				void Process() ;
+        void Execute() ;
 				inline bool GetStatus() { return m_bStatus ; }
 		} ;
 
@@ -91,7 +91,7 @@ class KernelService
 
 			public:
 				FlatAddress(unsigned uiVirtualAddress) ;
-				void Process() ;
+        void Execute() ;
 				inline unsigned GetFlatAddress() { return m_uiFlatAddress ; }
 		} ;
 
@@ -103,7 +103,7 @@ class KernelService
 
 			public:
 				PageFault(unsigned uiFaultyAddress) ;
-				void Process() ;
+        void Execute() ;
 				inline bool GetStatus() { return m_bStatus ; }
 		} ;
 
@@ -118,7 +118,7 @@ class KernelService
 			public:
 				ProcessExec(int iNoOfArgs, const char* szFile, const char** szArgs) ;
 				~ProcessExec() ;
-				void Process() ;
+        void Execute() ;
 				inline int GetNewProcId() { return m_iNewProcId ; }
 		} ;
 } ;

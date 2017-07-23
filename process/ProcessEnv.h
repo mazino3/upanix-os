@@ -38,7 +38,7 @@ typedef struct
 
 byte ProcessEnv_Initialize(__volatile__ unsigned uiPDEAddress, __volatile__ int iParentProcessID);
 void ProcessEnv_InitializeForKernelProcess() ;
-void ProcessEnv_UnInitialize(ProcessAddressSpace&);
+void ProcessEnv_UnInitialize(Process&);
 char* ProcessEnv_Get(const char* szEnvVar) ;
 byte ProcessEnv_Set(const char* szEnvVar, const char* szEnvValue) ;
 

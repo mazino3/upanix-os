@@ -25,9 +25,9 @@
 
 byte ProcessAllocator_AllocateAddressSpace(const unsigned uiNoOfPagesForProcess, const unsigned uiNoOfPagesForPTE,
 		unsigned* uiPDEAddress, unsigned* uiStartPDEForDLL, unsigned uiProcessBase) ;
-void ProcessAllocator_DeAllocateAddressSpace(ProcessAddressSpace* processAddressSpace) ; 
-byte ProcessAllocator_AllocateAddressSpaceForKernel(ProcessAddressSpace* processAddressSpace, unsigned* uiStackAddress) ;
-void ProcessAllocator_DeAllocateAddressSpaceForKernel(ProcessAddressSpace* processAddressSpace) ;
+void ProcessAllocator_DeAllocateAddressSpace(Process* processAddressSpace) ; 
+byte ProcessAllocator_AllocateAddressSpaceForKernel(Process* processAddressSpace, unsigned* uiStackAddress) ;
+void ProcessAllocator_DeAllocateAddressSpaceForKernel(Process* processAddressSpace) ;
 byte ProcessAllocator_AllocatePagesForDLL(unsigned uiNoOfPagesForDLL, ProcessSharedObjectList* pProcessSharedObjectList) ;
 
 #endif

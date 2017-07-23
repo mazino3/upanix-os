@@ -185,7 +185,7 @@ ProcessAllocator_DeAllocatePTE(unsigned uiNoOfPagesForPTE, unsigned uiPDEAddress
 }
 
 void
-ProcessAllocator_DeAllocateAddressSpace(ProcessAddressSpace* processAddressSpace)
+ProcessAllocator_DeAllocateAddressSpace(Process* processAddressSpace)
 {
 	ProcessAllocator_DeAllocateProcessSpace(processAddressSpace->uiNoOfPagesForProcess, 
 					processAddressSpace->taskState.CR3_PDBR,
@@ -199,7 +199,7 @@ ProcessAllocator_DeAllocateAddressSpace(ProcessAddressSpace* processAddressSpace
 }
 
 byte
-ProcessAllocator_AllocateAddressSpaceForKernel(ProcessAddressSpace* processAddressSpace, unsigned* uiStackAddress)
+ProcessAllocator_AllocateAddressSpaceForKernel(Process* processAddressSpace, unsigned* uiStackAddress)
 {
 	unsigned i, uiFreePageNo ;
 	
@@ -223,7 +223,7 @@ ProcessAllocator_AllocateAddressSpaceForKernel(ProcessAddressSpace* processAddre
 }
 
 void
-ProcessAllocator_DeAllocateAddressSpaceForKernel(ProcessAddressSpace* processAddressSpace)
+ProcessAllocator_DeAllocateAddressSpaceForKernel(Process* processAddressSpace)
 {
 	unsigned i ;
 	const int iStackBlockID = processAddressSpace->iKernelStackBlockID ;

@@ -29,8 +29,8 @@
 #define DynamicLinkLoader_FAILURE						5
 
 uint32_t DynamicLinkLoader_Initialize(unsigned uiPDEAddress) ;
-void DynamicLinkLoader_UnInitialize(ProcessAddressSpace* processAddressSpace) ;
-bool DynamicLinkLoader_GetSymbolOffset(const char* szJustDLLName, const char* szSymName, unsigned* uiDynSymOffset, ProcessAddressSpace* processAddressSpace) ;
-void DynamicLinkLoader_DoRelocation(ProcessAddressSpace* processAddressSpace, int iID, unsigned uiRelocationOffset, __volatile__ int* iDynamicSymAddress) ;
+void DynamicLinkLoader_UnInitialize(Process* processAddressSpace) ;
+bool DynamicLinkLoader_GetSymbolOffset(const char* szJustDLLName, const char* szSymName, unsigned* uiDynSymOffset, Process* processAddressSpace) ;
+void DynamicLinkLoader_DoRelocation(Process* processAddressSpace, int iID, unsigned uiRelocationOffset, __volatile__ int* iDynamicSymAddress) ;
 
 #endif

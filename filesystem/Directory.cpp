@@ -99,7 +99,7 @@ void Directory_SetLastReadSectorDetails(ProcFileDescriptor* pFDEntry, int iSecto
 
 /**********************************************************************************************/
 
-byte Directory_Create(ProcessAddressSpace* processAddressSpace, int iDriveID, byte* bParentDirectoryBuffer, const FileSystem_CWD* pCWD, 
+byte Directory_Create(Process* processAddressSpace, int iDriveID, byte* bParentDirectoryBuffer, const FileSystem_CWD* pCWD, 
 		char* szDirName, unsigned short usDirAttribute)
 {
 	byte bStatus ;
@@ -167,7 +167,7 @@ byte Directory_Create(ProcessAddressSpace* processAddressSpace, int iDriveID, by
 	return Directory_SUCCESS ;
 }
 
-byte Directory_Delete(ProcessAddressSpace* processAddressSpace, int iDriveID, byte* bParentDirectoryBuffer, const FileSystem_CWD* pCWD, 
+byte Directory_Delete(Process* processAddressSpace, int iDriveID, byte* bParentDirectoryBuffer, const FileSystem_CWD* pCWD, 
 				const char* szDirName)
 {
 	byte bStatus ;
@@ -235,7 +235,7 @@ byte Directory_Delete(ProcessAddressSpace* processAddressSpace, int iDriveID, by
 	return Directory_SUCCESS ;
 }
 
-byte Directory_GetDirEntryForCreateDelete(const ProcessAddressSpace* processAddressSpace, int iDriveID, const char* szDirPath, char* szDirName, 
+byte Directory_GetDirEntryForCreateDelete(const Process* processAddressSpace, int iDriveID, const char* szDirPath, char* szDirName, 
 			unsigned* uiSectorNo, byte* bSectorPos, byte* bDirectoryBuffer)
 {
 	byte bStatus ;
@@ -290,7 +290,7 @@ byte Directory_GetDirEntryForCreateDelete(const ProcessAddressSpace* processAddr
 	return Directory_SUCCESS ;
 }
 
-byte Directory_GetDirectoryContent(const char* szFileName, ProcessAddressSpace* processAddressSpace, int iDriveID, FileSystem_DIR_Entry** pDirList, int* iListSize)
+byte Directory_GetDirectoryContent(const char* szFileName, Process* processAddressSpace, int iDriveID, FileSystem_DIR_Entry** pDirList, int* iListSize)
 {
 	byte bStatus ;
 	byte bDirectoryBuffer[512] ;
@@ -943,7 +943,7 @@ byte Directory_GetDirEntryInfo(DiskDrive* pDiskDrive, FileSystem_CWD* pCWD, cons
 	return Directory_SUCCESS ;
 }
 
-byte Directory_Change(const char* szFileName, int iDriveID, ProcessAddressSpace* processAddressSpace)
+byte Directory_Change(const char* szFileName, int iDriveID, Process* processAddressSpace)
 {
 	byte bStatus ;
 	unsigned uiSectorNo ;
@@ -1022,7 +1022,7 @@ byte Directory_Change(const char* szFileName, int iDriveID, ProcessAddressSpace*
 	return Directory_SUCCESS ;
 }
 
-byte Directory_PresentWorkingDirectory(ProcessAddressSpace* processAddressSpace, char** uiReturnDirPathAddress)
+byte Directory_PresentWorkingDirectory(Process* processAddressSpace, char** uiReturnDirPathAddress)
 {
 	char* szPWD ;
 	char* pAddress ;
@@ -1050,7 +1050,7 @@ byte Directory_PresentWorkingDirectory(ProcessAddressSpace* processAddressSpace,
 	return Directory_SUCCESS ;
 }
 
-byte Directory_GetDirEntry(const char* szFileName, ProcessAddressSpace* processAddressSpace, int iDriveID, FileSystem_DIR_Entry* pDirEntry)
+byte Directory_GetDirEntry(const char* szFileName, Process* processAddressSpace, int iDriveID, FileSystem_DIR_Entry* pDirEntry)
 {
 	byte bStatus ;
 	byte bDirectoryBuffer[512] ;
@@ -1134,7 +1134,7 @@ byte Directory_FindFullDirPath(DiskDrive* pDiskDrive, const FileSystem_DIR_Entry
 	return Directory_FAILURE ;
 }
 
-byte Directory_SyncPWD(ProcessAddressSpace* processAddressSpace)
+byte Directory_SyncPWD(Process* processAddressSpace)
 {
 	GET_DRIVE_FOR_FS_OPS(processAddressSpace->iDriveID, Directory_FAILURE) ;
 

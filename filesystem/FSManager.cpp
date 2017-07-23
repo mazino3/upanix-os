@@ -171,10 +171,7 @@ byte FSManager_GetSectorEntryValue(DiskDrive* pDiskDrive, const unsigned uiSecto
 
 	if(pSectorBlockEntry != NULL)
 	{
-    unsigned* pTable = pSectorBlockEntry->SectorBlock();
-		unsigned uiIndex = BLOCK_OFFSET(uiSectorID) ;
-		*uiSectorEntryValue = pTable[uiIndex] & EOC ;
-    pSectorBlockEntry->UpdateReadCount();
+    *uiSectorEntryValue = pSectorBlockEntry->Read(uiSectorID);
 		return FSManager_SUCCESS ;
 	}
 	
@@ -213,16 +210,8 @@ byte FSManager_SetSectorEntryValue(DiskDrive* pDiskDrive, const unsigned uiSecto
 	SectorBlockEntry* pSectorBlockEntry = FSManager_GetSectorEntryFromCache(&pFSMountInfo->FSTableCache, uiSectorID) ;
 
 	if(pSectorBlockEntry != NULL)
-	{
-    unsigned* pTable = pSectorBlockEntry->SectorBlock();
-		unsigned uiIndex = BLOCK_OFFSET(uiSectorID) ;
-
-		uiSectorEntryValue &= EOC ;
-		pTable[uiIndex] = pTable[uiIndex] & 0xF0000000 ;
-		pTable[uiIndex] = pTable[uiIndex] | uiSectorEntryValue ;
-
-    pSectorBlockEntry->UpdateWriteCount();
-
+  {
+    pSectorBlockEntry->Write(uiSectorID, uiSectorEntryValue);
 		return FSManager_SUCCESS ;
 	}
 
@@ -279,4 +268,18 @@ byte SectorBlockEntry::Load(DiskDrive& diskDrive, uint32_t sectortId)
   _readCount = _writeCount = 0;
 
   return DeviceDrive_SUCCESS;
+}
+
+uint32_t SectorBlockEntry::Read(uint32_t sectorId)
+{
+  ++_readCount;
+  return _sectorBlock[BLOCK_OFFSET(sectorId)] & EOC ;
+}
+
+void SectorBlockEntry::Write(uint32_t sectorId, uint32_t value)
+{
+  auto index = BLOCK_OFFSET(sectorId) ;
+  _sectorBlock[index] = _sectorBlock[index] & 0xF0000000;
+  _sectorBlock[index] = _sectorBlock[index] | (value & EOC);
+  ++_writeCount;
 }

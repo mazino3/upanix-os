@@ -54,9 +54,9 @@ static void ProcessManager_Yield()
 
 ProcessManager::ProcessManager() : 
   _uiProcessCount(0),
-  _processAddressSpace((ProcessAddressSpace*)MEM_PAS_START)
+  _processAddressSpace((Process*)MEM_PAS_START)
 {
-	if(((sizeof(ProcessAddressSpace) * MAX_NO_PROCESS)) > (MEM_PAS_END - MEM_PAS_START))
+  if(((sizeof(Process) * MAX_NO_PROCESS)) > (MEM_PAS_END - MEM_PAS_START))
     throw upan::exception(XLOC, "Process Address Space InSufficient");
 
   for(int i = 0; i < MAX_NO_PROCESS; i++)
@@ -83,7 +83,7 @@ ProcessManager::ProcessManager() :
 	KC::MDisplay().LoadMessage("Process Manager Initialization", Success);
 }
 
-ProcessAddressSpace& ProcessManager::GetAddressSpace(int pid)
+Process& ProcessManager::GetAddressSpace(int pid)
 {
   return _processAddressSpace[pid];
 }
@@ -232,7 +232,7 @@ void ProcessManager::BuildKernelTaskState(const unsigned uiTaskAddress, const in
 	taskState.IO_MAP_BASE = 103 ; // > TSS Limit => No I/O Permission Bit Map present
 }
 
-void ProcessManager::BuildTaskState(ProcessAddressSpace* pProcessAddressSpace, unsigned uiPDEAddress, unsigned uiEntryAdddress, unsigned uiProcessEntryStackSize)
+void ProcessManager::BuildTaskState(Process* pProcessAddressSpace, unsigned uiPDEAddress, unsigned uiEntryAdddress, unsigned uiProcessEntryStackSize)
 {
 	int pr = 100 ;
 	TaskState* taskState = &(pProcessAddressSpace->taskState) ;
@@ -334,7 +334,7 @@ void ProcessManager::DeleteFromSchedulerList(int iDeleteProcessID)
 void ProcessManager::Destroy(int iDeleteProcessID)
 {
 	// Release process
-	ProcessAddressSpace& pas = GetAddressSpace(iDeleteProcessID);
+  Process& pas = GetAddressSpace(iDeleteProcessID);
 
 	Atomic::Swap((__volatile__ uint32_t&)(pas.status), static_cast<int>(TERMINATED)) ;
 
@@ -358,7 +358,7 @@ void ProcessManager::Destroy(int iDeleteProcessID)
 		if(iNextProcessID == NO_PROCESS_ID || iNextProcessID == iDeleteProcessID)
 			break ;
 
-		ProcessAddressSpace* pc = &GetAddressSpace(iNextProcessID);
+    Process* pc = &GetAddressSpace(iNextProcessID);
 
 		if(pc->iParentProcessID == iDeleteProcessID)
 		{
@@ -404,7 +404,7 @@ void ProcessManager::Store(int iProcessID)
 
 void ProcessManager::DoContextSwitch(int iProcessID)
 {
-	ProcessAddressSpace* pPAS = &GetAddressSpace(iProcessID) ;
+  Process* pPAS = &GetAddressSpace(iProcessID) ;
 	ProcessStateInfo* pStat = pPAS->pProcessStateInfo ;
 
 	if(pPAS->status == TERMINATED)
@@ -458,7 +458,7 @@ void ProcessManager::DoContextSwitch(int iProcessID)
 			}
 			else
 			{
-				ProcessAddressSpace* p = &GetAddressSpace(pStat->iWaitChildProcId) ;
+        Process* p = &GetAddressSpace(pStat->iWaitChildProcId) ;
 
 				if(p->bFree == true || p->iParentProcessID != iProcessID)
 				{
@@ -498,7 +498,7 @@ void ProcessManager::DoContextSwitch(int iProcessID)
 
 	case WAIT_KERNEL_SERVICE:
 		{
-			ProcessAddressSpace* p = &GetAddressSpace(iProcessID) ;
+      Process* p = &GetAddressSpace(iProcessID) ;
 			if(p->pProcessStateInfo->bKernelServiceComplete)
 			{
 				p->pProcessStateInfo->bKernelServiceComplete = false ;
@@ -540,7 +540,7 @@ void ProcessManager::StartScheduler()
 {
 	while(_uiProcessCount > 0)
 	{
-		__volatile__ ProcessAddressSpace* pPAS = &GetCurrentPAS();
+    __volatile__ Process* pPAS = &GetCurrentPAS();
 
 		if(pPAS->status == TERMINATED && pPAS->iParentProcessID == UpanixMain_KernelProcessID())
 		{
@@ -656,7 +656,7 @@ bool ProcessManager::IsChildAlive(int iChildProcessID)
 
 	if(iChildProcessID < 0 || iChildProcessID >= MAX_NO_PROCESS)
     return false;
-  ProcessAddressSpace* p = &GetAddressSpace(iChildProcessID) ;
+  Process* p = &GetAddressSpace(iChildProcessID) ;
 
   if(p->bFree == true || p->iParentProcessID != ProcessManager::GetCurrentProcessID())
     return false;
@@ -667,11 +667,12 @@ byte ProcessManager::CreateKernelImage(const unsigned uiTaskAddress, int iParent
 		int* iProcessID, const char* szKernelProcName)
 {
 	int iNewProcessID = FindFreePAS();
-  ProcessAddressSpace& newPAS = GetAddressSpace(iNewProcessID);
+  Process& newPAS = GetAddressSpace(iNewProcessID);
+  memset(&newPAS, 0, sizeof(Process));
 
 	if(iParentProcessID != NO_PROCESS_ID)
 	{
-    ProcessAddressSpace& parentPAS = GetAddressSpace(iParentProcessID);
+    Process& parentPAS = GetAddressSpace(iParentProcessID);
 		newPAS.iDriveID = parentPAS.iDriveID ;
 
 		MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&(parentPAS.processPWD),
@@ -749,7 +750,8 @@ byte ProcessManager::Create(const char* szProcessName, int iParentProcessID, byt
   try
   {
     int iNewProcessID = FindFreePAS();
-    ProcessAddressSpace& newPAS = GetAddressSpace(iNewProcessID);
+    Process& newPAS = GetAddressSpace(iNewProcessID);
+    memset(&newPAS, 0, sizeof(Process));
 
     unsigned uiEntryAdddress;
     unsigned uiProcessEntryStackSize;
@@ -759,7 +761,7 @@ byte ProcessManager::Create(const char* szProcessName, int iParentProcessID, byt
 
     if(iParentProcessID != NO_PROCESS_ID)
     {
-      ProcessAddressSpace& parentPAS = GetAddressSpace(iParentProcessID);
+      Process& parentPAS = GetAddressSpace(iParentProcessID);
       newPAS.iDriveID = parentPAS.iDriveID ;
 
       MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&(parentPAS.processPWD),
@@ -814,7 +816,7 @@ byte ProcessManager::Create(const char* szProcessName, int iParentProcessID, byt
     }
     else
     {
-      ProcessAddressSpace& parentPAS = GetAddressSpace(iParentProcessID);
+      Process& parentPAS = GetAddressSpace(iParentProcessID);
       newPAS.iDriveID = parentPAS.iDriveID ;
       newPAS._processGroup = parentPAS._processGroup;
     }
@@ -849,7 +851,7 @@ PS* ProcessManager::GetProcListASync()
 {
   PS* pProcList;
 	PS* pPS;
-	ProcessAddressSpace& pAddrSpc = GetCurrentPAS() ;
+  Process& pAddrSpc = GetCurrentPAS() ;
 
 	if(pAddrSpc.bIsKernelProcess == true)
 	{
@@ -864,7 +866,7 @@ PS* ProcessManager::GetProcListASync()
   auto it = _processList.begin();
 	for(int i = 0; it != _processList.end(); ++i, ++it)
 	{
-		ProcessAddressSpace& p = GetAddressSpace(*it);
+    Process& p = GetAddressSpace(*it);
 		
 		pPS[i].pid = *it;
 		pPS[i].status = p.status ;
@@ -897,7 +899,7 @@ PS* ProcessManager::GetProcList(unsigned& uiListSize)
 
 void ProcessManager::FreeProcListMem(PS* pProcList, unsigned uiListSize)
 {
-	ProcessAddressSpace& pAddrSpc = GetCurrentPAS();
+  Process& pAddrSpc = GetCurrentPAS();
 
 	for(unsigned i = 0; i < uiListSize; i++)
 	{
@@ -951,13 +953,13 @@ int ProcessManager::GetCurProcId()
 
 void ProcessManager::Kill(int iProcessID)
 {
-	ProcessAddressSpace* pPAS = &GetAddressSpace(iProcessID) ;
+  Process* pPAS = &GetAddressSpace(iProcessID) ;
 	Atomic::Swap((__volatile__ uint32_t&)(pPAS->status), static_cast<int>(TERMINATED)) ;
 }
 
 void ProcessManager::WakeUpFromKSWait(int iProcessID)
 {
-	ProcessAddressSpace* pPAS = &GetAddressSpace(iProcessID) ;
+  Process* pPAS = &GetAddressSpace(iProcessID) ;
 	pPAS->pProcessStateInfo->bKernelServiceComplete = true ;
 }
 
@@ -979,8 +981,8 @@ bool ProcessManager::CopyDiskDrive(int iProcessID, int& iOldDriveId, FileSystem_
 	if(GetCurProcId() < 0)
 		return false ;
 
-	ProcessAddressSpace* pSrcPAS = &GetAddressSpace( iProcessID ) ;
-	ProcessAddressSpace* pDestPAS = &GetCurrentPAS();
+  Process* pSrcPAS = &GetAddressSpace( iProcessID ) ;
+  Process* pDestPAS = &GetCurrentPAS();
 
 	iOldDriveId = pDestPAS->iDriveID ;
 	MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&(pDestPAS->processPWD), MemUtil_GetDS(), (unsigned)&(mOldPWD), sizeof(FileSystem_PresentWorkingDirectory)) ;
@@ -994,7 +996,7 @@ bool ProcessManager::CopyDiskDrive(int iProcessID, int& iOldDriveId, FileSystem_
 
 bool ProcessManager::WakeupProcessOnInterrupt(__volatile__ int iProcessID)
 {
-	__volatile__ ProcessAddressSpace* p = &GetAddressSpace(iProcessID) ;
+  __volatile__ Process* p = &GetAddressSpace(iProcessID) ;
 	const IRQ& irq = *p->pProcessStateInfo->pIRQ ;
 
 	if(irq == StdIRQ::Instance().NO_IRQ)
@@ -1027,7 +1029,7 @@ void ProcessManager::DeleteFromProcessList(int iProcessID)
   _processList.erase(iProcessID);
 }
 
-void ProcessManager::DeAllocateProcessInitDockMem(ProcessAddressSpace& pas)
+void ProcessManager::DeAllocateProcessInitDockMem(Process& pas)
 {
 	unsigned uiPDEAddress = pas.taskState.CR3_PDBR ;
 	unsigned uiPDEIndex = ((PROCESS_INIT_DOCK_ADDRESS >> 22) & 0x3FF) ;
@@ -1048,7 +1050,7 @@ void ProcessManager::DeAllocateProcessInitDockMem(ProcessAddressSpace& pas)
 
 void ProcessManager::DeAllocateResources(int iProcessID)
 {
-	ProcessAddressSpace& pas = GetAddressSpace(iProcessID) ;
+  Process& pas = GetAddressSpace(iProcessID) ;
 
 	if(pas.bIsKernelProcess == false)
 	{
@@ -1073,7 +1075,7 @@ void ProcessManager::DeAllocateResources(int iProcessID)
 void ProcessManager::Release(int iProcessID)
 {
   ProcessSwitchLock pLock;
-	ProcessAddressSpace& pas = GetAddressSpace(iProcessID) ;
+  Process& pas = GetAddressSpace(iProcessID) ;
 	DeleteFromSchedulerList(iProcessID) ;
 	DMM_DeAllocateForKernel((unsigned)(pas.pname)) ;
 	if(pas.pProcessStateInfo)

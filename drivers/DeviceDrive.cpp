@@ -853,7 +853,7 @@ byte DiskDriveManager::GetList(DriveStat** pDriveList, int* iListSize)
 	if(_driveList.empty())
 		return DeviceDrive_SUCCESS ;
 
-	ProcessAddressSpace* pAddrSpace = &ProcessManager::Instance().GetCurrentPAS() ;
+	Process* pAddrSpace = &ProcessManager::Instance().GetCurrentPAS() ;
 	DriveStat* pAddress = NULL ;
 	
 	if(pAddrSpace->bIsKernelProcess == true)

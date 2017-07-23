@@ -41,17 +41,17 @@ typedef struct
   };
 } PACKED AllocationUnitTracker ; // AUT
 
-class ProcessAddressSpace;
+class Process;
 
-unsigned DMM_Allocate(ProcessAddressSpace* processAddressSpace, unsigned uiSizeInBytes, unsigned uiAlignNumber = 0);
+unsigned DMM_Allocate(Process* processAddressSpace, unsigned uiSizeInBytes, unsigned uiAlignNumber = 0);
 unsigned DMM_AllocateForKernel(unsigned uiSizeInBytes, unsigned uiAlignNumber = 0);
 
-byte DMM_DeAllocate(ProcessAddressSpace* processAddressSpace, unsigned uiAddress);
+byte DMM_DeAllocate(Process* processAddressSpace, unsigned uiAddress);
 byte DMM_DeAllocateForKernel(unsigned uiAddress);
 
-byte DMM_GetAllocSize(ProcessAddressSpace* processAddressSpace, unsigned uiAddress, int* iSize);
+byte DMM_GetAllocSize(Process* processAddressSpace, unsigned uiAddress, int* iSize);
 byte DMM_GetAllocSizeForKernel(unsigned uiAddress, int* iSize);
-void DMM_DeAllocatePhysicalPages(ProcessAddressSpace* processAddressSpace);
+void DMM_DeAllocatePhysicalPages(Process* processAddressSpace);
 
 unsigned DMM_KernelHeapAllocSize() ;
 unsigned DMM_GetKernelHeapSize() ; ;

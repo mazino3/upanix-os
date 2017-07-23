@@ -23,7 +23,7 @@
 
 #define PROCESS_ENV_LIST ((ProcessEnvEntry*)(PROCESS_ENV_PAGE - GLOBAL_DATA_SEGMENT_BASE))
 
-static unsigned ProcessEnv_GetProcessEnvPageNumber(__volatile__ ProcessAddressSpace& processAddressSpace)
+static unsigned ProcessEnv_GetProcessEnvPageNumber(__volatile__ Process& processAddressSpace)
 {
 	unsigned uiPDEAddress = processAddressSpace.taskState.CR3_PDBR ;
 	unsigned uiPDEIndex = ((PROCESS_ENV_PAGE >> 22) & 0x3FF) ;
@@ -54,7 +54,7 @@ byte ProcessEnv_Initialize(__volatile__ unsigned uiPDEAddress, __volatile__ int 
 
 	if(iParentProcessID != NO_PROCESS_ID)
 	{
-		__volatile__ ProcessAddressSpace& parentProcessAddrSpace = ProcessManager::Instance().GetAddressSpace(iParentProcessID);
+		__volatile__ Process& parentProcessAddrSpace = ProcessManager::Instance().GetAddressSpace(iParentProcessID);
 
 		unsigned uiParentPageNo = ProcessEnv_GetProcessEnvPageNumber(parentProcessAddrSpace) ;
 
@@ -75,7 +75,7 @@ void ProcessEnv_InitializeForKernelProcess()
 	ProcessEnv_Set("PWD", FS_ROOT_DIR) ;
 }
 
-void ProcessEnv_UnInitialize(ProcessAddressSpace& pas)
+void ProcessEnv_UnInitialize(Process& pas)
 {
 	MemManager::Instance().DeAllocatePhysicalPage(ProcessEnv_GetProcessEnvPageNumber(pas)) ;
 }
