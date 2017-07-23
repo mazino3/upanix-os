@@ -1064,7 +1064,7 @@ void ProcessManager::DeAllocateResources(int iProcessID)
 
 		DeAllocateProcessInitDockMem(pas) ;
 
-		ProcessAllocator_DeAllocateAddressSpace(&pas) ;
+    pas.DeAllocateAddressSpace();
 	}
 	else
 	{

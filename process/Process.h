@@ -38,11 +38,20 @@ class Process
 public:
   void Load(const char* szProcessName, unsigned *uiPDEAddress,
             unsigned* uiEntryAdddress, unsigned* uiProcessEntryStackSize, int iNumberOfParameters, char** szArgumentList);
+  void DeAllocateAddressSpace();
 
 private:
   void PushProgramInitStackData(unsigned uiPDEAddr, unsigned* uiProcessEntryStackSize, unsigned uiProgramStartAddress,
                                 unsigned uiInitRelocAddress, unsigned uiTermRelocAddress, int iNumberOfParameters, char** szArgumentList);
   void CopyElfImage(unsigned uiPDEAddr, byte* bProcessImage, unsigned uiMemImageSize);
+
+  uint32_t AllocateAddressSpace();
+  uint32_t AllocatePDE();
+  void AllocatePTE(const unsigned uiPDEAddress);
+  void InitializeProcessSpaceForOS(const unsigned uiPDEAddress);
+  void InitializeProcessSpaceForProcess(const unsigned uiPDEAddress);
+  void DeAllocateProcessSpace();
+  void DeAllocatePTE();
 
   public:
   TaskState taskState ;
