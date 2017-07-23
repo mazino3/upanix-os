@@ -144,42 +144,6 @@ int ProcessManager::FindFreePAS()
   throw upan::exception(XLOC, "no free process address space available");
 }
 
-void ProcessManager::BuildDescriptor(Descriptor* descriptor, unsigned uiLimit, unsigned uiBase, byte bType, byte bFlag)
-{
-	descriptor->usLimit15_0 = (0xFFFF & uiLimit) ;
-	descriptor->usBase15_0 = (0xFFFF & uiBase) ;
-	descriptor->bBase23_16 = (uiBase >> 16) & 0xFF ;
-	descriptor->bType = bType ;
-	descriptor->bLimit19_16_Flags = (bFlag << 4) | ((uiLimit >> 16) & 0xF) ;
-	descriptor->bBase31_24 = (uiBase >> 24) & 0xFF ;
-}
-
-void ProcessManager::BuildLDT(ProcessLDT* processLDT)
-{
-	unsigned uiSegmentBase = PROCESS_BASE ;
-	unsigned uiProcessLimit = 0xFFFFF ;
-
-	BuildDescriptor(&processLDT->NullDesc, 0, 0, 0, 0) ;
-	BuildDescriptor(&processLDT->LinearDesc, uiProcessLimit, uiSegmentBase, 0xF2, 0xC) ;
-	BuildDescriptor(&processLDT->CodeDesc, uiProcessLimit, uiSegmentBase, 0xFA, 0xC) ;
-	BuildDescriptor(&processLDT->DataDesc, uiProcessLimit, uiSegmentBase, 0xF2, 0xC) ;
-	BuildDescriptor(&processLDT->StackDesc, uiProcessLimit, uiSegmentBase, 0xF2, 0xC) ;
-	
-	BuildDescriptor(&processLDT->CallGateStackDesc, uiProcessLimit, GLOBAL_DATA_SEGMENT_BASE, 0x92, 0xC);
-}
-
-void ProcessManager::BuildKernelTaskLDT(int iProcessID)
-{
-	ProcessLDT& processLDT = GetAddressSpace(iProcessID).processLDT;
-
-	BuildDescriptor(&processLDT.NullDesc, 0, 0, 0, 0) ;
-//BuildDescriptor(&processLDT->LinearDesc, 0xFFFFF, 0x00, 0x92, 0xC) ;
-	BuildDescriptor(&processLDT.LinearDesc, 0xFFFFF, GLOBAL_DATA_SEGMENT_BASE, 0x92, 0xC) ;
-	BuildDescriptor(&processLDT.CodeDesc, 0xFFFFF, GLOBAL_DATA_SEGMENT_BASE, 0x9A, 0xC) ;
-	BuildDescriptor(&processLDT.DataDesc, 0xFFFFF, GLOBAL_DATA_SEGMENT_BASE, 0x92, 0xC) ;
-	BuildDescriptor(&processLDT.StackDesc, 0xFFFFF, GLOBAL_DATA_SEGMENT_BASE, 0x92, 0xC) ;
-}
-
 void ProcessManager::BuildIntTaskState(const unsigned uiTaskAddress, const unsigned uiTSSAddress, const int stack)
 {
 	TaskState* taskState = (TaskState*)(uiTSSAddress - GLOBAL_DATA_SEGMENT_BASE) ;
@@ -230,61 +194,6 @@ void ProcessManager::BuildKernelTaskState(const unsigned uiTaskAddress, const in
 	taskState.EFLAGS = 0x202 ;
 	taskState.DEBUG_T_BIT = 0x00 ;
 	taskState.IO_MAP_BASE = 103 ; // > TSS Limit => No I/O Permission Bit Map present
-}
-
-void ProcessManager::BuildTaskState(Process* pProcessAddressSpace, unsigned uiPDEAddress, unsigned uiEntryAdddress, unsigned uiProcessEntryStackSize)
-{
-	int pr = 100 ;
-	TaskState* taskState = &(pProcessAddressSpace->taskState) ;
-	memset(taskState, 0, sizeof(TaskState)) ;
-
-	taskState->CR3_PDBR = uiPDEAddress ;
-	taskState->EIP = uiEntryAdddress ;
-  taskState->ESP = pProcessAddressSpace->_processBase + (pProcessAddressSpace->_noOfPagesForProcess - PROCESS_CG_STACK_PAGES) * PAGE_SIZE - uiProcessEntryStackSize ;
-
-	if(pr == 1) //GDT - Low Priority
-	{
-		taskState->ES = 0x50 | 0x3 ;
-	
-		taskState->CS = 0x40 | 0x3 ; 
-	
-		taskState->DS = 0x48 | 0x3 ;
-		taskState->SS = 0x48 | 0x3 ;
-		taskState->FS = 0x48 | 0x3 ;
-		taskState->GS = 0x48 | 0x3 ;
-		taskState->LDT = 0x0 ;
-	}
-	else if(pr == 2) //GDT - High Priority
-	{
-		taskState->ES = 0x8 ;
-	
-		taskState->CS = 0x10 ;
-	
-		taskState->DS = 0x18 ;
-		taskState->SS = 0x18 ;
-		taskState->FS = 0x18 ;
-		taskState->GS = 0x18 ;
-		taskState->LDT = 0x0 ;
-	}
-	else //LDT
-	{
-		taskState->ES = 0x8 | 0x7 ;
-	
-		taskState->CS = 0x10 | 0x7 ;
-	
-		taskState->DS = 0x18 | 0x7 ;
-		taskState->FS = 0x18 | 0x7 ;
-		taskState->GS = 0x18 | 0x7 ;
-
-		taskState->SS = 0x20 | 0x7 ;
-
-		taskState->SS0 = 0x28 | 0x4 ;
-    taskState->ESP0 = PROCESS_BASE + pProcessAddressSpace->_processBase + (pProcessAddressSpace->_noOfPagesForProcess) * PAGE_SIZE - GLOBAL_DATA_SEGMENT_BASE ;
-		taskState->LDT = 0x50 ;
-	}
-	taskState->EFLAGS = 0x202 ;
-	taskState->DEBUG_T_BIT = 0x00 ;
-	taskState->IO_MAP_BASE = 103 ; // > TSS Limit => No I/O Permission Bit Map present
 }
 
 void ProcessManager::AddToSchedulerList(int iNewProcessID)
@@ -714,7 +623,7 @@ byte ProcessManager::CreateKernelImage(const unsigned uiTaskAddress, int iParent
 	unsigned uiStackTop = uiStackAddress - GLOBAL_DATA_SEGMENT_BASE + (PROCESS_KERNEL_STACK_PAGES * PAGE_SIZE) - 1 ;
 
 	BuildKernelTaskState(uiTaskAddress, iNewProcessID, uiStackTop, uiParam1, uiParam2) ;
-	BuildKernelTaskLDT(iNewProcessID) ;
+  newPAS.processLDT.BuildForKernel();
 	
 	newPAS.iUserID = ROOT_USER_ID ;
 	newPAS.iParentProcessID = iParentProcessID ;
@@ -793,9 +702,8 @@ byte ProcessManager::Create(const char* szProcessName, int iParentProcessID, byt
 
     newPAS.bIsKernelProcess = false ;
     newPAS.uiNoOfPagesForDLLPTE = 0 ;
-
-    BuildLDT(&GetAddressSpace(iNewProcessID).processLDT) ;
-    BuildTaskState(&GetAddressSpace(iNewProcessID), uiPDEAddress, uiEntryAdddress, uiProcessEntryStackSize) ;
+    newPAS.processLDT.Build();
+    newPAS.taskState.Build(newPAS._processBase + newPAS._noOfPagesForProcess * PAGE_SIZE, uiPDEAddress, uiEntryAdddress, uiProcessEntryStackSize);
 
     if(iUserID == DERIVE_FROM_PARENT)
     {

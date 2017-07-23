@@ -129,9 +129,6 @@ class ProcessManager
     void DeAllocateResources(int iProcessID);
     void Release(int iProcessID);
     bool DoPollWait();
-    void BuildDescriptor(Descriptor* descriptor, unsigned uiLimit, unsigned uiBase, byte bType, byte bFlag);
-    void BuildLDT(ProcessLDT* processLDT);
-    void BuildKernelTaskLDT(int iProcessID);
     void BuildIntTaskState(const unsigned uiTaskAddress, const unsigned uiTSSAddress, const int stack);
     void BuildTaskState(Process* pProcessAddressSpace, unsigned uiPDEAddress, unsigned uiEntryAdddress, unsigned uiProcessEntryStackSize);
     void BuildKernelTaskState(const unsigned uiTaskAddress, const int iProcessID, const unsigned uiStackTop, unsigned uiParam1, unsigned uiParam2);

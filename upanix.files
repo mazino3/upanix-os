@@ -575,3 +575,4 @@ libmcpp/infra/try.h
 process/Process.h
 process/Process.cpp
 process/TaskStructures.h
+process/TaskStructures.cpp

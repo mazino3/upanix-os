@@ -3,8 +3,11 @@
 
 #include <Global.h>
 
-typedef struct
+class TaskState
 {
+public:
+  void Build(uint32_t stackStartAddress, unsigned uiPDEAddress, unsigned uiEntryAdddress, unsigned uiProcessEntryStackSize);
+
   unsigned short	backlink ;
   unsigned short	FILLER1 ;
 
@@ -56,17 +59,21 @@ typedef struct
 
   unsigned short	DEBUG_T_BIT ;
   unsigned short	IO_MAP_BASE ;
-} PACKED TaskState ;
+} PACKED;
 
-typedef struct
+class Descriptor
 {
-  unsigned short	usLimit15_0;
-  unsigned short	usBase15_0 ;
-  byte			bBase23_16 ;
-  byte			bType ;
-  byte			bLimit19_16_Flags ;
-  byte			bBase31_24 ;
-} PACKED Descriptor ;
+public:
+  void Build(unsigned uiLimit, unsigned uiBase, byte bType, byte bFlag);
+
+private:
+  unsigned short	_usLimit15_0;
+  unsigned short	_usBase15_0 ;
+  byte			_bBase23_16 ;
+  byte			_bType ;
+  byte			_bLimit19_16_Flags ;
+  byte			_bBase31_24 ;
+} PACKED;
 
 typedef struct
 {
@@ -79,14 +86,19 @@ typedef struct
   unsigned short int upperOffset ;
 } PACKED GateDescriptor ;
 
-typedef struct
+class ProcessLDT
 {
+public:
+  void Build();
+  void BuildForKernel();
+
+private:
   Descriptor NullDesc ;
   Descriptor LinearDesc ;
   Descriptor CodeDesc ;
   Descriptor DataDesc ;
   Descriptor StackDesc ;
   Descriptor CallGateStackDesc ;
-} PACKED ProcessLDT ;
+} PACKED;
 
 #endif // TASKSTRUCTURES_H
