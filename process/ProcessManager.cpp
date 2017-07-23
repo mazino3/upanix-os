@@ -672,10 +672,7 @@ byte ProcessManager::Create(const char* szProcessName, int iParentProcessID, byt
     {
       Process& parentPAS = GetAddressSpace(iParentProcessID);
       newPAS.iDriveID = parentPAS.iDriveID ;
-
-      MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&(parentPAS.processPWD),
-      MemUtil_GetDS(), (unsigned)&(newPAS.processPWD),
-      sizeof(FileSystem_PresentWorkingDirectory)) ;
+      newPAS.processPWD = parentPAS.processPWD;
     }
     else
     {
@@ -689,10 +686,7 @@ byte ProcessManager::Create(const char* szProcessName, int iParentProcessID, byt
           return ProcessManager_FAILURE ;
 
         if(pDiskDrive->Mounted())
-        {
-          MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&(pDiskDrive->FSMountInfo.FSpwd), MemUtil_GetDS(),
-              (unsigned)&newPAS.processPWD, sizeof(FileSystem_PresentWorkingDirectory)) ;
-        }
+          newPAS.processPWD = pDiskDrive->FSMountInfo.FSpwd;
       }
     }
 
@@ -705,14 +699,7 @@ byte ProcessManager::Create(const char* szProcessName, int iParentProcessID, byt
     newPAS.processLDT.Build();
     newPAS.taskState.Build(newPAS._processBase + newPAS._noOfPagesForProcess * PAGE_SIZE, uiPDEAddress, uiEntryAdddress, uiProcessEntryStackSize);
 
-    if(iUserID == DERIVE_FROM_PARENT)
-    {
-      newPAS.iUserID = GetCurrentPAS().iUserID ;
-    }
-    else
-    {
-      newPAS.iUserID = iUserID;
-    }
+    newPAS.iUserID = iUserID == DERIVE_FROM_PARENT ? GetCurrentPAS().iUserID : iUserID;
 
     *iProcessID = iNewProcessID ;
 
@@ -730,8 +717,6 @@ byte ProcessManager::Create(const char* szProcessName, int iParentProcessID, byt
     }
 
     newPAS._processGroup->AddProcess();
-
-    *iProcessID = iNewProcessID ;
 
     if(bIsFGProcess)
       newPAS._processGroup->PutOnFGProcessList(iNewProcessID);
