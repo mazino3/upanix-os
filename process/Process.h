@@ -59,6 +59,7 @@ public:
   void Load(const char* szProcessName, unsigned *uiPDEAddress, unsigned* uiEntryAdddress,
             unsigned* uiProcessEntryStackSize, int iNumberOfParameters, char** szArgumentList);
   void DeAllocateAddressSpace();
+  uint32_t GetDLLPageAddressForKernel();
 
 private:
   void PushProgramInitStackData(unsigned uiPDEAddr, unsigned* uiProcessEntryStackSize, unsigned uiProgramStartAddress,

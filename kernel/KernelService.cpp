@@ -38,7 +38,7 @@ void KernelService::DLLAllocCopy::Execute()
 {
   Process* pPAS = &ProcessManager::Instance().GetAddressSpace( GetRequestProcessID() ) ;
 
-	ProcessSharedObjectList* pPSOList = (ProcessSharedObjectList*)DLLLoader_GetProcessDLLPageAdrressForKernel(pPAS) ;
+  ProcessSharedObjectList* pPSOList = (ProcessSharedObjectList*)pPAS->GetDLLPageAddressForKernel();
 	ProcessSharedObjectList* pPSO = &pPSOList[ m_iProcessDLLEntryIndex ] ;
 
 	if(ProcessAllocator_AllocatePagesForDLL(m_uiNoOfPagesForDLL, pPSO) != ProcessAllocator_SUCCESS)

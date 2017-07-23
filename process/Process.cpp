@@ -328,6 +328,17 @@ void Process::DeAllocatePTE()
   }
 }
 
+uint32_t Process::GetDLLPageAddressForKernel()
+{
+  unsigned uiPDEAddress = taskState.CR3_PDBR ;
+  unsigned uiPDEIndex = ((PROCESS_DLL_PAGE_ADDR >> 22) & 0x3FF) ;
+  unsigned uiPTEIndex = ((PROCESS_DLL_PAGE_ADDR >> 12) & 0x3FF) ;
+  unsigned uiPTEAddress = ((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPDEIndex] & 0xFFFFF000 ;
+  unsigned uiPageNumber = (((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPTEIndex] & 0xFFFFF000) / PAGE_SIZE ;
+
+  return (uiPageNumber * PAGE_SIZE) - GLOBAL_DATA_SEGMENT_BASE ;
+}
+
 ProcessStateInfo::ProcessStateInfo() :
   _sleepTime(0),
   _irq(&StdIRQ::Instance().NO_IRQ),

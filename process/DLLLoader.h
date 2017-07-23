@@ -55,5 +55,4 @@ unsigned DLLLoader_GetProcessDLLLoadAddress(Process* processAddressSpace, int iI
 byte DLLLoader_MapDLLPagesToProcess(Process* processAddressSpace, 
 		ProcessSharedObjectList* pProcessSharedObjectList, unsigned uiAllocatedPagesCount) ;
 
-unsigned DLLLoader_GetProcessDLLPageAdrressForKernel(Process* processAddressSpace) ;
 #endif
