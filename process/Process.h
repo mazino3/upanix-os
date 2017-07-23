@@ -39,6 +39,11 @@ public:
   void Load(const char* szProcessName, unsigned *uiPDEAddress,
             unsigned* uiEntryAdddress, unsigned* uiProcessEntryStackSize, int iNumberOfParameters, char** szArgumentList);
 
+private:
+  void PushProgramInitStackData(unsigned uiPDEAddr, unsigned* uiProcessEntryStackSize, unsigned uiProgramStartAddress,
+                                unsigned uiInitRelocAddress, unsigned uiTermRelocAddress, int iNumberOfParameters, char** szArgumentList);
+  void CopyElfImage(unsigned uiPDEAddr, byte* bProcessImage, unsigned uiMemImageSize);
+
   public:
   TaskState taskState ;
   ProcessLDT processLDT ;

@@ -85,7 +85,7 @@ void Process::Load(const char* szProcessName, unsigned *uiPDEAddress,
     for(r = q * sizeof(unsigned); r < uiBSSSize; r++) ((char*)pBSS)[r] = 0 ;
   });
 
-  ProcessLoader_CopyElfImage(*uiPDEAddress, bProcessImage.get(), uiMemImageSize, _processBase) ;
+  CopyElfImage(*uiPDEAddress, bProcessImage.get(), uiMemImageSize);
 
   /* Find init and term stdio functions in libc if any */
   unsigned uiInitRelocAddress = NULL ;
@@ -126,10 +126,92 @@ void Process::Load(const char* szProcessName, unsigned *uiPDEAddress,
 
   /* End of Find init and term stdio functions in libc if any */
 
-  ProcessLoader_PushProgramInitStackData(*uiPDEAddress, _noOfPagesForProcess,
-        _processBase, uiProcessEntryStackSize, mELFParser.GetProgramStartAddress(), uiInitRelocAddress, uiTermRelocAddress,
-        iNumberOfParameters, szArgumentList) ;
+  PushProgramInitStackData(*uiPDEAddress, uiProcessEntryStackSize, mELFParser.GetProgramStartAddress(), uiInitRelocAddress, uiTermRelocAddress, iNumberOfParameters, szArgumentList) ;
 
   *uiEntryAdddress = uiMinMemAddr + uiProcessImageSize ;
 }
 
+void Process::PushProgramInitStackData(unsigned uiPDEAddr, unsigned* uiProcessEntryStackSize, unsigned uiProgramStartAddress,
+                                       unsigned uiInitRelocAddress, unsigned uiTermRelocAddress, int iNumberOfParameters, char** szArgumentList)
+{
+  unsigned uiPDEAddress = uiPDEAddr ;
+  unsigned uiPDEIndex, uiPTEIndex, uiPTEAddress, uiPageAddress ;
+  unsigned uiProcessPDEBase = _processBase / PAGE_SIZE / PAGE_TABLE_ENTRIES ;
+  unsigned uiProcessPageBase = ( _processBase / PAGE_SIZE ) % PAGE_TABLE_ENTRIES ;
+
+  unsigned uiLastProcessStackPage = _noOfPagesForProcess - PROCESS_CG_STACK_PAGES - 1 ;
+
+  uiPDEIndex = (uiProcessPageBase + uiLastProcessStackPage) / PAGE_TABLE_ENTRIES + uiProcessPDEBase + PROCESS_SPACE_FOR_OS ;
+  uiPTEIndex = (uiProcessPageBase + uiLastProcessStackPage) % PAGE_TABLE_ENTRIES ;
+
+  uiPTEAddress = (((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPDEIndex]) & 0xFFFFF000 ;
+  uiPageAddress = (((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPTEIndex]) & 0xFFFFF000 ;
+
+  const unsigned uiEntryAdddressSize = 4 ;
+  const unsigned uiInitRelocAddressSize = 4 ;
+  const unsigned uiTermRelocAddressSize = 4 ;
+  const unsigned argc = 4 ;
+  const unsigned argv = 4 ;
+  const unsigned uiArgumentAddressListSize = iNumberOfParameters * 4 ;
+
+  unsigned uiStackTopAddress = _processBase + (_noOfPagesForProcess - PROCESS_CG_STACK_PAGES) * PAGE_SIZE ;
+
+  unsigned uiArgumentListSize = 0 ;
+  int i ;
+  for(i = 0; i < iNumberOfParameters; i++)
+    uiArgumentListSize += (strlen(szArgumentList[i]) + 1) ;
+
+  *uiProcessEntryStackSize = uiTermRelocAddressSize + uiInitRelocAddressSize + uiEntryAdddressSize + argc + argv + uiArgumentAddressListSize + uiArgumentListSize ;
+
+  uiPageAddress = uiPageAddress + PAGE_SIZE - GLOBAL_DATA_SEGMENT_BASE - *uiProcessEntryStackSize ;
+
+  int iStackIndex = 0 ;
+  ((unsigned*)(uiPageAddress))[iStackIndex++] = uiProgramStartAddress;
+  ((unsigned*)(uiPageAddress))[iStackIndex++] = uiInitRelocAddress;
+  ((unsigned*)(uiPageAddress))[iStackIndex++] = uiTermRelocAddress;
+  ((unsigned*)(uiPageAddress))[iStackIndex++] = iNumberOfParameters;
+  int argLength = (iStackIndex + 1) * 4;
+  ((unsigned*)(uiPageAddress))[iStackIndex++] = uiStackTopAddress - *uiProcessEntryStackSize + argLength;
+
+  uiArgumentListSize = 0 ;
+  for(i = 0; i < iNumberOfParameters; i++)
+  {
+    ((unsigned*)(uiPageAddress))[iStackIndex + i] = ((unsigned*)(uiPageAddress))[iStackIndex - 1] + uiArgumentAddressListSize + uiArgumentListSize ;
+
+    strcpy((char*)&((unsigned*)(uiPageAddress))[iStackIndex + iNumberOfParameters] + uiArgumentListSize,	szArgumentList[i]) ;
+
+    uiArgumentListSize += (strlen(szArgumentList[i]) + 1) ;
+  }
+}
+
+void Process::CopyElfImage(unsigned uiPDEAddr, byte* bProcessImage, unsigned uiMemImageSize)
+{
+  unsigned uiPDEAddress = uiPDEAddr ;
+  unsigned uiPDEIndex, uiPTEIndex, uiPTEAddress, uiPageAddress ;
+  unsigned uiOffset = 0 ;
+  unsigned uiProcessPDEBase = _processBase / PAGE_SIZE / PAGE_TABLE_ENTRIES ;
+  unsigned uiProcessPageBase = ( _processBase / PAGE_SIZE ) % PAGE_TABLE_ENTRIES ;
+
+  unsigned uiCopySize = uiMemImageSize ;
+  unsigned uiNoOfPagesForProcess = MemManager::Instance().GetProcessSizeInPages(uiMemImageSize) ;
+
+  for(uint32_t i = 0; i < uiNoOfPagesForProcess; i++)
+  {
+    uiPDEIndex = (uiProcessPageBase + i) / PAGE_TABLE_ENTRIES + uiProcessPDEBase + PROCESS_SPACE_FOR_OS ;
+    uiPTEIndex = (uiProcessPageBase + i) % PAGE_TABLE_ENTRIES ;
+    //Kernel Heap PTE and PROCESS_SPACE_FOR_OS need not be part of uiPTEIndex calculation as they shall
+    //be aligned at PAGE BOUNDARY
+
+    uiPTEAddress = (((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPDEIndex]) & 0xFFFFF000 ;
+    uiPageAddress = (((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPTEIndex]) & 0xFFFFF000 ;
+
+    memcpy(uiPageAddress - GLOBAL_DATA_SEGMENT_BASE, (unsigned)bProcessImage + uiOffset, upan::min(uiCopySize, (uint32_t)PAGE_SIZE));
+    if(uiCopySize <= PAGE_SIZE)
+      break;
+
+    uiOffset += PAGE_SIZE ;
+    uiCopySize -= PAGE_SIZE ;
+  }
+
+  return ;
+}

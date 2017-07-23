@@ -37,12 +37,6 @@
 
 byte ProcessLoader_CopyImage(const char* szProcessName, unsigned uiPDEAddr, unsigned uiNoOfPagesForProcess) ;
 byte ProcessLoader_CopyProcessPage(const char* szProcessName, unsigned uiProcessAddress, unsigned uiOffset) ;
-void ProcessLoader_CopyElfImage(unsigned uiPDEAddr, byte* bProcessImage, unsigned uiMemImageSize, unsigned uiMinMemAddr) ;
-
-void ProcessLoader_PushProgramInitStackData(unsigned uiPDEAddr, unsigned uiNoOfPagesForProcess, 
-				unsigned uiProcessBase, unsigned* uiProcessEntryStackSize,
-				unsigned uiProgramStartAddress, unsigned uiInitRelocAddress, unsigned uiTermRelocAddress, int iNumberOfParameters, 
-				char** szArgumentList) ;
 
 unsigned ProcessLoader_GetCeilAlignedAddress(unsigned uiAddress, unsigned uiAlign) ;
 unsigned ProcessLoader_GetFloorAlignedAddress(unsigned uiAddress, unsigned uiAlign) ;
@@ -57,9 +51,6 @@ class ProcessLoader
       static ProcessLoader instance;
       return instance;
     }
-    void Load(const char* szProcessName, Process* pProcessAddressSpace, unsigned *uiPDEAddress,
-              unsigned* uiEntryAdddress, unsigned* uiProcessEntryStackSize, int iNumberOfParameters,
-              char** szArgumentList);
     byte* LoadDLLInitSection(unsigned& uiSectionSize);
     byte* LoadStartUpInitSection(unsigned& uiSectionSize);
   private:
