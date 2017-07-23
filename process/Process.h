@@ -23,21 +23,41 @@ typedef enum
 
 class ProcessStateInfo
 {
-  public:
-    ProcessStateInfo();
-  unsigned uiSleepTime ;
-  const IRQ* pIRQ ;
-  int iWaitChildProcId ;
-  RESOURCE_KEYS uiWaitResourceId;
-  uint32_t _eventCompleted;
-  bool bKernelServiceComplete ;
+public:
+  ProcessStateInfo();
+
+  uint32_t SleepTime() const { return _sleepTime; }
+  void SleepTime(const uint32_t s) { _sleepTime = s; }
+
+  int WaitChildProcId() const { return _waitChildProcId; }
+  void WaitChildProcId(const int id) { _waitChildProcId = id; }
+
+  RESOURCE_KEYS WaitResourceId() const { return _waitResourceId; }
+  void WaitResourceId(const RESOURCE_KEYS id) { _waitResourceId = id; }
+
+  bool IsKernelServiceComplete() const { return _kernelServiceComplete; }
+  void KernelServiceComplete(const bool v) { _kernelServiceComplete = v; }
+
+  const IRQ* Irq() const { return _irq; }
+  void Irq(const IRQ* irq) { _irq = irq; }
+
+  bool IsEventCompleted();
+  void EventCompleted();
+
+private:
+  unsigned      _sleepTime ;
+  const IRQ*    _irq;
+  int           _waitChildProcId ;
+  RESOURCE_KEYS _waitResourceId;
+  uint32_t      _eventCompleted;
+  bool          _kernelServiceComplete ;
 };
 
 class Process
 {
 public:
-  void Load(const char* szProcessName, unsigned *uiPDEAddress,
-            unsigned* uiEntryAdddress, unsigned* uiProcessEntryStackSize, int iNumberOfParameters, char** szArgumentList);
+  void Load(const char* szProcessName, unsigned *uiPDEAddress, unsigned* uiEntryAdddress,
+            unsigned* uiProcessEntryStackSize, int iNumberOfParameters, char** szArgumentList);
   void DeAllocateAddressSpace();
 
 private:

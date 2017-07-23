@@ -328,3 +328,27 @@ void Process::DeAllocatePTE()
   }
 }
 
+ProcessStateInfo::ProcessStateInfo() :
+  _sleepTime(0),
+  _irq(&StdIRQ::Instance().NO_IRQ),
+  _waitChildProcId(NO_PROCESS_ID),
+  _waitResourceId(RESOURCE_NIL),
+  _eventCompleted(0),
+  _kernelServiceComplete(false)
+{
+}
+
+bool ProcessStateInfo::IsEventCompleted()
+{
+  if(_eventCompleted)
+  {
+    Atomic::Swap(_eventCompleted, 0);
+    return true;
+  }
+  return false;
+}
+
+void ProcessStateInfo::EventCompleted()
+{
+  Atomic::Swap(_eventCompleted, 1);
+}

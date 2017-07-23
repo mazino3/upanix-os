@@ -326,16 +326,16 @@ void ProcessManager::DoContextSwitch(int iProcessID)
 	{
 	case WAIT_SLEEP:
 		{
-			if(PIT_GetClockCount() >= pStat->uiSleepTime)
+      if(PIT_GetClockCount() >= pStat->SleepTime())
 			{
-				pStat->uiSleepTime = 0 ;
+        pStat->SleepTime(0) ;
 				pPAS->status = RUN ;
 			}
 			else
 			{
 				if(debug_point) 
 				{
-					printf("\n Sleep Time: %u", pStat->uiSleepTime) ;
+          printf("\n Sleep Time: %u", pStat->SleepTime()) ;
 					printf("\n PIT Tick Count: %u", PIT_GetClockCount()) ;
 					printf("\n") ;
 				}
@@ -360,24 +360,24 @@ void ProcessManager::DoContextSwitch(int iProcessID)
 	
 	case WAIT_CHILD:
 		{
-			if(pStat->iWaitChildProcId < 0)
+      if(pStat->WaitChildProcId() < 0)
 			{
-				pStat->iWaitChildProcId = NO_PROCESS_ID ;
+        pStat->WaitChildProcId(NO_PROCESS_ID);
 				pPAS->status = RUN ;
 			}
 			else
 			{
-        Process* p = &GetAddressSpace(pStat->iWaitChildProcId) ;
+        Process* p = &GetAddressSpace(pStat->WaitChildProcId()) ;
 
 				if(p->bFree == true || p->iParentProcessID != iProcessID)
 				{
-					pStat->iWaitChildProcId = NO_PROCESS_ID ;
+          pStat->WaitChildProcId(NO_PROCESS_ID);
 					pPAS->status = RUN ;
 				}
 				else if(p->status == TERMINATED && p->iParentProcessID == iProcessID)
 				{
-					Release(pStat->iWaitChildProcId) ;
-					pStat->iWaitChildProcId = NO_PROCESS_ID ;
+          Release(pStat->WaitChildProcId()) ;
+          pStat->WaitChildProcId(NO_PROCESS_ID);
 					pPAS->status = RUN ;
 				}
 				else
@@ -388,15 +388,15 @@ void ProcessManager::DoContextSwitch(int iProcessID)
 
 	case WAIT_RESOURCE:
 		{
-			if(pStat->uiWaitResourceId == RESOURCE_NIL)
+      if(pStat->WaitResourceId() == RESOURCE_NIL)
 			{
 				pPAS->status = RUN ;
 			}
 			else
 			{
-				if(_resourceList[pStat->uiWaitResourceId] == false)
+        if(_resourceList[pStat->WaitResourceId()] == false)
 				{ 
-					pStat->uiWaitResourceId = RESOURCE_NIL ;
+          pStat->WaitResourceId(RESOURCE_NIL);
 					pPAS->status = RUN ;
 				}
 				else
@@ -408,9 +408,9 @@ void ProcessManager::DoContextSwitch(int iProcessID)
 	case WAIT_KERNEL_SERVICE:
 		{
       Process* p = &GetAddressSpace(iProcessID) ;
-			if(p->pProcessStateInfo->bKernelServiceComplete)
+      if(p->pProcessStateInfo->IsKernelServiceComplete())
 			{
-				p->pProcessStateInfo->bKernelServiceComplete = false ;
+        p->pProcessStateInfo->KernelServiceComplete(false);
 				p->status = RUN ;
 			}
 			else
@@ -488,8 +488,7 @@ void ProcessManager::Sleep(__volatile__ unsigned uiSleepTime) // in Mili Seconds
 
 	ProcessManager::DisableTaskSwitch() ;
 
-	uiSleepTime = PIT_RoundSleepTime(uiSleepTime) ;
-	GetCurrentPAS().pProcessStateInfo->uiSleepTime = PIT_GetClockCount() + uiSleepTime ;
+  GetCurrentPAS().pProcessStateInfo->SleepTime(PIT_GetClockCount() + PIT_RoundSleepTime(uiSleepTime));
 	GetCurrentPAS().status = WAIT_SLEEP ;
 
 	ProcessManager_Yield() ;
@@ -505,7 +504,7 @@ void ProcessManager::WaitOnInterrupt(const IRQ& irq)
 
 	ProcessManager::DisableTaskSwitch();
 	
-	GetCurrentPAS().pProcessStateInfo->pIRQ = &irq;
+  GetCurrentPAS().pProcessStateInfo->Irq(&irq);
 	GetCurrentPAS().status = WAIT_INT;
 
 	ProcessManager_Yield();
@@ -539,7 +538,7 @@ void ProcessManager::WaitOnChild(int iChildProcessID)
 
 	ProcessManager::DisableTaskSwitch() ;
 	
-	GetCurrentPAS().pProcessStateInfo->iWaitChildProcId = iChildProcessID ;
+  GetCurrentPAS().pProcessStateInfo->WaitChildProcId(iChildProcessID);
 	GetCurrentPAS().status = WAIT_CHILD ;
 
 	ProcessManager_Yield() ;
@@ -553,7 +552,7 @@ void ProcessManager::WaitOnResource(RESOURCE_KEYS resourceKey)
 	//ProcessManager_EnableTaskSwitch() ;
 	ProcessManager::DisableTaskSwitch() ;
 	
-	GetCurrentPAS().pProcessStateInfo->uiWaitResourceId = resourceKey;
+  GetCurrentPAS().pProcessStateInfo->WaitResourceId(resourceKey);
 	GetCurrentPAS().status = WAIT_RESOURCE ;
 
 	ProcessManager_Yield() ;
@@ -853,7 +852,7 @@ void ProcessManager::Kill(int iProcessID)
 void ProcessManager::WakeUpFromKSWait(int iProcessID)
 {
   Process* pPAS = &GetAddressSpace(iProcessID) ;
-	pPAS->pProcessStateInfo->bKernelServiceComplete = true ;
+  pPAS->pProcessStateInfo->KernelServiceComplete(true);
 }
 
 void ProcessManager::WaitOnKernelService()
@@ -863,7 +862,7 @@ void ProcessManager::WaitOnKernelService()
 
 	ProcessManager::DisableTaskSwitch() ;
 
-	GetCurrentPAS().pProcessStateInfo->bKernelServiceComplete = false ;
+  GetCurrentPAS().pProcessStateInfo->KernelServiceComplete(false);
 	GetCurrentPAS().status = WAIT_KERNEL_SERVICE ;
 
 	ProcessManager_Yield() ;
@@ -890,7 +889,7 @@ bool ProcessManager::CopyDiskDrive(int iProcessID, int& iOldDriveId, FileSystem_
 bool ProcessManager::WakeupProcessOnInterrupt(__volatile__ int iProcessID)
 {
   __volatile__ Process* p = &GetAddressSpace(iProcessID) ;
-	const IRQ& irq = *p->pProcessStateInfo->pIRQ ;
+  const IRQ& irq = *p->pProcessStateInfo->Irq();
 
 	if(irq == StdIRQ::Instance().NO_IRQ)
 		return true ;
@@ -1003,18 +1002,12 @@ bool ProcessManager::ConditionalWait(const volatile unsigned* registry, unsigned
 
 bool ProcessManager::IsEventCompleted(int pid)
 {
-  auto& info = GetProcessStateInfo(pid);
-  if(info._eventCompleted)
-  {
-    Atomic::Swap(info._eventCompleted, 0);
-    return true;
-  }
-  return false;
+  return GetProcessStateInfo(pid).IsEventCompleted();
 }
 
 void ProcessManager::EventCompleted(int pid)
 {
-  Atomic::Swap(GetProcessStateInfo(pid)._eventCompleted, 1);
+  GetProcessStateInfo(pid).EventCompleted();
 }
 
 ProcessStateInfo& ProcessManager::GetProcessStateInfo(int pid)
@@ -1022,13 +1015,4 @@ ProcessStateInfo& ProcessManager::GetProcessStateInfo(int pid)
   if(pid == NO_PROCESS_ID)
     return _kernelModeStateInfo;
   return *GetAddressSpace(pid).pProcessStateInfo;
-}
-
-ProcessStateInfo::ProcessStateInfo() : 
-  uiSleepTime(0), 
-  pIRQ(&StdIRQ::Instance().NO_IRQ), 
-  iWaitChildProcId(NO_PROCESS_ID),
-  uiWaitResourceId(RESOURCE_NIL), 
-  _eventCompleted(0)
-{
 }
