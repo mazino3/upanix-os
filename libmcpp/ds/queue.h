@@ -38,14 +38,15 @@ class queue
     void clear();
 
   private:
-    unsigned short _readEnd;
-    unsigned short _writeEnd;
-    unsigned       _size;
-    T*             _buffer;
+    uint32_t _readEnd;
+    uint32_t _writeEnd;
+    uint32_t _size;
+    uint32_t _count;
+    T*       _buffer;
 };
 
 template <typename T>
-queue<T>::queue(unsigned size) : _readEnd(0), _writeEnd(0), _size(size), _buffer(nullptr)
+queue<T>::queue(unsigned size) : _readEnd(0), _writeEnd(0), _size(size), _count(0), _buffer(nullptr)
 {
   _buffer = new T[_size];
 }
@@ -59,13 +60,13 @@ queue<T>::~queue()
 template <typename T>
 bool queue<T>::empty() const
 {
-  return _readEnd == _writeEnd;
+  return _count == 0;
 }
 
 template <typename T>
 bool queue<T>::full() const
 {
-  return ((_writeEnd + 1) % _size) == _readEnd;
+  return _count == _size;
 }
 
 template <typename T>
@@ -88,6 +89,7 @@ bool queue<T>::pop_front()
   if(empty())
     return false;
 	_readEnd = (_readEnd + 1) % _size;
+  --_count;
   return true;
 }
 
@@ -98,13 +100,14 @@ bool queue<T>::push_back(const T& data)
     return false;
 	_buffer[_writeEnd] = data;	
 	_writeEnd = (_writeEnd + 1) % _size;
+  ++_count;
 	return true;
 }
 
 template <typename T>
 void queue<T>::clear()
 {
-  _readEnd = _writeEnd = 0;
+  _count = _readEnd = _writeEnd = 0;
 }
 
 };

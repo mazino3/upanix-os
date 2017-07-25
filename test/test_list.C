@@ -1,6 +1,7 @@
 #include <iostream>
 #include "list.h"
 #include "algorithm.h"
+#include "testassert.h"
 
 int main()
 {
@@ -22,10 +23,8 @@ int main()
   for(const auto i : x)
     std::cout << i << std::endl;
   
-  if(upan::find(x.begin(), x.end(), 30) != x.end())
-    std::cout << "Found 30" << std::endl;
-  else
-    std::cout << "Didn't find 30" << std::endl;
+  std::cout << "Find 30 successfully" << std::endl;
+  TEST_ASSERT(upan::find(x.begin(), x.end(), 30) != x.end());
 
   auto i = x.begin();
   while(i != x.end())
@@ -37,15 +36,11 @@ int main()
        ++i;
   }
 
-  if(upan::find(x.begin(), x.end(), 30) != x.end())
-    std::cout << "Found 30" << std::endl;
-  else
-    std::cout << "Didn't find 30" << std::endl;
+  std::cout << "30 not found" << std::endl;
+  TEST_ASSERT(upan::find(x.begin(), x.end(), 30) == x.end());
 
-  if(upan::find_if(x.begin(), x.end(), upan::equal_to<int>(40)) != x.end())
-    std::cout << "Found 40" << std::endl;
-  else
-    std::cout << "Didn't find 40" << std::endl;
+  std::cout << "Find 40 using equal_to predicate" << std::endl;
+  TEST_ASSERT(upan::find_if(x.begin(), x.end(), upan::equal_to<int>(40)) != x.end());
 
   i = x.begin();
   while(i != x.end())

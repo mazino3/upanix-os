@@ -4,6 +4,9 @@ CXXFLAGS=-std=c++11
 
 rm -f test_list test_map
 
+echo "compiling test_queue.C..."
+g++ ${CXXFLAGS} ${INCLUDES} ${DFLAGS} test_queue.C -o test_queue
+
 echo "compiling test_list.C..."
 g++ ${CXXFLAGS} ${INCLUDES} ${DFLAGS} test_list.C -o test_list
 

@@ -40,3 +40,4 @@ util
 util/bak
 .
 drivers/usb/devices
+test

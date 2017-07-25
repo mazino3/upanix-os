@@ -574,3 +574,6 @@ process/Process.h
 process/Process.cpp
 process/TaskStructures.h
 process/TaskStructures.cpp
+test/test_list.C
+test/test_map.C
+test/test_queue.C

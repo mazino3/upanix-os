@@ -4,5 +4,6 @@ CXXFLAGS=-std=c++11
 
 ./compile.sh
 
+./test_queue
 ./test_list
 ./test_map
