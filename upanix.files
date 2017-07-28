@@ -577,3 +577,4 @@ process/TaskStructures.cpp
 test/test_list.C
 test/test_map.C
 test/test_queue.C
+libmcpp/ds/vector.h

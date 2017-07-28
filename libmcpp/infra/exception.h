@@ -20,6 +20,7 @@
 
 #ifdef __LOCAL_TEST__
 
+#include <stdarg.h>
 #include <string>
 
 namespace upan {
@@ -32,6 +33,15 @@ class exception
     exception(const std::string& fileName, unsigned lineNo, const std::string& msg)
     {
       printf("\n %s:%u - %s", fileName.c_str(), lineNo, msg.c_str());
+    }
+
+    exception(const std::string& fileName, unsigned lineNo, const char * __restrict fmsg, ...)
+    {
+      printf("\n %s:%u - ", fileName.c_str(), lineNo);
+      va_list arg;
+      va_start(arg, fmsg);
+      vprintf(fmsg, arg);
+      va_end(arg);
     }
 };
 

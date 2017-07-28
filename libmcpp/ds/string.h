@@ -18,8 +18,13 @@
 #ifndef _UPAN_STRING_H_
 #define _UPAN_STRING_H_
 
+#ifdef __LOCAL_TEST__
+#include "/usr/include/string.h"
+#else
 #include <Global.h>
 #include <cstring.h>
+#endif
+
 #include <stdio.h>
 
 namespace upan {

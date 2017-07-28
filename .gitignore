@@ -10,3 +10,5 @@ UpanixStart_Main.grub
 .realmode
 test_list
 test_map
+test_vector
+test_queue
