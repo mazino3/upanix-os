@@ -3,12 +3,16 @@
 #include "algorithm.h"
 #include "testassert.h"
 
+struct Obj
+{
+  Obj(int x, int y) : k(x), v(y) {}
+  int k;
+  int v;
+};
+
 int main()
 {
   upan::vector<int> x;
-  upan::vector<const int> y;
-  upan::vector<int*> a;
-  upan::vector<const int*> b;
 
   TEST_ASSERT(x.empty());
   TEST_ASSERT(x.size() == 0);
@@ -145,6 +149,48 @@ int main()
   TEST_ASSERT(x._capacity == 141 * sizeof(int));
   for(int i = 0; i < 87; ++i)
     TEST_ASSERT(x[i] == i + 11);
+
+  std::cout << "assignment" << std::endl;
+  upan::vector<Obj> o1;
+  for(int i = 0; i < 10; ++i)
+    o1.push_back(Obj(i, i * 10));
+  TEST_ASSERT(o1.size() == 10);
+  TEST_ASSERT(o1._capacity == 13 * sizeof(Obj));
+
+  upan::vector<Obj> o2;
+  for(int i = 0; i < 20; ++i)
+    o2.push_back(Obj(i, i * 10));
+  TEST_ASSERT(o2.size() == 20);
+  TEST_ASSERT(o2._capacity == 28 * sizeof(Obj));
+
+  o2 = o1;
+  TEST_ASSERT(o2.size() == 10);
+  TEST_ASSERT(o2._capacity == 13 * sizeof(Obj));
+
+  o1.push_back(Obj(-1, -1));
+  TEST_ASSERT(o2.size() == 10);
+  TEST_ASSERT(o2._capacity == 13 * sizeof(Obj));
+  for(int i = 0; i < 10; ++i)
+    TEST_ASSERT(o2[i].k == i && o2[i].v == i * 10);
+  
+  TEST_ASSERT(o1.size() == 11);
+  TEST_ASSERT(o1._capacity == 13 * sizeof(Obj));
+  for(int i = 0; i < 10; ++i)
+    TEST_ASSERT(o1[i].k == i && o1[i].v == i * 10);
+  TEST_ASSERT(o1[10].k == -1 && o1[10].v == -1);
+
+  std::cout << "swap" << std::endl;
+  o1.swap(o2);
+  TEST_ASSERT(o1.size() == 10);
+  TEST_ASSERT(o1._capacity == 13 * sizeof(Obj));
+  for(int i = 0; i < 10; ++i)
+    TEST_ASSERT(o1[i].k == i && o1[i].v == i * 10);
+  
+  TEST_ASSERT(o2.size() == 11);
+  TEST_ASSERT(o2._capacity == 13 * sizeof(Obj));
+  for(int i = 0; i < 10; ++i)
+    TEST_ASSERT(o2[i].k == i && o2[i].v == i * 10);
+  TEST_ASSERT(o2[10].k == -1 && o2[10].v == -1);
 
   return 0;
 }
