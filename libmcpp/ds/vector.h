@@ -44,12 +44,11 @@ class vector
     void insert(const_iterator pos, const T& v);
     void push_back(const T& value);
 
-    bool erase(const int index);
-    bool erase(const T& value);
-    bool erase(const_iterator& it);
-    bool erase(const_iterator& first, const_iterator& last);
-    bool erase(const int first, const int last);
-    bool pop_back();
+    iterator erase(const T& value);
+    iterator erase(const_iterator& it);
+    iterator erase(const_iterator& first, const_iterator& last);
+    iterator erase(const int first, const int last);
+    void pop_back();
 
     unsigned size() const { return _size; }
     bool empty() const { return _size == 0; }
@@ -88,14 +87,14 @@ class vector
         vector_iterator operator--(int) { return post_dec(); }
         vector_iterator operator--(int) const { return post_dec(); }
 
-        vector_iterator operator+(const int delta)
+        vector_iterator operator+(const int delta) const
         {
           const int newIndex = _index + delta;
           validate_index(newIndex);
           return vector_iterator(*_parent, newIndex);
         }
 
-        vector_iterator operator-(const int delta)
+        vector_iterator operator-(const int delta) const
         {
           const int newIndex = _index - delta;
           validate_index(newIndex);
@@ -159,10 +158,12 @@ class vector
     };
     friend class vector_iterator;
 
+#ifdef __LOCAL_TEST__
+  public:
+#else
   private:
-    uint32_t sizeInBytes() const { return _size * sizeof(T); }
+#endif
     void expandIfNeeded();
-    bool deleteAt(const int index);
 
     int    _size;
     int    _capacity;
@@ -191,27 +192,15 @@ vector<T>::~vector()
 template <typename T>
 void vector<T>::expandIfNeeded()
 {
-  if(sizeInBytes() >= _capacity)
+  if((_size * sizeof(T)) >= _capacity)
   {
-    const uint32_t newCapacity = sizeof(T) * (_size == 0 ? 2 : _size * 1.5);
+    const uint32_t newCapacity = sizeof(T) * (int)(_size == 0 ? 2 : _size * 1.5);
     char* tempBuffer = new char[newCapacity];
     memcpy(tempBuffer, _buffer, _capacity);
     delete[] _buffer;
     _buffer = tempBuffer;
+    _capacity = newCapacity;
   }
-}
-
-template <typename T>
-bool vector<T>::deleteAt(const int index)
-{
-  if(index < 0 || index >= _size)
-    return false;
-
-  --_size;
-  if(index < _size)
-    memcpy(_buffer + index * sizeof(T), _buffer + (index + 1) * sizeof(T), (_size - index) * sizeof(T));
-
-  return true;
 }
 
 template <typename T>
@@ -240,45 +229,39 @@ void vector<T>::push_back(const T& value)
 }
 
 template <typename T>
-bool vector<T>::erase(const int index)
+typename vector<T>::iterator vector<T>::erase(vector<T>::const_iterator& it)
 {
-  return deleteAt(index);
+  return erase(it, it + 1);
 }
 
 template <typename T>
-bool vector<T>::erase(vector<T>::const_iterator& it)
-{
-  return deleteAt(it._index);
-}
-
-template <typename T>
-bool vector<T>::erase(vector<T>::const_iterator& first, vector<T>::const_iterator& last)
+typename vector<T>::iterator vector<T>::erase(vector<T>::const_iterator& first, vector<T>::const_iterator& last)
 {
   return erase(first._index, last._index);
 }
 
 template <typename T>
-bool vector<T>::erase(const int first, const int last)
+typename vector<T>::iterator vector<T>::erase(const int first, const int last)
 {
-  if(first < 0 || first >= _size || last < 0 || last > _size || last < first)
-    return false;
+  if(first < 0 || first >= _size || last < 0 || last > _size || last <= first)
+    throw upan::exception(XLOC, "vector index first:%d and last:%d out of bounds while deleting elements", first, last);
 
   const int remaining = _size - last;
-  memcpy(_buffer + first * sizeof(T), _buffer + last * sizeof(T), remaining);
+  memcpy(_buffer + first * sizeof(T), _buffer + last * sizeof(T), remaining * sizeof(T));
   _size -= (last - first);
-  return true;
+  return vector_iterator(*this, first);
 }
 
 template <typename T>
-bool vector<T>::erase(const T& v)
+typename vector<T>::iterator vector<T>::erase(const T& v)
 {
   return erase(find(begin(), end(), v));
 }
 
 template <typename T>
-bool vector<T>::pop_back()
+void vector<T>::pop_back()
 {
-  return deleteAt(_size - 1);
+  erase(end() - 1);
 }
 
 template <typename T>
