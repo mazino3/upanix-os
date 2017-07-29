@@ -31,112 +31,130 @@ namespace upan {
 
 class string
 {
-	public:
-		string() : _pVal(0), _len(0)
-		{
-			_sVal[0] = '\0';
-		}
+public:
+  string()
+  {
+    init();
+  }
 
-		string(const char* v) : _pVal(0), _len(0)
-		{
-			Value(v);
-		}
-
-		~string()
-		{
-			DeletePtr();
-		}
-
-		string(const string& r) : _pVal(0)
-		{
-			Value(r.c_str());
-		}
-
-    const char operator[](unsigned index) const;
-
-		string& operator=(const string& r)
-		{
-      Value(r.c_str());
-			return *this;
-		}
-
-    string operator+(const string& r) const
+  string(const char* v)
+  {
+    if(v == nullptr)
+      init();
+    else
     {
-      string temp(*this);
-      return temp += r;
+      _len = strlen(v);
+      _capacity = _len + 1;
+      _buffer = new char[_capacity];
+      strcpy(_buffer, v);
     }
+  }
 
-		string& operator+=(const string& r)
-		{
-      unsigned newLen = _len + r.length();
-			if(Large(newLen))
-			{
-				char* newVal = AllocPtr(newLen);
-				strcpy(newVal, c_str());
-				strcat(newVal, r.c_str());
-				DeletePtr();
-				_pVal = newVal;
-			}
-			else
-				strcat(_sVal, r.c_str());
-      _len = newLen;
-			return *this;
-		}
+  string(const string& r)
+  {
+    _len = r.length();
+    _capacity = _len + 1;
+    _buffer = new char[_capacity];
+    strcpy(_buffer, r.c_str());
+  }
 
-    bool operator<(const string& r) const
+  string(string&& r)
+  {
+    _len = r.length();
+    _capacity = r._capacity;
+    _buffer = r._buffer;
+
+    r._buffer = nullptr;
+  }
+
+  ~string()
+  {
+    delete[] _buffer;
+  }
+
+  string& operator=(const string& r)
+  {
+    _len = r.length();
+    if(_capacity <= _len)
     {
-      return strcmp(c_str(), r.c_str()) < 0;
+      delete[] _buffer;
+      _capacity = _len + 1;
+      _buffer = new char[_capacity];
     }
+    strcpy(_buffer, r.c_str());
+    return *this;
+  }
 
-		bool operator==(const string& r) const
-		{
-			return strcmp(c_str(), r.c_str()) == 0;
-		}
+  string& operator=(string&& r)
+  {
+    delete[] _buffer;
 
-		bool operator!=(const string& r) const
-		{
-			return !(*this == r);
-		}
+    _len = r.length();
+    _capacity = r._capacity;
+    _buffer = r._buffer;
 
-		const char* c_str() const
-		{
-			if(Large())
-				return _pVal;
-			return _sVal;
-		}
+    r._buffer = nullptr;
+    return *this;
+  }
 
-		unsigned length() const { return _len; }
+  string operator+(const string& r) const
+  {
+    string temp(*this);
+    return temp += r;
+  }
 
-	private:
-		static const unsigned FIXED_BUFFER = 64;
+  string& operator+=(const string& r)
+  {
+    _len += r.length();
+    if(_capacity <= _len)
+    {
+      _capacity = (_len + 1) * 1.5;
+      char* temp = new char[_capacity];
+      strcpy(temp, _buffer);
+      delete[] _buffer;
+      _buffer = temp;
+    }
+    strcat(_buffer, r.c_str());
+    return *this;
+  }
 
-		bool Large(unsigned len) const { return len > FIXED_BUFFER - 1; }
-		bool Large() const { return Large(_len); }
+  bool operator<(const string& r) const
+  {
+    return strcmp(c_str(), r.c_str()) < 0;
+  }
 
-		void Value(const char* v)
-		{
-			DeletePtr();
-			_len = strlen(v);
-			char* dest = _sVal;
-			if(Large())
-				dest = _pVal = AllocPtr(_len);
-			strcpy(dest, v);
-		}
+  bool operator==(const string& r) const
+  {
+    return strcmp(c_str(), r.c_str()) == 0;
+  }
 
-		char* AllocPtr(unsigned len)
-		{
-			return new char[len + 1];
-		}
+  bool operator!=(const string& r) const
+  {
+    return !(*this == r);
+  }
 
-		void DeletePtr()
-		{
-			delete[] _pVal;
-			_pVal = 0;
-		}
+  const char* c_str() const
+  {
+    return _buffer;
+  }
 
-		char  _sVal[FIXED_BUFFER];
-		char* _pVal;
-		unsigned _len;
+  int length() const { return _len; }
+
+  const char operator[](int index) const;
+
+private:
+  void init()
+  {
+    _capacity = 8;
+    _len = 0;
+    _buffer = new char[_capacity];
+    _buffer[0] = '\0';
+  }
+
+private:
+  char* _buffer;
+  int   _len;
+  int   _capacity;
 };
 
 };

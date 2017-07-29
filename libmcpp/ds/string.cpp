@@ -20,7 +20,7 @@
 
 namespace upan {
 
-const char string::operator[](unsigned index) const
+const char string::operator[](int index) const
 {
   if(index < 0 || index > length())
     throw exception(XLOC, "accessing string index (%d) out of range", index);

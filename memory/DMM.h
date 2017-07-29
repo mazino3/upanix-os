@@ -54,6 +54,6 @@ byte DMM_GetAllocSizeForKernel(unsigned uiAddress, int* iSize);
 void DMM_DeAllocatePhysicalPages(Process* processAddressSpace);
 
 unsigned DMM_KernelHeapAllocSize() ;
-unsigned DMM_GetKernelHeapSize() ; ;
+unsigned DMM_GetKernelHeapSize() ;
 
 #endif
