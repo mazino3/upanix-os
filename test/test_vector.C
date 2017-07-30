@@ -192,5 +192,9 @@ int main()
     TEST_ASSERT(o2[i].k == i && o2[i].v == i * 10);
   TEST_ASSERT(o2[10].k == -1 && o2[10].v == -1);
 
+  o1.clear();
+  o2.clear();
+  x.clear();
+
   return 0;
 }

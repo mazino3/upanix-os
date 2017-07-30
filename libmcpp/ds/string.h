@@ -50,6 +50,15 @@ public:
     }
   }
 
+  string(const char* v, int len)
+  {
+    _len = len + 1;
+    _capacity = _len + 1;
+    _buffer = new char[_capacity];
+    strncpy(_buffer, v, len);
+    _buffer[_len] = '\0';
+  }
+
   string(const string& r)
   {
     _len = r.length();

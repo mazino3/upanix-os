@@ -22,6 +22,7 @@
 #include "/usr/include/string.h"
 #else
 #include <cstring.h>
+#include <Alloc.h>
 #endif
 #include <exception.h>
 #include <algorithm.h>
@@ -305,6 +306,8 @@ typename vector<T>::iterator vector<T>::end() const
 template <typename T>
 void vector<T>::clear()
 {
+  for(int i = 0; i < _size; ++i)
+    reinterpret_cast<T*>(_buffer)[i].~T();
   _size = 0;
 }
 
