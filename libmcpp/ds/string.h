@@ -52,7 +52,7 @@ public:
 
   string(const char* v, int len)
   {
-    _len = len + 1;
+    _len = len;
     _capacity = _len + 1;
     _buffer = new char[_capacity];
     strncpy(_buffer, v, len);
@@ -108,22 +108,27 @@ public:
 
   string operator+(const string& r) const
   {
+    if (r.length() == 0)
+      return *this;
     string temp(*this);
     return temp += r;
   }
 
   string& operator+=(const string& r)
   {
-    _len += r.length();
-    if(_capacity <= _len)
+    if (r.length() > 0)
     {
-      _capacity = (_len + 1) * 1.5;
-      char* temp = new char[_capacity];
-      strcpy(temp, _buffer);
-      delete[] _buffer;
-      _buffer = temp;
+      _len += r.length();
+      if(_capacity <= _len)
+      {
+        _capacity = (_len + 1) * 1.5;
+        char* temp = new char[_capacity];
+        strcpy(temp, _buffer);
+        delete[] _buffer;
+        _buffer = temp;
+      }
+      strcat(_buffer, r.c_str());
     }
-    strcat(_buffer, r.c_str());
     return *this;
   }
 
