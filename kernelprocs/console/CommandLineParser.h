@@ -18,19 +18,37 @@
 #ifndef _COMMAND_LINE_PARSER_H_
 #define _COMMAND_LINE_PARSER_H_
 
-#include <Global.h>
+#include <vector.h>
+#include <set.h>
+#include <string.h>
 
 #define COMMAND_LINE_SIZE 70
 #define MAX_COMMAND_LINE_ENTRIES 20
 
-void CommandLineParser_Parse(const char* szCommandLine) ;
-char* CommandLineParser_GetCommand() ;
-int CommandLineParser_GetNoOfCommandLineEntries() ;
-int CommandLineParser_GetNoOfParameters() ;
-int CommandLineParser_GetNoOfOptions() ;
-char* CommandLineParser_GetParameterAt(int iPos) ;
-char** CommandLineParser_GetArgV() ;
-bool CommandLineParser_IsOptPresent(char* opt) ;
+class CommandLineParser
+{
+private:
+  CommandLineParser() {}
+public:
+  static CommandLineParser& Instance()
+  {
+    static CommandLineParser _instance;
+    return _instance;
+  }
+
+  void Parse(const char* szCommandLine);
+
+  const char* GetCommand() const;
+  int GetNoOfParameters() const { return _params.size(); }
+  int GetNoOfOptions() const { return _options.size(); }
+  const char* GetParameterAt(const int iPos) const;
+  bool IsOptPresent(const char* opt) const;
+
+public:
+  upan::string _command;
+  upan::vector<upan::string> _params;
+  upan::set<upan::string> _options;
+};
 
 #endif
 

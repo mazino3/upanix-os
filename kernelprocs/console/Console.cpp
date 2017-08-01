@@ -144,8 +144,9 @@ void Console::ProcessCommand()
 
 void Console::ExecuteCommand(const char* szCommandLine)
 {
-	CommandLineParser_Parse(szCommandLine) ;
-	if(CommandLineParser_GetNoOfCommandLineEntries() != 0)
-		ConsoleCommands_ExecuteInternalCommand(CommandLineParser_GetCommand()) ;
+  CommandLineParser::Instance().Parse(szCommandLine);
+  auto command = CommandLineParser::Instance().GetCommand();
+  if(command)
+    ConsoleCommands_ExecuteInternalCommand(command);
 }
 

@@ -19,15 +19,7 @@
 # include <cstring.h>
 # include <ctype.h>
 # include <stdlib.h>
-
-static char CommandLineParser_szCommandLineEntries[MAX_COMMAND_LINE_ENTRIES][COMMAND_LINE_SIZE] ;
-static char CommandLineParser_szParameters[MAX_COMMAND_LINE_ENTRIES][COMMAND_LINE_SIZE] ;
-static char CommandLineParser_szOptions[MAX_COMMAND_LINE_ENTRIES][COMMAND_LINE_SIZE] ;
-static char* CommandLineParser_ArgV[MAX_COMMAND_LINE_ENTRIES] ;
-static int CommandLineParser_iNoOfCommandLineEntries ;
-static int CommandLineParser_iNoOfParamters ;
-static int CommandLineParser_iNoOfOptions ;
-
+# include <vector.h>
 
 bool CommandLineParser_TokenCompare(char ch)
 {
@@ -39,137 +31,68 @@ bool CommandLineParser_GroupToken(char ch)
 	return (ch == '"') ;
 }
 
+const upan::string Expand(const upan::string& param)
+{
+  if(param.length() > 1 && param[0] == '$' && !iswhitespace(param[1]))
+  {
+    int j;
+    for(j = 0; param[j] != '\0' && !iswhitespace(param[j]) && param[j] != '/'; ++j) ;
+
+    upan::string var(param.c_str() + 1, j - 1);
+    upan::string val(getenv(var.c_str()));
+    upan::string temp(param.c_str() + j);
+    return val + temp;
+  }
+  else
+    return param;
+}
+
 void CommandLineParser_Copy(int index, const char* src, int len)
 {
-	memcpy(CommandLineParser_szCommandLineEntries[index], src, len) ;
-	CommandLineParser_szCommandLineEntries[index][len] = '\0' ;
+
+  upan::string token(src, len);
+  if (index == 0)
+    CommandLineParser::Instance()._command = token;
+  else if (len > 0)
+  {
+    //TODO: options are not handled properly yet
+    if (src[0] == '-')
+      CommandLineParser::Instance()._options.insert(token);
+    else
+      CommandLineParser::Instance()._params.push_back(Expand(token));
+  }
 }
 
-void CommandLineParser_ExpandCommandLine()
+void CommandLineParser::Parse(const char* szCommandLine)
 {
-	int i ;
-	for(i = 0; i < CommandLineParser_iNoOfCommandLineEntries; i++)
-	{
-		char* par = CommandLineParser_szCommandLineEntries[i] ;
+  _command = "";
+  _options.clear();
+  _params.clear();
+  int d = 0;
 
-		if(strlen(par) > 1)
-		{
-			if(par[0] == '$' && !iswhitespace(par[1]))
-			{
-				char temp[COMMAND_LINE_SIZE] ;
-				
-				int j ;
-				for(j = 0; par[j] != '\0' && !iswhitespace(par[j]) && par[j] != '/'; j++) ;
-				
-				strcpy(temp, par + j) ;
-
-				par[j] = '\0' ;
-				char* val = getenv(par + 1) ;
-
-				if(val == NULL)
-					strcpy(par, "") ;	
-				else
-					strcpy(par, val) ;
-
-				strcat(par, temp) ;
-			}
-		}
-	}
+  strtok_c(szCommandLine,
+      &CommandLineParser_TokenCompare,
+      &CommandLineParser_GroupToken,
+      &CommandLineParser_Copy,
+      &d) ;
 }
 
-void CommandLineParser_LoadParameters()
+const char* CommandLineParser::GetCommand() const
 {
-	CommandLineParser_iNoOfParamters = 0 ;
+  if(_command.length() == 0)
+    return nullptr;
 
-	int i ;
-	for(i = 1; i < CommandLineParser_iNoOfCommandLineEntries; i++)
-	{
-		if(CommandLineParser_szCommandLineEntries[i][0] != '-')
-			strcpy(CommandLineParser_szParameters[ CommandLineParser_iNoOfParamters++ ], CommandLineParser_szCommandLineEntries[i]) ;
-	}
+  return _command.c_str();
 }
 
-void CommandLineParser_LoadOptions()
+const char* CommandLineParser::GetParameterAt(const int pos) const
 {
-	CommandLineParser_iNoOfOptions = 0 ;
-
-	int i ;
-	for(i = 1; i < CommandLineParser_iNoOfCommandLineEntries; i++)
-	{
-		if(CommandLineParser_szCommandLineEntries[i][0] == '-')
-			strcpy(CommandLineParser_szOptions[ CommandLineParser_iNoOfOptions++ ], CommandLineParser_szCommandLineEntries[i]) ;
-	}
+  if(pos < 0 || pos >= GetNoOfParameters())
+    return nullptr;
+  return _params[pos].c_str();
 }
 
-void CommandLineParser_Parse(const char* szInputCommandLine)
+bool CommandLineParser::IsOptPresent(const char* opt) const
 {
-	CommandLineParser_iNoOfCommandLineEntries =  0 ;
-	CommandLineParser_iNoOfParamters =  0 ;
-	CommandLineParser_iNoOfOptions =  0 ;
-
-	strtok_c(szInputCommandLine, 
-			&CommandLineParser_TokenCompare, 
-			&CommandLineParser_GroupToken,
-			&CommandLineParser_Copy, 
-			&CommandLineParser_iNoOfCommandLineEntries) ;
-
-	CommandLineParser_ExpandCommandLine() ;
-
-	CommandLineParser_LoadParameters() ;
-	CommandLineParser_LoadOptions() ;
-}
-
-char* CommandLineParser_GetCommand()
-{
-	if(CommandLineParser_iNoOfCommandLineEntries == 0)
-		return NULL ;
-
-	return CommandLineParser_szCommandLineEntries[0] ;
-}
-
-int CommandLineParser_GetNoOfCommandLineEntries()
-{
-	return CommandLineParser_iNoOfCommandLineEntries ;
-}
-
-int CommandLineParser_GetNoOfParameters()
-{
-	return CommandLineParser_iNoOfParamters ;
-}
-
-int CommandLineParser_GetNoOfOptions()
-{
-	return CommandLineParser_iNoOfOptions ;
-}
-
-char* CommandLineParser_GetParameterAt(int iPos)
-{
-	if(iPos < 0)
-		return NULL ;
-
-	if(iPos >= CommandLineParser_GetNoOfParameters())
-		return NULL ;
-
-	return CommandLineParser_szParameters[iPos] ;
-}
-
-char** CommandLineParser_GetArgV()
-{
-	int i ;
-	for(i = 0; i < CommandLineParser_iNoOfCommandLineEntries; i++)
-		CommandLineParser_ArgV[i] = CommandLineParser_szCommandLineEntries[i] ;
-
-	return CommandLineParser_ArgV ;
-}
-
-bool CommandLineParser_IsOptPresent(char* opt)
-{
-	int i ;
-	for(i = 0; i < CommandLineParser_iNoOfOptions; i++)
-	{
-		if(strcmp(CommandLineParser_szOptions[i], opt) == 0)
-			return true ;
-	}
-
-	return false ;
+  return _options.find(opt) != _options.end();
 }

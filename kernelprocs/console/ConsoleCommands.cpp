@@ -213,7 +213,7 @@ void ConsoleCommands_ExecuteInternalCommand(const char* szCommand)
 
 void ConsoleCommands_ChangeDrive()
 {
-	DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByDriveName(CommandLineParser_GetParameterAt(0), false) ;
+  DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByDriveName(CommandLineParser::Instance().GetParameterAt(0), false) ;
 	if(pDiskDrive == NULL)
 	{
 		KC::MDisplay().Message("\n Invalid Drive", ' ') ;
@@ -235,7 +235,7 @@ void ConsoleCommands_ShowDrive()
 
 void ConsoleCommands_MountDrive()
 {
-	DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByDriveName(CommandLineParser_GetParameterAt(0), false) ;
+  DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByDriveName(CommandLineParser::Instance().GetParameterAt(0), false) ;
 	if(pDiskDrive == NULL)
 	{
 		KC::MDisplay().Message("\n Invalid Drive", ' ') ;
@@ -249,7 +249,7 @@ void ConsoleCommands_MountDrive()
 
 void ConsoleCommands_UnMountDrive()
 {
-	DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByDriveName(CommandLineParser_GetParameterAt(0), false) ;
+  DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByDriveName(CommandLineParser::Instance().GetParameterAt(0), false) ;
 	if(pDiskDrive == NULL)
 	{
 		KC::MDisplay().Message("\n Invalid Drive", ' ') ;
@@ -263,7 +263,7 @@ void ConsoleCommands_UnMountDrive()
 
 void ConsoleCommands_FormatDrive()
 {
-	if(DiskDriveManager::Instance().FormatDrive(CommandLineParser_GetParameterAt(0)) != DeviceDrive_SUCCESS)
+  if(DiskDriveManager::Instance().FormatDrive(CommandLineParser::Instance().GetParameterAt(0)) != DeviceDrive_SUCCESS)
 		KC::MDisplay().Message("\nFailed to Format Drive", Display::WHITE_ON_BLACK()) ;
 	else
 		KC::MDisplay().Message("\nDrive Formated", Display::WHITE_ON_BLACK()) ;
@@ -276,7 +276,7 @@ void ConsoleCommands_ClearScreen()
 
 void ConsoleCommands_CreateDirectory()
 {
-	byte bStatus = FileOperations_Create((char*)(CommandLineParser_GetParameterAt(0)), ATTR_TYPE_DIRECTORY, ATTR_DIR_DEFAULT) ;
+  byte bStatus = FileOperations_Create((char*)(CommandLineParser::Instance().GetParameterAt(0)), ATTR_TYPE_DIRECTORY, ATTR_DIR_DEFAULT) ;
 
 	if(bStatus != FileOperations_SUCCESS)
 	{
@@ -290,7 +290,7 @@ void ConsoleCommands_CreateDirectory()
 
 void ConsoleCommands_RemoveFile()
 {
-	byte bStatus = FileOperations_Delete((char*)(CommandLineParser_GetParameterAt(0))) ;
+  byte bStatus = FileOperations_Delete((char*)(CommandLineParser::Instance().GetParameterAt(0))) ;
 
 	if(bStatus != FileOperations_SUCCESS)
 	{
@@ -309,8 +309,8 @@ void ConsoleCommands_ListDirContent()
 	int iListSize = 0 ;
 	const char* szListDirName = "." ;
 
-	if(CommandLineParser_GetNoOfParameters())
-		szListDirName = CommandLineParser_GetParameterAt(0) ;
+  if(CommandLineParser::Instance().GetNoOfParameters())
+    szListDirName = CommandLineParser::Instance().GetParameterAt(0) ;
 
 	if(FileOperations_GetDirectoryContent(szListDirName, &pDirList, &iListSize) != FileOperations_SUCCESS)
 	{
@@ -334,7 +334,7 @@ void ConsoleCommands_ReadFileContent()
 	unsigned n = 0 ;
 	char bDataBuffer[513] ;
 	
-	const char* szFileName = CommandLineParser_GetParameterAt(0) ;
+  const char* szFileName = CommandLineParser::Instance().GetParameterAt(0) ;
 	int fd ;
 
 	if(FileOperations_Open(&fd, szFileName, O_RDONLY) != FileOperations_SUCCESS)
@@ -375,7 +375,7 @@ void ConsoleCommands_ReadFileContent()
 void ConsoleCommands_ChangeDirectory()
 {
 	byte bStatus ;
-	if((bStatus = FileOperations_ChangeDir(CommandLineParser_GetParameterAt(0))) != Directory_SUCCESS)
+  if((bStatus = FileOperations_ChangeDir(CommandLineParser::Instance().GetParameterAt(0))) != Directory_SUCCESS)
 	{
 		KC::MDisplay().Address("\n Directory Change Failed: ", bStatus) ;	
 	}
@@ -398,7 +398,7 @@ void ConsoleCommands_CopyFile()
 	const int iBufSize = 512 ;
 	char bDataBuffer[iBufSize] ;
 
-	const char* szFileName = CommandLineParser_GetParameterAt(0) ;
+  const char* szFileName = CommandLineParser::Instance().GetParameterAt(0) ;
 	int fd ;
 
 	if(FileOperations_Open(&fd, szFileName, O_RDONLY) != FileOperations_SUCCESS)
@@ -407,7 +407,7 @@ void ConsoleCommands_CopyFile()
 		return ;
 	}
 
-	char* szDestFile = CommandLineParser_GetParameterAt(1) ;
+  char* szDestFile = CommandLineParser::Instance().GetParameterAt(1) ;
 
 	if(FileOperations_Create(szDestFile, ATTR_TYPE_FILE, ATTR_FILE_DEFAULT) != FileOperations_SUCCESS)
 	{
@@ -533,17 +533,17 @@ void ConsoleCommands_OpenSession()
 
 RawDiskDrive* ConsoleCommands_CheckDiskParam()
 {
-	if(CommandLineParser_GetNoOfParameters() < 1)
+  if(CommandLineParser::Instance().GetNoOfParameters() < 1)
 	{
 		printf("\n Disk name parameter missing") ;
 		return NULL ;
 	}
 
-	RawDiskDrive* pDisk = DiskDriveManager::Instance().GetRawDiskByName(CommandLineParser_GetParameterAt(0)) ;
+  RawDiskDrive* pDisk = DiskDriveManager::Instance().GetRawDiskByName(CommandLineParser::Instance().GetParameterAt(0)) ;
 
 	if(!pDisk)
 	{
-		printf("\n '%s' no such disk", CommandLineParser_GetParameterAt(0)) ;
+    printf("\n '%s' no such disk", CommandLineParser::Instance().GetParameterAt(0)) ;
 		return NULL ;
 	}
 
@@ -709,7 +709,7 @@ void ConsoleCommands_LoadExe()
 	argv[0] = (char*)&a1 ;
 	argv[1] = (char*)&a2 ;
 
-	if((bStatus = ProcessManager::Instance().Create(CommandLineParser_GetParameterAt(0), ProcessManager::GetCurrentProcessID(), true, &iChildProcessID, DERIVE_FROM_PARENT, 2, argv)) != ProcessManager_SUCCESS)
+  if((bStatus = ProcessManager::Instance().Create(CommandLineParser::Instance().GetParameterAt(0), ProcessManager::GetCurrentProcessID(), true, &iChildProcessID, DERIVE_FROM_PARENT, 2, argv)) != ProcessManager_SUCCESS)
 	{
 		KC::MDisplay().Address("\n Load User Process Failed: ", bStatus) ;
 		KC::MDisplay().Character('\n', Display::WHITE_ON_BLACK()) ;
@@ -722,7 +722,7 @@ void ConsoleCommands_LoadExe()
 
 void ConsoleCommands_WaitPID()
 {
-  int pid = atoi(CommandLineParser_GetParameterAt(0));
+  int pid = atoi(CommandLineParser::Instance().GetParameterAt(0));
   if(pid <= 0)
     printf("\n Invalid PID : %d", pid);
   else
@@ -795,7 +795,7 @@ void ConsoleCommands_ListProcess()
 
 void ConsoleCommands_ChangeRootDrive()
 {
-	DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByDriveName(CommandLineParser_GetParameterAt(0), false) ;
+  DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByDriveName(CommandLineParser::Instance().GetParameterAt(0), false) ;
 	if(pDiskDrive == NULL)
 	{
 		KC::MDisplay().Message("\n Invalid Drive", ' ') ;
@@ -807,23 +807,23 @@ void ConsoleCommands_ChangeRootDrive()
 
 void ConsoleCommands_Echo()
 {
-	if(CommandLineParser_GetNoOfParameters())
-		printf("\n%s", CommandLineParser_GetParameterAt(0)) ;
+  if(CommandLineParser::Instance().GetNoOfParameters())
+    printf("\n%s", CommandLineParser::Instance().GetParameterAt(0)) ;
 }
 
 void ConsoleCommands_Export()
 {
-    if(CommandLineParser_GetNoOfParameters() < 1)
+    if(CommandLineParser::Instance().GetNoOfParameters() < 1)
         return ;
 
-    char* szExp = CommandLineParser_GetParameterAt(0) ;
+    char* szExp = CommandLineParser::Instance().GetParameterAt(0) ;
     char* var = szExp ;
     char* val = strchr(szExp, '=') ;
 
     if(val == NULL)
     {
-		KC::MDisplay().Message("\n Incorrect syntax", Display::WHITE_ON_BLACK()) ;
-        return ;
+      printf("\n Incorrect syntax");
+      return ;
     }
 
     val[0] = '\0' ;
@@ -831,8 +831,8 @@ void ConsoleCommands_Export()
 
     if(setenv(var, val) < 0)
     {
-        printf("\n Failed to set env variable\n") ;
-        return ;
+      printf("\n Failed to set env variable\n") ;
+      return ;
     }
 }
 
@@ -869,10 +869,10 @@ void ConsoleCommands_ProbeXHCIUSB()
 
 void ConsoleCommands_SetXHCIEventMode()
 {
-  if(CommandLineParser_GetNoOfParameters() < 1)
+  if(CommandLineParser::Instance().GetNoOfParameters() < 1)
       return ;
 
-  upan::string mode(CommandLineParser_GetParameterAt(0));
+  upan::string mode(CommandLineParser::Instance().GetParameterAt(0));
   if(mode == "poll")
     XHCIManager::Instance().SetEventMode(XHCIManager::Poll);
   else if(mode == "int")
@@ -883,7 +883,7 @@ void ConsoleCommands_SetXHCIEventMode()
 
 void ConsoleCommands_ShowRawDiskList()
 {
-	unsigned uiCount = CommandLineParser_GetNoOfParameters() ;
+  unsigned uiCount = CommandLineParser::Instance().GetNoOfParameters() ;
 	RawDiskDrive* pDisk = NULL ;
 
 	printf("\n%-15s %-18s %-10s %-15s %-10s", "Name", "Type", "Sec-Size", "Tot-Sectors", "Size (MB)") ;
@@ -909,7 +909,7 @@ void ConsoleCommands_ShowRawDiskList()
 	{
 		for(unsigned i = 0; i < uiCount; i++)
 		{
-			char* szName = CommandLineParser_GetParameterAt(i) ;
+      char* szName = CommandLineParser::Instance().GetParameterAt(i) ;
 			pDisk = DiskDriveManager::Instance().GetRawDiskByName(szName) ;
 			lamdaDisplay(pDisk) ;
 		}
@@ -1141,6 +1141,6 @@ void ConsoleCommands_Beep()
 
 void ConsoleCommands_Sleep()
 {
-  uint32_t t = atoi(CommandLineParser_GetParameterAt(0));
+  uint32_t t = atoi(CommandLineParser::Instance().GetParameterAt(0));
   ProcessManager::Instance().Sleep(t * 1000);
 }
