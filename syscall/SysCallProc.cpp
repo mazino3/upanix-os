@@ -106,14 +106,14 @@ __volatile__ unsigned uiP9)
 			//P2 - Return val
 			{
 				char* szVar = KERNEL_ADDR(bDoAddrTranslation, char*, uiP1) ;
-				char** szVal = KERNEL_ADDR(bDoAddrTranslation, char**, uiP2) ;
-				*szVal = ProcessEnv_Get(szVar) ;
+        const char* szVal = ProcessEnv_Get(szVar) ;
 
-				if(*szVal != NULL)
+        if(szVal != NULL)
 				{
 					if(bDoAddrTranslation)
-						*szVal = (char*)((unsigned)*szVal + GLOBAL_DATA_SEGMENT_BASE - PROCESS_BASE) ;
+            szVal = (char*)((uint32_t)szVal + GLOBAL_DATA_SEGMENT_BASE - PROCESS_BASE) ;
 				}
+        *piRetVal = (uint32_t)szVal;
 			}
 			break ;
 

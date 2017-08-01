@@ -84,7 +84,7 @@ int SysProcess_GetPID()
 	return iProcessID ;
 }
 
-extern "C" char* SysProcess_GetEnv(const char* szVar, char* szVal)
+extern "C" char* SysProcess_GetEnv(const char* szVar)
 {
 	__volatile__ int iRetStatus ;
 	SysCallProc_Handle(&iRetStatus, SYS_CALL_PROCESS_GET_ENV, false, (unsigned)szVar, 2, 3, 4, 5, 6, 7, 8, 9);
