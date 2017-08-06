@@ -39,9 +39,11 @@ class vector
 
     vector();
     vector(const vector<T>& rhs);
+    vector(vector<T>&& rhs);
     ~vector();
 
     vector& operator=(const vector& rhs);
+    vector& operator=(vector&& rhs);
 
     void insert(const int index, const T& v);
     void insert(const_iterator pos, const T& v);
@@ -188,6 +190,14 @@ vector<T>::vector(const vector<T>& rhs) : _size(rhs._size), _capacity(rhs._capac
 }
 
 template <typename T>
+vector<T>::vector(vector<T> &&rhs) : _size(rhs._size), _capacity(rhs._capacity), _buffer(rhs._buffer)
+{
+  rhs._size = 0;
+  rhs._capacity = 0;
+  rhs._buffer = nullptr;
+}
+
+template <typename T>
 vector<T>::~vector()
 {
   delete[] _buffer;
@@ -198,6 +208,22 @@ vector<T>& vector<T>::operator=(const vector<T>& rhs)
 {
   vector<T> temp(rhs);
   this->swap(temp);
+}
+
+template <typename T>
+vector<T>& vector<T>::operator =(vector<T>&& rhs)
+{
+  delete[] _buffer;
+
+  _size = rhs._size;
+  _capacity = rhs._capacity;
+  _buffer = rhs._buffer;
+
+  rhs._size = 0;
+  rhs._capacity = 0;
+  rhs._buffer = nullptr;
+
+  return *this;
 }
 
 template <typename T>

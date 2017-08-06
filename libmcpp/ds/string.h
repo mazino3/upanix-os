@@ -67,12 +67,8 @@ public:
     strcpy(_buffer, r.c_str());
   }
 
-  string(string&& r)
+  string(string&& r) : _len(r.length()), _capacity(r._capacity), _buffer(r._buffer)
   {
-    _len = r.length();
-    _capacity = r._capacity;
-    _buffer = r._buffer;
-
     r._buffer = nullptr;
   }
 
