@@ -22,8 +22,9 @@
 #define FSManager_FAILURE	1
 
 # include <DeviceDrive.h>
+# include <vector.h>
 
-byte FSManager_BinarySearch(SectorBlockEntry* pList, int iSize, unsigned uiBlockID, int* iPos) ;
+byte FSManager_BinarySearch(const upan::vector<SectorBlockEntry>& blocks, unsigned uiBlockID, int* iPos) ;
 byte FSManager_GetSectorEntryValue(DiskDrive* pDiskDrive, const unsigned uiSectorID, unsigned* uiSectorEntryValue, byte bFromCahceOnly) ;
 byte FSManager_SetSectorEntryValue(DiskDrive* pDiskDrive, const unsigned uiSectorID, unsigned uiSectorEntryValue, byte bFromCahceOnly) ;
 byte FSManager_AllocateSector(DiskDrive* pDiskDrive, unsigned* uiFreeSectorID) ;

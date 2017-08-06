@@ -400,40 +400,10 @@ static void ATADeviceController_AddATADrive(RawDiskDrive* pDisk)
 
 	/*** Calculate MountSpacePerPartition, TableCacheSize *****/
 	const unsigned uiSectorsInFreePool = 4096 ;
-	unsigned uiSectorsInTableCache = 1024 ;
-	
-	const unsigned uiMinMountSpaceRequired =  FileSystem_GetSizeForTableCache(uiSectorsInTableCache) ;
-	const unsigned uiTotalMountSpaceAvailable = MEM_HDD_FS_END - MEM_HDD_FS_START ;
-	
-	unsigned uiNoOfParitions = partitionTable.GetPartitions().size();
-	unsigned uiMountSpaceAvailablePerDrive = 0 ;
-	while(true)
-	{
-		if(uiNoOfParitions == 0)
-			break ;
-		uiMountSpaceAvailablePerDrive = uiTotalMountSpaceAvailable / uiNoOfParitions ;
-		if(uiMountSpaceAvailablePerDrive > uiMinMountSpaceRequired)
-			break ;	
-		uiNoOfParitions--;
-	}
-	
-	if( uiMountSpaceAvailablePerDrive > uiMinMountSpaceRequired )
-	{
-		uiSectorsInTableCache = uiMountSpaceAvailablePerDrive / FileSystem_GetSizeForTableCache(1) ;
-	}
+
 	/*** DONE - Calculating mount stuff ***/
-  unsigned peCount = 0;
   for(const auto& pe : partitionTable.GetPartitions())
 	{
-    unsigned uiMountPointStart = 0;
-    unsigned uiMountPointEnd = 0;
-		if(peCount < uiNoOfParitions)
-		{
-			uiMountPointStart = MEM_HDD_FS_START + uiMountSpaceAvailablePerDrive * peCount ;
-			uiMountPointEnd = MEM_HDD_FS_START + uiMountSpaceAvailablePerDrive * (peCount + 1) ;
-		}
-    ++peCount;
-
 		driveName[3] = driveCh + ATADeviceController_uiHDDDeviceID++ ;
     DiskDriveManager::Instance().Create(driveName, DEV_ATA_IDE, HDD_DRIVE0,
       pe.LBAStartSector(),
@@ -443,10 +413,7 @@ static void ATADeviceController_AddATADrive(RawDiskDrive* pDisk)
       pPort->id.usHead,
       pPort,
       pDisk,
-      uiSectorsInFreePool,
-      uiSectorsInTableCache,
-      uiMountPointStart,
-      uiMountPointEnd);
+      uiSectorsInFreePool);
 	}
 }
 
@@ -457,13 +424,6 @@ static void ATADeviceController_AddATAPIDrive(ATAPort* pPort)
 	driveName[2] = driveCh + ATADeviceController_uiCDDeviceID++;
 
 	const unsigned uiSectorsInFreePool = 4096 ;
-	unsigned uiSectorsInTableCache = 1024 ;
-	
-	const unsigned uiMinMountSpaceRequired =  FileSystem_GetSizeForTableCache(uiSectorsInTableCache) ;
-	const unsigned uiTotalMountSpaceAvailable = MEM_CD_FS_END - MEM_CD_FS_START;
-	
-  if(uiTotalMountSpaceAvailable < uiMinMountSpaceRequired)
-    printf("\n insufficient mount space available for %s", driveName);
 	
   unsigned uiSizeInSectors;
 	if(pPort->bLBA48Bit)
@@ -471,12 +431,8 @@ static void ATADeviceController_AddATAPIDrive(ATAPort* pPort)
 	else
 		uiSizeInSectors = pPort->id.uiLBASectors ;
 
-	DiskDriveManager::Instance().Create(driveName, DEV_ATAPI, CD_DRIVE0,
-    0,
-    uiSizeInSectors, 
-    pPort->id.usSectors, pPort->id.usCylinders, pPort->id.usHead,
-    pPort, nullptr, uiSectorsInFreePool, uiSectorsInTableCache,
-    MEM_CD_FS_START, MEM_CD_FS_END);
+  DiskDriveManager::Instance().Create(driveName, DEV_ATAPI, CD_DRIVE0, 0, uiSizeInSectors,
+                                      pPort->id.usSectors, pPort->id.usCylinders, pPort->id.usHead, pPort, nullptr, uiSectorsInFreePool);
 }
 
 static void ATADeviceController_Add(ATAController* pController)

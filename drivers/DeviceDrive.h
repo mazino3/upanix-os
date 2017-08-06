@@ -94,10 +94,7 @@ class DiskDrive
       unsigned uiNoOfHeads,
       void* device, 
       RawDiskDrive* rawDisk,
-      unsigned uiMaxSectorsInFreePoolCache, 
-      unsigned uiNoOfSectorsInTableCache,
-      unsigned uiMountPointStart, 
-      unsigned uiMountPointEnd);
+      unsigned uiMaxSectorsInFreePoolCache);
 
   public:
     byte Mount();
@@ -125,9 +122,6 @@ class DiskDrive
     unsigned TracksPerHead() const { return _uiTracksPerHead; }
     unsigned NoOfHeads() const { return _uiNoOfHeads; }
     unsigned MaxSectorsInFreePoolCache() const { return _uiMaxSectorsInFreePoolCache; }
-    unsigned NoOfSectorsInTableCache() const { return _uiNoOfSectorsInTableCache; }
-    unsigned MountPointStart() const { return _uiMountPointStart; }
-    unsigned MountPointEnd() const { return _uiMountPointEnd; }
     bool StopReleaseCacheTask() const { return _bStopReleaseCacheTask; }
 
     int Id() const { return _id; }
@@ -143,6 +137,8 @@ class DiskDrive
     // FileSystem Mount Info
     FileSystemMountInfo	FSMountInfo ;
     byte					bFSCacheFlag ;
+
+    static const int MAX_SECTORS_IN_TABLE_CACHE = 2048;
 
   private:
     byte RawRead(unsigned uiStartSector, unsigned uiNoOfSectors, byte* bDataBuffer);
@@ -166,9 +162,6 @@ class DiskDrive
 	  void*			    _device;
     RawDiskDrive* _rawDisk;
     unsigned      _uiMaxSectorsInFreePoolCache;
-    unsigned      _uiNoOfSectorsInTableCache;
-    unsigned      _uiMountPointStart;
-    unsigned      _uiMountPointEnd;
 
     FS_TYPE       _fsType;
     bool          _mounted;
@@ -237,8 +230,7 @@ class DiskDriveManager
       unsigned uiLBAStartSector, unsigned uiSizeInSectors,
       unsigned uiSectorsPerTrack, unsigned uiTracksPerHead, unsigned uiNoOfHeads,
       void* device, RawDiskDrive* rawDisk,
-      unsigned uiMaxSectorsInFreePoolCache, unsigned uiNoOfSectorsInTableCache,
-      unsigned uiMountPointStart, unsigned uiMountPointEnd);
+      unsigned uiMaxSectorsInFreePoolCache);
     void RemoveEntryByCondition(const DriveRemoveClause& removeClause);
     DiskDrive* GetByDriveName(const upan::string& szDriveName, bool bCheckMount);
     DiskDrive* GetByID(int iID, bool bCheckMount);

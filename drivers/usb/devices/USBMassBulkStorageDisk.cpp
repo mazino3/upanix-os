@@ -47,49 +47,14 @@ void USBMassBulkStorageDisk::AddDeviceDrive(RawDiskDrive* pDisk)
 	
 	/*** Calculate MountSpacePerPartition, FreePoolSize, TableCacheSize *****/
 	const unsigned uiSectorsInFreePool = 4096 ;
-	unsigned uiSectorsInTableCache = 1024 ;
 	
-	const unsigned uiMinMountSpaceRequired =  FileSystem_GetSizeForTableCache(uiSectorsInTableCache) ;
-	const unsigned uiTotalMountSpaceAvailable = MEM_USD_FS_END - MEM_USD_FS_START ;
-	
-	unsigned uiNoOfParitions = partitionTable.GetPartitions().size();
-	unsigned uiMountSpaceAvailablePerDrive = 0 ;
-	while(true)
-	{
-		if(uiNoOfParitions == 0)
-			break ;
-
-		uiMountSpaceAvailablePerDrive = uiTotalMountSpaceAvailable / uiNoOfParitions ;
-
-		if( uiMountSpaceAvailablePerDrive > uiMinMountSpaceRequired )
-		{
-			break ;	
-		}
-
-		uiNoOfParitions-- ;
-	}
-	
-	if( uiMountSpaceAvailablePerDrive > uiMinMountSpaceRequired )
-	{
-		uiSectorsInTableCache = uiMountSpaceAvailablePerDrive / FileSystem_GetSizeForTableCache(1) ;
-	}
 	/*** DONE - Calculating mount stuff ***/
-  unsigned peCount = 0;
 	for(const auto& pe : partitionTable.GetPartitions())
 	{
-    unsigned uiMountPointStart = 0;
-    unsigned uiMountPointEnd = 0;
-		if(peCount < uiNoOfParitions)
-		{
-			uiMountPointStart = MEM_USD_FS_START + uiMountSpaceAvailablePerDrive * peCount ;
-			uiMountPointEnd = MEM_USD_FS_START + uiMountSpaceAvailablePerDrive * (peCount + 1) ;
-		}
-    ++peCount;
-
 		driveName[3] = driveCh + USDDeviceId++;
     DiskDriveManager::Instance().Create(driveName, DEV_SCSI_USB_DISK, USD_DRIVE0,
-      pe.LBAStartSector(), pe.LBASize(),
-      1, 1, 1, pDevice, pDisk, uiSectorsInFreePool, uiSectorsInTableCache, uiMountPointStart, uiMountPointEnd);
+                                        pe.LBAStartSector(), pe.LBASize(),
+                                        1, 1, 1, pDevice, pDisk, uiSectorsInFreePool);
 	}
 }
 

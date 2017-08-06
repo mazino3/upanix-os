@@ -27,8 +27,7 @@
 #define DiskCache_SUCCESS 0
 #define DiskCache_FAILURE 1
 
-struct DiskDrive ;
-typedef struct DiskDrive DiskDrive ;
+class DiskDrive;
 
 class DiskCacheKey : public BTreeKey
 {

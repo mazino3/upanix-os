@@ -79,10 +79,7 @@ DiskDrive::DiskDrive(int id,
   unsigned uiNoOfHeads,
   void* device,
   RawDiskDrive* rawDisk,
-  unsigned uiMaxSectorsInFreePoolCache,
-  unsigned uiNoOfSectorsInTableCache,
-  unsigned uiMountPointStart,
-  unsigned uiMountPointEnd) : _id(id),
+  unsigned uiMaxSectorsInFreePoolCache) : _id(id),
     _driveName(driveName),
     _deviceType(deviceType),
     _driveNumber(driveNumber),
@@ -95,27 +92,13 @@ DiskDrive::DiskDrive(int id,
     _device(device),
     _rawDisk(rawDisk),
     _uiMaxSectorsInFreePoolCache(uiMaxSectorsInFreePoolCache),
-    _uiNoOfSectorsInTableCache(uiNoOfSectorsInTableCache),
-    _uiMountPointStart(uiMountPointStart),
-    _uiMountPointEnd(uiMountPointEnd),
     _fsType(FS_UNKNOWN),
     _mounted(false),
     _enableFreePoolCache(true),
     _enableTableCache(true)
 {
 	StartReleaseCacheTask();
-
-	unsigned uiMountSpaceLimit = _uiMountPointEnd - _uiMountPointStart;
-	unsigned uiSizeOfTableCahce = FileSystem_GetSizeForTableCache(NoOfSectorsInTableCache());
-	if(uiSizeOfTableCahce > uiMountSpaceLimit)
-	{
-		KC::MDisplay().Message("\n Critical Error: FS Mount Cache size insufficient. ", ' ') ;
-    _enableTableCache = false;
-		KernelUtil::Wait(3000) ;
-	}
-	FSMountInfo.FSTableCache.iSize = 0;
   FSMountInfo.pFreePoolQueue = nullptr;
-	FSMountInfo.FSTableCache.pSectorBlockEntryList = (SectorBlockEntry*)(_uiMountPointStart);
 }
 
 byte DiskDrive::Mount()
@@ -125,7 +108,6 @@ byte DiskDrive::Mount()
 	if(Mounted())
 		return FileSystem_ERR_ALREADY_MOUNTED;
 
-	FSMountInfo.FSTableCache.iSize = 0;
   FSMountInfo.pFreePoolQueue = new upan::queue<unsigned>(MaxSectorsInFreePoolCache());
 
 	RETURN_IF_NOT(bStatus, ReadFSBootBlock(), DeviceDrive_SUCCESS);
@@ -153,7 +135,7 @@ byte DiskDrive::UnMount()
 	MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&FSMountInfo.FSBootBlock, MemUtil_GetDS(), (unsigned)bSectorBuffer, sizeof(FileSystem_BootBlock));
 
 	RETURN_IF_NOT(bStatus, Write(1, 1, bSectorBuffer), DeviceDrive_SUCCESS) ;
-	RETURN_IF_NOT(bStatus, FlushTableCache(NoOfSectorsInTableCache()), DeviceDrive_SUCCESS);
+  RETURN_IF_NOT(bStatus, FlushTableCache(MAX_SECTORS_IN_TABLE_CACHE), DeviceDrive_SUCCESS);
 	FlushDirtyCacheSectors();
 	Mounted(false);
 
@@ -241,24 +223,22 @@ byte DiskDrive::LoadFreeSectors()
     return DeviceDrive_SUCCESS;
 
 	FileSystem_BootBlock& fsBootBlock = FSMountInfo.FSBootBlock;
-	FileSystem_TableCache& fsTableCache = FSMountInfo.FSTableCache;
-	SectorBlockEntry* pSectorBlockEntryList = fsTableCache.pSectorBlockEntryList;
 
 	bool bStop = false;
 
 	if(IsTableCacheEnabled())
 	{
 		// First do Cache Lookup
-		for(int i = 0; i < fsTableCache.iSize; ++i)
+    for(const auto& sectorBlockEntry : FSMountInfo.FSTableCache)
 		{
 			if(bStop)
 				break;
-      unsigned* uiSectorBlock = pSectorBlockEntryList[i].SectorBlock();
+      unsigned* uiSectorBlock = sectorBlockEntry.SectorBlock();
 			for(int j = 0; j < ENTRIES_PER_TABLE_SECTOR; j++)
 			{
 				if(!(uiSectorBlock[j] & EOC))
 				{
-          unsigned uiSectorID = pSectorBlockEntryList[i].BlockId() * ENTRIES_PER_TABLE_SECTOR + j;
+          unsigned uiSectorID = sectorBlockEntry.BlockId() * ENTRIES_PER_TABLE_SECTOR + j;
           if(!freePoolQueue.push_back(uiSectorID))
 					{
 						bStop = true;
@@ -280,9 +260,9 @@ byte DiskDrive::LoadFreeSectors()
 		if(bStop)
 			break;
 		if(IsTableCacheEnabled())
-		{
+    {
       int iPos;
-			if(FSManager_BinarySearch(pSectorBlockEntryList, fsTableCache.iSize, i, &iPos))
+      if(FSManager_BinarySearch(FSMountInfo.FSTableCache, i, &iPos))
 			{
 				i++;
 				continue;
@@ -339,7 +319,6 @@ void DiskDrive::Mounted(bool mounted)
     if(FSMountInfo.pFreePoolQueue)
       delete FSMountInfo.pFreePoolQueue;
     FSMountInfo.pFreePoolQueue = nullptr;
-    FSMountInfo.FSTableCache.iSize = 0;
   }
 }
 
@@ -605,19 +584,17 @@ byte DiskDrive::FlushTableCache(int iFlushSize)
 	if(!IsTableCacheEnabled())
 		return DeviceDrive_SUCCESS;
 
-	FileSystem_TableCache& fsTableCache = FSMountInfo.FSTableCache;
+  auto& fsTableCache = FSMountInfo.FSTableCache;
 	FileSystem_BootBlock& fsBootBlock = FSMountInfo.FSBootBlock;
-	SectorBlockEntry* pSectorBlockEntryList = fsTableCache.pSectorBlockEntryList;
-	int iSize = fsTableCache.iSize;
 
-	if(iFlushSize > iSize)
-		iFlushSize = iSize;
+  if(iFlushSize > fsTableCache.size())
+    iFlushSize = fsTableCache.size();
 
 	byte bStatus;
 	
 	for(int i = 0; i < iFlushSize; i++)
 	{
-    auto& block = pSectorBlockEntryList[i];
+    auto& block = fsTableCache[i];
 
     if(block.WriteCount() == 0)
       continue;
@@ -625,14 +602,8 @@ byte DiskDrive::FlushTableCache(int iFlushSize)
     RETURN_IF_NOT(bStatus, Write(block.BlockId() + fsBootBlock.BPB_RsvdSecCnt + 1, 1, (byte*)(block.SectorBlock())), DeviceDrive_SUCCESS) ;
 	}
 
-	if(iFlushSize < iSize)
-	{
-		unsigned uiSrc = (unsigned)&pSectorBlockEntryList[iFlushSize] ;
-		unsigned uiDest = (unsigned)&pSectorBlockEntryList[0] ;
-		MemUtil_CopyMemory(MemUtil_GetDS(), uiSrc, MemUtil_GetDS(), uiDest, (iSize - iFlushSize) * sizeof(SectorBlockEntry)) ;
-	}
-
-	fsTableCache.iSize -= iFlushSize ;
+  if(iFlushSize < fsTableCache.size())
+    fsTableCache.erase(0, iFlushSize);
 
 	return DeviceDrive_SUCCESS;
 }
@@ -718,8 +689,7 @@ void DiskDriveManager::Create(const upan::string& driveName,
   unsigned uiLBAStartSector, unsigned uiSizeInSectors,
   unsigned uiSectorsPerTrack, unsigned uiTracksPerHead, unsigned uiNoOfHeads,
   void* device, RawDiskDrive* rawDisk,
-  unsigned uiMaxSectorsInFreePoolCache, unsigned uiNoOfSectorsInTableCache,
-  unsigned uiMountPointStart, unsigned uiMountPointEnd)
+  unsigned uiMaxSectorsInFreePoolCache)
 {
   MutexGuard g(_driveListMutex);
   DiskDrive* pDiskDrive = new DiskDrive(_idSequence++, driveName,
@@ -727,8 +697,7 @@ void DiskDriveManager::Create(const upan::string& driveName,
     uiLBAStartSector, uiSizeInSectors,
     uiSectorsPerTrack, uiTracksPerHead, uiNoOfHeads,
     device, rawDisk,
-    uiMaxSectorsInFreePoolCache, uiNoOfSectorsInTableCache,
-    uiMountPointStart, uiMountPointEnd);
+    uiMaxSectorsInFreePoolCache);
   _driveList.push_back(pDiskDrive);
 }
 

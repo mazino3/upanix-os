@@ -19,6 +19,7 @@
 #define _FS_STRUCTURES_H_
 
 #include <queue.h>
+#include <vector.h>
 
 #define ENTRIES_PER_TABLE_SECTOR	(128)
 
@@ -111,11 +112,11 @@ private:
   uint32_t _writeCount;
 } PACKED;
 
-typedef struct
-{
-	SectorBlockEntry* pSectorBlockEntryList ;
-	int iSize ;
-} PACKED FileSystem_TableCache ;
+//typedef struct
+//{
+//	SectorBlockEntry* pSectorBlockEntryList ;
+//	int iSize ;
+//} PACKED FileSystem_TableCache ;
 
 class FileSystemMountInfo
 {
@@ -129,7 +130,7 @@ class FileSystemMountInfo
         delete pFreePoolQueue;
     }
     upan::queue<unsigned>* pFreePoolQueue;
-    FileSystem_TableCache FSTableCache;
+    upan::vector<SectorBlockEntry> FSTableCache;
     //Ouput
     FileSystem_BootBlock FSBootBlock; 
     FileSystem_PresentWorkingDirectory FSpwd;

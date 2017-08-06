@@ -56,7 +56,7 @@ class vector
     iterator erase(const int first, const int last);
     void pop_back();
 
-    unsigned size() const { return _size; }
+    int size() const { return _size; }
     bool empty() const { return _size == 0; }
 
     iterator begin() const;

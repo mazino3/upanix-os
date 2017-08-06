@@ -28,90 +28,76 @@
 
 /**************************** static functions **************************************/
 
-static SectorBlockEntry* FSManager_GetSectorEntryFromCache(const FileSystem_TableCache* pFSTableCache, unsigned uiSectorEntry) ;
+static SectorBlockEntry* FSManager_GetSectorEntryFromCache(const upan::vector<SectorBlockEntry>& fsTableCache, unsigned uiSectorEntry) ;
 static byte FSManager_AddSectorEntryIntoCache(DiskDrive* pDiskDrive, unsigned uiSectorEntry) ;
 static byte FSManager_GetSectorEntryValueDirect(DiskDrive* pDiskDrive, unsigned uiSectorID, unsigned* uiValue) ;
 static byte FSManager_SetSectorEntryValueDirect(DiskDrive* pDiskDrive, unsigned uiSectorID, unsigned uiValue) ;
 static void FSManager_UpdateUsedSectors(DiskDrive* pDiskDrive, unsigned uiSectorEntryValue) ;
 
-byte FSManager_BinarySearch(SectorBlockEntry* pList, int iSize, unsigned uiBlockID, int* iPos)
+byte FSManager_BinarySearch(const upan::vector<SectorBlockEntry>& blocks, unsigned uiBlockID, int* iPos)
 {
-	int low, high, mid ;
+  int low, high, mid ;
 
-	*iPos = -1 ;
+  *iPos = -1 ;
 
-	for(low = 0, high = iSize - 1; low <= high;)
+  for(low = 0, high = blocks.size() - 1; low <= high;)
 	{
 		mid = (low + high) / 2 ;
 
-    if(uiBlockID == pList[mid].BlockId())
-		{
-			*iPos = mid ;
-			return true ;
-		}
+    if(uiBlockID == blocks[mid].BlockId())
+    {
+      *iPos = mid ;
+      return true ;
+    }
 
-    if(uiBlockID < pList[mid].BlockId())
+    if(uiBlockID < blocks[mid].BlockId())
 		{
 			high = mid - 1 ;
-			*iPos = high + 1 ;
+      *iPos = high + 1 ;
 		}
 		else
 		{
 			low = mid + 1 ;
-			*iPos = low ;
+      *iPos = low ;
 		}
 	}
 
 	if(*iPos < 0)
 		*iPos = 0 ;
-	else if(*iPos >= iSize)
-		*iPos = iSize ;
+  else if(*iPos >= blocks.size())
+    *iPos = blocks.size() ;
 
 	return false ;
 }
 
-static SectorBlockEntry* FSManager_GetSectorEntryFromCache(const FileSystem_TableCache* pFSTableCache, unsigned uiSectorEntry)
+static SectorBlockEntry* FSManager_GetSectorEntryFromCache(const upan::vector<SectorBlockEntry>& fsTableCache, unsigned uiSectorEntry)
 {
-	SectorBlockEntry* pSectorBlockEntryList = pFSTableCache->pSectorBlockEntryList ;
-	int iSize = pFSTableCache->iSize ;
-
-	if(!iSize)
+  if(fsTableCache.empty())
 		return NULL ;
 
 	int iPos ;
-	if(!FSManager_BinarySearch(pSectorBlockEntryList, iSize, BLOCK_ID(uiSectorEntry), &iPos))
+  if(!FSManager_BinarySearch(fsTableCache, BLOCK_ID(uiSectorEntry), &iPos))
 		return NULL ;
 
-	return &pSectorBlockEntryList[iPos] ;
+  return &fsTableCache[iPos] ;
 }
 
 static byte FSManager_AddSectorEntryIntoCache(DiskDrive* pDiskDrive, unsigned uiSectorEntry)
 {	
 	FileSystemMountInfo* pFSMountInfo = (FileSystemMountInfo*)&pDiskDrive->FSMountInfo ;
-	FileSystem_TableCache* pFSTableCache = (FileSystem_TableCache*)&pFSMountInfo->FSTableCache ;
-	SectorBlockEntry* pSectorBlockEntryList = pFSTableCache->pSectorBlockEntryList ;
-	int iSize = pFSTableCache->iSize ;
+  auto& fsTableCache = pFSMountInfo->FSTableCache;
 	int iPos ;
 	byte bStatus ;
 
-	if((unsigned)iSize == pDiskDrive->NoOfSectorsInTableCache())
-	{
+  if((unsigned)fsTableCache.size() == DiskDrive::MAX_SECTORS_IN_TABLE_CACHE)
 		RETURN_IF_NOT(bStatus, pDiskDrive->FlushTableCache(1), DeviceDrive_SUCCESS) ;
-		iSize = pFSTableCache->iSize ;
-	}
 
-	if(FSManager_BinarySearch(pSectorBlockEntryList, iSize, BLOCK_ID(uiSectorEntry), &iPos))
+  if(FSManager_BinarySearch(fsTableCache, BLOCK_ID(uiSectorEntry), &iPos))
 		return FSManager_SUCCESS ;
 
-	unsigned uiSrc = (unsigned)&pSectorBlockEntryList[iPos] ;
-	unsigned uiDest = (unsigned)&pSectorBlockEntryList[iPos + 1] ;
+  fsTableCache.insert(iPos, SectorBlockEntry());
 
-	MemUtil_CopyMemoryBack(MemUtil_GetDS(), uiSrc, MemUtil_GetDS(), uiDest, (iSize - iPos) * sizeof(SectorBlockEntry)) ;
-//	memmove((void*)uiDest, (void*)uiSrc, (iSize - iPos) * sizeof(SectorBlockEntry)) ;
-
-  RETURN_X_IF_NOT(pSectorBlockEntryList[iPos].Load(*pDiskDrive, uiSectorEntry), DeviceDrive_SUCCESS, FSManager_FAILURE) ;
-
-	pFSTableCache->iSize++ ;
+  RETURN_X_IF_NOT(fsTableCache[iPos].Load(*pDiskDrive, uiSectorEntry), DeviceDrive_SUCCESS, FSManager_FAILURE) ;
 
 	return FSManager_SUCCESS ;
 }
@@ -167,7 +153,7 @@ byte FSManager_GetSectorEntryValue(DiskDrive* pDiskDrive, const unsigned uiSecto
 	}
 	
 	FileSystemMountInfo* pFSMountInfo = (FileSystemMountInfo*)&pDiskDrive->FSMountInfo ;
-	SectorBlockEntry* pSectorBlockEntry = FSManager_GetSectorEntryFromCache(&pFSMountInfo->FSTableCache, uiSectorID) ;
+  SectorBlockEntry* pSectorBlockEntry = FSManager_GetSectorEntryFromCache(pFSMountInfo->FSTableCache, uiSectorID) ;
 
 	if(pSectorBlockEntry != NULL)
 	{
@@ -207,7 +193,7 @@ byte FSManager_SetSectorEntryValue(DiskDrive* pDiskDrive, const unsigned uiSecto
 	}
 
 	FileSystemMountInfo* pFSMountInfo = (FileSystemMountInfo*)&pDiskDrive->FSMountInfo ;
-	SectorBlockEntry* pSectorBlockEntry = FSManager_GetSectorEntryFromCache(&pFSMountInfo->FSTableCache, uiSectorID) ;
+  SectorBlockEntry* pSectorBlockEntry = FSManager_GetSectorEntryFromCache(pFSMountInfo->FSTableCache, uiSectorID) ;
 
 	if(pSectorBlockEntry != NULL)
   {
@@ -253,9 +239,9 @@ byte FSManager_AllocateSector(DiskDrive* pDiskDrive, unsigned* uiFreeSectorID)
 void display_cahce(DiskDrive* pDiskDrive)
 {
   printf("\nSTART\n");
-  for(int i = 0; i < pDiskDrive->FSMountInfo.FSTableCache.iSize; i++)
-    printf(", %u", pDiskDrive->FSMountInfo.FSTableCache.pSectorBlockEntryList[i].BlockId());
-  printf(" :: SIZE = %d", pDiskDrive->FSMountInfo.FSTableCache.iSize);
+  for(const auto& block : pDiskDrive->FSMountInfo.FSTableCache)
+    printf(", %u", block.BlockId());
+  printf(" :: SIZE = %d", pDiskDrive->FSMountInfo.FSTableCache.size());
 }
 
 byte SectorBlockEntry::Load(DiskDrive& diskDrive, uint32_t sectortId)
