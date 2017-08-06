@@ -38,6 +38,7 @@ class vector
     typedef const vector_iterator const_iterator;
 
     vector();
+    explicit vector(const int reservce);
     vector(const vector<T>& rhs);
     vector(vector<T>&& rhs);
     ~vector();
@@ -179,6 +180,15 @@ class vector
 template <typename T>
 vector<T>::vector() : _size(0), _capacity(0), _buffer(nullptr)
 {
+  _buffer = new char[_capacity];
+}
+
+template <typename T>
+vector<T>::vector(const int reserve) : _size(0)
+{
+  if (reserve <= 0)
+    throw upan::exception(XLOC, "invalid vector reserve size: %d - must be > 0", reserve);
+  _capacity = sizeof(T) * reserve;
   _buffer = new char[_capacity];
 }
 
