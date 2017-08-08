@@ -30,7 +30,6 @@
 
 static byte FSManager_GetSectorEntryValueDirect(DiskDrive* pDiskDrive, unsigned uiSectorID, unsigned* uiValue) ;
 static byte FSManager_SetSectorEntryValueDirect(DiskDrive* pDiskDrive, unsigned uiSectorID, unsigned uiValue) ;
-static void FSManager_UpdateUsedSectors(DiskDrive* pDiskDrive, unsigned uiSectorEntryValue) ;
 
 byte FSManager_BinarySearch(const upan::vector<SectorBlockEntry>& blocks, unsigned uiBlockID, int* iPos)
 {
@@ -71,11 +70,9 @@ byte FSManager_BinarySearch(const upan::vector<SectorBlockEntry>& blocks, unsign
 static byte FSManager_GetSectorEntryValueDirect(DiskDrive* pDiskDrive, unsigned uiSectorID, unsigned* uiValue)
 {
 	unsigned pTable[ ENTRIES_PER_TABLE_SECTOR ] ;
-	FileSystem_BootBlock* pFSBootBlock = &pDiskDrive->FSMountInfo.FSBootBlock ;
+  const FileSystem_BootBlock& fsBootBlock = pDiskDrive->FSMountInfo.GetBootBlock();
 
-	RETURN_X_IF_NOT(pDiskDrive->Read(pFSBootBlock->BPB_RsvdSecCnt + BLOCK_ID(uiSectorID) + 1, 1, 
-									(byte*)pTable),
-					DeviceDrive_SUCCESS, FSManager_FAILURE) ;
+  RETURN_X_IF_NOT(pDiskDrive->Read(fsBootBlock.BPB_RsvdSecCnt + BLOCK_ID(uiSectorID) + 1, 1, (byte*)pTable), DeviceDrive_SUCCESS, FSManager_FAILURE) ;
 
 	*uiValue = pTable[ BLOCK_OFFSET(uiSectorID) ] ;
 
@@ -86,27 +83,15 @@ static byte FSManager_SetSectorEntryValueDirect(DiskDrive* pDiskDrive, unsigned 
 {
 	unsigned pTable[ ENTRIES_PER_TABLE_SECTOR ] ;
 
-	FileSystem_BootBlock* pFSBootBlock = &pDiskDrive->FSMountInfo.FSBootBlock ;
+  const FileSystem_BootBlock& fsBootBlock = pDiskDrive->FSMountInfo.GetBootBlock();
 
-	RETURN_X_IF_NOT(pDiskDrive->Read(pFSBootBlock->BPB_RsvdSecCnt + BLOCK_ID(uiSectorID) + 1, 1, 
-									(byte*)pTable),
-					DeviceDrive_SUCCESS, FSManager_FAILURE) ;
+  RETURN_X_IF_NOT(pDiskDrive->Read(fsBootBlock.BPB_RsvdSecCnt + BLOCK_ID(uiSectorID) + 1, 1,  (byte*)pTable), DeviceDrive_SUCCESS, FSManager_FAILURE) ;
 
 	pTable[ BLOCK_OFFSET(uiSectorID) ] = uiValue ;
 
-	RETURN_X_IF_NOT(pDiskDrive->Write(pFSBootBlock->BPB_RsvdSecCnt + BLOCK_ID(uiSectorID) + 1, 1, 
-									(byte*)pTable), 
-					DeviceDrive_SUCCESS, FSManager_FAILURE) ;
+  RETURN_X_IF_NOT(pDiskDrive->Write(fsBootBlock.BPB_RsvdSecCnt + BLOCK_ID(uiSectorID) + 1, 1, (byte*)pTable), DeviceDrive_SUCCESS, FSManager_FAILURE) ;
 
 	return FSManager_SUCCESS ;
-}
-
-static void FSManager_UpdateUsedSectors(DiskDrive* pDiskDrive, unsigned uiSectorEntryValue)
-{
-	if(uiSectorEntryValue == EOC)
-		pDiskDrive->FSMountInfo.FSBootBlock.uiUsedSectors++ ;
-	else if(uiSectorEntryValue == 0)
-		pDiskDrive->FSMountInfo.FSBootBlock.uiUsedSectors-- ;
 }
 
 /**************************************************************************************/
@@ -139,9 +124,7 @@ byte FSManager_SetSectorEntryValue(DiskDrive* pDiskDrive, const unsigned uiSecto
 	byte bStatus ;
 
 	if(!bFromCahceOnly)
-	{
-		FSManager_UpdateUsedSectors(pDiskDrive, uiSectorEntryValue) ;
-	}
+    pDiskDrive->FSMountInfo.UpdateUsedSectors((uiSectorEntryValue));
 
   FileSystemMountInfo& fsMountInfo = pDiskDrive->FSMountInfo ;
   SectorBlockEntry* pSectorBlockEntry = fsMountInfo.GetSectorEntryFromCache(uiSectorID) ;
@@ -175,10 +158,9 @@ byte FSManager_AllocateSector(DiskDrive* pDiskDrive, unsigned* uiFreeSectorID)
 
 byte SectorBlockEntry::Load(DiskDrive& diskDrive, uint32_t sectortId)
 {
-  FileSystemMountInfo* pFSMountInfo = (FileSystemMountInfo*)&diskDrive.FSMountInfo;
-  FileSystem_BootBlock* pFSBootBlock = (FileSystem_BootBlock*)&pFSMountInfo->FSBootBlock;
+  const FileSystem_BootBlock& fsBootBlock = diskDrive.FSMountInfo.GetBootBlock();
 
-  RETURN_X_IF_NOT(diskDrive.Read(pFSBootBlock->BPB_RsvdSecCnt + BLOCK_ID(sectortId) + 1, 1, (byte*)_sectorBlock), DeviceDrive_SUCCESS, FSManager_FAILURE) ;
+  RETURN_X_IF_NOT(diskDrive.Read(fsBootBlock.BPB_RsvdSecCnt + BLOCK_ID(sectortId) + 1, 1, (byte*)_sectorBlock), DeviceDrive_SUCCESS, FSManager_FAILURE) ;
   _blockId = BLOCK_ID(sectortId);
   _readCount = _writeCount = 0;
 
@@ -223,9 +205,9 @@ byte FileSystemMountInfo::ReadFSBootBlock()
   if(bArrFSBootBlock[510] != 0x55 || bArrFSBootBlock[511] != 0xAA)
     return FileSystem_ERR_INVALID_BPB_SIGNATURE;
 
-  memcpy(&FSBootBlock, bArrFSBootBlock, sizeof(FileSystem_BootBlock));
+  memcpy(&_fsBootBlock, bArrFSBootBlock, sizeof(FileSystem_BootBlock));
 
-  if(FSBootBlock.BPB_BootSig != 0x29)
+  if(_fsBootBlock.BPB_BootSig != 0x29)
     return FileSystem_ERR_INVALID_BOOT_SIGNATURE;
 
   // TODO: A write to HD image file from mos fs util is changing the CHS value !!
@@ -239,35 +221,35 @@ byte FileSystemMountInfo::ReadFSBootBlock()
     return FileSystem_ERR_INVALID_NO_OF_HEADS;
   */
 
-  if(FSBootBlock.BPB_TotSec32 != _diskDrive.SizeInSectors())
+  if(_fsBootBlock.BPB_TotSec32 != _diskDrive.SizeInSectors())
     return FileSystem_ERR_INVALID_DRIVE_SIZE_IN_SECTORS;
 
-  if(FSBootBlock.BPB_FSTableSize == 0)
+  if(_fsBootBlock.BPB_FSTableSize == 0)
     return FileSystem_ERR_ZERO_FATSZ32;
 
-  if(FSBootBlock.BPB_BytesPerSec != 0x200)
+  if(_fsBootBlock.BPB_BytesPerSec != 0x200)
     return FileSystem_ERR_UNSUPPORTED_SECTOR_SIZE;
 
-  if(FSBootBlock.BPB_jmpBoot[0] != 0xEB || FSBootBlock.BPB_jmpBoot[1] != 0xFE || FSBootBlock.BPB_jmpBoot[2] != 0x90)
+  if(_fsBootBlock.BPB_jmpBoot[0] != 0xEB || _fsBootBlock.BPB_jmpBoot[1] != 0xFE || _fsBootBlock.BPB_jmpBoot[2] != 0x90)
     return FileSystem_ERR_BPB_JMP;
 
-  if(FSBootBlock.BPB_BytesPerSec != 0x200)
+  if(_fsBootBlock.BPB_BytesPerSec != 0x200)
     return FileSystem_ERR_UNSUPPORTED_SECTOR_SIZE;
 
   if(_diskDrive.DeviceType() == DEV_FLOPPY)
-    if(FSBootBlock.BPB_Media  != 0xF0)
+    if(_fsBootBlock.BPB_Media  != 0xF0)
       return FileSystem_ERR_UNSUPPORTED_MEDIA;
 
-  if(FSBootBlock.BPB_ExtFlags  != 0x0080)
+  if(_fsBootBlock.BPB_ExtFlags  != 0x0080)
     return FileSystem_ERR_INVALID_EXTFLAG;
 
-  if(FSBootBlock.BPB_FSVer != 0x0100)
+  if(_fsBootBlock.BPB_FSVer != 0x0100)
     return FileSystem_ERR_FS_VERSION;
 
-  if(FSBootBlock.BPB_FSInfo  != 1)
+  if(_fsBootBlock.BPB_FSInfo  != 1)
     return FileSystem_ERR_FSINFO_SECTOR;
 
-  if(FSBootBlock.BPB_VolID != 0x01)
+  if(_fsBootBlock.BPB_VolID != 0x01)
     return FileSystem_ERR_INVALID_VOL_ID;
 
   return DeviceDrive_SUCCESS;
@@ -280,7 +262,7 @@ byte FileSystemMountInfo::WriteFSBootBlock()
   bSectorBuffer[510] = 0x55; /* BootSector Signature */
   bSectorBuffer[511] = 0xAA;
 
-  memcpy(bSectorBuffer, &FSBootBlock, sizeof(FileSystem_BootBlock));
+  memcpy(bSectorBuffer, &_fsBootBlock, sizeof(FileSystem_BootBlock));
 
   byte bStatus;
   RETURN_IF_NOT(bStatus, _diskDrive.Write(1, 1, bSectorBuffer), DeviceDrive_SUCCESS) ;
@@ -321,7 +303,7 @@ byte FileSystemMountInfo::LoadFreeSectors()
   byte bBuffer[ 4096 ];
   byte bStatus;
 
-  for(unsigned i = 0; i < FSBootBlock.BPB_FSTableSize; )
+  for(unsigned i = 0; i < _fsBootBlock.BPB_FSTableSize; )
   {
     if(bStop)
       break;
@@ -333,11 +315,11 @@ byte FileSystemMountInfo::LoadFreeSectors()
       continue;
     }
 
-    unsigned uiBlockSize = (FSBootBlock.BPB_FSTableSize - i);
+    unsigned uiBlockSize = (_fsBootBlock.BPB_FSTableSize - i);
     if(uiBlockSize > 8)
       uiBlockSize = 8;
 
-    RETURN_IF_NOT(bStatus, _diskDrive.Read(i + FSBootBlock.BPB_RsvdSecCnt + 1, uiBlockSize, (byte*)bBuffer), DeviceDrive_SUCCESS);
+    RETURN_IF_NOT(bStatus, _diskDrive.Read(i + _fsBootBlock.BPB_RsvdSecCnt + 1, uiBlockSize, (byte*)bBuffer), DeviceDrive_SUCCESS);
 
     unsigned* pTable = (unsigned*)bBuffer;
 
@@ -374,7 +356,7 @@ byte FileSystemMountInfo::FlushTableCache(int iFlushSize)
     if(block.WriteCount() == 0)
       continue;
 
-    RETURN_IF_NOT(bStatus, _diskDrive.Write(block.BlockId() + FSBootBlock.BPB_RsvdSecCnt + 1, 1, (byte*)(block.SectorBlock())), DeviceDrive_SUCCESS) ;
+    RETURN_IF_NOT(bStatus, _diskDrive.Write(block.BlockId() + _fsBootBlock.BPB_RsvdSecCnt + 1, 1, (byte*)(block.SectorBlock())), DeviceDrive_SUCCESS) ;
   }
 
   if(iFlushSize < _fsTableCache.size())
@@ -433,4 +415,24 @@ void FileSystemMountInfo::DisplayCache()
   for(const auto& block : _fsTableCache)
     printf(", %u", block.BlockId());
   printf(" :: SIZE = %d", _fsTableCache.size());
+}
+
+uint32_t FileSystemMountInfo::GetRealSectorNumber(uint32_t uiSectorID) const
+{
+  return uiSectorID + 1/*BPB*/
+          + _fsBootBlock.BPB_RsvdSecCnt
+          + _fsBootBlock.BPB_FSTableSize;
+}
+
+void FileSystemMountInfo::InitBootBlock(FileSystem_BootBlock* bootBlock)
+{
+  memcpy(&_fsBootBlock, bootBlock, sizeof(FileSystem_BootBlock));
+}
+
+void FileSystemMountInfo::UpdateUsedSectors(unsigned uiSectorEntryValue)
+{
+  if(uiSectorEntryValue == EOC)
+    _fsBootBlock.uiUsedSectors++;
+  else if(uiSectorEntryValue == 0)
+    _fsBootBlock.uiUsedSectors--;
 }

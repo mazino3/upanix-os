@@ -105,7 +105,6 @@ class DiskDrive
     byte xWrite(byte* bDataBuffer, unsigned uiSector, unsigned uiNoOfSectors);
     byte FlushDirtyCacheSectors(int iCount = -1);
     void ReleaseCache();
-    unsigned GetRealSectorNumber(unsigned uiSectorID) const;
     unsigned GetFreeSector();
 
     const upan::string& DriveName() const { return _driveName; }

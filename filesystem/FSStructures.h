@@ -123,6 +123,8 @@ class FileSystemMountInfo
     {
       delete _freePoolQueue;
     }
+    const FileSystem_BootBlock& GetBootBlock() const { return _fsBootBlock; }
+    void InitBootBlock(FileSystem_BootBlock* bootBlock);
     void UnallocateFreePoolQueue();
     void AllocateFreePoolQueue(uint32_t size);
     byte ReadFSBootBlock();
@@ -133,13 +135,17 @@ class FileSystemMountInfo
     byte AddToTableCache(unsigned uiSectorEntry);
     SectorBlockEntry* GetSectorEntryFromCache(unsigned uiSectorEntry);
     byte AllocateSector(uint32_t* uiFreeSectorID);
+
+    uint32_t GetRealSectorNumber(uint32_t uiSectorID) const;
+    void UpdateUsedSectors(unsigned uiSectorEntryValue);
+
     void DisplayCache();
 
     //Ouput
-    FileSystem_BootBlock FSBootBlock; 
     FileSystem_PresentWorkingDirectory FSpwd;
 private:
     DiskDrive& _diskDrive;
+    FileSystem_BootBlock _fsBootBlock;
     upan::queue<unsigned>* _freePoolQueue;
     upan::vector<SectorBlockEntry> _fsTableCache;
 };

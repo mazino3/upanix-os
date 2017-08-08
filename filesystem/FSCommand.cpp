@@ -62,7 +62,7 @@ byte FSCommand_Format(DiskDrive* pDiskDrive)
 
 void FSCommand_GetDriveSpace(DiskDrive* pDiskDrive, DriveStat* pDriveStat)
 {
-	FileSystem_BootBlock* pFSBootBlock = &pDiskDrive->FSMountInfo.FSBootBlock ;
-	pDriveStat->ulTotalSize = pFSBootBlock->BPB_FSTableSize * ENTRIES_PER_TABLE_SECTOR * 512 ;
-	pDriveStat->ulUsedSize = pFSBootBlock->uiUsedSectors * 512 ;
+  const FileSystem_BootBlock& fsBootBlock = pDiskDrive->FSMountInfo.GetBootBlock();
+  pDriveStat->ulTotalSize = fsBootBlock.BPB_FSTableSize * ENTRIES_PER_TABLE_SECTOR * 512 ;
+  pDriveStat->ulUsedSize = fsBootBlock.uiUsedSectors * 512 ;
 }

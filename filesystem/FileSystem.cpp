@@ -106,9 +106,9 @@ static void FileSystem_InitFSBootBlock(FileSystem_BootBlock* pFSBootBlock, DiskD
 byte
 FileSystem_GetSectorEntryValue(DiskDrive* pDiskDrive, const unsigned uiSectorID, unsigned* uiSectorEntryValue)
 {
-	FileSystem_BootBlock* pFSBootBlock = (FileSystem_BootBlock*)&(pDiskDrive->FSMountInfo.FSBootBlock) ;
+  const FileSystem_BootBlock& fsBootBlock = pDiskDrive->FSMountInfo.GetBootBlock();
 	
-	if(uiSectorID > (pFSBootBlock->BPB_FSTableSize * pFSBootBlock->BPB_BytesPerSec / 4))
+  if(uiSectorID > (fsBootBlock.BPB_FSTableSize * fsBootBlock.BPB_BytesPerSec / 4))
 		return FileSystem_ERR_INVALID_CLUSTER_ID ;
 
 	RETURN_X_IF_NOT(FSManager_GetSectorEntryValue(pDiskDrive, uiSectorID, uiSectorEntryValue, false), FSManager_SUCCESS, FileSystem_FAILURE) ;
@@ -119,9 +119,9 @@ FileSystem_GetSectorEntryValue(DiskDrive* pDiskDrive, const unsigned uiSectorID,
 byte
 FileSystem_SetSectorEntryValue(DiskDrive* pDiskDrive, const unsigned uiSectorID, unsigned uiSectorEntryValue)
 {
-	FileSystem_BootBlock* pFSBootBlock = (FileSystem_BootBlock*)&(pDiskDrive->FSMountInfo.FSBootBlock) ;
+  const FileSystem_BootBlock& fsBootBlock = pDiskDrive->FSMountInfo.GetBootBlock();
 	
-	if(uiSectorID > (pFSBootBlock->BPB_FSTableSize * pFSBootBlock->BPB_BytesPerSec / 4))
+  if(uiSectorID > (fsBootBlock.BPB_FSTableSize * fsBootBlock.BPB_BytesPerSec / 4))
 		return FileSystem_ERR_INVALID_CLUSTER_ID ;
 	
 	RETURN_X_IF_NOT(FSManager_SetSectorEntryValue(pDiskDrive, uiSectorID, uiSectorEntryValue, false), FSManager_SUCCESS, FileSystem_FAILURE) ;
@@ -170,11 +170,9 @@ byte FileSystem_Format(DiskDrive* pDiskDrive)
 	/*************************** FAT Table [END] **************************************/
 
 	/*************************** Root Directory [START] *******************************/
-	MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)pFSBootBlock, MemUtil_GetDS(), 
-						(unsigned)&(pDiskDrive->FSMountInfo.FSBootBlock), 
-						sizeof(FileSystem_BootBlock)) ;
+  pDiskDrive->FSMountInfo.InitBootBlock(pFSBootBlock);
 
-	unsigned uiSec = pDiskDrive->GetRealSectorNumber(0);
+  unsigned uiSec = pDiskDrive->FSMountInfo.GetRealSectorNumber(0);
 
 	FileSystem_PopulateRootDirEntry(((FileSystem_DIR_Entry*)&bSectorBuffer), uiSec) ;
 	

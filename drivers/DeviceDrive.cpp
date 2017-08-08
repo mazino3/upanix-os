@@ -240,7 +240,7 @@ byte DiskDrive::Read(unsigned uiStartSector, unsigned uiNoOfSectors, byte* bData
 
 byte DiskDrive::xRead(byte* bDataBuffer, unsigned uiSector, unsigned uiNoOfSectors)
 {
-  return Read(GetRealSectorNumber(uiSector), uiNoOfSectors, bDataBuffer);
+  return Read(FSMountInfo.GetRealSectorNumber(uiSector), uiNoOfSectors, bDataBuffer);
 }
 
 byte DiskDrive::RawRead(unsigned uiStartSector, unsigned uiNoOfSectors, byte* bDataBuffer)
@@ -359,7 +359,7 @@ byte DiskDrive::Write(unsigned uiStartSector, unsigned uiNoOfSectors, byte* bDat
 
 byte DiskDrive::xWrite(byte* bDataBuffer, unsigned uiSector, unsigned uiNoOfSectors)
 {
-  return Write(GetRealSectorNumber(uiSector), uiNoOfSectors, bDataBuffer);
+  return Write(FSMountInfo.GetRealSectorNumber(uiSector), uiNoOfSectors, bDataBuffer);
 }
 
 byte DiskDrive::RawWrite(unsigned uiStartSector, unsigned uiNoOfSectors, byte* bDataBuffer)
@@ -431,17 +431,10 @@ void DiskDrive::ReleaseCache()
     _mCache.LFUCacheCleanUp();
 }
 
-unsigned DiskDrive::GetRealSectorNumber(unsigned uiSectorID) const
-{
-	return uiSectorID + 1/*BPB*/ 
-					+ FSMountInfo.FSBootBlock.BPB_RsvdSecCnt 
-					+ FSMountInfo.FSBootBlock.BPB_FSTableSize;
-}
-
 unsigned DiskDrive::GetFreeSector()
 {
 	byte bBuffer[512];
-	FileSystem_BootBlock& fsBootBlock = FSMountInfo.FSBootBlock ;
+  const FileSystem_BootBlock& fsBootBlock = FSMountInfo.GetBootBlock() ;
 	
 	for(unsigned i = 0; i < fsBootBlock.BPB_FSTableSize; ++i)
 	{

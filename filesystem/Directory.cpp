@@ -1159,7 +1159,7 @@ byte Directory_RawDirEntryRead(DiskDrive* pDiskDrive, unsigned uiSectorID, byte 
 	byte bStatus ;
 	byte bSectorBuffer[512] ;
 	
-	uiSectorID = pDiskDrive->GetRealSectorNumber(uiSectorID);
+  uiSectorID = pDiskDrive->FSMountInfo.GetRealSectorNumber(uiSectorID);
 
 	RETURN_IF_NOT(bStatus, pDiskDrive->Read(uiSectorID, 1, bSectorBuffer), DeviceDrive_SUCCESS) ;
 
