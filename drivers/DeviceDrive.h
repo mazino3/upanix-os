@@ -104,12 +104,8 @@ class DiskDrive
     byte Write(unsigned uiStartSector, unsigned uiNoOfSectors, byte* bDataBuffer);
     byte xWrite(byte* bDataBuffer, unsigned uiSector, unsigned uiNoOfSectors);
     byte FlushDirtyCacheSectors(int iCount = -1);
-    byte FlushTableCache(int iFlushSize);
     void ReleaseCache();
     unsigned GetRealSectorNumber(unsigned uiSectorID) const;
-    bool IsFreePoolCacheEnabled() const { return _enableFreePoolCache; }
-    bool IsTableCacheEnabled() const { return _enableTableCache; }
-    byte LoadFreeSectors();
     unsigned GetFreeSector();
 
     const upan::string& DriveName() const { return _driveName; }
@@ -145,9 +141,7 @@ class DiskDrive
     byte RawWrite(unsigned uiStartSector, unsigned uiNoOfSectors, byte* bDataBuffer);
     bool FlushSector(unsigned uiSectorID, const byte* pBuffer);
     void StartReleaseCacheTask();
-    byte ReadFSBootBlock();
     byte ReadRootDirectory();
-    byte VerifyBootBlock();
 
     int          _id;
     upan::string _driveName;
@@ -168,8 +162,6 @@ class DiskDrive
     Mutex			    _driveMutex;
     DiskCache		  _mCache;
 		bool          _bStopReleaseCacheTask;
-    bool          _enableFreePoolCache;
-    bool          _enableTableCache;
 
     friend class DiskDriveManager;
 };

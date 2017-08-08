@@ -201,10 +201,7 @@ byte FileSystem_DeAllocateSector(DiskDrive* pDiskDrive, unsigned uiCurrentSector
 
 	RETURN_IF_NOT(bStatus, FileSystem_SetSectorEntryValue(pDiskDrive, uiCurrentSectorID, 0), FileSystem_SUCCESS) ;
 
-	if(pDiskDrive->IsFreePoolCacheEnabled())
-	{
-    pDiskDrive->FSMountInfo.pFreePoolQueue->push_back(uiCurrentSectorID);
-	}
+  pDiskDrive->FSMountInfo.AddToFreePoolCache(uiCurrentSectorID);
 
 	return FileSystem_SUCCESS ;
 }

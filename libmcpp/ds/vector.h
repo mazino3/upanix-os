@@ -255,7 +255,7 @@ void vector<T>::swap(vector<T>& other)
 template <typename T>
 void vector<T>::expandIfNeeded()
 {
-  if((_size * sizeof(T)) >= _capacity)
+  if((_size * (int)sizeof(T)) >= _capacity)
   {
     const uint32_t newCapacity = sizeof(T) * (int)(_size == 0 ? 2 : _size * 1.5);
     char* tempBuffer = new char[newCapacity];

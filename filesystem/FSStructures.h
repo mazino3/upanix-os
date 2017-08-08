@@ -97,6 +97,7 @@ class SectorBlockEntry
 {
 public:
   uint32_t* SectorBlock() { return _sectorBlock; }
+  const uint32_t* SectorBlock() const { return _sectorBlock; }
   const uint32_t BlockId() const { return _blockId; }
   const uint32_t ReadCount() const { return _readCount; }
   const uint32_t WriteCount() const { return _writeCount; }
@@ -112,28 +113,35 @@ private:
   uint32_t _writeCount;
 } PACKED;
 
-//typedef struct
-//{
-//	SectorBlockEntry* pSectorBlockEntryList ;
-//	int iSize ;
-//} PACKED FileSystem_TableCache ;
-
 class FileSystemMountInfo
 {
   public:
-    FileSystemMountInfo() : pFreePoolQueue(nullptr)
+    FileSystemMountInfo(DiskDrive& diskDrive) : _diskDrive(diskDrive), _freePoolQueue(nullptr)
     {
     }
     ~FileSystemMountInfo()
     {
-      if(pFreePoolQueue)
-        delete pFreePoolQueue;
+      delete _freePoolQueue;
     }
-    upan::queue<unsigned>* pFreePoolQueue;
-    upan::vector<SectorBlockEntry> FSTableCache;
+    void UnallocateFreePoolQueue();
+    void AllocateFreePoolQueue(uint32_t size);
+    byte ReadFSBootBlock();
+    byte WriteFSBootBlock();
+    byte LoadFreeSectors();
+    byte FlushTableCache(int iFlushSize);
+    void AddToFreePoolCache(uint32_t sectorId) { _freePoolQueue->push_back(sectorId); }
+    byte AddToTableCache(unsigned uiSectorEntry);
+    SectorBlockEntry* GetSectorEntryFromCache(unsigned uiSectorEntry);
+    byte AllocateSector(uint32_t* uiFreeSectorID);
+    void DisplayCache();
+
     //Ouput
     FileSystem_BootBlock FSBootBlock; 
     FileSystem_PresentWorkingDirectory FSpwd;
+private:
+    DiskDrive& _diskDrive;
+    upan::queue<unsigned>* _freePoolQueue;
+    upan::vector<SectorBlockEntry> _fsTableCache;
 };
 
 typedef struct
