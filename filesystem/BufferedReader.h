@@ -33,10 +33,10 @@ class BufferedReader
 		~BufferedReader() ;
 
     void Seek(unsigned uiOffSet) ;
-    uint32_t Read(char* szBuffer, int iLen) ;
+    int Read(char* szBuffer, int iLen) ;
 
   private:
-    bool DoRead(char* szBuffer, int iLen, unsigned* pReadLen);
+    int DoRead(char* szBuffer, int iLen);
 } ;
 
 #endif

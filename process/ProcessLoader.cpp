@@ -48,10 +48,7 @@ ProcessLoader::ProcessLoader() :
 
 byte* ProcessLoader::LoadInitSection(unsigned& uiSectionSize, const upan::string& szSectionName)
 {
-	FileSystem_DIR_Entry DirEntry ;
-
-  if(FileOperations_GetDirEntry(szSectionName.c_str(), &DirEntry) != FileOperations_SUCCESS)
-    throw upan::exception(XLOC, "failed to get dir entry for: %s", szSectionName.c_str());
+  const FileSystem_DIR_Entry& DirEntry = FileOperations_GetDirEntry(szSectionName.c_str());
 	
 	if((DirEntry.usAttribute & ATTR_TYPE_DIRECTORY) == ATTR_TYPE_DIRECTORY)
     throw upan::exception(XLOC, "%s is a directory!", szSectionName.c_str());
@@ -59,14 +56,9 @@ byte* ProcessLoader::LoadInitSection(unsigned& uiSectionSize, const upan::string
 	uiSectionSize = DirEntry.uiSize ;
   upan::uniq_ptr<byte[]> bSectionImage(new byte[sizeof(char) * uiSectionSize]);
 
-  int fd;
-  unsigned n;
+  const int fd = FileOperations_Open(szSectionName.c_str(), O_RDONLY);
 
-  if(FileOperations_Open(&fd, szSectionName.c_str(), O_RDONLY) != FileOperations_SUCCESS)
-    throw upan::exception(XLOC, "failed to open file: %s", szSectionName.c_str());
-
-  if(FileOperations_Read(fd, (char*)bSectionImage.get(), 0, &n) != FileOperations_SUCCESS)
-    throw upan::exception(XLOC, "error reading file: %s", szSectionName.c_str());
+  const int n = FileOperations_Read(fd, (char*)bSectionImage.get(), 0);
 
   if(FileOperations_Close(fd) != FileOperations_SUCCESS)
     throw upan::exception(XLOC, "error closing file: %s", szSectionName.c_str());

@@ -152,70 +152,59 @@ void ProcFileManager_InitForKernel()
 	}
 }
 
-byte ProcFileManager_GetFD(int* fd)
+int ProcFileManager_GetFD()
 {
 	ProcFileManager_FDTableLock() ;
 
 	if(PROCESS_FD_TABLE_HEADER->TotalFDCount == PROC_SYS_MAX_OPEN_FILES)
 	{
 		ProcFileManager_FDTableUnLock() ;
-		return ProcFileManager_ERR_MAX_OPEN_FILES ;
+    throw upan::exception(XLOC, "can't open new file - max open files limit %d reached", PROC_SYS_MAX_OPEN_FILES);
 	}
 
 	if(PROCESS_FD_TABLE_HEADER->LastFDAssigned == PROC_SYS_MAX_OPEN_FILES - 1 || PROCESS_FD_TABLE_HEADER->LastFDAssigned == -1)
-	{
 		PROCESS_FD_TABLE_HEADER->LastFDAssigned = NORMAL_FILES_START_FD ;
-	}
 
-	unsigned i ;
-	for(i = PROCESS_FD_TABLE_HEADER->LastFDAssigned; i < PROC_SYS_MAX_OPEN_FILES; i++)
+  for(int i = PROCESS_FD_TABLE_HEADER->LastFDAssigned; i < PROC_SYS_MAX_OPEN_FILES; i++)
 	{
 		if(PROCESS_FD_TABLE[i].iDriveID == PROC_FREE_FD)
 		{
-			*fd = i ;
-			break ;
+      PROCESS_FD_TABLE_HEADER->LastFDAssigned = i;
+
+      PROCESS_FD_TABLE_HEADER->TotalFDCount++ ;
+
+      ProcFileManager_FDTableUnLock() ;
+
+      return i;
 		}
 	}
 	
-	if(i == PROC_SYS_MAX_OPEN_FILES)
-	{
-		ProcFileManager_FDTableUnLock() ;
-		return ProcFileManager_ERR_MAX_OPEN_FILES ;
-	}
-
-	PROCESS_FD_TABLE_HEADER->LastFDAssigned = *fd ;
-
-	PROCESS_FD_TABLE_HEADER->TotalFDCount++ ;
-
-	ProcFileManager_FDTableUnLock() ;
-
-	return ProcFileManager_SUCCESS ;
+  ProcFileManager_FDTableUnLock() ;
+  throw upan::exception(XLOC, "can't open new file - max open files limit %d reached", PROC_SYS_MAX_OPEN_FILES);
 }
 
-byte ProcFileManager_AllocateFD(int* fd, const char* szFileName, const byte mode, int iDriveID, const unsigned uiFileSize, unsigned uiStartSectorID)
+int ProcFileManager_AllocateFD(const char* szFileName, const byte mode, int iDriveID, const unsigned uiFileSize, unsigned uiStartSectorID)
 {
-	byte bStatus ;
-
-	RETURN_IF_NOT(bStatus, ProcFileManager_GetFD(fd), ProcFileManager_SUCCESS) ;
+  const int fd = ProcFileManager_GetFD();
 
 	if(mode & O_APPEND)
-		PROCESS_FD_TABLE[*fd].uiOffset = uiFileSize ;
+    PROCESS_FD_TABLE[fd].uiOffset = uiFileSize ;
 	else
-		PROCESS_FD_TABLE[*fd].uiOffset = 0 ;
+    PROCESS_FD_TABLE[fd].uiOffset = 0 ;
 	
-	PROCESS_FD_TABLE[*fd].mode = mode ;
-	PROCESS_FD_TABLE[*fd].uiFileSize = uiFileSize ;
-	PROCESS_FD_TABLE[*fd].iDriveID = iDriveID ;
+  PROCESS_FD_TABLE[fd].mode = mode ;
+  PROCESS_FD_TABLE[fd].uiFileSize = uiFileSize ;
+  PROCESS_FD_TABLE[fd].iDriveID = iDriveID ;
 
-	PROCESS_FD_TABLE[*fd].szFileName = (char*)DMM_AllocateForKernel(strlen(szFileName) + 1)  ;
-	strcpy(PROCESS_FD_TABLE[*fd].szFileName, szFileName) ;
+  PROCESS_FD_TABLE[fd].szFileName = (char*)DMM_AllocateForKernel(strlen(szFileName) + 1)  ;
+  strcpy(PROCESS_FD_TABLE[fd].szFileName, szFileName) ;
 
-	PROCESS_FD_TABLE[*fd].RefCount = 1 ;
+  PROCESS_FD_TABLE[fd].RefCount = 1 ;
 
-	PROCESS_FD_TABLE[*fd].iLastReadSectorIndex = 0 ;
-	PROCESS_FD_TABLE[*fd].uiLastReadSectorNumber = uiStartSectorID ;
+  PROCESS_FD_TABLE[fd].iLastReadSectorIndex = 0 ;
+  PROCESS_FD_TABLE[fd].uiLastReadSectorNumber = uiStartSectorID ;
 
-	return ProcFileManager_SUCCESS ;
+  return fd;
 }
 
 byte ProcFileManager_FreeFD(int fd)
@@ -257,17 +246,17 @@ byte ProcFileManager_FreeFD(int fd)
 	return ProcFileManager_SUCCESS ;
 }
 
-byte ProcFileManager_UpdateOffset(int fd, int seekType, int iOffset)
+void ProcFileManager_UpdateOffset(int fd, int seekType, int iOffset)
 {
-	RETURN_X_IF_NOT(ProcFileManager_GetRealNonDuppedFD(fd, &fd), ProcFileManager_SUCCESS, ProcFileManager_FAILURE) ;
+  fd = ProcFileManager_GetRealNonDuppedFD(fd);
 
 	if(!IS_VALID_PROC_FD(fd))
-		return ProcFileManager_ERR_INVALID_FD ;
+    throw upan::exception(XLOC, "invalid file descriptor: %d", fd);
 
 	switch(seekType)
 	{
 		case SEEK_SET:
-		break ;
+      break ;
 
 		case SEEK_CUR:
 			iOffset = PROCESS_FD_TABLE[fd].uiOffset + iOffset ;
@@ -278,48 +267,37 @@ byte ProcFileManager_UpdateOffset(int fd, int seekType, int iOffset)
 		break ;
 
 		default:
-			KC::MDisplay().Address("\n Seek Type = ", seekType) ;
-			return ProcFileManager_ERR_INVALID_SEEK_TYPE ;
+      throw upan::exception(XLOC, "invalid file seek type: %d", seekType);
 	}
 
 	if(iOffset < 0)
-		return ProcFileManager_ERR_INVALID_OFFSET ;
+    throw upan::exception(XLOC, "invalid file offset %d", iOffset);
 
 	PROCESS_FD_TABLE[fd].uiOffset = iOffset ;
-
-	return ProcFileManager_SUCCESS ;
 }
 
-byte ProcFileManager_GetOffset(int fd, unsigned* uiOffset)
+uint32_t ProcFileManager_GetOffset(int fd)
 {
 	if(!IS_VALID_PROC_FD(fd))
-		return ProcFileManager_ERR_INVALID_FD ;
+    throw upan::exception(XLOC, "invalid file descriptor:%d", fd);
 
-	RETURN_X_IF_NOT(ProcFileManager_GetRealNonDuppedFD(fd, &fd), ProcFileManager_SUCCESS, ProcFileManager_FAILURE) ;
-
-	*uiOffset = PROCESS_FD_TABLE[fd].uiOffset ;
-
-	return ProcFileManager_SUCCESS ;
+  return PROCESS_FD_TABLE[ProcFileManager_GetRealNonDuppedFD(fd)].uiOffset ;
 }
 
-byte ProcFileManager_GetMode(int fd, byte* mode)
+byte ProcFileManager_GetMode(int fd)
 {
 	if(!IS_VALID_PROC_FD(fd))
-		return ProcFileManager_ERR_INVALID_FD ;
+    throw upan::exception(XLOC, "invalid file descriptor: %d", fd);
 
-	*mode = PROCESS_FD_TABLE[fd].mode ;
-
-	return ProcFileManager_SUCCESS ;
+  return PROCESS_FD_TABLE[fd].mode ;
 }
 
-byte ProcFileManager_GetFDEntry(int fd, ProcFileDescriptor** pFDEntry)
+ProcFileDescriptor* ProcFileManager_GetFDEntry(int fd)
 {
 	if(!IS_VALID_PROC_FD(fd))
-		return ProcFileManager_ERR_INVALID_FD ;
+    throw upan::exception(XLOC, "invalid file descriptor:%d", fd);
 
-	*pFDEntry = &PROCESS_FD_TABLE[fd] ;
-
-	return ProcFileManager_SUCCESS ;
+  return &PROCESS_FD_TABLE[fd] ;
 }
 
 byte ProcFileManager_IsSTDOUT(int fd)
@@ -369,21 +347,18 @@ byte ProcFileManager_Dup2(int oldFD, int newFD)
 	return ProcFileManager_SUCCESS ;
 }
 
-byte ProcFileManager_GetRealNonDuppedFD(int dupedFD, int* realFD)
+int ProcFileManager_GetRealNonDuppedFD(int dupedFD)
 {
 	if(!IS_VALID_PROC_FD(dupedFD))
-		return ProcFileManager_ERR_INVALID_FD ;
+    throw upan::exception(XLOC, "invalid file descriptor:%d", dupedFD);
 
 	if(PROCESS_FD_TABLE[dupedFD].iDriveID == PROC_FREE_FD)
-		return ProcFileManager_FAILURE ;
+    throw upan::exception(XLOC, "%d fd is a free fd - can't find real fd", dupedFD);
 	
 	if(PROCESS_FD_TABLE[dupedFD].mode != DUPPED)
-	{
-		*realFD = dupedFD ;
-		return ProcFileManager_SUCCESS ;
-	}
+    return dupedFD ;
 
-	return ProcFileManager_GetRealNonDuppedFD(PROCESS_FD_TABLE[dupedFD].iDriveID, realFD) ;
+  return ProcFileManager_GetRealNonDuppedFD(PROCESS_FD_TABLE[dupedFD].iDriveID) ;
 }
 
 byte ProcFileManager_InitSTDFile(int StdFD)

@@ -43,27 +43,23 @@
 #define DIR_SPECIAL_CURRENT		"."
 #define DIR_SPECIAL_PARENT		".."
 
-byte Directory_Create(Process* processAddressSpace, int iDriveID, byte* bParentDirectoryBuffer, const FileSystem_CWD* pCWD, 
+void Directory_Create(Process* processAddressSpace, int iDriveID, byte* bParentDirectoryBuffer, const FileSystem_CWD* pCWD,
 		char* szDirName, unsigned short usDirAttribute) ;
-byte Directory_Delete(Process* processAddressSpace, int iDriveID, byte* bParentDirectoryBuffer, const FileSystem_CWD* pCWD, 
+void Directory_Delete(Process* processAddressSpace, int iDriveID, byte* bParentDirectoryBuffer, const FileSystem_CWD* pCWD,
 				const char* szDirName) ;
-byte Directory_GetDirEntryForCreateDelete(const Process* processAddressSpace, int iDriveID, const char* szDirPath, char* szDirName, 
-			unsigned* uiSectorNo, byte* bSectorPos, byte* bDirectoryBuffer) ;
-byte Directory_FindDirectory(DiskDrive* pDiskDrive, const FileSystem_CWD* pCWD, const char* szDirName, unsigned* uiSectorNo, byte* bSectorPos, byte* bIsPresent, byte* bDestSectorBuffer) ;
-byte Directory_GetDirectoryContent(const char* szFileName, Process* processAddressSpace, int iDriveID, FileSystem_DIR_Entry** pDirList, int* iListSize) ;
-byte Directory_FileWrite(DiskDrive* pDiskDrive, FileSystem_CWD* pCWD, ProcFileDescriptor* pFDEntry, byte* bDataBuffer, unsigned uiDataSize) ;
-byte Directory_ActualFileWrite(DiskDrive* pDiskDrive, byte* bDataBuffer, ProcFileDescriptor* pFDEntry, 
+void Directory_GetDirEntryForCreateDelete(const Process*, int iDriveID, const char* szDirPath, char* szDirName, unsigned& uiSectorNo, byte& bSectorPos, byte* bDirectoryBuffer) ;
+bool Directory_FindDirectory(DiskDrive&, const FileSystem_CWD& cwd, const char* szDirName, unsigned& uiSectorNo, byte& bSectorPos, byte* bDestSectorBuffer);
+void Directory_GetDirectoryContent(const char* szFileName, Process* processAddressSpace, int iDriveID, FileSystem_DIR_Entry** pDirList, int* iListSize) ;
+void Directory_FileWrite(DiskDrive* pDiskDrive, FileSystem_CWD* pCWD, ProcFileDescriptor* pFDEntry, byte* bDataBuffer, unsigned uiDataSize) ;
+void Directory_ActualFileWrite(DiskDrive* pDiskDrive, byte* bDataBuffer, ProcFileDescriptor* pFDEntry,
 								unsigned uiDataSize, FileSystem_DIR_Entry* dirFile) ;
-byte Directory_FileRead(DiskDrive* pDiskDrive, FileSystem_CWD* pCWD, ProcFileDescriptor* pFDEntry, byte* bDataBuffer, 
-						unsigned uiDataSize, unsigned* uiReadFileSize) ;
+int Directory_FileRead(DiskDrive* pDiskDrive, FileSystem_CWD* pCWD, ProcFileDescriptor* pFDEntry, byte* bDataBuffer, unsigned uiDataSize);
 void Directory_PopulateDirEntry(FileSystem_DIR_Entry* dirEntry, char* szDirName, unsigned short usDirAttribute, int iUserID, unsigned uiParentSecNo, byte bParentSecPos) ;
-byte Directory_GetDirEntryInfo(DiskDrive* pDiskDrive, FileSystem_CWD* pCWD, const char* szFileName, unsigned* uiSectorNo, byte* bSectorPos, byte* bDirectoryBuffer) ;
-byte Directory_Change(const char* szFileName, int iDriveID, Process* processAddressSpace) ;
-byte Directory_PresentWorkingDirectory(Process* processAddressSpace, char** uiReturnDirPathAddress) ;
-byte Directory_GetDirEntry(const char* szFileName, Process* processAddressSpace, int iDriveID, FileSystem_DIR_Entry* pDirEntry) ;
-byte Directory_FindFullDirPath(DiskDrive* pDiskDrive, const FileSystem_DIR_Entry* pDirEntry, char* szFullDirPath) ;
-byte Directory_SyncPWD(Process* processAddressSpace) ;
-byte Directory_RawDirEntryRead(DiskDrive* pDiskDrive, unsigned uiSectorID, byte bSecPos, FileSystem_DIR_Entry* pDestDirEntry) ;
-void Directory_CopyDirEntry(FileSystem_DIR_Entry* pDest, FileSystem_DIR_Entry* pSrc) ;
+void Directory_ReadDirEntryInfo(DiskDrive&, const FileSystem_CWD&, const char* szFileName, unsigned& uiSectorNo, byte& bSectorPos, byte* bDirectoryBuffer) ;
+void Directory_Change(const char* szFileName, int iDriveID, Process* processAddressSpace) ;
+void Directory_PresentWorkingDirectory(Process* processAddressSpace, char** uiReturnDirPathAddress) ;
+const FileSystem_DIR_Entry Directory_GetDirEntry(const char* szFileName, Process* processAddressSpace, int iDriveID) ;
+void Directory_FindFullDirPath(DiskDrive* pDiskDrive, const FileSystem_DIR_Entry&, char* szFullDirPath) ;
+void Directory_SyncPWD(Process* processAddressSpace) ;
 
 #endif

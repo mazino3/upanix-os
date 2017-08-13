@@ -19,7 +19,7 @@
 # include <ATACommandManager.h>
 # include <MemConstants.h>
 
-byte ATADrive_Read(ATAPort* pPort, unsigned uiSectorAddress, byte* pBuffer, unsigned uiNoOfSectorsToTransfer)
+void ATADrive_Read(ATAPort* pPort, unsigned uiSectorAddress, byte* pBuffer, unsigned uiNoOfSectorsToTransfer)
 {
 	ATACommand ataCommand ;
 	unsigned uiBytesTransfered = 0 ;
@@ -51,17 +51,15 @@ byte ATADrive_Read(ATAPort* pPort, unsigned uiSectorAddress, byte* pBuffer, unsi
 		ATACommandManager_Queue(&ataCommand) ;
 
 		if(ataCommand.iStatus != ATACommandManager_SUCCESS)
-			return ATADrive_FAILURE ;
+      throw upan::exception(XLOC, "ATA read failed with status code:%d", ataCommand.iStatus);
 	
 		uiSectorAddress++ ;
 		uiBytesTransfered += ataCommand.uiTransferLength ;
 		pBuffer += ataCommand.uiTransferLength ;
 	}
-
-	return ATADrive_SUCCESS ;
 }
 
-byte ATADrive_Write(ATAPort* pPort, unsigned uiSectorAddress, byte* pBuffer, unsigned uiNoOfSectorsToTransfer)
+void ATADrive_Write(ATAPort* pPort, unsigned uiSectorAddress, byte* pBuffer, unsigned uiNoOfSectorsToTransfer)
 {
 	ATACommand ataCommand ;
 	unsigned uiBytesTransfered = 0 ;
@@ -94,12 +92,10 @@ byte ATADrive_Write(ATAPort* pPort, unsigned uiSectorAddress, byte* pBuffer, uns
 		ATACommandManager_Queue(&ataCommand) ;
 
 		if(ataCommand.iStatus != ATACommandManager_SUCCESS)
-			return ATADrive_FAILURE ;
+      throw upan::exception(XLOC, "ATA write failed with status code:%d", ataCommand.iStatus);
 	
 		uiSectorAddress++ ;
 		uiBytesTransfered += ataCommand.uiTransferLength ;
 		pBuffer += ataCommand.uiTransferLength ;
 	}
-
-	return ATADrive_SUCCESS ;
 }

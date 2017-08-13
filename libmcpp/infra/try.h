@@ -23,7 +23,7 @@
 namespace upan {
 
 template <typename LAMBDA>
-upan::result<bool> tryresult(const LAMBDA& lambdaf)
+upan::result<bool> trycall(const LAMBDA& lambdaf)
 {
   try
   {
@@ -33,6 +33,19 @@ upan::result<bool> tryresult(const LAMBDA& lambdaf)
   catch(const upan::exception& e)
   {
     return upan::result<bool>(e.Error());
+  }
+}
+
+template <typename LAMBDA>
+upan::result<typename function_traits<LAMBDA>::return_type> tryreturn(const LAMBDA& lambdaf)
+{
+  try
+  {
+    return upan::good(lambdaf());
+  }
+  catch(const upan::exception& e)
+  {
+    return upan::result<typename function_traits<LAMBDA>::return_type>(e.Error());
   }
 }
 

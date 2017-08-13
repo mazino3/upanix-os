@@ -23,6 +23,17 @@
 
 namespace upan {
 
+template <typename T>
+struct function_traits : function_traits<decltype(&T::operator())>
+{
+};
+
+template <typename R, typename C, typename... A>
+struct function_traits<R(C::*)(A...) const>
+{
+  typedef R return_type;
+};
+
 template <typename Good>
 class result
 {
@@ -69,7 +80,7 @@ class result
     }
 
     template <typename LAMBDA>
-    bool goodMap(const LAMBDA& lambdaf)
+    bool onGood(const LAMBDA& lambdaf)
     {
       if(isBad())
         return false;
@@ -85,7 +96,7 @@ class result
     }
 
     template <typename LAMBDA>
-    bool badMap(const LAMBDA& lambdaf)
+    bool onBad(const LAMBDA& lambdaf)
     {
       if(isGood())
         return false;

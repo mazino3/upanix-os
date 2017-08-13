@@ -115,6 +115,7 @@ class exception
     exception(const upan::string& fileName, unsigned lineNo, const upan::error& err) :
       _fileName(fileName), _lineNo(lineNo), _error(err)
     {
+      _msg = _fileName + ":" + ToString(_lineNo) + " " + _error.Msg();
     }
 
     const upan::string& File() const { return _fileName; }

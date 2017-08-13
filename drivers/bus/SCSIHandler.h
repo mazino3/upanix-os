@@ -333,7 +333,7 @@ SCSIDevice* SCSIHandler_ScanDevice(SCSIHost *pHost, int iChannel, int iDevice, i
 
 byte SCSIHandler_GenericOpen(SCSIDevice* pDevice) ;
 byte SCSIHandler_GenericClose(SCSIDevice* pDevice) ;
-byte SCSIHandler_GenericRead(SCSIDevice* pDevice, unsigned uiStartSector, unsigned uiNumOfSectors, byte* pDataBuffer) ;
-byte SCSIHandler_GenericWrite(SCSIDevice* pDevice, unsigned uiStartSector, unsigned uiNumOfSectors, byte* pDataBuffer) ;
+void SCSIHandler_GenericRead(SCSIDevice* pDevice, unsigned uiStartSector, unsigned uiNumOfSectors, byte* pDataBuffer) ;
+void SCSIHandler_GenericWrite(SCSIDevice* pDevice, unsigned uiStartSector, unsigned uiNumOfSectors, byte* pDataBuffer) ;
 
 #endif

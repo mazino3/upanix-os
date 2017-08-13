@@ -76,17 +76,17 @@ void ProcFileManager_InitForKernel() ;
 
 void ProcFileManager_UnInitialize(Process* processAddressSpace) ;
 
-byte ProcFileManager_GetFD(int* fd) ;
-byte ProcFileManager_AllocateFD(int* fd, const char* szFileName, const byte mode, int iDriveID, const unsigned uiFileSize, unsigned uiStartSectorID) ;
+int ProcFileManager_GetFD() ;
+int ProcFileManager_AllocateFD(const char* szFileName, const byte mode, int iDriveID, const unsigned uiFileSize, unsigned uiStartSectorID) ;
 byte ProcFileManager_FreeFD(int fd) ;
-byte ProcFileManager_UpdateOffset(int fd, int seekType, int iOffset) ;
-byte ProcFileManager_GetOffset(int fd, unsigned* uiOffset) ;
-byte ProcFileManager_GetFDEntry(int fd, ProcFileDescriptor** pFDEntry) ;
-byte ProcFileManager_GetMode(int fd, byte* mode) ;
+void ProcFileManager_UpdateOffset(int fd, int seekType, int iOffset) ;
+uint32_t ProcFileManager_GetOffset(int fd) ;
+ProcFileDescriptor* ProcFileManager_GetFDEntry(int fd) ;
+byte ProcFileManager_GetMode(int fd) ;
 byte ProcFileManager_IsSTDOUT(int fd) ;
 byte ProcFileManager_IsSTDIN(int fd) ;
 byte ProcFileManager_Dup2(int oldFD, int newFD) ;
-byte ProcFileManager_GetRealNonDuppedFD(int dupedFD, int* realFD) ;
+int ProcFileManager_GetRealNonDuppedFD(int dupedFD);
 byte ProcFileManager_InitSTDFile(int StdFD) ;
 
 #endif

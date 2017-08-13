@@ -24,6 +24,7 @@
 #include <DiskCache.h>
 #include <string.h>
 #include <drive.h>
+#include <result.h>
 
 #define DeviceDrive_SUCCESS						0
 #define DeviceDrive_ERR_UNKNOWN_DEVICE_TYPE		1
@@ -36,11 +37,6 @@
 #define	DeviceDrive_ERR_DUPLICATE				8
 #define	DeviceDrive_ERR_NOTFOUND				9
 #define DeviceDrive_FAILURE						10
-
-#define GET_DRIVE_FOR_FS_OPS(DRIVE_ID, ERR) \
-	DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByID(DRIVE_ID, true) ; \
-	if(pDiskDrive == NULL) \
-		return ERR ;
 
 typedef enum
 {
@@ -97,12 +93,12 @@ class DiskDrive
       unsigned uiMaxSectorsInFreePoolCache);
 
   public:
-    byte Mount();
-    byte UnMount();
-    byte Read(unsigned uiStartSector, unsigned uiNoOfSectors, byte* bDataBuffer);
-    byte xRead(byte* bDataBuffer, unsigned uiSector, unsigned uiNoOfSectors);
-    byte Write(unsigned uiStartSector, unsigned uiNoOfSectors, byte* bDataBuffer);
-    byte xWrite(byte* bDataBuffer, unsigned uiSector, unsigned uiNoOfSectors);
+    void Mount();
+    void UnMount();
+    void Read(unsigned uiStartSector, unsigned uiNoOfSectors, byte* bDataBuffer);
+    void xRead(byte* bDataBuffer, unsigned uiSector, unsigned uiNoOfSectors);
+    void Write(unsigned uiStartSector, unsigned uiNoOfSectors, byte* bDataBuffer);
+    void xWrite(byte* bDataBuffer, unsigned uiSector, unsigned uiNoOfSectors);
     byte FlushDirtyCacheSectors(int iCount = -1);
     void ReleaseCache();
     unsigned GetFreeSector();
@@ -136,11 +132,11 @@ class DiskDrive
     static const int MAX_SECTORS_IN_TABLE_CACHE = 2048;
 
   private:
-    byte RawRead(unsigned uiStartSector, unsigned uiNoOfSectors, byte* bDataBuffer);
-    byte RawWrite(unsigned uiStartSector, unsigned uiNoOfSectors, byte* bDataBuffer);
+    void RawRead(unsigned uiStartSector, unsigned uiNoOfSectors, byte* bDataBuffer);
+    void RawWrite(unsigned uiStartSector, unsigned uiNoOfSectors, byte* bDataBuffer);
     bool FlushSector(unsigned uiSectorID, const byte* pBuffer);
     void StartReleaseCacheTask();
-    byte ReadRootDirectory();
+    void ReadRootDirectory();
 
     int          _id;
     upan::string _driveName;
@@ -223,15 +219,15 @@ class DiskDriveManager
       void* device, RawDiskDrive* rawDisk,
       unsigned uiMaxSectorsInFreePoolCache);
     void RemoveEntryByCondition(const DriveRemoveClause& removeClause);
-    DiskDrive* GetByDriveName(const upan::string& szDriveName, bool bCheckMount);
-    DiskDrive* GetByID(int iID, bool bCheckMount);
+    upan::result<DiskDrive*> GetByDriveName(const upan::string& szDriveName, bool bCheckMount);
+    upan::result<DiskDrive*> GetByID(int iID, bool bCheckMount);
     void DisplayList();
     byte Change(const upan::string& szDriveName);
     byte GetList(DriveStat** pDriveList, int* iListSize);
-    byte MountDrive(const upan::string& szDriveName);
-    byte UnMountDrive(const upan::string& szDriveName);
-    byte FormatDrive(const upan::string& szDriveName);
-    byte GetCurrentDriveStat(DriveStat* pDriveStat);
+    void MountDrive(const upan::string& szDriveName);
+    void UnMountDrive(const upan::string& szDriveName);
+    void FormatDrive(const upan::string& szDriveName);
+    void GetCurrentDriveStat(DriveStat* pDriveStat);
 
     RawDiskDrive* CreateRawDisk(const upan::string& name, RAW_DISK_TYPES iType, void* pDevice);
     byte RemoveRawDiskEntry(const upan::string& name);

@@ -68,7 +68,7 @@ static void FileSystem_PopulateRootDirEntry(FileSystem_DIR_Entry* rootDir, unsig
 	rootDir->iUserID = ROOT_USER_ID ;
 }
 
-static void FileSystem_InitFSBootBlock(FileSystem_BootBlock* pFSBootBlock, DiskDrive* pDiskDrive)
+static void FileSystem_InitFSBootBlock(FileSystem_BootBlock* pFSBootBlock, DiskDrive& diskDrive)
 {
 	pFSBootBlock->BPB_jmpBoot[0] = 0xEB ; /****************/
 	pFSBootBlock->BPB_jmpBoot[1] = 0xFE ; /* JMP $ -- ARR */
@@ -77,15 +77,15 @@ static void FileSystem_InitFSBootBlock(FileSystem_BootBlock* pFSBootBlock, DiskD
 	pFSBootBlock->BPB_BytesPerSec = 0x200; // 512 ;
 	pFSBootBlock->BPB_RsvdSecCnt = 2 ;
 
-	if(pDiskDrive->DeviceType() == DEV_FLOPPY)
+  if(diskDrive.DeviceType() == DEV_FLOPPY)
 		pFSBootBlock->BPB_Media  = MEDIA_REMOVABLE ;
 	else
 		pFSBootBlock->BPB_Media  = MEDIA_FIXED ;
 
-	pFSBootBlock->BPB_SecPerTrk = pDiskDrive->SectorsPerTrack();
-	pFSBootBlock->BPB_NumHeads = pDiskDrive->NoOfHeads();
+  pFSBootBlock->BPB_SecPerTrk = diskDrive.SectorsPerTrack();
+  pFSBootBlock->BPB_NumHeads = diskDrive.NoOfHeads();
 	pFSBootBlock->BPB_HiddSec  = 0 ;
-	pFSBootBlock->BPB_TotSec32 = pDiskDrive->SizeInSectors();
+  pFSBootBlock->BPB_TotSec32 = diskDrive.SizeInSectors();
 	
 /*	pFSBootBlock->BPB_FSTableSize ; ---> Calculated */
 	pFSBootBlock->BPB_ExtFlags  = 0x0080 ; 
@@ -103,37 +103,29 @@ static void FileSystem_InitFSBootBlock(FileSystem_BootBlock* pFSBootBlock, DiskD
 
 /**********************************************************************************************/
 
-byte
-FileSystem_GetSectorEntryValue(DiskDrive* pDiskDrive, const unsigned uiSectorID, unsigned* uiSectorEntryValue)
+uint32_t FileSystem_GetSectorEntryValue(DiskDrive* pDiskDrive, const unsigned uiSectorID)
 {
   const FileSystem_BootBlock& fsBootBlock = pDiskDrive->FSMountInfo.GetBootBlock();
 	
   if(uiSectorID > (fsBootBlock.BPB_FSTableSize * fsBootBlock.BPB_BytesPerSec / 4))
-		return FileSystem_ERR_INVALID_CLUSTER_ID ;
+    throw upan::exception(XLOC, "invalid cluster id: %u", uiSectorID);
 
-	RETURN_X_IF_NOT(FSManager_GetSectorEntryValue(pDiskDrive, uiSectorID, uiSectorEntryValue, false), FSManager_SUCCESS, FileSystem_FAILURE) ;
-
-	return FileSystem_SUCCESS ;
+  return FSManager_GetSectorEntryValue(pDiskDrive, uiSectorID, false);
 }
 
-byte
-FileSystem_SetSectorEntryValue(DiskDrive* pDiskDrive, const unsigned uiSectorID, unsigned uiSectorEntryValue)
+void FileSystem_SetSectorEntryValue(DiskDrive* pDiskDrive, const unsigned uiSectorID, unsigned uiSectorEntryValue)
 {
   const FileSystem_BootBlock& fsBootBlock = pDiskDrive->FSMountInfo.GetBootBlock();
 	
   if(uiSectorID > (fsBootBlock.BPB_FSTableSize * fsBootBlock.BPB_BytesPerSec / 4))
-		return FileSystem_ERR_INVALID_CLUSTER_ID ;
+    throw upan::exception(XLOC, "invalid cluster id: %u", uiSectorID);
 	
-	RETURN_X_IF_NOT(FSManager_SetSectorEntryValue(pDiskDrive, uiSectorID, uiSectorEntryValue, false), FSManager_SUCCESS, FileSystem_FAILURE) ;
-
-	return FileSystem_SUCCESS ;
+  FSManager_SetSectorEntryValue(pDiskDrive, uiSectorID, uiSectorEntryValue, false);
 }
 
-byte FileSystem_Format(DiskDrive* pDiskDrive)
+void FileSystem_Format(DiskDrive& diskDrive)
 {
-	byte bStatus ;
-
-	if(pDiskDrive->DeviceType() == DEV_FLOPPY)
+  if(diskDrive.DeviceType() == DEV_FLOPPY)
 	{
 ;//		RETURN_IF_NOT(bStatus, Floppy_Format(pDiskDrive->driveNo), Floppy_SUCCESS) ;
 	}
@@ -143,12 +135,12 @@ byte FileSystem_Format(DiskDrive* pDiskDrive)
 	FileSystem_BootBlock* pFSBootBlock = (FileSystem_BootBlock*)(bFSBootBlockBuffer) ;
 
 	/************************ FAT Boot Block [START] *******************************/
-	FileSystem_InitFSBootBlock(((FileSystem_BootBlock*)bFSBootBlockBuffer), pDiskDrive) ;
+  FileSystem_InitFSBootBlock(((FileSystem_BootBlock*)bFSBootBlockBuffer), diskDrive) ;
 	
 	bFSBootBlockBuffer[510] = 0x55 ; /* BootSector Signature */
 	bFSBootBlockBuffer[511] = 0xAA ;
 
-	RETURN_IF_NOT(bStatus, pDiskDrive->Write(1, 1, bFSBootBlockBuffer), DeviceDrive_SUCCESS) ;
+  diskDrive.Write(1, 1, bFSBootBlockBuffer);
 	/************************* FAT Boot Block [END] **************************/
 	
 	/*********************** FAT Table [START] *************************************/
@@ -162,7 +154,7 @@ byte FileSystem_Format(DiskDrive* pDiskDrive)
 		if(i == 0)
 			((unsigned*)&bSectorBuffer)[0] = EOC ;
 		
-		RETURN_IF_NOT(bStatus, pDiskDrive->Write(i + pFSBootBlock->BPB_RsvdSecCnt + 1, 1, bSectorBuffer), DeviceDrive_SUCCESS) ;
+    diskDrive.Write(i + pFSBootBlock->BPB_RsvdSecCnt + 1, 1, bSectorBuffer);
 
 		if(i == 0)
 			((unsigned*)&bSectorBuffer)[0] = 0 ;
@@ -170,38 +162,29 @@ byte FileSystem_Format(DiskDrive* pDiskDrive)
 	/*************************** FAT Table [END] **************************************/
 
 	/*************************** Root Directory [START] *******************************/
-  pDiskDrive->FSMountInfo.InitBootBlock(pFSBootBlock);
+  diskDrive.FSMountInfo.InitBootBlock(pFSBootBlock);
 
-  unsigned uiSec = pDiskDrive->FSMountInfo.GetRealSectorNumber(0);
+  unsigned uiSec = diskDrive.FSMountInfo.GetRealSectorNumber(0);
 
 	FileSystem_PopulateRootDirEntry(((FileSystem_DIR_Entry*)&bSectorBuffer), uiSec) ;
 	
-	RETURN_IF_NOT(bStatus, pDiskDrive->Write(uiSec, 1, bSectorBuffer), DeviceDrive_SUCCESS) ;
+  diskDrive.Write(uiSec, 1, bSectorBuffer);
 	/*************************** Root Directory [END] ********************************/
 
-	pDiskDrive->Mounted(false);
-
-	return FileSystem_SUCCESS ;
+  diskDrive.Mounted(false);
 }
 
-byte FileSystem_AllocateSector(DiskDrive* pDiskDrive, unsigned* uiFreeSectorID)
+uint32_t FileSystem_AllocateSector(DiskDrive* pDiskDrive)
 {
-	RETURN_X_IF_NOT(FSManager_AllocateSector(pDiskDrive, uiFreeSectorID), FSManager_SUCCESS, FileSystem_FAILURE) ;
-
-	return FileSystem_SUCCESS ;
+  return FSManager_AllocateSector(pDiskDrive);
 }
 
-byte FileSystem_DeAllocateSector(DiskDrive* pDiskDrive, unsigned uiCurrentSectorID, unsigned* uiNextSectorID)
+uint32_t FileSystem_DeAllocateSector(DiskDrive* pDiskDrive, unsigned uiCurrentSectorID)
 {
-	byte bStatus ;
-
-	RETURN_IF_NOT(bStatus, FileSystem_GetSectorEntryValue(pDiskDrive, uiCurrentSectorID, uiNextSectorID), FileSystem_SUCCESS) ;
-
-	RETURN_IF_NOT(bStatus, FileSystem_SetSectorEntryValue(pDiskDrive, uiCurrentSectorID, 0), FileSystem_SUCCESS) ;
-
+  auto uiNextSectorID = FileSystem_GetSectorEntryValue(pDiskDrive, uiCurrentSectorID);
+  FileSystem_SetSectorEntryValue(pDiskDrive, uiCurrentSectorID, 0);
   pDiskDrive->FSMountInfo.AddToFreePoolCache(uiCurrentSectorID);
-
-	return FileSystem_SUCCESS ;
+  return uiNextSectorID;
 }
 
 unsigned FileSystem_GetSizeForTableCache(unsigned uiNoOfSectorsInTableCache)

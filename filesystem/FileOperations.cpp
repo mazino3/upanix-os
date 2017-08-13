@@ -29,20 +29,18 @@
 # include <Display.h>
 # include <stdio.h>
 # include <list.h>
+# include <try.h>
 
 /************************************************************************************************************/
-static byte FileOperations_ValidateAndGetFileAttr(unsigned short usFileType, unsigned short usMode, 
-	unsigned short* usFileAttr)
+static upan::result<unsigned short> FileOperations_ValidateAndGetFileAttr(unsigned short usFileType, unsigned short usMode)
 {
 	usMode = FILE_PERM(usMode) ;
 	usFileType = FILE_TYPE(usFileType) ;
 
 	if(!(usFileType == ATTR_TYPE_FILE || usFileType == ATTR_TYPE_DIRECTORY))
-		return FileOperations_ERR_INVALID_FILE_ATTR ;
+    return upan::result<unsigned short>::bad("invalid file attribute: %x", usFileType);
 
-	*usFileAttr = (usFileType | usMode) ;
-
-	return FileOperations_SUCCESS ;
+  return upan::good((unsigned short)(usFileType | usMode));
 }
 
 static byte FileOperations_HasPermission(int userType, unsigned short usFileAttr, byte mode)
@@ -119,7 +117,7 @@ static void FileOperations_ParseFilePathWithDrive(const char* szFileNameWithDriv
 	}
 	else
 	{
-		DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByDriveName(szDriveName, false) ;
+    DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByDriveName(szDriveName, false).goodValueOrElse(nullptr);
 		if(pDiskDrive == NULL)
 			*pDriveID = ROOT_DRIVE_ID ;
 		else
@@ -128,43 +126,38 @@ static void FileOperations_ParseFilePathWithDrive(const char* szFileNameWithDriv
 }
 
 /************************************************************************************************************/
-byte FileOperations_Open(int* fd, const char* szFileName, const byte mode)
+int FileOperations_Open(const char* szFileName, const byte mode)
 {
 	int iDriveID ;
 	char szFile[100] ;
 	FileOperations_ParseFilePathWithDrive(szFileName, szFile, (unsigned*)&iDriveID) ;
 
-	byte bStatus ;
-	FileSystem_DIR_Entry dirEntry ;
 	Process* pPAS = &ProcessManager::Instance().GetCurrentPAS() ;
 
-	GET_DRIVE_FOR_FS_OPS(iDriveID, Directory_FAILURE) ;
+  DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByID(iDriveID, true).goodValueOrThrow(XLOC);
 
-	RETURN_IF_NOT(bStatus, Directory_GetDirEntry(szFile, pPAS, iDriveID, &dirEntry), Directory_SUCCESS)
+  FileSystem_DIR_Entry dirEntry = Directory_GetDirEntry(szFile, pPAS, iDriveID);
 
 	unsigned short usFileAttr = dirEntry.usAttribute ;
 	if(FILE_TYPE(usFileAttr) != ATTR_TYPE_FILE)
-		return FileOperations_ERR_NOT_EXISTS;
+    throw upan::exception(XLOC, "%s file doesn't exist", szFileName);
 
 	int userType = FileOperations_GetUserType(pPAS->bIsKernelProcess, pPAS->iUserID, dirEntry.iUserID) ;
 
 	if(!FileOperations_HasPermission(userType, usFileAttr, mode))
-		return FileOperations_ERR_NO_PERM ;
+    throw upan::exception(XLOC, "insufficient permission to open file %s", szFileName);
 
 	if( (mode & O_TRUNC) )
 	{
-		RETURN_IF_NOT(bStatus, FileOperations_Delete(szFileName), FileOperations_SUCCESS) ;
-		RETURN_IF_NOT(bStatus, FileOperations_Create(szFileName, FILE_TYPE(dirEntry.usAttribute), FILE_PERM(dirEntry.usAttribute)), 
-					FileOperations_SUCCESS) ;
-		RETURN_IF_NOT(bStatus, Directory_GetDirEntry(szFile, pPAS, iDriveID, &dirEntry), Directory_SUCCESS)
+    FileOperations_Delete(szFileName);
+    FileOperations_Create(szFileName, FILE_TYPE(dirEntry.usAttribute), FILE_PERM(dirEntry.usAttribute));
+    dirEntry = Directory_GetDirEntry(szFile, pPAS, iDriveID);
 	}
 
 	char szFullFilePath[256] ;
-	RETURN_IF_NOT(bStatus, Directory_FindFullDirPath(pDiskDrive, &dirEntry, szFullFilePath), Directory_SUCCESS) ;
+  Directory_FindFullDirPath(pDiskDrive, dirEntry, szFullFilePath);
 
-	RETURN_X_IF_NOT(ProcFileManager_AllocateFD(fd, szFullFilePath, mode, iDriveID, dirEntry.uiSize, dirEntry.uiStartSectorID), ProcFileManager_SUCCESS, FileOperations_FAILURE) ;
-
-	return FileOperations_SUCCESS ;
+  return ProcFileManager_AllocateFD(szFullFilePath, mode, iDriveID, dirEntry.uiSize, dirEntry.uiStartSectorID);
 }
 
 byte FileOperations_Close(int fd)
@@ -179,19 +172,16 @@ bool FileOperations_ReadLine(int fd, upan::string& line)
   const int CHUNK_SIZE = 64;
   char buffer[CHUNK_SIZE + 1];
   upan::list<upan::string> buffers;
-  unsigned readLen;
   int line_size = 0;
   while(true)
   {
-    byte ret = FileOperations_Read(fd, buffer, CHUNK_SIZE, &readLen);
+    int readLen = FileOperations_Read(fd, buffer, CHUNK_SIZE);
     
-    if(ret == Directory_ERR_EOF)
+    if(readLen == 0)
       break;
-    else if(ret != FileOperations_SUCCESS)
-      throw upan::exception(XLOC, "error reading file fd %d", fd);
 
     //find new line
-    unsigned i = 0;
+    int i = 0;
     for(i = 0; i < readLen; ++i)
       if(buffer[i] == '\n')
         break;
@@ -215,18 +205,17 @@ bool FileOperations_ReadLine(int fd, upan::string& line)
   return true;
 }
 
-byte FileOperations_Read(int fd, char* buffer, int len, unsigned* pReadLen)
+int FileOperations_Read(int fd, char* buffer, int len)
 {
-	RETURN_X_IF_NOT(ProcFileManager_GetRealNonDuppedFD(fd, &fd), ProcFileManager_SUCCESS, FileOperations_FAILURE) ;
+  fd = ProcFileManager_GetRealNonDuppedFD(fd);
 
-	ProcFileDescriptor* pFDEntry ;
 	Process* pPAS = &ProcessManager::Instance().GetCurrentPAS() ;
 
-	RETURN_X_IF_NOT(ProcFileManager_GetFDEntry(fd, &pFDEntry), ProcFileManager_SUCCESS, FileOperations_FAILURE) ;
+  ProcFileDescriptor* pFDEntry = ProcFileManager_GetFDEntry(fd);
 
 	int iDriveID = pFDEntry->iDriveID ;
 
-	GET_DRIVE_FOR_FS_OPS(iDriveID, Directory_FAILURE) ;
+  DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByID(iDriveID, true).goodValueOrThrow(XLOC);
 	FileSystem_CWD CWD ;
 	if(pPAS->iDriveID == iDriveID)
 	{
@@ -241,19 +230,18 @@ byte FileOperations_Read(int fd, char* buffer, int len, unsigned* pReadLen)
 		CWD.bSectorEntryPosition = pDiskDrive->FSMountInfo.FSpwd.bSectorEntryPosition ;
 	}
 
-	byte bStatus ;
-	RETURN_IF_NOT(bStatus, Directory_FileRead(pDiskDrive, &CWD, pFDEntry, (byte*)buffer, len, pReadLen), Directory_SUCCESS) ;
+  int readLen = Directory_FileRead(pDiskDrive, &CWD, pFDEntry, (byte*)buffer, len);
 
-	RETURN_IF_NOT(bStatus, FileOperations_UpdateTime(pFDEntry->szFileName, iDriveID, DIR_ACCESS_TIME), FileOperations_SUCCESS) ;
+  FileOperations_UpdateTime(pFDEntry->szFileName, iDriveID, DIR_ACCESS_TIME);
 
-	pFDEntry->uiOffset += (*pReadLen) ;
+  pFDEntry->uiOffset += readLen;
 
-	return FileOperations_SUCCESS ;
+  return readLen;
 }
 
-byte FileOperations_Write(int fd, const char* buffer, int len, int* pWriteLen)
+void FileOperations_Write(int fd, const char* buffer, int len, int* pWriteLen)
 {
-	RETURN_X_IF_NOT(ProcFileManager_GetRealNonDuppedFD(fd, &fd), ProcFileManager_SUCCESS, FileOperations_FAILURE) ;
+  fd = ProcFileManager_GetRealNonDuppedFD(fd);
 
 	*pWriteLen = -1 ;
 
@@ -261,20 +249,20 @@ byte FileOperations_Write(int fd, const char* buffer, int len, int* pWriteLen)
 	{
 		KC::MDisplay().nMessage(buffer, len, Display::WHITE_ON_BLACK()) ;
 		*pWriteLen = len ;
-		return FileOperations_SUCCESS ;
+    return;
 	}
 
-	ProcFileDescriptor* pFDEntry ;
-	RETURN_X_IF_NOT(ProcFileManager_GetFDEntry(fd, &pFDEntry), ProcFileManager_SUCCESS, FileOperations_FAILURE) ;
+  ProcFileDescriptor* pFDEntry = ProcFileManager_GetFDEntry(fd);
 
 	Process* pPAS = &ProcessManager::Instance().GetCurrentPAS() ;
 
 	if( !(pFDEntry->mode & O_WRONLY || pFDEntry->mode & O_RDWR || pFDEntry->mode & O_APPEND) )
-		return FileOperations_ERR_NO_WRITE_PERM ;
+    throw upan::exception(XLOC, "insufficient permission to write file fd: %d", fd);
 
 	int iDriveID = pFDEntry->iDriveID ;
 
-	GET_DRIVE_FOR_FS_OPS(iDriveID, Directory_FAILURE) ;
+  DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByID(iDriveID, true).goodValueOrThrow(XLOC);
+
 	FileSystem_CWD CWD ;
 	if(pPAS->iDriveID == iDriveID)
 	{
@@ -297,7 +285,7 @@ byte FileOperations_Write(int fd, const char* buffer, int len, int* pWriteLen)
 	{
 		n = (uiIncLen > uiLimit) ? uiLimit : uiIncLen ;
 		
-		RETURN_X_IF_NOT(Directory_FileWrite(pDiskDrive, &CWD, pFDEntry, (byte*)buffer, n), Directory_SUCCESS, FileOperations_FAILURE) ;
+    Directory_FileWrite(pDiskDrive, &CWD, pFDEntry, (byte*)buffer, n);
 
 		pFDEntry->uiOffset += n ;
 
@@ -307,14 +295,12 @@ byte FileOperations_Write(int fd, const char* buffer, int len, int* pWriteLen)
 			break ;
 	}
 
-	RETURN_X_IF_NOT(FileOperations_UpdateTime(pFDEntry->szFileName, iDriveID, DIR_ACCESS_TIME | DIR_MODIFIED_TIME), FileOperations_SUCCESS, FileOperations_FAILURE) ;
+  FileOperations_UpdateTime(pFDEntry->szFileName, iDriveID, DIR_ACCESS_TIME | DIR_MODIFIED_TIME);
 	
 	*pWriteLen = len ;
-
-	return FileOperations_SUCCESS ;
 }
 
-byte FileOperations_Create(const char* szFilePath, unsigned short usFileType, unsigned short usMode)
+void FileOperations_Create(const char* szFilePath, unsigned short usFileType, unsigned short usMode)
 {
 	int iDriveID ;
 	char szFile[100] ;
@@ -322,10 +308,7 @@ byte FileOperations_Create(const char* szFilePath, unsigned short usFileType, un
 
 	Process* pPAS = &ProcessManager::Instance().GetCurrentPAS() ;
 
-	unsigned short usFileAttr ;
-	byte bStatus ;
-
-	RETURN_IF_NOT(bStatus, FileOperations_ValidateAndGetFileAttr(usFileType, usMode, &usFileAttr), FileOperations_SUCCESS) ;
+  const unsigned short usFileAttr = FileOperations_ValidateAndGetFileAttr(usFileType, usMode).goodValueOrThrow(XLOC);
 
 	byte bParentDirectoryBuffer[512] ;
 	char szDirName[33] ;
@@ -333,8 +316,7 @@ byte FileOperations_Create(const char* szFilePath, unsigned short usFileType, un
 	unsigned uiParentSectorNo ;
 	byte bParentSectorPos ;
 
-	RETURN_IF_NOT(bStatus, Directory_GetDirEntryForCreateDelete(pPAS, iDriveID, szFile,
-							szDirName, &uiParentSectorNo, &bParentSectorPos, bParentDirectoryBuffer), Directory_SUCCESS) ;
+  Directory_GetDirEntryForCreateDelete(pPAS, iDriveID, szFile, szDirName, uiParentSectorNo, bParentSectorPos, bParentDirectoryBuffer);
 
 	CWD.pDirEntry = ((FileSystem_DIR_Entry*)bParentDirectoryBuffer) + bParentSectorPos ;
 	CWD.uiSectorNo = uiParentSectorNo ;
@@ -344,14 +326,12 @@ byte FileOperations_Create(const char* szFilePath, unsigned short usFileType, un
 	int userType = FileOperations_GetUserType(pPAS->bIsKernelProcess, pPAS->iUserID, CWD.pDirEntry->iUserID) ;
 
 	if(!FileOperations_HasPermission(userType, usParentDirAttr, O_RDWR))
-		return FileOperations_ERR_NO_PERM ;
+    throw upan::exception(XLOC, "insufficient permission to create file: %s", szFilePath);
 
-	RETURN_X_IF_NOT(Directory_Create(pPAS, iDriveID, bParentDirectoryBuffer, &CWD, szDirName, usFileAttr), Directory_SUCCESS, FileOperations_FAILURE) ;
-
-	return FileOperations_SUCCESS ;
+  Directory_Create(pPAS, iDriveID, bParentDirectoryBuffer, &CWD, szDirName, usFileAttr);
 }
 
-byte FileOperations_Delete(const char* szFilePath)
+void FileOperations_Delete(const char* szFilePath)
 {
 	int iDriveID ;
 	char szFile[100] ;
@@ -359,15 +339,13 @@ byte FileOperations_Delete(const char* szFilePath)
 
 	Process* pPAS = &ProcessManager::Instance().GetCurrentPAS() ;
 
-	byte bStatus ;
 	byte bParentDirectoryBuffer[512] ;
 	char szDirName[33] ;
 	FileSystem_CWD CWD ;
 	unsigned uiParentSectorNo ;
 	byte bParentSectorPos ;
 
-	RETURN_IF_NOT(bStatus, Directory_GetDirEntryForCreateDelete(pPAS, iDriveID, szFile,
-							szDirName, &uiParentSectorNo, &bParentSectorPos, bParentDirectoryBuffer), Directory_SUCCESS) ;
+  Directory_GetDirEntryForCreateDelete(pPAS, iDriveID, szFile, szDirName, uiParentSectorNo, bParentSectorPos, bParentDirectoryBuffer);
 
 	CWD.pDirEntry = ((FileSystem_DIR_Entry*)bParentDirectoryBuffer) + bParentSectorPos ;
 	CWD.uiSectorNo = uiParentSectorNo ;
@@ -377,78 +355,71 @@ byte FileOperations_Delete(const char* szFilePath)
 	int userType = FileOperations_GetUserType(pPAS->bIsKernelProcess, pPAS->iUserID, CWD.pDirEntry->iUserID) ;
 
 	if(!FileOperations_HasPermission(userType, usParentDirAttr, O_RDWR))
-		return FileOperations_ERR_NO_PERM ;
+    throw upan::exception(XLOC, "insufficient permission to delete file: %s", szFilePath);
 
-	FileSystem_DIR_Entry fileDirEntry ;
-
-	RETURN_IF_NOT(bStatus, FileOperations_GetDirEntry(szFilePath, &fileDirEntry), FileOperations_SUCCESS) ;
+  const FileSystem_DIR_Entry& fileDirEntry = FileOperations_GetDirEntry(szFilePath);
 
 	if(FileOperations_GetUserType(pPAS->bIsKernelProcess, pPAS->iUserID, fileDirEntry.iUserID) != USER_OWNER)
-		return FileOperations_ERR_NO_PERM ;
+    throw upan::exception(XLOC, "insufficient permission to delete file: %s", szFilePath);
 
-	RETURN_X_IF_NOT(Directory_Delete(pPAS, iDriveID, bParentDirectoryBuffer, &CWD, szDirName), Directory_SUCCESS, 
-		FileOperations_FAILURE) ;
-
-	return FileOperations_SUCCESS ;
+  Directory_Delete(pPAS, iDriveID, bParentDirectoryBuffer, &CWD, szDirName);
 }
 
-byte FileOperations_Exists(const char* szFileName, unsigned short usFileType)
+bool FileOperations_Exists(const char* szFileName, unsigned short usFileType)
 {
-	int iDriveID ;
-	char szFile[100] ;
-	FileOperations_ParseFilePathWithDrive(szFileName, szFile, (unsigned*)&iDriveID) ;
+  try
+  {
+    int iDriveID ;
+    char szFile[100] ;
+    FileOperations_ParseFilePathWithDrive(szFileName, szFile, (unsigned*)&iDriveID) ;
 
-	FileSystem_DIR_Entry dirEntry ;
-	Process* pPAS = &ProcessManager::Instance().GetCurrentPAS() ;
+    Process* pPAS = &ProcessManager::Instance().GetCurrentPAS() ;
 
-	byte bStatus ;
-	RETURN_IF_NOT(bStatus, Directory_GetDirEntry(szFile, pPAS, iDriveID, &dirEntry), Directory_SUCCESS)
-
-	if((dirEntry.usAttribute & usFileType) != usFileType)
-		return FileOperations_ERR_NOT_EXISTS ;
-
-	return FileOperations_SUCCESS ;
+    const FileSystem_DIR_Entry dirEntry = Directory_GetDirEntry(szFile, pPAS, iDriveID);
+    if((dirEntry.usAttribute & usFileType) != usFileType)
+      return false;
+  }
+  catch(const upan::exception& ex)
+  {
+    ex.Print();
+    return false;
+  }
+  return true;
 }
 
-byte FileOperations_Seek(int fd, int iOffset, int seekType)
+void FileOperations_Seek(int fd, int iOffset, int seekType)
 {
-	byte bStatus ;
-	RETURN_IF_NOT(bStatus, ProcFileManager_UpdateOffset(fd, seekType, iOffset), ProcFileManager_SUCCESS) ;
-	return FileOperations_SUCCESS ;
+  ProcFileManager_UpdateOffset(fd, seekType, iOffset);
 }
 
-byte FileOperations_GetOffset(int fd, unsigned* uiOffset)
+uint32_t FileOperations_GetOffset(int fd)
 {
-	byte bStatus ;
-	RETURN_IF_NOT(bStatus, ProcFileManager_GetOffset(fd, uiOffset), ProcFileManager_SUCCESS) ;
-	return FileOperations_SUCCESS ;
+  return ProcFileManager_GetOffset(fd);
 }
 
-byte FileOperations_GetCWD(char* szPathBuf, int iBufSize)
+void FileOperations_GetCWD(char* szPathBuf, int iBufSize)
 {
-	byte bStatus ;
 	FileSystem_PresentWorkingDirectory* pPWD = (FileSystem_PresentWorkingDirectory*)&(ProcessManager::Instance().GetCurrentPAS().processPWD) ;
 	int iDriveID = ProcessManager::Instance().GetCurrentPAS().iDriveID ;
 
-	GET_DRIVE_FOR_FS_OPS(iDriveID, Directory_FAILURE) ;
+  DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByID(iDriveID, true).goodValueOrThrow(XLOC);
 
 	char szFullFilePath[256] ;
-	RETURN_IF_NOT(bStatus, Directory_FindFullDirPath(pDiskDrive, &pPWD->DirEntry, szFullFilePath), Directory_SUCCESS) ;
+  Directory_FindFullDirPath(pDiskDrive, pPWD->DirEntry, szFullFilePath);
 
 	if(strlen(szFullFilePath) > iBufSize)
-		return FileOperations_FAILURE ;
+    throw upan::exception(XLOC, "%d buf-size is smaller than path size %d", iBufSize, strlen(szFullFilePath));
 
 	strcpy(szPathBuf, szFullFilePath);
-	return FileOperations_SUCCESS ;
 }
 
-byte FileOperations_GetDirEntry(const char* szFileName, FileSystem_DIR_Entry* pDirEntry)
+const FileSystem_DIR_Entry FileOperations_GetDirEntry(const char* szFileName)
 {
 	int iDriveID ;
 	char szFile[100] ;
 	FileOperations_ParseFilePathWithDrive(szFileName, szFile, (unsigned*)&iDriveID) ;
 
-	GET_DRIVE_FOR_FS_OPS(iDriveID, Directory_FAILURE) ;
+  DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByID(iDriveID, true).goodValueOrThrow(XLOC);
 
 	FileSystem_CWD CWD ;
 	if(iDriveID == ProcessManager::Instance().GetCurrentPAS().iDriveID)
@@ -469,16 +440,12 @@ byte FileOperations_GetDirEntry(const char* szFileName, FileSystem_DIR_Entry* pD
 	byte bSectorPos ;
 	byte bDirectoryBuffer[512] ;
 	
-	RETURN_X_IF_NOT(Directory_GetDirEntryInfo(pDiskDrive, &CWD, szFile, &uiSectorNo, &bSectorPos, bDirectoryBuffer), Directory_SUCCESS, FileOperations_FAILURE) ;
+  Directory_ReadDirEntryInfo(*pDiskDrive, CWD, szFile, uiSectorNo, bSectorPos, bDirectoryBuffer);
 
-	FileSystem_DIR_Entry* pSrcDirEntry = &((FileSystem_DIR_Entry*)bDirectoryBuffer)[bSectorPos] ;
-
-	MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)pSrcDirEntry,	MemUtil_GetDS(), (unsigned)pDirEntry, sizeof(FileSystem_DIR_Entry)) ;
-
-	return FileOperations_SUCCESS ;
+  return ((FileSystem_DIR_Entry*)bDirectoryBuffer)[bSectorPos] ;
 }
 
-byte FileOperations_GetStat(const char* szFileName, int iDriveID, FileSystem_FileStat* pFileStat)
+const FileSystem_FileStat FileOperations_GetStat(const char* szFileName, int iDriveID)
 {
 	char szFile[100] ;
 	if(iDriveID == FROM_FILE)
@@ -490,7 +457,7 @@ byte FileOperations_GetStat(const char* szFileName, int iDriveID, FileSystem_Fil
 		strcpy(szFile, szFileName) ;
 	}
 
-	GET_DRIVE_FOR_FS_OPS(iDriveID, Directory_FAILURE) ;
+  DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByID(iDriveID, true).goodValueOrThrow(XLOC);
 
 	FileSystem_CWD CWD ;
 
@@ -513,46 +480,44 @@ byte FileOperations_GetStat(const char* szFileName, int iDriveID, FileSystem_Fil
 	byte bDirectoryBuffer[512] ;
 	
 	printf("\n Debug... Searching: %s", szFile) ;
-	RETURN_X_IF_NOT(Directory_GetDirEntryInfo(pDiskDrive, &CWD, szFile, &uiSectorNo, &bSectorPos, bDirectoryBuffer), Directory_SUCCESS, FileOperations_FAILURE) ;
+  Directory_ReadDirEntryInfo(*pDiskDrive, CWD, szFile, uiSectorNo, bSectorPos, bDirectoryBuffer);
 
 	FileSystem_DIR_Entry* pSrcDirEntry = &((FileSystem_DIR_Entry*)bDirectoryBuffer)[bSectorPos] ;
 
-	pFileStat->st_dev = pDiskDrive->DriveNumber();
-	pFileStat->st_mode = pSrcDirEntry->usAttribute ;
-	pFileStat->st_uid = pSrcDirEntry->iUserID ;
-	pFileStat->st_size = pSrcDirEntry->uiSize ;
-	pFileStat->st_atime = pSrcDirEntry->AccessedTime ;
-	pFileStat->st_mtime = pSrcDirEntry->ModifiedTime ;
-	pFileStat->st_ctime = pSrcDirEntry->CreatedTime ;
+  FileSystem_FileStat fileStat;
 
-	pFileStat->st_blksize = 512 ;
-	pFileStat->st_blocks = (pSrcDirEntry->uiSize / 512) + ((pSrcDirEntry->uiSize % 512) ? 1 : 0 ) ;
+  fileStat.st_dev = pDiskDrive->DriveNumber();
+  fileStat.st_mode = pSrcDirEntry->usAttribute ;
+  fileStat.st_uid = pSrcDirEntry->iUserID ;
+  fileStat.st_size = pSrcDirEntry->uiSize ;
+  fileStat.st_atime = pSrcDirEntry->AccessedTime ;
+  fileStat.st_mtime = pSrcDirEntry->ModifiedTime ;
+  fileStat.st_ctime = pSrcDirEntry->CreatedTime ;
 
-	pFileStat->st_rdev = 0 ;
-	pFileStat->st_gid = 1 ;
-	pFileStat->st_nlink = 1 ;
-	pFileStat->st_ino = 0 ;
+  fileStat.st_blksize = 512 ;
+  fileStat.st_blocks = (pSrcDirEntry->uiSize / 512) + ((pSrcDirEntry->uiSize % 512) ? 1 : 0 ) ;
 
-	return FileOperations_SUCCESS ;
+  fileStat.st_rdev = 0 ;
+  fileStat.st_gid = 1 ;
+  fileStat.st_nlink = 1 ;
+  fileStat.st_ino = 0 ;
+
+  return fileStat;
 }
 
-byte FileOperations_GetStatFD(int iFD, FileSystem_FileStat* pFileStat)
+const FileSystem_FileStat FileOperations_GetStatFD(int iFD)
 {
-	ProcFileDescriptor* pFDEntry ;
-
-	RETURN_X_IF_NOT(ProcFileManager_GetRealNonDuppedFD(iFD, &iFD), ProcFileManager_SUCCESS, FileOperations_FAILURE) ;
-
-	RETURN_X_IF_NOT(ProcFileManager_GetFDEntry(iFD, &pFDEntry), ProcFileManager_SUCCESS, FileOperations_FAILURE) ;
-
-	return FileOperations_GetStat(pFDEntry->szFileName, pFDEntry->iDriveID, pFileStat) ;
+  iFD = ProcFileManager_GetRealNonDuppedFD(iFD);
+  const ProcFileDescriptor* pFDEntry = ProcFileManager_GetFDEntry(iFD);
+  return FileOperations_GetStat(pFDEntry->szFileName, pFDEntry->iDriveID);
 }
 
-byte FileOperations_UpdateTime(const char* szFileName, int iDriveID, byte bTimeType)
+void FileOperations_UpdateTime(const char* szFileName, int iDriveID, byte bTimeType)
 {
 	if(iDriveID == CURRENT_DRIVE)
 		iDriveID = ProcessManager::Instance().GetCurrentPAS().iDriveID ;
 
-	GET_DRIVE_FOR_FS_OPS(iDriveID, Directory_FAILURE) ;
+  DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByID(iDriveID, true).goodValueOrThrow(XLOC);
 
 	FileSystem_CWD CWD ;
 	if(iDriveID == ProcessManager::Instance().GetCurrentPAS().iDriveID)
@@ -573,7 +538,7 @@ byte FileOperations_UpdateTime(const char* szFileName, int iDriveID, byte bTimeT
 	byte bSectorPos ;
 	byte bDirectoryBuffer[512] ;
 	
-	RETURN_X_IF_NOT(Directory_GetDirEntryInfo(pDiskDrive, &CWD, szFileName, &uiSectorNo, &bSectorPos, bDirectoryBuffer), Directory_SUCCESS, FileOperations_FAILURE) ;
+  Directory_ReadDirEntryInfo(*pDiskDrive, CWD, szFileName, uiSectorNo, bSectorPos, bDirectoryBuffer);
 
 	FileSystem_DIR_Entry* pSrcDirEntry = &((FileSystem_DIR_Entry*)bDirectoryBuffer)[bSectorPos] ;
 	if(bTimeType & DIR_ACCESS_TIME)
@@ -582,26 +547,20 @@ byte FileOperations_UpdateTime(const char* szFileName, int iDriveID, byte bTimeT
 	if(bTimeType & DIR_MODIFIED_TIME)
 		SystemUtil_GetTimeOfDay(&(pSrcDirEntry->ModifiedTime)) ;
 
-	RETURN_X_IF_NOT(pDiskDrive->xWrite(bDirectoryBuffer, uiSectorNo, 1), DeviceDrive_SUCCESS, FileOperations_FAILURE);
-
-	return FileOperations_SUCCESS ;
+  pDiskDrive->xWrite(bDirectoryBuffer, uiSectorNo, 1);
 }
 
-byte FileOperations_GetFileOpenMode(int fd, byte* mode)
+byte FileOperations_GetFileOpenMode(int fd)
 {
-	byte bStatus ;
-	RETURN_X_IF_NOT(ProcFileManager_GetRealNonDuppedFD(fd, &fd), ProcFileManager_SUCCESS, FileOperations_FAILURE) ;
-	RETURN_IF_NOT(bStatus, ProcFileManager_GetMode(fd, mode), ProcFileManager_SUCCESS) ;
-	return FileOperations_SUCCESS ;
+  return ProcFileManager_GetMode(ProcFileManager_GetRealNonDuppedFD(fd));
 }
 
-byte FileOperations_SyncPWD()
+void FileOperations_SyncPWD()
 {
-	RETURN_X_IF_NOT(Directory_SyncPWD(&ProcessManager::Instance().GetCurrentPAS()), Directory_SUCCESS, FileOperations_FAILURE) ;
-	return FileOperations_SUCCESS ;
+  Directory_SyncPWD(&ProcessManager::Instance().GetCurrentPAS());
 }
 
-byte FileOperations_ChangeDir(const char* szFileName)
+void FileOperations_ChangeDir(const char* szFileName)
 {
 	int iDriveID ;
 	char szFile[100] ;
@@ -609,12 +568,10 @@ byte FileOperations_ChangeDir(const char* szFileName)
 
 	Process* pPAS = &ProcessManager::Instance().GetCurrentPAS() ;
 	
-	RETURN_X_IF_NOT(Directory_Change(szFile, iDriveID, pPAS), Directory_SUCCESS, FileOperations_FAILURE) ;
-
-	return FileOperations_SUCCESS ;
+  Directory_Change(szFile, iDriveID, pPAS);
 }
 
-byte FileOperations_GetDirectoryContent(const char* szPathAddress, FileSystem_DIR_Entry** pDirList, int* iListSize)
+void FileOperations_GetDirectoryContent(const char* szPathAddress, FileSystem_DIR_Entry** pDirList, int* iListSize)
 {
 	int iDriveID ;
 	char szPath[100] ;
@@ -622,40 +579,42 @@ byte FileOperations_GetDirectoryContent(const char* szPathAddress, FileSystem_DI
 
 	Process* pPAS = &ProcessManager::Instance().GetCurrentPAS() ;
 
-	RETURN_X_IF_NOT(Directory_GetDirectoryContent(szPath, pPAS, iDriveID, pDirList, iListSize), Directory_SUCCESS, FileOperations_FAILURE) ;
-
-	return FileOperations_SUCCESS ;
+  Directory_GetDirectoryContent(szPath, pPAS, iDriveID, pDirList, iListSize);
 }
 
-byte FileOperations_FileAccess(const char* szFileName, int iDriveID, int mode)
+bool FileOperations_FileAccess(const char* szFileName, int iDriveID, int mode)
 {
-	char szFile[100] ;
-	if(iDriveID == FROM_FILE)
-	{
-		FileOperations_ParseFilePathWithDrive(szFileName, szFile, (unsigned*)&iDriveID) ;
-	}
-	else
-	{
-		strcpy(szFile, szFileName) ;
-	}
+  try
+  {
+    char szFile[100] ;
+    if(iDriveID == FROM_FILE)
+    {
+      FileOperations_ParseFilePathWithDrive(szFileName, szFile, (unsigned*)&iDriveID) ;
+    }
+    else
+    {
+      strcpy(szFile, szFileName) ;
+    }
 
-	byte bStatus ;
-	FileSystem_DIR_Entry dirEntry ;
-	Process* pPAS = &ProcessManager::Instance().GetCurrentPAS() ;
+    Process* pPAS = &ProcessManager::Instance().GetCurrentPAS() ;
 
-	GET_DRIVE_FOR_FS_OPS(iDriveID, Directory_FAILURE) ;
+    const FileSystem_DIR_Entry& dirEntry = Directory_GetDirEntry(szFile, pPAS, iDriveID);
 
-	RETURN_IF_NOT(bStatus, Directory_GetDirEntry(szFile, pPAS, iDriveID, &dirEntry), Directory_SUCCESS)
+    unsigned short usFileAttr = dirEntry.usAttribute ;
+    if(FILE_TYPE(usFileAttr) != ATTR_TYPE_FILE)
+      return false;
+    int userType = FileOperations_GetUserType(pPAS->bIsKernelProcess, pPAS->iUserID, dirEntry.iUserID) ;
 
-	unsigned short usFileAttr = dirEntry.usAttribute ;
-	if(FILE_TYPE(usFileAttr) != ATTR_TYPE_FILE)
-		return FileOperations_ERR_NOT_EXISTS ;
-	int userType = FileOperations_GetUserType(pPAS->bIsKernelProcess, pPAS->iUserID, dirEntry.iUserID) ;
+    if(!FileOperations_HasPermission(userType, usFileAttr, mode))
+      return false;
+  }
+  catch(const upan::exception& ex)
+  {
+    ex.Print();
+    return false;
+  }
 
-	if(!FileOperations_HasPermission(userType, usFileAttr, mode))
-		return FileOperations_ERR_NO_PERM ;
-
-	return FileOperations_SUCCESS;
+  return true;
 }
 
 byte FileOperations_Dup2(int oldFD, int newFD)

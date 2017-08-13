@@ -26,6 +26,7 @@
 # include <DMM.h>
 # include <GenericUtil.h>
 # include <MemUtil.h>
+# include <uniq_ptr.h>
 
 UserManager::UserManager() : _userListFileName(upan::string(OSIN_PATH) + ".user.lst")
 {
@@ -47,8 +48,7 @@ void UserManager::CreateNewUserList()
 {
 	unsigned short usPerm = S_OWNER((ATTR_READ | ATTR_WRITE)) | S_GROUP(ATTR_READ) | S_OTHERS(ATTR_READ);
 
-	if(FileOperations_Create(_userListFileName.c_str(), ATTR_TYPE_FILE, usPerm) != FileOperations_SUCCESS)
-    throw upan::exception(XLOC, "failed to create user list file %s", _userListFileName.c_str());
+  FileOperations_Create(_userListFileName.c_str(), ATTR_TYPE_FILE, usPerm);
 
 	InitializeDefaultUserList();
 	WriteUserList();
@@ -61,26 +61,26 @@ void UserManager::InitializeDefaultUserList()
 
 void UserManager::WriteUserList()
 {
-	int fd;
-  if(FileOperations_Open(&fd, _userListFileName.c_str(), O_RDWR | O_TRUNC) != FileOperations_SUCCESS)
-    throw upan::exception(XLOC, "failed to open %s file for writing", _userListFileName.c_str());
+  const int fd = FileOperations_Open(_userListFileName.c_str(), O_RDWR | O_TRUNC);
 
   for(auto u : _users)
   {
     const User& user = *u.second;
 
     int buf_size = user.Name().length() + user.Password().length() + user.HomeDirPath().length() + 1 /*type*/ + 4 /* 4 new lines */;
-    char* buffer = new char[buf_size + 1];
-    sprintf(buffer, "%s\n%s\n%s\n%d\n", user.Name().c_str(), user.Password().c_str(), user.HomeDirPath().c_str(), user.Type());
+    upan::uniq_ptr<char[]> buffer(new char[buf_size + 1]);
+    sprintf(buffer.get(), "%s\n%s\n%s\n%d\n", user.Name().c_str(), user.Password().c_str(), user.HomeDirPath().c_str(), user.Type());
 
     int n;
-    if(FileOperations_Write(fd, (const char*)buffer, buf_size, &n) != FileOperations_SUCCESS)
+    try
     {
-      delete[] buffer;
-      FileOperations_Close(fd);
-      throw upan::exception(XLOC, "error writing user file list");
+      FileOperations_Write(fd, (const char*)buffer.get(), buf_size, &n);
     }
-    delete[] buffer;
+    catch(const upan::exception&)
+    {
+      FileOperations_Close(fd);
+      throw;
+    }
   }
 
 	if(FileOperations_Close(fd) != FileOperations_SUCCESS)
@@ -89,8 +89,7 @@ void UserManager::WriteUserList()
 
 bool UserManager::LoadUserList()
 {
-	int fd;
-	RETURN_X_IF_NOT(FileOperations_Open(&fd, _userListFileName.c_str(), O_RDONLY), FileOperations_SUCCESS, false);
+  const int fd = FileOperations_Open(_userListFileName.c_str(), O_RDONLY);
 
   upan::string name;
   while(FileOperations_ReadLine(fd, name))
@@ -185,7 +184,7 @@ bool UserManager::ValidateName(const upan::string& name)
 		return false;
   }
 
-	for(unsigned i = 0; i < name.length(); ++i)
+  for(int i = 0; i < name.length(); ++i)
 	{
 		if(!isalnum(name[i]))
     {

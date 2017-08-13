@@ -25,6 +25,7 @@
 # include <FileOperations.h>
 # include <MultiBoot.h>
 # include <MountManager.h>
+# include <try.h>
 
 static char MountManager_szRootDriveName[33] = "" ;
 static int MountManager_iRootDriveID = CURRENT_DRIVE ;
@@ -58,42 +59,33 @@ static void MountManager_GetBootMountDrive(char* szBootDriveName)
 	}
 }
 
-static byte MountManager_GetHomeMountDrive(char* szHomeDriveName, unsigned uiSize)
+static bool MountManager_GetHomeMountDrive(char* szHomeDriveName, unsigned uiSize)
 {
-	int fd ;
-	if(FileOperations_Open(&fd, "ROOT@/.mount.lst", O_RDONLY) != FileOperations_SUCCESS)
-		return false ;
+  auto result = upan::tryreturn([&]() {
+    const int fd = FileOperations_Open("ROOT@/.mount.lst", O_RDONLY);
+    return FileOperations_Read(fd, szHomeDriveName, uiSize);
+  });
 
-	unsigned uiBytesRead ;
+  if(result.isBad())
+    return false;
 
-	if(FileOperations_Read(fd, szHomeDriveName, uiSize, &uiBytesRead) != FileOperations_SUCCESS)
-		return false ;
+  int bytesRead = result.goodValue();
 	
-	szHomeDriveName[uiBytesRead - 1] = '\0' ; /* Junk Fix... Use ctype and trim functions
+  szHomeDriveName[bytesRead - 1] = '\0' ; /* Junk Fix... Use ctype and trim functions
 	from UPANIXApps library... port it to kernel using kernel coding conventions */
 
 	return true ;
 }
 
-static byte MountManager_MountDrive(char* szDriveName)
+static void MountManager_MountDrive(char* szDriveName)
 {
-	KC::MDisplay().Message("\n Mounting Drive: ", Display::WHITE_ON_BLACK()) ;
-	KC::MDisplay().Message(szDriveName, Display::WHITE_ON_BLACK()) ;
-	KC::MDisplay().Message(" ...", Display::WHITE_ON_BLACK()) ;
+  printf("\n Mounting Drive: %s ...", szDriveName);
 
 	// Find Drive
-	DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByDriveName(szDriveName, false) ;
-	if(pDiskDrive == NULL)
-	{
-		KC::MDisplay().Message("\n Invalid Drive: ", Display::WHITE_ON_BLACK()) ;
-		return false ;
-	}
+  DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByDriveName(szDriveName, false).goodValueOrThrow(XLOC);
 
 	// Mount Drive
-	if(FSCommand_Mounter(pDiskDrive, FS_MOUNT) != FSCommand_SUCCESS)
-		KC::MDisplay().Message(" Failed !!!", Display::WHITE_ON_BLACK()) ;
-	else
-		KC::MDisplay().Message(" Done.", Display::WHITE_ON_BLACK()) ;
+  FSCommand_Mounter(pDiskDrive, FS_MOUNT);
 
 	// Set Process Drive
 	ProcessManager::Instance().GetCurrentPAS().iDriveID = pDiskDrive->Id();
@@ -104,13 +96,7 @@ static byte MountManager_MountDrive(char* szDriveName)
 	sizeof(FileSystem_PresentWorkingDirectory)) ;
 
 	// Change To Root Directory
-	if(FileOperations_ChangeDir(FS_ROOT_DIR) != Directory_SUCCESS)
-	{
-		KC::MDisplay().Message("\n Directory Change Failed !!!", Display::WHITE_ON_BLACK()) ;
-		return false ;
-	}
-
-	return true ;
+  FileOperations_ChangeDir(FS_ROOT_DIR);
 }
 /****************************************************************************/
 
@@ -122,7 +108,7 @@ void MountManager_Initialize()
 	KC::MDisplay().Message("\n\tBoot Mount Drive: ", Display::WHITE_ON_BLACK()) ;
 	KC::MDisplay().Message(MountManager_szRootDriveName, ' ') ;
 	
-	DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByDriveName(MountManager_szRootDriveName, false) ;
+  DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByDriveName(MountManager_szRootDriveName, false).goodValueOrElse(nullptr);
 	
 	if(pDiskDrive == NULL)
 	{
@@ -166,7 +152,7 @@ int MountManager_GetRootDriveID()
 {
 	if(MountManager_iRootDriveID == CURRENT_DRIVE)
 	{
-		DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByDriveName(MountManager_szRootDriveName, false) ;
+    DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByDriveName(MountManager_szRootDriveName, false).goodValueOrElse(nullptr);
 		
 		if(pDiskDrive == NULL)
 		{

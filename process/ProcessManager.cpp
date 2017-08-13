@@ -574,81 +574,84 @@ bool ProcessManager::IsChildAlive(int iChildProcessID)
 byte ProcessManager::CreateKernelImage(const unsigned uiTaskAddress, int iParentProcessID, byte bIsFGProcess, unsigned uiParam1, unsigned uiParam2, 
 		int* iProcessID, const char* szKernelProcName)
 {
-	int iNewProcessID = FindFreePAS();
-  Process& newPAS = GetAddressSpace(iNewProcessID);
-  memset(&newPAS, 0, sizeof(Process));
+  try
+  {
+    int iNewProcessID = FindFreePAS();
+    Process& newPAS = GetAddressSpace(iNewProcessID);
+    memset(&newPAS, 0, sizeof(Process));
 
-	if(iParentProcessID != NO_PROCESS_ID)
-	{
-    Process& parentPAS = GetAddressSpace(iParentProcessID);
-		newPAS.iDriveID = parentPAS.iDriveID ;
+    if(iParentProcessID != NO_PROCESS_ID)
+    {
+      Process& parentPAS = GetAddressSpace(iParentProcessID);
+      newPAS.iDriveID = parentPAS.iDriveID ;
 
-		MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&(parentPAS.processPWD),
-		MemUtil_GetDS(), (unsigned)&(newPAS.processPWD), 
-		sizeof(FileSystem_PresentWorkingDirectory)) ;
-	}
-	else
-	{
-		int iDriveID = ROOT_DRIVE_ID ;
-		newPAS.iDriveID = iDriveID ;
+      MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&(parentPAS.processPWD),
+      MemUtil_GetDS(), (unsigned)&(newPAS.processPWD),
+      sizeof(FileSystem_PresentWorkingDirectory)) ;
+    }
+    else
+    {
+      int iDriveID = ROOT_DRIVE_ID ;
+      newPAS.iDriveID = iDriveID ;
 
-		if(iDriveID != CURRENT_DRIVE)
-		{
-			DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByID(iDriveID, false) ;
-			if(pDiskDrive == NULL)
-				return ProcessManager_FAILURE ;
+      if(iDriveID != CURRENT_DRIVE)
+      {
+        DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByID(iDriveID, false).goodValueOrThrow(XLOC);
 
-			if(pDiskDrive->Mounted())
-			{
-				MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&(pDiskDrive->FSMountInfo.FSpwd), MemUtil_GetDS(), 
-						(unsigned)&newPAS.processPWD, sizeof(FileSystem_PresentWorkingDirectory)) ;
-			}
-		}
-	}
+        if(pDiskDrive->Mounted())
+          newPAS.processPWD = pDiskDrive->FSMountInfo.FSpwd;
+      }
+    }
 
-	unsigned uiStackAddress ;
-	RETURN_X_IF_NOT(ProcessAllocator_AllocateAddressSpaceForKernel(&GetAddressSpace(iNewProcessID), 
-		&uiStackAddress), ProcessAllocator_SUCCESS, ProcessManager_FAILURE) ;
+    unsigned uiStackAddress ;
+    RETURN_X_IF_NOT(ProcessAllocator_AllocateAddressSpaceForKernel(&GetAddressSpace(iNewProcessID),
+      &uiStackAddress), ProcessAllocator_SUCCESS, ProcessManager_FAILURE) ;
 
-	GetAddressSpace(iNewProcessID).bIsKernelProcess = true ;
+    GetAddressSpace(iNewProcessID).bIsKernelProcess = true ;
 
-	ProcessEnv_InitializeForKernelProcess() ;
+    ProcessEnv_InitializeForKernelProcess() ;
 
-//	DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByID(GetAddressSpace(iNewProcessID).iDriveID) ;
-//
-//	MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&(pDiskDrive->FSMountInfo.FSpwd), 
-//	MemUtil_GetDS(), (unsigned)&GetAddressSpace(iNewProcessID).processPWD, sizeof(FileSystem_PresentWorkingDirectory)) ;
+  //	DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByID(GetAddressSpace(iNewProcessID).iDriveID) ;
+  //
+  //	MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&(pDiskDrive->FSMountInfo.FSpwd),
+  //	MemUtil_GetDS(), (unsigned)&GetAddressSpace(iNewProcessID).processPWD, sizeof(FileSystem_PresentWorkingDirectory)) ;
 
-	unsigned uiStackTop = uiStackAddress - GLOBAL_DATA_SEGMENT_BASE + (PROCESS_KERNEL_STACK_PAGES * PAGE_SIZE) - 1 ;
+    unsigned uiStackTop = uiStackAddress - GLOBAL_DATA_SEGMENT_BASE + (PROCESS_KERNEL_STACK_PAGES * PAGE_SIZE) - 1 ;
 
-	BuildKernelTaskState(uiTaskAddress, iNewProcessID, uiStackTop, uiParam1, uiParam2) ;
-  newPAS.processLDT.BuildForKernel();
-	
-	newPAS.iUserID = ROOT_USER_ID ;
-	newPAS.iParentProcessID = iParentProcessID ;
+    BuildKernelTaskState(uiTaskAddress, iNewProcessID, uiStackTop, uiParam1, uiParam2) ;
+    newPAS.processLDT.BuildForKernel();
 
-	if(iParentProcessID == NO_PROCESS_ID)
-    newPAS._processGroup = new ProcessGroup(bIsFGProcess);
-	else
-    newPAS._processGroup = GetAddressSpace(iParentProcessID)._processGroup;
+    newPAS.iUserID = ROOT_USER_ID ;
+    newPAS.iParentProcessID = iParentProcessID ;
 
-  newPAS._processGroup->AddProcess();
+    if(iParentProcessID == NO_PROCESS_ID)
+      newPAS._processGroup = new ProcessGroup(bIsFGProcess);
+    else
+      newPAS._processGroup = GetAddressSpace(iParentProcessID)._processGroup;
 
-	*iProcessID = iNewProcessID ;
+    newPAS._processGroup->AddProcess();
 
-	if(bIsFGProcess)
-    newPAS._processGroup->PutOnFGProcessList(iNewProcessID);
+    *iProcessID = iNewProcessID ;
 
-	if(szKernelProcName == NULL)
-		szKernelProcName = DEF_KERNEL_PROC_NAME ;
+    if(bIsFGProcess)
+      newPAS._processGroup->PutOnFGProcessList(iNewProcessID);
 
-	newPAS.pname = (char*)DMM_AllocateForKernel(strlen(szKernelProcName) + 1);
-	strcpy(newPAS.pname, szKernelProcName) ;
+    if(szKernelProcName == NULL)
+      szKernelProcName = DEF_KERNEL_PROC_NAME ;
 
-	newPAS.pProcessStateInfo = new ProcessStateInfo();
-	newPAS.status = RUN ;
+    newPAS.pname = (char*)DMM_AllocateForKernel(strlen(szKernelProcName) + 1);
+    strcpy(newPAS.pname, szKernelProcName) ;
 
-	AddToSchedulerList(iNewProcessID) ;
+    newPAS.pProcessStateInfo = new ProcessStateInfo();
+    newPAS.status = RUN ;
+
+    AddToSchedulerList(iNewProcessID) ;
+  }
+  catch(upan::exception& ex)
+  {
+    ex.Print();
+    return ProcessManager_FAILURE;
+  }
 
 	return ProcessManager_SUCCESS ;
 }
@@ -680,10 +683,7 @@ byte ProcessManager::Create(const char* szProcessName, int iParentProcessID, byt
 
       if(iDriveID != CURRENT_DRIVE)
       {
-        DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByID(iDriveID, false) ;
-        if(pDiskDrive == NULL)
-          return ProcessManager_FAILURE ;
-
+        DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByID(iDriveID, false).goodValueOrThrow(XLOC);
         if(pDiskDrive->Mounted())
           newPAS.processPWD = pDiskDrive->FSMountInfo.FSpwd;
       }

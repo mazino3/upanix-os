@@ -479,7 +479,7 @@ byte SCSIHandler_GenericClose(SCSIDevice* pDevice)
 	return SCSIHandler_SUCCESS ;
 }
 
-byte SCSIHandler_GenericRead(SCSIDevice* pDevice, unsigned uiStartSector, unsigned uiNumOfSectors, byte* pDataBuffer)
+void SCSIHandler_GenericRead(SCSIDevice* pDevice, unsigned uiStartSector, unsigned uiNumOfSectors, byte* pDataBuffer)
 {
 	unsigned uiBlock ;
 	unsigned uiBlockCount ;
@@ -520,17 +520,15 @@ byte SCSIHandler_GenericRead(SCSIDevice* pDevice, unsigned uiStartSector, unsign
 		bool bStatus = pDevice->pHost->QueueCommand(&sCommand) ;
 
 		if(!bStatus || sCommand.iResult != 0)
-			return SCSIHandler_FAILURE ;
+      throw upan::exception(XLOC, "SCSI read failed with status code:%d, result:%d", bStatus, sCommand.iResult);
 
 		uiStartSector += uiBlockCount ;
 		uiNumOfSectors -= uiBlockCount ;
 		pDataBuffer += uiReadLen ;
 	}
-
-	return SCSIHandler_SUCCESS ;
 }
 
-byte SCSIHandler_GenericWrite(SCSIDevice* pDevice, unsigned uiStartSector, unsigned uiNumOfSectors, byte* pDataBuffer)
+void SCSIHandler_GenericWrite(SCSIDevice* pDevice, unsigned uiStartSector, unsigned uiNumOfSectors, byte* pDataBuffer)
 {
 	unsigned uiBlock ;
 	unsigned uiBlockCount ;
@@ -570,14 +568,12 @@ byte SCSIHandler_GenericWrite(SCSIDevice* pDevice, unsigned uiStartSector, unsig
 		bool bStatus = pDevice->pHost->QueueCommand(&sCommand) ;
 
 		if(!bStatus || sCommand.iResult != 0)
-			return SCSIHandler_FAILURE ;
+      throw upan::exception(XLOC, "SCSI read failed with status code:%d, result:%d", bStatus, sCommand.iResult);
 
 		uiStartSector += uiBlockCount ;
 		uiNumOfSectors -= uiBlockCount ;
 		pDataBuffer += uiWriteLen ;
 	}
-
-	return SCSIHandler_SUCCESS ;
 }
 
 byte SCSIHandler_DoStartStop(SCSIDevice* pDevice, unsigned uiFlags)
@@ -609,10 +605,10 @@ byte SCSIHandler_Eject(SCSIDevice* pDevice)
 	return SCSIHandler_DoStartStop(pDevice, 0x02) ;
 }
 
-byte SCSIHandler_ReadPart(void* pPrivate, unsigned uiStartSector, unsigned uiNumOfSectors, byte* pDataBuffer)
+void SCSIHandler_ReadPart(void* pPrivate, unsigned uiStartSector, unsigned uiNumOfSectors, byte* pDataBuffer)
 {
 	SCSIDevice* pDevice = (SCSIDevice*)pPrivate ;
-	return SCSIHandler_GenericRead(pDevice, uiStartSector, uiNumOfSectors, pDataBuffer) ;
+  SCSIHandler_GenericRead(pDevice, uiStartSector, uiNumOfSectors, pDataBuffer) ;
 }
 
 //byte SCSIHandler_DecodePartitions(SCSIDevice* pDevice)

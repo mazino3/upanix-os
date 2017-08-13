@@ -29,6 +29,7 @@
 #include <StringUtil.h>
 #include <DMM.h>
 #include <KernelUtil.h>
+#include <try.h>
 
 #define	SRA_STATUS_REGA				0x3F0
 #define	SRB_STATUS_REGB				0x3F1
@@ -87,23 +88,22 @@ typedef struct FloppyFormat
 
 /****************************** Static Functions **************************************/
 
-static  void Floppy_SetDataRate(byte bDataRate) ;
-static  void Floppy_EnableMotorAndDrive(DRIVE_NO driveNo) ;
-static  void Floppy_DisableMotorAndDrive(DRIVE_NO driveNo) ;
-static  void Floppy_Reset() ;
-static  byte Floppy_InitDMAController(DMA_MODE DMAMode, unsigned uiWordCount) ;
+static void Floppy_SetDataRate(byte bDataRate) ;
+static void Floppy_EnableMotorAndDrive(DRIVE_NO driveNo) ;
+static void Floppy_DisableMotorAndDrive(DRIVE_NO driveNo) ;
+static void Floppy_Reset() ;
+static void Floppy_InitDMAController(DMA_MODE DMAMode, unsigned uiWordCount) ;
 
-static byte Floppy_CompleteResultPhase1(byte bNoOfResultReplies) ;
-static byte Floppy_SendControlCommand(byte bCmd) ;
-static byte Floppy_SendSpecifyCommand() ;
-static byte Floppy_CompleteResultPhase(byte bNoOfResultReplies) ;
-static byte Floppy_SenseInterruptStatus() ;
-static byte Floppy_WaitForInterrupt() ;
-static byte Floppy_ReCaliberate(DRIVE_NO driveNo) ;
-static byte Floppy_Seek(DRIVE_NO driveNo, Floppy_HEAD_NO headNo, unsigned uiSeekTrack) ;
-static byte Floppy_FormatTrack(const DiskDrive* pDiskDrive, const Floppy_HEAD_NO headNo) ;
-static byte Floppy_ReadWrite(const DiskDrive* pDiskDrive, unsigned uiStartSectorNo, unsigned uiEndSectorNo, Floppy_MODE mode) ;
-static byte Floppy_FullFormat(const DiskDrive* pDiskDrive) ;
+static void Floppy_SendControlCommand(byte bCmd) ;
+static void Floppy_SendSpecifyCommand() ;
+static void Floppy_CompleteResultPhase(byte bNoOfResultReplies) ;
+static void Floppy_SenseInterruptStatus() ;
+static void Floppy_WaitForInterrupt() ;
+static void Floppy_ReCaliberate(DRIVE_NO driveNo) ;
+static void Floppy_Seek(DRIVE_NO driveNo, Floppy_HEAD_NO headNo, unsigned uiSeekTrack) ;
+static void Floppy_FormatTrack(const DiskDrive* pDiskDrive, const Floppy_HEAD_NO headNo) ;
+static void Floppy_ReadWrite(const DiskDrive* pDiskDrive, unsigned uiStartSectorNo, unsigned uiEndSectorNo, Floppy_MODE mode) ;
+static void Floppy_FullFormat(const DiskDrive* pDiskDrive) ;
 
 struct FloppyMotorController : public KernelUtil::TimerTask
 {
@@ -137,33 +137,28 @@ static void Floppy_StopMotor(DRIVE_NO driveNo)
 	Floppy_bRequestMotorOff[driveNo] = true ;
 }
 
-static  void
-Floppy_SetDataRate(byte bDataRate)
+static  void Floppy_SetDataRate(byte bDataRate)
 {
 	PortCom_SendByte(CCR_CONFIG_CONTROL_REG, bDataRate & 0x03) ;
 }
 
-static  void
-Floppy_EnableMotorAndDrive(DRIVE_NO driveNo)
+static  void Floppy_EnableMotorAndDrive(DRIVE_NO driveNo)
 {
 	PortCom_SendByte(DOR_DIGITAL_OUTPUT_REG, (DOR_MOTOR_NO [ driveNo ] | DOR_DMA_GATE | DOR_RESET | driveNo)) ;
 }
 
-static  void
-Floppy_DisableMotorAndDrive(DRIVE_NO driveNo)
+static  void Floppy_DisableMotorAndDrive(DRIVE_NO driveNo)
 {
 	PortCom_SendByte(DOR_DIGITAL_OUTPUT_REG, (0x00 | DOR_DMA_GATE | DOR_RESET | driveNo)) ;
 }
 
-static  void
-Floppy_Reset()
+static  void Floppy_Reset()
 {
 	PortCom_SendByte(DOR_DIGITAL_OUTPUT_REG, 0x08) ;
 	PortCom_SendByte(DOR_DIGITAL_OUTPUT_REG, 0x0C) ;
 }
 
-static  byte
-Floppy_InitDMAController(DMA_MODE DMAMode, unsigned uiWordCount)
+static void Floppy_InitDMAController(DMA_MODE DMAMode, unsigned uiWordCount)
 {
 	DMA_Request DMARequest ;
 	DMARequest.DMAChannelNo = DMA_CH2 ;
@@ -173,17 +168,11 @@ Floppy_InitDMAController(DMA_MODE DMAMode, unsigned uiWordCount)
 	DMARequest.DMAMode = DMAMode ;
 
 	byte bStatus;
-	if((bStatus = DMA_RequestChannel(&DMARequest)) != DMA_SUCCESS)
-	{
-		printf("\n Init DMA in Floppy Failed. ErrorCode: %d\n", bStatus);
-		return Floppy_ERR_DMA ;
-	}
-
-	return Floppy_SUCCESS ;
+  if((bStatus = DMA_RequestChannel(&DMARequest)) != DMA_SUCCESS)
+    throw upan::exception(XLOC, "Init DMA in Floppy Failed. ErrorCode: %d\n", bStatus);
 }
 
-static byte
-Floppy_SendControlCommand(byte bCmd)
+static void Floppy_SendControlCommand(byte bCmd)
 {
 	unsigned int uiCounter ;
 	byte bStatus ;
@@ -195,86 +184,65 @@ Floppy_SendControlCommand(byte bCmd)
 		if(bStatus == MSR_RQM)
 		{
 			PortCom_SendByte(DFR_DATA_FIFO_REG, bCmd) ;
-			return Floppy_SUCCESS ;
+      return;
 		}
 	}
 
-	return Floppy_ERR_TIMEOUT ;
+  throw upan::exception(XLOC, "timedout while sending control command %d to floppy", bCmd);
 }
 
-static byte
-Floppy_SendSpecifyCommand()
+static void Floppy_SendSpecifyCommand()
 {
-	if(Floppy_SendControlCommand(FDD_SPECIFY_CMD) == Floppy_SUCCESS) 
-		if(Floppy_SendControlCommand(SRTHUT) == Floppy_SUCCESS)
-			if(Floppy_SendControlCommand(HLT_ND) == Floppy_SUCCESS)
-				return Floppy_SUCCESS ;
-
-	return Floppy_FAILURE ;
+  Floppy_SendControlCommand(FDD_SPECIFY_CMD);
+  Floppy_SendControlCommand(SRTHUT);
+  Floppy_SendControlCommand(HLT_ND);
 }
 
-static byte
-Floppy_CompleteResultPhase(byte bNoOfResultReplies)
+static void Floppy_CompleteResultPhase(byte bNoOfResultReplies)
 {
 	unsigned int uiCounter ;
-	byte bStatus ;
 	byte bCurrentNoOfResultReplies ;
-	byte bErrCode = Floppy_ERR_TIMEOUT ;
 	
 	if(bNoOfResultReplies > MAX_RESULT_PHASE_REPLIES)
-			return Floppy_ERR_INVALID_NO_OF_RESULT_REPLIES ;
+      throw upan::exception(XLOC, "Floppy: Invalid no. of result replies: %d", bNoOfResultReplies);
 			
 	for(uiCounter = 0, bCurrentNoOfResultReplies = 0; uiCounter < 10000; uiCounter++)
 	{
-		bStatus = PortCom_ReceiveByte(MSR_MAIN_STATUS_REG) ;
+    byte bStatus = PortCom_ReceiveByte(MSR_MAIN_STATUS_REG) ;
 		bStatus &= (MSR_RQM | MSR_DIO | MSR_CMD_BUSY) ;
 
 		if(bStatus == MSR_RQM)
 		{
 			if(bCurrentNoOfResultReplies < bNoOfResultReplies)
-			{
-				bErrCode = Floppy_ERR_UNDERRUN ;
-				break ;
-			}
-
-			return Floppy_SUCCESS ;
+        throw upan::exception(XLOC, "Floppy underrun");
+      return;
 		}
 
 		if(bStatus == (MSR_RQM | MSR_DIO | MSR_CMD_BUSY))
 		{
 			if(bCurrentNoOfResultReplies >= bNoOfResultReplies)
-			{
-				bErrCode = Floppy_ERR_OVERRUN ;
-				break ;
-			}
+        throw upan::exception(XLOC, "Floppy overrun");
 			Floppy_ReplyBuffer[bCurrentNoOfResultReplies++] = PortCom_ReceiveByte(DFR_DATA_FIFO_REG) ;
 		}
 	}
-
-	return bErrCode ;
+  throw upan::exception(XLOC, "Failed to complete result phase");
 }
 
-static byte
-Floppy_SenseInterruptStatus()
+static void Floppy_SenseInterruptStatus()
 {
-	if(Floppy_SendControlCommand(FDD_SENSE_INT_STATUS_CMD) == Floppy_SUCCESS)
-		return Floppy_CompleteResultPhase(2) ;
-	return Floppy_ERR_TIMEOUT ;
+  Floppy_SendControlCommand(FDD_SENSE_INT_STATUS_CMD);
+  Floppy_CompleteResultPhase(2) ;
 }
 
-static byte
-Floppy_WaitForInterrupt()
+static void Floppy_WaitForInterrupt()
 {
 	unsigned int uiCounter ;
 	
 	for(uiCounter = 0; uiCounter < 100; uiCounter++)
 		asm("nop") ;
-
-	return Floppy_SUCCESS ;
 }
 
-static byte
-Floppy_ReCaliberate(DRIVE_NO driveNo)
+static void Floppy_ReCaliberate(DRIVE_NO driveNo)
 {
 	Floppy_SendControlCommand(FDD_RECALIBRATE_CMD) ;
 	Floppy_SendControlCommand(driveNo) ;
@@ -282,17 +250,13 @@ Floppy_ReCaliberate(DRIVE_NO driveNo)
 	ProcessManager::Instance().WaitOnInterrupt(StdIRQ::Instance().FLOPPY_IRQ);
 	Floppy_SenseInterruptStatus() ;
 
-	if (Floppy_ReplyBuffer[0] & 0x20)
-	{
-		if (Floppy_ReplyBuffer[1] == 0x00)
-			return Floppy_SUCCESS ;
-	}
+  if (Floppy_ReplyBuffer[0] & 0x20 && Floppy_ReplyBuffer[1] == 0x00)
+    return;
 
-	return Floppy_ERR_RECALIBERATE ;
+  throw upan::exception(XLOC, "Failed to recalibrate floppy");
 }
 
-static byte
-Floppy_Seek(DRIVE_NO driveNo, Floppy_HEAD_NO headNo, unsigned uiSeekTrack)
+static void Floppy_Seek(DRIVE_NO driveNo, Floppy_HEAD_NO headNo, unsigned uiSeekTrack)
 {
 	Floppy_SendControlCommand(FDD_SEEK_CMD) ;
 	Floppy_SendControlCommand((headNo << 2) | driveNo) ;
@@ -302,43 +266,35 @@ Floppy_Seek(DRIVE_NO driveNo, Floppy_HEAD_NO headNo, unsigned uiSeekTrack)
 	Floppy_SenseInterruptStatus() ;
 
 	if (Floppy_ReplyBuffer[0] & 0x20)
-		return Floppy_SUCCESS ;
+    return;
 
-	return Floppy_ERR_SEEK ;
+  throw upan::exception(XLOC, "Floppy: failed to seek");
 }
 
-static byte
-Floppy_FormatTrack(const DiskDrive* pDiskDrive, const Floppy_HEAD_NO headNo)
+static void Floppy_FormatTrack(const DiskDrive* pDiskDrive, const Floppy_HEAD_NO headNo)
 {
-	byte bStatus ;
-	
-	if(Floppy_SendControlCommand(FDD_FORMAT_TRACK_CMD) == Floppy_SUCCESS)
-		if(Floppy_SendControlCommand(((headNo << 2) & 4) | pDiskDrive->DriveNumber()) == Floppy_SUCCESS) //Drive 1
-			if(Floppy_SendControlCommand(2) == Floppy_SUCCESS) // No of Bytes/Sector = 512
-				if(Floppy_SendControlCommand(pDiskDrive->SectorsPerTrack()) == Floppy_SUCCESS)
-					if(Floppy_SendControlCommand(GAP) == Floppy_SUCCESS)
-						if(Floppy_SendControlCommand(0x00) == Floppy_SUCCESS) // Data Field Filler Value	
-						{
-							ProcessManager::Instance().WaitOnInterrupt(StdIRQ::Instance().FLOPPY_IRQ);
-								
-							if((bStatus = Floppy_CompleteResultPhase(MAX_RESULT_PHASE_REPLIES)) != Floppy_SUCCESS)
-								return bStatus ;
+  Floppy_SendControlCommand(FDD_FORMAT_TRACK_CMD);
+  Floppy_SendControlCommand(((headNo << 2) & 4) | pDiskDrive->DriveNumber()); //Drive 1
+  Floppy_SendControlCommand(2); // No of Bytes/Sector = 512
+  Floppy_SendControlCommand(pDiskDrive->SectorsPerTrack());
+  Floppy_SendControlCommand(GAP);
+  Floppy_SendControlCommand(0x00); // Data Field Filler Value
+  ProcessManager::Instance().WaitOnInterrupt(StdIRQ::Instance().FLOPPY_IRQ);
 
-							if((Floppy_ReplyBuffer[0] & 0xC0) == 0x00)
-								return Floppy_SUCCESS ;
-						}
+  Floppy_CompleteResultPhase(MAX_RESULT_PHASE_REPLIES);
 
-	return Floppy_ERR_FORMAT ;	
+  if((Floppy_ReplyBuffer[0] & 0xC0) == 0x00)
+    return;
+
+  throw upan::exception(XLOC, "Floppy: failed to format");
 }
 
-static byte Floppy_ReadWrite(const DiskDrive* pDiskDrive, unsigned uiStartSectorNo, unsigned uiEndSectorNo, Floppy_MODE mode)
+static void Floppy_ReadWrite(const DiskDrive* pDiskDrive, unsigned uiStartSectorNo, unsigned uiEndSectorNo, Floppy_MODE mode)
 {
-	byte bStatus ;
-	
 	if(uiStartSectorNo + 1 > pDiskDrive->SizeInSectors()
 			|| uiEndSectorNo + 1 > pDiskDrive->SizeInSectors()
 			|| uiStartSectorNo >= uiEndSectorNo)
-		return Floppy_INVALID_SECTOR ;
+    throw upan::exception(XLOC, "floppy: invalid sector %d - %d", uiStartSectorNo, uiEndSectorNo);
 		
 	unsigned uiStartSector = uiStartSectorNo % pDiskDrive->SectorsPerTrack();
 //	unsigned uiEndSector = uiEndSectorNo % pDiskDrive->SectorsPerTrack();
@@ -365,63 +321,60 @@ static byte Floppy_ReadWrite(const DiskDrive* pDiskDrive, unsigned uiStartSector
 	unsigned uiOperationRetryCount ;
 	const unsigned uiNoOfRetrys = 3 ;
 
-	bStatus = Floppy_ERR_READ ;
+  upan::string lastErr;
 	for(uiSeekRetryCount = 0; uiSeekRetryCount < uiNoOfRetrys; uiSeekRetryCount++)
 	{
+    try {
 		if(uiSeekRetryCount > 0)
-			if((bStatus = Floppy_ReCaliberate(pDiskDrive->DriveNumber())) != Floppy_SUCCESS)
-				continue ;
+      Floppy_ReCaliberate(pDiskDrive->DriveNumber());
 
 //		ProcessManager_Sleep(100) ;
 
-		if((bStatus = Floppy_Seek(pDiskDrive->DriveNumber(), (Floppy_HEAD_NO)uiHead, uiSeekTrack)) != Floppy_SUCCESS)
-			continue ;
+    Floppy_Seek(pDiskDrive->DriveNumber(), (Floppy_HEAD_NO)uiHead, uiSeekTrack);
 
-		for(uiOperationRetryCount = 0; uiOperationRetryCount < uiNoOfRetrys; uiOperationRetryCount++)
-		{
-			DMA_ReleaseChannel(DMA_CH2) ;
-			if((bStatus = Floppy_InitDMAController(DMAMode, ((uiEndSectorNo - uiStartSectorNo) * 512 - 1))) != Floppy_SUCCESS)
-				continue ;
+      for(uiOperationRetryCount = 0; uiOperationRetryCount < uiNoOfRetrys; uiOperationRetryCount++)
+      {
+        try {
+          DMA_ReleaseChannel(DMA_CH2) ;
+          Floppy_InitDMAController(DMAMode, ((uiEndSectorNo - uiStartSectorNo) * 512 - 1));
 
-			if(Floppy_SendControlCommand(bFloppyCmd) == Floppy_SUCCESS)
-				if(Floppy_SendControlCommand(((uiHead << 2) & 4) | pDiskDrive->DriveNumber()) == Floppy_SUCCESS) //Drive 1
-					if(Floppy_SendControlCommand(uiTrack) == Floppy_SUCCESS) //Track 0
-						if(Floppy_SendControlCommand(uiHead) == Floppy_SUCCESS) // Head 0
-							if(Floppy_SendControlCommand(uiStartSector + 1) == Floppy_SUCCESS) //sector 1
-								if(Floppy_SendControlCommand(2) == Floppy_SUCCESS) // No of Bytes/Sector = 512
-									if(Floppy_SendControlCommand(pDiskDrive->SectorsPerTrack())== Floppy_SUCCESS) 
-										if(Floppy_SendControlCommand(GAP) == Floppy_SUCCESS)
-											if(Floppy_SendControlCommand(0xFF) == Floppy_SUCCESS) // DTL = 0xFF
-											{
-												ProcessManager::Instance().WaitOnInterrupt(StdIRQ::Instance().FLOPPY_IRQ);
+          Floppy_SendControlCommand(bFloppyCmd);
+          Floppy_SendControlCommand(((uiHead << 2) & 4) | pDiskDrive->DriveNumber()); //Drive 1
+          Floppy_SendControlCommand(uiTrack); //Track 0
+          Floppy_SendControlCommand(uiHead); // Head 0
+          Floppy_SendControlCommand(uiStartSector + 1); //sector 1
+          Floppy_SendControlCommand(2); // No of Bytes/Sector = 512
+          Floppy_SendControlCommand(pDiskDrive->SectorsPerTrack());
+          Floppy_SendControlCommand(GAP);
+          Floppy_SendControlCommand(0xFF); // DTL = 0xFF
 
-												if((bStatus = Floppy_CompleteResultPhase1(MAX_RESULT_PHASE_REPLIES)) != Floppy_SUCCESS)
-													continue ;
+          ProcessManager::Instance().WaitOnInterrupt(StdIRQ::Instance().FLOPPY_IRQ);
 
-												if(Floppy_ReplyBuffer[0] & (0x00 | ((uiHead << 2) & 4) | pDiskDrive->DriveNumber()))
-													return Floppy_SUCCESS ;
-								
-											}
-		}
+          Floppy_CompleteResultPhase(MAX_RESULT_PHASE_REPLIES);
+
+          if(Floppy_ReplyBuffer[0] & (0x00 | ((uiHead << 2) & 4) | pDiskDrive->DriveNumber()))
+            return;
+        } catch(const upan::exception& ex) { lastErr = ex.ErrorMsg(); }
+
+      }
+    } catch(const upan::exception& ex) { lastErr = ex.ErrorMsg(); }
 	}
 
-	return bStatus ;
+  throw upan::exception(XLOC, "Floppy read/write failed - last error: %s", lastErr.c_str());
 }
 
-static byte Floppy_FullFormat(const DiskDrive* pDiskDrive)
+static void Floppy_FullFormat(const DiskDrive* pDiskDrive)
 {
-	byte bStatus ;
 	DRIVE_NO driveNo = pDiskDrive->DriveNumber();
 	
 	if(driveNo != FD_DRIVE0 && driveNo != FD_DRIVE1)
-		return Floppy_ERR_INVALID_DRIVE ;
+    throw upan::exception(XLOC, "Floppy: invalid drive: %d", driveNo);
 		
 	Floppy_StartMotor(driveNo) ;
 	
 	Floppy_SetDataRate(RATE) ;
 
-	if((bStatus = Floppy_ReCaliberate(pDiskDrive->DriveNumber())) != Floppy_SUCCESS)
-		return bStatus ;
+  Floppy_ReCaliberate(pDiskDrive->DriveNumber());
 
 	Floppy_FormatFields Floppy_FormatData[pDiskDrive->SectorsPerTrack()] ;
 	
@@ -431,13 +384,11 @@ static byte Floppy_FullFormat(const DiskDrive* pDiskDrive)
 	{
 		ProcessManager::Instance().Sleep(100) ;
 
-		if((bStatus = Floppy_Seek(pDiskDrive->DriveNumber(), (Floppy_HEAD_NO)0, uiTrackCount)) != Floppy_SUCCESS)
-			return bStatus ;
+    Floppy_Seek(pDiskDrive->DriveNumber(), (Floppy_HEAD_NO)0, uiTrackCount);
 
 		DMA_ReleaseChannel(DMA_CH2) ;
 
-		if((bStatus = Floppy_InitDMAController(DMA_MODE_READ, uiWordCount)) != Floppy_SUCCESS)
-			return bStatus ;
+    Floppy_InitDMAController(DMA_MODE_READ, uiWordCount);
 			
 		unsigned uiHeadCount ;
 		for(uiHeadCount = 0; uiHeadCount < pDiskDrive->NoOfHeads(); uiHeadCount++)
@@ -451,56 +402,11 @@ static byte Floppy_FullFormat(const DiskDrive* pDiskDrive)
 				Floppy_FormatData[uiSectorCount].bSectorSize = 2 ; /* 512bytes/Sector */
 			}
 			
-			MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&Floppy_FormatData,
-								SYS_LINEAR_SELECTOR_DEFINED, MEM_DMA_FLOPPY_START, uiWordCount) ;
+      MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&Floppy_FormatData, SYS_LINEAR_SELECTOR_DEFINED, MEM_DMA_FLOPPY_START, uiWordCount) ;
 
-			if((bStatus = Floppy_FormatTrack(pDiskDrive, (Floppy_HEAD_NO)uiHeadCount)) != Floppy_SUCCESS)
-				return bStatus ;
+      Floppy_FormatTrack(pDiskDrive, (Floppy_HEAD_NO)uiHeadCount);
 		}
 	}
-	
-	return Floppy_SUCCESS ;	
-}
-
-static byte
-Floppy_CompleteResultPhase1(byte bNoOfResultReplies)
-{
-	unsigned int uiCounter ;
-	byte bStatus ;
-	byte bCurrentNoOfResultReplies ;
-	byte bErrCode = Floppy_ERR_TIMEOUT ;
-	
-	if(bNoOfResultReplies > MAX_RESULT_PHASE_REPLIES)
-			return Floppy_ERR_INVALID_NO_OF_RESULT_REPLIES ;
-			
-	for(uiCounter = 0, bCurrentNoOfResultReplies = 0; uiCounter < 10000; uiCounter++)
-	{
-		bStatus = PortCom_ReceiveByte(MSR_MAIN_STATUS_REG) ;
-		bStatus &= (MSR_RQM | MSR_DIO | MSR_CMD_BUSY) ;
-
-		if(bStatus == MSR_RQM)
-		{
-			if(bCurrentNoOfResultReplies < bNoOfResultReplies)
-			{
-				bErrCode = Floppy_ERR_UNDERRUN ;
-				break ;
-			}
-
-			return Floppy_SUCCESS ;
-		}
-
-		if(bStatus == (MSR_RQM | MSR_DIO | MSR_CMD_BUSY))
-		{
-			if(bCurrentNoOfResultReplies >= bNoOfResultReplies)
-			{
-				bErrCode = Floppy_ERR_OVERRUN ;
-				break ;
-			}
-			Floppy_ReplyBuffer[bCurrentNoOfResultReplies++] = PortCom_ReceiveByte(DFR_DATA_FIFO_REG) ;
-		}
-	}
-
-	return bErrCode ;
 }
 
 /********************************************************************************************/
@@ -534,21 +440,13 @@ void Floppy_Initialize()
 		Floppy_SetDataRate(RATE) ;
 
 	//	ProcessManager_WaitOnInterrupt(StdIRQ::Instance().FLOPPY_IRQ) ;
-		if(Floppy_WaitForInterrupt() == Floppy_SUCCESS)
-		{
-			bInitStatus = true ;
-			int i ;
-			for(i = 0; i < 4; i++)
-			{
-				bInitStatus = false ;
-				if(Floppy_SenseInterruptStatus() == Floppy_SUCCESS)
-					bInitStatus = true ;
-			}
-			
-			if(bInitStatus == true)
-				if(Floppy_SendSpecifyCommand() == Floppy_SUCCESS)
-					bInitStatus = true ;
-		}
+    Floppy_WaitForInterrupt();
+    bInitStatus = true ;
+    for(int i = 0; i < 4; i++)
+      bInitStatus = upan::trycall([]() { Floppy_SenseInterruptStatus(); }).isGood();
+
+    if(bInitStatus)
+      bInitStatus = upan::trycall([]() { Floppy_SendSpecifyCommand(); }).isGood();
 	}
 	else
 	{
@@ -558,24 +456,22 @@ void Floppy_Initialize()
 
 	if(bInitStatus == true)
 	{
-		bool boolEnhanced ;
-		if(Floppy_IsEnhancedController(&boolEnhanced) == Floppy_SUCCESS)
-		{
-			if(boolEnhanced)
-				KC::MDisplay().Message("\n\tEnhanced Floppy Controller : 8272A", Display::WHITE_ON_BLACK()) ;
-			else
-				KC::MDisplay().Message("\n\tOlder Floppy Controller : 8272A", Display::WHITE_ON_BLACK()) ;
-		}
-		else
+    if (upan::trycall([]() {
+      if(Floppy_IsEnhancedController())
+        KC::MDisplay().Message("\n\tEnhanced Floppy Controller : 8272A", Display::WHITE_ON_BLACK()) ;
+      else
+        KC::MDisplay().Message("\n\tOlder Floppy Controller : 8272A", Display::WHITE_ON_BLACK()) ;
+    }).isBad())
+    {
 			KC::MDisplay().Message("\n\tFailed To Get Floppy Controller Version", Display::WHITE_ON_BLACK()) ;
+    }
 	
     DiskDriveManager::Instance().Create("floppya", DEV_FLOPPY, FD_DRIVE1,
       0, 2880,
       18, 80, 2,
       nullptr, DiskDriveManager::Instance().CreateRawDisk("floppy", FLOPPY_DISK, NULL), 2048);
 		
-		unsigned i ;
-		for(i = 0; i < MAX_DRIVES; i++)
+    for(auto i = 0; i < MAX_DRIVES; i++)
 		{
 			Floppy_bMotorOn[i] = false ;
 			Floppy_bRequestMotorOff[i] = false ;
@@ -593,51 +489,44 @@ bool Floppy_GetInitStatus()
 	return Floppy_bInitStatus ;
 }
 
-byte Floppy_IsEnhancedController(bool* boolEnhanced)
+bool Floppy_IsEnhancedController()
 {
-	*boolEnhanced = false ;
 	Floppy_SendControlCommand(FDD_VERSION_CMD) ;
 
-	if(Floppy_CompleteResultPhase(1) != Floppy_SUCCESS)
-		return Floppy_FAILURE ;
+  Floppy_CompleteResultPhase(1);
 
-	if(Floppy_ReplyBuffer[0] == FDD_VERSION_ENHANCED)
-		*boolEnhanced = true ;
-	
-	return Floppy_SUCCESS ;
+  return Floppy_ReplyBuffer[0] == FDD_VERSION_ENHANCED;
 }
 
-byte Floppy_Read(const DiskDrive* pDiskDrive, unsigned uiStartSectorNo, unsigned uiEndSectorNo, byte* bSectorBuffer)
+void Floppy_Read(const DiskDrive* pDiskDrive, unsigned uiStartSectorNo, unsigned uiEndSectorNo, byte* bSectorBuffer)
 {
-	byte bStatus = Floppy_ReadWrite(pDiskDrive, uiStartSectorNo, uiEndSectorNo, FD_READ) ;
-	Floppy_StopMotor(pDiskDrive->DriveNumber()) ;
-	DMA_ReleaseChannel(DMA_CH2) ;
-	
-	if(bStatus == Floppy_SUCCESS)
+  auto result = upan::trycall([&]() { Floppy_ReadWrite(pDiskDrive, uiStartSectorNo, uiEndSectorNo, FD_READ); });
+  Floppy_StopMotor(pDiskDrive->DriveNumber()) ;
+  DMA_ReleaseChannel(DMA_CH2) ;
+
+  if(result.isGood())
 		MemUtil_CopyMemory(SYS_LINEAR_SELECTOR_DEFINED, MEM_DMA_FLOPPY_START, MemUtil_GetDS(), 
 						(unsigned)bSectorBuffer, (uiEndSectorNo - uiStartSectorNo) * 512) ;
 
-	return bStatus ;
+  result.goodValueOrThrow(XLOC);
 }
 
-byte Floppy_Write(const DiskDrive* pDiskDrive, unsigned uiStartSectorNo, unsigned uiEndSectorNo, byte* bSectorBuffer)
+void Floppy_Write(const DiskDrive* pDiskDrive, unsigned uiStartSectorNo, unsigned uiEndSectorNo, byte* bSectorBuffer)
 {
 	MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)bSectorBuffer, SYS_LINEAR_SELECTOR_DEFINED, 
 					MEM_DMA_FLOPPY_START, (uiEndSectorNo - uiStartSectorNo) * 512) ;
 					
-	byte bStatus = Floppy_ReadWrite(pDiskDrive, uiStartSectorNo, uiEndSectorNo, FD_WRITE) ;
+  auto result = upan::trycall([&]() { Floppy_ReadWrite(pDiskDrive, uiStartSectorNo, uiEndSectorNo, FD_WRITE); });
 	Floppy_StopMotor(pDiskDrive->DriveNumber()) ;
 	DMA_ReleaseChannel(DMA_CH2) ;
 
-	return bStatus ;
+  result.goodValueOrThrow(XLOC);
 }
 
-byte
-Floppy_Format(const DiskDrive* pDiskDrive)
+void Floppy_Format(const DiskDrive* pDiskDrive)
 {
-	byte bStatus = Floppy_FullFormat(pDiskDrive) ;
+  Floppy_FullFormat(pDiskDrive) ;
 	Floppy_StopMotor(pDiskDrive->DriveNumber()) ;
-	return bStatus ;	
 }
 
 

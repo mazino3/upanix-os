@@ -213,19 +213,12 @@ void ConsoleCommands_ExecuteInternalCommand(const char* szCommand)
 
 void ConsoleCommands_ChangeDrive()
 {
-  DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByDriveName(CommandLineParser::Instance().GetParameterAt(0), false) ;
-	if(pDiskDrive == NULL)
-	{
-		KC::MDisplay().Message("\n Invalid Drive", ' ') ;
-		return ;
-	}
+  DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByDriveName(CommandLineParser::Instance().GetParameterAt(0), false).goodValueOrThrow(XLOC);
 
 	ProcessManager::Instance().GetCurrentPAS().iDriveID = pDiskDrive->Id();
 
-	MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&(pDiskDrive->FSMountInfo.FSpwd), 
-	MemUtil_GetDS(), 
-	(unsigned)&ProcessManager::Instance().GetCurrentPAS().processPWD, 
-	sizeof(FileSystem_PresentWorkingDirectory)) ;
+  MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&(pDiskDrive->FSMountInfo.FSpwd), MemUtil_GetDS(),
+                     (unsigned)&ProcessManager::Instance().GetCurrentPAS().processPWD, sizeof(FileSystem_PresentWorkingDirectory)) ;
 }
 
 void ConsoleCommands_ShowDrive()
@@ -235,38 +228,21 @@ void ConsoleCommands_ShowDrive()
 
 void ConsoleCommands_MountDrive()
 {
-  DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByDriveName(CommandLineParser::Instance().GetParameterAt(0), false) ;
-	if(pDiskDrive == NULL)
-	{
-		KC::MDisplay().Message("\n Invalid Drive", ' ') ;
-		return ;
-	}
-	if(FSCommand_Mounter(pDiskDrive, FS_MOUNT) != FSCommand_SUCCESS)
-		KC::MDisplay().Message("\nFailed to Mount Drive", Display::WHITE_ON_BLACK()) ;
-	else
-		KC::MDisplay().Message("\nDrive Mounted", Display::WHITE_ON_BLACK()) ;
+  DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByDriveName(CommandLineParser::Instance().GetParameterAt(0), false).goodValueOrThrow(XLOC);
+  FSCommand_Mounter(pDiskDrive, FS_MOUNT);
+  printf("\nDrive Mounted");
 }
 
 void ConsoleCommands_UnMountDrive()
 {
-  DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByDriveName(CommandLineParser::Instance().GetParameterAt(0), false) ;
-	if(pDiskDrive == NULL)
-	{
-		KC::MDisplay().Message("\n Invalid Drive", ' ') ;
-		return ;
-	}
-	if(FSCommand_Mounter(pDiskDrive, FS_UNMOUNT) != FSCommand_SUCCESS)
-		KC::MDisplay().Message("\nFailed to UnMount Drive", Display::WHITE_ON_BLACK()) ;
-	else
-		KC::MDisplay().Message("\nDrive UnMounted", Display::WHITE_ON_BLACK()) ;
+  DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByDriveName(CommandLineParser::Instance().GetParameterAt(0), false).goodValueOrThrow(XLOC);
+  FSCommand_Mounter(pDiskDrive, FS_UNMOUNT);
+  printf("\nDrive UnMounted");
 }
 
 void ConsoleCommands_FormatDrive()
 {
-  if(DiskDriveManager::Instance().FormatDrive(CommandLineParser::Instance().GetParameterAt(0)) != DeviceDrive_SUCCESS)
-		KC::MDisplay().Message("\nFailed to Format Drive", Display::WHITE_ON_BLACK()) ;
-	else
-		KC::MDisplay().Message("\nDrive Formated", Display::WHITE_ON_BLACK()) ;
+  DiskDriveManager::Instance().FormatDrive(CommandLineParser::Instance().GetParameterAt(0));
 }
 
 void ConsoleCommands_ClearScreen()
@@ -276,30 +252,14 @@ void ConsoleCommands_ClearScreen()
 
 void ConsoleCommands_CreateDirectory()
 {
-  byte bStatus = FileOperations_Create((char*)(CommandLineParser::Instance().GetParameterAt(0)), ATTR_TYPE_DIRECTORY, ATTR_DIR_DEFAULT) ;
-
-	if(bStatus != FileOperations_SUCCESS)
-	{
-		KC::MDisplay().Address("\n DIR Create Err: ", bStatus) ;
-	}
-	else
-	{
-		KC::MDisplay().Message("\n DIR Created\n", Display::WHITE_ON_BLACK()) ;
-	}
+  FileOperations_Create((char*)(CommandLineParser::Instance().GetParameterAt(0)), ATTR_TYPE_DIRECTORY, ATTR_DIR_DEFAULT);
+  printf("\n DIR Created\n");
 }
 
 void ConsoleCommands_RemoveFile()
 {
-  byte bStatus = FileOperations_Delete((char*)(CommandLineParser::Instance().GetParameterAt(0))) ;
-
-	if(bStatus != FileOperations_SUCCESS)
-	{
-		KC::MDisplay().Address("\n DIR Delete Err: ", bStatus) ;
-	}
-	else
-	{
-		KC::MDisplay().Message("\n DIR Deleted\n", Display::WHITE_ON_BLACK()) ;
-	}
+  FileOperations_Delete((char*)(CommandLineParser::Instance().GetParameterAt(0)));
+  printf("\n DIR Deleted\n");
 }
 
 void ConsoleCommands_ListDirContent()
@@ -312,13 +272,8 @@ void ConsoleCommands_ListDirContent()
   if(CommandLineParser::Instance().GetNoOfParameters())
     szListDirName = CommandLineParser::Instance().GetParameterAt(0) ;
 
-	if(FileOperations_GetDirectoryContent(szListDirName, &pDirList, &iListSize) != FileOperations_SUCCESS)
-	{
-		KC::MDisplay().Message("\n Failed", ' ') ;
-		return ;
-	}
-
-	int i ;
+  FileOperations_GetDirectoryContent(szListDirName, &pDirList, &iListSize);
+  int i ;
 	for(i = 0; i < iListSize; i++)
 	{
 		if(!(i % 3))
@@ -331,37 +286,25 @@ void ConsoleCommands_ListDirContent()
 
 void ConsoleCommands_ReadFileContent()
 {
-	unsigned n = 0 ;
 	char bDataBuffer[513] ;
 	
   const char* szFileName = CommandLineParser::Instance().GetParameterAt(0) ;
-	int fd ;
 
-	if(FileOperations_Open(&fd, szFileName, O_RDONLY) != FileOperations_SUCCESS)
-	{
-		KC::MDisplay().Message("\n File Open Failed", Display::WHITE_ON_BLACK()) ;
-		return ;
-	}
+  const int fd = FileOperations_Open(szFileName, O_RDONLY);
 
 	KC::MDisplay().Character('\n', ' ') ;
 	while(true)
 	{
-		byte bStatus = FileOperations_Read(fd, bDataBuffer, 512, &n) ;
+    int n = FileOperations_Read(fd, bDataBuffer, 512);
 
 		bDataBuffer[n] = '\0' ;
 
-		if(bStatus == Directory_ERR_EOF || (bStatus == Directory_SUCCESS && n < 512))
+    if(n < 512)
 		{
 			KC::MDisplay().Message(bDataBuffer, Display::WHITE_ON_BLACK()) ;
 			break ;
 		}
 		
-		if(bStatus != Directory_SUCCESS)
-		{
-			KC::MDisplay().Address("\n File Read Error: ", bStatus) ;
-			break ;
-		}
-
 		KC::MDisplay().Message(bDataBuffer, Display::WHITE_ON_BLACK()) ;
 	}
 
@@ -374,11 +317,7 @@ void ConsoleCommands_ReadFileContent()
 
 void ConsoleCommands_ChangeDirectory()
 {
-	byte bStatus ;
-  if((bStatus = FileOperations_ChangeDir(CommandLineParser::Instance().GetParameterAt(0))) != Directory_SUCCESS)
-	{
-		KC::MDisplay().Address("\n Directory Change Failed: ", bStatus) ;	
-	}
+  FileOperations_ChangeDir(CommandLineParser::Instance().GetParameterAt(0));
 }
 
 void ConsoleCommands_PresentWorkingDir()
@@ -394,39 +333,22 @@ void ConsoleCommands_PresentWorkingDir()
 
 void ConsoleCommands_CopyFile()
 {
-	unsigned n = 0 ;
 	const int iBufSize = 512 ;
 	char bDataBuffer[iBufSize] ;
 
   const char* szFileName = CommandLineParser::Instance().GetParameterAt(0) ;
-	int fd ;
+  const int fd = FileOperations_Open(szFileName, O_RDONLY);
 
-	if(FileOperations_Open(&fd, szFileName, O_RDONLY) != FileOperations_SUCCESS)
-	{
-		KC::MDisplay().Message("\n File Open Failed - Src", Display::WHITE_ON_BLACK()) ;
-		return ;
-	}
+  const char* szDestFile = CommandLineParser::Instance().GetParameterAt(1) ;
 
-  char* szDestFile = CommandLineParser::Instance().GetParameterAt(1) ;
+  FileOperations_Create(szDestFile, ATTR_TYPE_FILE, ATTR_FILE_DEFAULT);
 
-	if(FileOperations_Create(szDestFile, ATTR_TYPE_FILE, ATTR_FILE_DEFAULT) != FileOperations_SUCCESS)
-	{
-		KC::MDisplay().Message("\n File Creation Failed", Display::WHITE_ON_BLACK()) ;
-		return ;
-	}
+  const int fd1 = FileOperations_Open(szDestFile, O_RDWR);
 
-	int fd1 ;
-	if(FileOperations_Open(&fd1, szDestFile, O_RDWR) != FileOperations_SUCCESS)
-	{
-		KC::MDisplay().Message("\n File1 Open Failed - Dest", Display::WHITE_ON_BLACK()) ;
-		return ;
-	}
-
-	KC::MDisplay().Message("\n Progress = ", Display::WHITE_ON_BLACK()) ;
+  printf("\n Progress = ");
 	int cr = KC::MDisplay().GetCurrentCursorPosition();
 	int i = 0 ;
-	FileSystem_FileStat fStat ;	
-	FileOperations_GetStatFD(fd, &fStat) ;
+  const FileSystem_FileStat& fStat = FileOperations_GetStatFD(fd);
 	unsigned fsize = fStat.st_size ;
 	if(fsize == 0)
 	{
@@ -437,33 +359,18 @@ void ConsoleCommands_CopyFile()
 
 	while(true)
 	{
-		byte bStatus = FileOperations_Read(fd, bDataBuffer, iBufSize, &n) ;
+    int n = FileOperations_Read(fd, bDataBuffer, iBufSize);
 		int w ;
 
-		if(bStatus == Directory_ERR_EOF || (bStatus == Directory_SUCCESS && n < 512))
+    if(n < 512)
 		{
 			if(n > 0)
-			{
-				if(FileOperations_Write(fd1, bDataBuffer, n, &w) != FileOperations_SUCCESS)
-				{
-					KC::MDisplay().Message("\n File Write Error", ' ') ;
-				}
-			}
+        FileOperations_Write(fd1, bDataBuffer, n, &w);
 			KC::MDisplay().ShowProgress("", cr, 100) ;
 			break ;
 		}
 		
-		if(bStatus != Directory_SUCCESS)
-		{
-			KC::MDisplay().Address("\n File Read Error: ", bStatus) ;
-			break ;
-		}
-		
-		if(FileOperations_Write(fd1, bDataBuffer, 512, &w) != FileOperations_SUCCESS)
-		{
-			KC::MDisplay().Message("\n File Write Error", ' ') ;
-			break ;
-		}
+    FileOperations_Write(fd1, bDataBuffer, 512, &w);
 
 		i++ ;
 		KC::MDisplay().ShowProgress("", cr, (i * iBufSize * 100) / fsize) ;
@@ -795,13 +702,7 @@ void ConsoleCommands_ListProcess()
 
 void ConsoleCommands_ChangeRootDrive()
 {
-  DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByDriveName(CommandLineParser::Instance().GetParameterAt(0), false) ;
-	if(pDiskDrive == NULL)
-	{
-		KC::MDisplay().Message("\n Invalid Drive", ' ') ;
-		return ;
-	}
-
+  DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByDriveName(CommandLineParser::Instance().GetParameterAt(0), false).goodValueOrThrow(XLOC);
 	MountManager_SetRootDrive(pDiskDrive) ;
 }
 
@@ -816,8 +717,8 @@ void ConsoleCommands_Export()
     if(CommandLineParser::Instance().GetNoOfParameters() < 1)
         return ;
 
-    char* szExp = CommandLineParser::Instance().GetParameterAt(0) ;
-    char* var = szExp ;
+    const char* szExp = CommandLineParser::Instance().GetParameterAt(0) ;
+    const char* var = szExp ;
     char* val = strchr(szExp, '=') ;
 
     if(val == NULL)
@@ -909,7 +810,7 @@ void ConsoleCommands_ShowRawDiskList()
 	{
 		for(unsigned i = 0; i < uiCount; i++)
 		{
-      char* szName = CommandLineParser::Instance().GetParameterAt(i) ;
+      const char* szName = CommandLineParser::Instance().GetParameterAt(i) ;
 			pDisk = DiskDriveManager::Instance().GetRawDiskByName(szName) ;
 			lamdaDisplay(pDisk) ;
 		}

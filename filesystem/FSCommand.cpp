@@ -21,43 +21,28 @@
 #include <DMM.h>
 #include <Display.h>
 
-byte FSCommand_Mounter(DiskDrive* pDiskDrive, MOUNT_TYPE mountType)
+void FSCommand_Mounter(DiskDrive* pDiskDrive, MOUNT_TYPE mountType)
 {
-	byte bStatus ;
-
 	if(pDiskDrive == NULL)
-		return FSCommand_FAILURE ;
+    throw upan::exception(XLOC, "drive can't be null");
 
 	if(!KERNEL_MOUNT_DRIVE)
-	{
-		KC::MDisplay().Message("\n KERNEL_MOUNT_DRIVE Parameter is OFF\n", ' ') ;
-		return FSCommand_FAILURE ;
-	}
+    throw upan::exception(XLOC, "KERNEL_MOUNT_DRIVE Parameter is OFF");
 
 	if(mountType == FS_MOUNT)
   {
-		RETURN_IF_NOT(bStatus, pDiskDrive->Mount(), DeviceDrive_SUCCESS);
+    pDiskDrive->Mount();
   }
 	else
   {
-		RETURN_IF_NOT(bStatus, pDiskDrive->UnMount(), DeviceDrive_SUCCESS);
+    pDiskDrive->UnMount();
   }
-
-	return FSCommand_SUCCESS ;
 }
 
-byte FSCommand_Format(DiskDrive* pDiskDrive)
+void FSCommand_Format(DiskDrive& diskDrive)
 {	
-	byte bStatus ;
-
-	if(pDiskDrive == NULL)
-		return FSCommand_FAILURE ;
-
-	RETURN_IF_NOT(bStatus, FileSystem_Format(pDiskDrive), FileSystem_SUCCESS) ;
-
-	pDiskDrive->FlushDirtyCacheSectors();
-
-	return FSCommand_SUCCESS ;
+  FileSystem_Format(diskDrive);
+  diskDrive.FlushDirtyCacheSectors();
 }
 
 void FSCommand_GetDriveSpace(DiskDrive* pDiskDrive, DriveStat* pDriveStat)

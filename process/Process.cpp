@@ -52,7 +52,7 @@ void Process::Load(const char* szProcessName, unsigned *uiPDEAddress,
 
   upan::uniq_ptr<byte[]> bProcessImage(new byte[sizeof(char) * uiMemImageSize]);
 
-  upan::tryresult([&] { mELFParser.CopyProcessImage(bProcessImage.get(), _processBase, uiMemImageSize); }).badMap([&] (const upan::error& err) {
+  upan::trycall([&] { mELFParser.CopyProcessImage(bProcessImage.get(), _processBase, uiMemImageSize); }).onBad([&] (const upan::error& err) {
     DeAllocateAddressSpace();
     throw upan::exception(XLOC, err);
   });
@@ -61,13 +61,13 @@ void Process::Load(const char* szProcessName, unsigned *uiPDEAddress,
   memcpy((void*)(bProcessImage.get() + uiProcessImageSize + uiStartUpSectionSize), (void*)bDLLSectionImage.get(), uiDLLSectionSize) ;
 
   // Setting the Dynamic Link Loader Address in GOT
-  mELFParser.GetGOTAddress(bProcessImage.get(), uiMinMemAddr).goodMap([&](uint32_t* uiGOT) {
+  mELFParser.GetGOTAddress(bProcessImage.get(), uiMinMemAddr).onGood([&](uint32_t* uiGOT) {
     uiGOT[1] = -1 ;
     uiGOT[2] = uiMinMemAddr + uiProcessImageSize + uiStartUpSectionSize ;
   });
 
   // Initialize BSS segment to 0
-  mELFParser.GetSectionHeaderByTypeAndName(ELFSectionHeader::SHT_NOBITS, BSS_SEC_NAME).goodMap([&] (ELF32SectionHeader* pBSSSectionHeader)
+  mELFParser.GetSectionHeaderByTypeAndName(ELFSectionHeader::SHT_NOBITS, BSS_SEC_NAME).onGood([&] (ELF32SectionHeader* pBSSSectionHeader)
   {
     unsigned* pBSS = (unsigned*)(bProcessImage.get() + pBSSSectionHeader->sh_addr - uiMinMemAddr) ;
     unsigned uiBSSSize = pBSSSectionHeader->sh_size ;
@@ -84,11 +84,11 @@ void Process::Load(const char* szProcessName, unsigned *uiPDEAddress,
   /* Find init and term stdio functions in libc if any */
   unsigned uiInitRelocAddress = NULL ;
   unsigned uiTermRelocAddress = NULL ;
-  mELFParser.GetSectionHeaderByTypeAndName(ELFSectionHeader::SHT_REL, REL_PLT_SUB_NAME).goodMap([&] (ELF32SectionHeader* pRelocationSectionHeader)
+  mELFParser.GetSectionHeaderByTypeAndName(ELFSectionHeader::SHT_REL, REL_PLT_SUB_NAME).onGood([&] (ELF32SectionHeader* pRelocationSectionHeader)
   {
-    mELFParser.GetSectionHeaderByIndex(pRelocationSectionHeader->sh_link).goodMap([&] (ELF32SectionHeader* pDynamicSymSectiomHeader)
+    mELFParser.GetSectionHeaderByIndex(pRelocationSectionHeader->sh_link).onGood([&] (ELF32SectionHeader* pDynamicSymSectiomHeader)
     {
-      mELFParser.GetSectionHeaderByIndex(pDynamicSymSectiomHeader->sh_link).goodMap([&] (ELF32SectionHeader* pDynamicSymStringSectionHeader)
+      mELFParser.GetSectionHeaderByIndex(pDynamicSymSectiomHeader->sh_link).onGood([&] (ELF32SectionHeader* pDynamicSymStringSectionHeader)
       {
         ELFRelocSection::ELF32_Rel* pELFDynRelTable =
           (ELFRelocSection::ELF32_Rel*)((unsigned)bProcessImage.get() + pRelocationSectionHeader->sh_addr - uiMinMemAddr) ;

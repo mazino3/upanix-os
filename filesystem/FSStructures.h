@@ -63,7 +63,7 @@ typedef struct
 } PACKED FileSystem_Time ;
 */
 
-typedef struct
+struct FileSystem_DIR_Entry
 {
 	byte			Name[33] ;
 	struct timeval			CreatedTime ;
@@ -75,7 +75,7 @@ typedef struct
 	unsigned		uiStartSectorID ;
 	unsigned		uiParentSecID ;
 	int				iUserID ;
-} PACKED FileSystem_DIR_Entry ;
+} PACKED;
 
 typedef struct
 {
@@ -102,7 +102,7 @@ public:
   const uint32_t ReadCount() const { return _readCount; }
   const uint32_t WriteCount() const { return _writeCount; }
 
-  byte Load(DiskDrive& diskDrive, uint32_t sectortId);
+  void Load(DiskDrive& diskDrive, uint32_t sectortId);
   uint32_t Read(uint32_t sectorId);
   void Write(uint32_t sectorId, uint32_t value);
 
@@ -127,14 +127,14 @@ class FileSystemMountInfo
     void InitBootBlock(FileSystem_BootBlock* bootBlock);
     void UnallocateFreePoolQueue();
     void AllocateFreePoolQueue(uint32_t size);
-    byte ReadFSBootBlock();
-    byte WriteFSBootBlock();
-    byte LoadFreeSectors();
-    byte FlushTableCache(int iFlushSize);
+    void ReadFSBootBlock();
+    void WriteFSBootBlock();
+    void LoadFreeSectors();
+    void FlushTableCache(int iFlushSize);
     void AddToFreePoolCache(uint32_t sectorId) { _freePoolQueue->push_back(sectorId); }
-    byte AddToTableCache(unsigned uiSectorEntry);
+    void AddToTableCache(unsigned uiSectorEntry);
     SectorBlockEntry* GetSectorEntryFromCache(unsigned uiSectorEntry);
-    byte AllocateSector(uint32_t* uiFreeSectorID);
+    uint32_t AllocateSector();
 
     uint32_t GetRealSectorNumber(uint32_t uiSectorID) const;
     void UpdateUsedSectors(unsigned uiSectorEntryValue);

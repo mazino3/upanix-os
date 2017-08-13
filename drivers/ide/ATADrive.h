@@ -24,7 +24,7 @@
 #define ATADrive_SUCCESS	0
 #define ATADrive_FAILURE	1
 
-byte ATADrive_Read(ATAPort* pPort, unsigned uiSectorAddress, byte* pBuffer, unsigned uiNoOfSectorsToTransfer) ;
-byte ATADrive_Write(ATAPort* pPort, unsigned uiSectorAddress, byte* pBuffer, unsigned uiNoOfSectorsToTransfer) ;
+void ATADrive_Read(ATAPort* pPort, unsigned uiSectorAddress, byte* pBuffer, unsigned uiNoOfSectorsToTransfer) ;
+void ATADrive_Write(ATAPort* pPort, unsigned uiSectorAddress, byte* pBuffer, unsigned uiNoOfSectorsToTransfer) ;
 
 #endif

@@ -25,6 +25,7 @@
 # include <mdate.h>
 # include <ProcessManager.h>
 # include <DiskCache.h>
+# include <try.h>
 
 void SystemUtil_Reboot()
 {
@@ -33,10 +34,10 @@ void SystemUtil_Reboot()
 		if(pDiskDrive->Mounted())
 		{
 			printf("\n UnMounting Drive: %-20s", pDiskDrive->DriveName().c_str());
-			byte bStatus = FSCommand_Mounter(pDiskDrive, FS_UNMOUNT) ;
+      const auto& result = upan::trycall([&]() { FSCommand_Mounter(pDiskDrive, FS_UNMOUNT); });
 			pDiskDrive->StopReleaseCacheTask(true);
       pDiskDrive->FlushDirtyCacheSectors();
-			if(bStatus != FSCommand_SUCCESS)
+      if(result.isBad())
 				printf("\n Failed to UnMount Drive\n") ;
 			else
 				printf("[ Done ]") ;

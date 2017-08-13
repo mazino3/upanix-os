@@ -21,21 +21,6 @@
 #include <Global.h>
 #include <DeviceDrive.h>
 
-#define Floppy_SUCCESS							0
-#define Floppy_ERR_TIMEOUT						1
-#define Floppy_ERR_UNDERRUN						2
-#define Floppy_ERR_OVERRUN						3
-#define Floppy_INIT_FAILURE						4
-#define Floppy_FAILURE							5
-#define Floppy_ERR_INVALID_NO_OF_RESULT_REPLIES	6
-#define Floppy_ERR_SEEK							7
-#define Floppy_INVALID_SECTOR					8
-#define Floppy_ERR_RECALIBERATE					9
-#define Floppy_ERR_READ							10
-#define Floppy_ERR_DMA							11
-#define Floppy_ERR_FORMAT						12
-#define Floppy_ERR_INVALID_DRIVE				13
-
 #define MAX_RESULT_PHASE_REPLIES 7
 
 typedef enum
@@ -53,9 +38,9 @@ typedef enum
 void Floppy_Initialize() ;
 bool Floppy_GetInitStatus() ;
 void Floppy_Handler() ;
-byte Floppy_IsEnhancedController(bool* boolEnhanced) ;
-byte Floppy_Read(const DiskDrive* pDiskDrive, unsigned uiStartSectorNo, unsigned uiEndSectorNo, byte* bSectorBuffer) ;
-byte Floppy_Write(const DiskDrive* pDiskDrive, unsigned uiStartSectorNo, unsigned uiEndSectorNo, byte* bSectorBuffer) ;
-byte Floppy_Format(const DiskDrive* pDiskDrive) ;
+bool Floppy_IsEnhancedController() ;
+void Floppy_Read(const DiskDrive* pDiskDrive, unsigned uiStartSectorNo, unsigned uiEndSectorNo, byte* bSectorBuffer) ;
+void Floppy_Write(const DiskDrive* pDiskDrive, unsigned uiStartSectorNo, unsigned uiEndSectorNo, byte* bSectorBuffer) ;
+void Floppy_Format(const DiskDrive* pDiskDrive) ;
 
 #endif

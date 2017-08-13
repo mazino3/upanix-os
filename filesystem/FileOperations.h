@@ -75,27 +75,27 @@ typedef enum
 	USER_OTHERS
 } USER_TYPE ;
 
-byte FileOperations_Open(int* fd, const char* szFileName, const byte mode) ;
+int FileOperations_Open(const char* szFileName, const byte mode) ;
 byte FileOperations_Close(int fd) ;
 bool FileOperations_ReadLine(int fd, upan::string& line);
-byte FileOperations_Read(int fd, char* buffer, int len, unsigned* pReadLen) ;
-byte FileOperations_Write(int fd, const char* buffer, int len, int* pWriteLen) ;
-byte FileOperations_Create(const char* szFilePath, unsigned short usFileType, unsigned short usMode) ;
-byte FileOperations_Delete(const char* szFilePath) ;
-byte FileOperations_Exists(const char* szFileName, unsigned short usFileType) ;
-byte FileOperations_Seek(int fd, int iOffset, int seekType) ;
-byte FileOperations_UpdateTime(const char* szFileName, int iDriveID, byte bTimeType) ;
-byte FileOperations_GetOffset(int fd, unsigned* uiOffset) ;
-byte FileOperations_GetDirEntry(const char* szFileName, FileSystem_DIR_Entry* pDirEntry) ;
-byte FileOperations_GetStat(const char* szFileName, int iDriveID, FileSystem_FileStat* pFileStat) ;
-byte FileOperations_GetFileOpenMode(int fd, byte* mode) ;
-byte FileOperations_GetStatFD(int iFD, FileSystem_FileStat* pFileStat) ;
-byte FileOperations_SyncPWD() ;
-byte FileOperations_ChangeDir(const char* szFileName) ;
-byte FileOperations_GetDirectoryContent(const char* szPathAddress, FileSystem_DIR_Entry** pDirList, int* iListSize) ;
-byte FileOperations_FileAccess(const char* szFileName, int iDriveID, int mode) ;
+int FileOperations_Read(int fd, char* buffer, int len) ;
+void FileOperations_Write(int fd, const char* buffer, int len, int* pWriteLen) ;
+void FileOperations_Create(const char* szFilePath, unsigned short usFileType, unsigned short usMode) ;
+void FileOperations_Delete(const char* szFilePath) ;
+bool FileOperations_Exists(const char* szFileName, unsigned short usFileType) ;
+void FileOperations_Seek(int fd, int iOffset, int seekType) ;
+void FileOperations_UpdateTime(const char* szFileName, int iDriveID, byte bTimeType) ;
+uint32_t FileOperations_GetOffset(int fd) ;
+const FileSystem_DIR_Entry FileOperations_GetDirEntry(const char* szFileName);
+const FileSystem_FileStat FileOperations_GetStat(const char* szFileName, int iDriveID) ;
+byte FileOperations_GetFileOpenMode(int fd) ;
+const FileSystem_FileStat FileOperations_GetStatFD(int iFD) ;
+void FileOperations_SyncPWD() ;
+void FileOperations_ChangeDir(const char* szFileName) ;
+void FileOperations_GetDirectoryContent(const char* szPathAddress, FileSystem_DIR_Entry** pDirList, int* iListSize) ;
+bool FileOperations_FileAccess(const char* szFileName, int iDriveID, int mode) ;
 byte FileOperations_Dup2(int oldFD, int newFD) ;
 byte FileOperations_ReInitStdFd(int StdFD) ;
-byte FileOperations_GetCWD(char* szPathBuf, int iBufSize) ;
+void FileOperations_GetCWD(char* szPathBuf, int iBufSize) ;
 
 #endif

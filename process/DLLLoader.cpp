@@ -198,7 +198,7 @@ void DLLLoader_LoadELFDLL(const char* szDLLName, const char* szJustDLLName, Proc
 
   upan::uniq_ptr<byte[]> bDLLImage(new byte[sizeof(char) * uiMemImageSize]);
 
-  upan::tryresult([&] () { mELFParser.CopyProcessImage(bDLLImage.get(), 0, uiMemImageSize); }).badMap([&] (const upan::error& err) {
+  upan::trycall([&] () { mELFParser.CopyProcessImage(bDLLImage.get(), 0, uiMemImageSize); }).onBad([&] (const upan::error& err) {
     for(unsigned i = 0; i < pProcessSharedObjectList[iProcessDLLEntryIndex].uiNoOfPages; i++)
       MemManager::Instance().DeAllocatePhysicalPage(pProcessSharedObjectList[iProcessDLLEntryIndex].uiAllocatedPageNumbers[i]) ;
     throw upan::exception(XLOC, err);
@@ -207,18 +207,18 @@ void DLLLoader_LoadELFDLL(const char* szDLLName, const char* szJustDLLName, Proc
   MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)bDLLSectionImage.get(), MemUtil_GetDS(), (unsigned)(bDLLImage.get() + uiDLLImageSize), uiDLLSectionSize) ;
 
 	// Setting the Dynamic Link Loader Address in GOT
-  mELFParser.GetGOTAddress(bDLLImage.get(), uiMinMemAddr).goodMap([&](uint32_t* uiGOT) {
+  mELFParser.GetGOTAddress(bDLLImage.get(), uiMinMemAddr).onGood([&](uint32_t* uiGOT) {
     uiGOT[1] = iProcessDLLEntryIndex ;
     uiGOT[2] = uiDLLImageSize + uiDLLLoadAddress ;
 
-    mELFParser.GetNoOfGOTEntries().goodMap([&](uint32_t uiNoOfGOTEntries) {
+    mELFParser.GetNoOfGOTEntries().onGood([&](uint32_t uiNoOfGOTEntries) {
       for(uint32_t i = 3; i < uiNoOfGOTEntries; i++)
         uiGOT[i] += uiDLLLoadAddress ;
     });
   });
 
 /* Dynamic Relocation Entries are resolved here in Global Offset Table */
-  mELFParser.GetSectionHeaderByTypeAndName(SHT_REL, REL_DYN_SUB_NAME).goodMap([&] (ELF32SectionHeader* pRelocationSectionHeader)
+  mELFParser.GetSectionHeaderByTypeAndName(SHT_REL, REL_DYN_SUB_NAME).onGood([&] (ELF32SectionHeader* pRelocationSectionHeader)
   {
     ELF32SectionHeader* pDynamicSymSectiomHeader = mELFParser.GetSectionHeaderByIndex(pRelocationSectionHeader->sh_link).goodValueOrThrow(XLOC);
 

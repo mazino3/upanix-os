@@ -50,7 +50,7 @@ class StrPathTokenizer : public StringTokenizer
 			
 			strcat((char*)szTemp, m_szFileName) ;
 
-			if(FileOperations_Exists((const char*)szTemp, ATTR_TYPE_FILE) == FileOperations_SUCCESS)
+      if(FileOperations_Exists((const char*)szTemp, ATTR_TYPE_FILE))
 			{
 				m_bFound = true ;
 
@@ -135,7 +135,7 @@ void GenericUtil_ReadInput(char* szInputBuffer, const int iMaxReadLength, byte b
 	}
 }
 
-byte GenericUtil_GetFullFilePathFromEnv(const char* szPathEnvVar, const char* szPathEnvDefVal, const char* szFileName, char* szFullFilePath)
+bool GenericUtil_GetFullFilePathFromEnv(const char* szPathEnvVar, const char* szPathEnvDefVal, const char* szFileName, char* szFullFilePath)
 {
 	char* s = ProcessEnv_Get(szPathEnvVar) ;
 	char szEnvValue[256] ;
@@ -163,7 +163,7 @@ byte GenericUtil_GetFullFilePathFromEnv(const char* szPathEnvVar, const char* sz
 	StrPathTokenizer tokenizer(szFileName, szFullFilePath) ;
 	String_Tokenize(szEnvValue, ':', &iListSize, tokenizer) ;
 
-	return (byte)tokenizer.IsFound() ;
+  return tokenizer.IsFound() ;
 }
 
 void debug_step(const char* msg)
