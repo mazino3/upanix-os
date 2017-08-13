@@ -236,12 +236,14 @@ void Directory_GetDirEntryForCreateDelete(const Process* processAddressSpace, in
 
 	String_Tokenize(szDirPath, '/', &iListSize, tokenizer) ;
 
+  FileSystem_DIR_Entry tempDirEntry;
   for(int i = 0; i < iListSize - 1; i++)
 	{
     if(!Directory_FindDirectory(*pDiskDrive, CWD, tokenizer.szToken[i], uiSectorNo, bSectorPos, bDirectoryBuffer))
       throw upan::exception(XLOC, "directory %s is not found", tokenizer.szToken[i]);
 
-    CWD.pDirEntry = ((FileSystem_DIR_Entry*)bDirectoryBuffer) + bSectorPos ;
+    tempDirEntry = *(((FileSystem_DIR_Entry*)bDirectoryBuffer) + bSectorPos);
+    CWD.pDirEntry = &tempDirEntry;
     CWD.uiSectorNo = uiSectorNo ;
     CWD.bSectorEntryPosition = bSectorPos ;
 	}
@@ -492,7 +494,7 @@ bool Directory_FindDirectory(DiskDrive& diskDrive, const FileSystem_CWD& cwd, co
 		uiCurrentSectorID = uiNextSectorID ;
 	}
 
-  throw upan::exception(XLOC, "fs table corrupted for drive: %s", diskDrive.DriveName().c_str());
+  return false;
 }
 
 void Directory_FileWrite(DiskDrive* pDiskDrive, FileSystem_CWD* pCWD, ProcFileDescriptor* pFDEntry, byte* bDataBuffer, unsigned uiDataSize)
@@ -838,12 +840,14 @@ void Directory_ReadDirEntryInfo(DiskDrive& diskDrive, const FileSystem_CWD& cwd,
 
 	String_Tokenize(szFileName, '/', &iListSize, tokenizer) ;
 
+  FileSystem_DIR_Entry tempDirEntry;
   for(int i = 0; i < iListSize; i++)
 	{
     if (!Directory_FindDirectory(diskDrive, CWD, tokenizer.szToken[i], uiSectorNo, bSectorPos, bDirectoryBuffer))
       throw upan::exception(XLOC, "file/directory %s doesn't exist", szFileName);
 
-    CWD.pDirEntry = ((FileSystem_DIR_Entry*)bDirectoryBuffer) + bSectorPos ;
+    tempDirEntry = *(((FileSystem_DIR_Entry*)bDirectoryBuffer) + bSectorPos);
+    CWD.pDirEntry = &tempDirEntry;
     CWD.uiSectorNo = uiSectorNo ;
     CWD.bSectorEntryPosition = bSectorPos ;
 	}
