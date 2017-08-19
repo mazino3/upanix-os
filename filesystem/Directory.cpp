@@ -28,59 +28,50 @@
 #define MAX_SECTORS_PER_RW 8
 
 /************************************* Static Functions ***********************************/
-static void Directory_BufferedWrite(DiskDrive* pDiskDrive, unsigned uiSectorID, byte* bSectorBuffer, byte* bBuffer,
-                                    unsigned* uiStartSectorID, unsigned* uiPrevSectorID, unsigned* iCount, byte bFlush)
+static void Directory_BufferedWrite(DiskDrive& diskDrive, unsigned uiSectorID, byte* bSectorBuffer, byte* bBuffer,
+                                    unsigned& uiStartSectorID, unsigned& uiPrevSectorID, unsigned& iCount, bool bFlush)
 {
-	byte bNewBuffering = false ;
+  bool bNewBuffering = false ;
 
 	if(bFlush)
 	{
-		if(*iCount > 0)
-		{
-      pDiskDrive->xWrite(bBuffer, *uiStartSectorID, *iCount);
-		}
+    if(iCount > 0)
+      diskDrive.xWrite(bBuffer, uiStartSectorID, iCount);
 
-		*iCount = 0 ;
+    iCount = 0 ;
     return;
 	}
 
-	if((*iCount) == 0)
+  if(iCount == 0)
 	{
-		*uiStartSectorID = *uiPrevSectorID = uiSectorID ;
-
-		MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)bSectorBuffer, MemUtil_GetDS(), (unsigned)bBuffer, 512) ;
-
-		*iCount = 1 ;
+    uiStartSectorID = uiPrevSectorID = uiSectorID ;
+    memcpy(bBuffer, bSectorBuffer, 512);
+    iCount = 1 ;
 	}
-	else if((*uiPrevSectorID) + 1 == uiSectorID)
+  else if(uiPrevSectorID + 1 == uiSectorID)
 	{
-		*uiPrevSectorID = uiSectorID ;
-
-		MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)bSectorBuffer, MemUtil_GetDS(), (unsigned)(bBuffer + (*iCount) * 512), 512) ;
-
-		(*iCount)++ ;
+    uiPrevSectorID = uiSectorID ;
+    memcpy(bBuffer + iCount * 512, bSectorBuffer, 512);
+    ++iCount;
 	}
 	else
 	{
 		bNewBuffering = true ;
 	}
 
-	if((*iCount) == MAX_SECTORS_PER_RW || bNewBuffering)
+  if(iCount == MAX_SECTORS_PER_RW || bNewBuffering)
 	{
-    pDiskDrive->xWrite(bBuffer, *uiStartSectorID, *iCount);
+    diskDrive.xWrite(bBuffer, uiStartSectorID, iCount);
 
-		*iCount = 0 ;
+    iCount = 0 ;
 		
 		if(bNewBuffering)
 		{	
-			*uiStartSectorID = *uiPrevSectorID = uiSectorID ;
-
-			MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)bSectorBuffer, MemUtil_GetDS(), (unsigned)bBuffer, 512) ;
-		
-			*iCount = 1 ;
+      uiStartSectorID = uiPrevSectorID = uiSectorID ;
+      memcpy(bBuffer, bSectorBuffer, 512);
+      iCount = 1 ;
 		}
 	}
-
 }
 
 void Directory_GetLastReadSectorDetails(const ProcFileDescriptor* pFDEntry, int* iSectorIndex, unsigned* uiSectorID)
@@ -622,7 +613,7 @@ void Directory_ActualFileWrite(DiskDrive* pDiskDrive, byte* bDataBuffer, ProcFil
 	
 	unsigned uiBufStartSectorID, uiBufPrecSectorID ;
 	byte bWriteBuffer[MAX_SECTORS_PER_RW * 512] ;
-	int iBufCount = 0 ;
+  uint32_t iBufCount = 0 ;
 
 	while(true)
 	{
@@ -642,23 +633,23 @@ void Directory_ActualFileWrite(DiskDrive* pDiskDrive, byte* bDataBuffer, ProcFil
 
       memcpy(bSectorBuffer, (bDataBuffer + uiWrittenCount), uiWriteRemainingCount);
 
-      Directory_BufferedWrite(pDiskDrive, uiCurrentSectorID, bSectorBuffer, bWriteBuffer, &uiBufStartSectorID,
-                              &uiBufPrecSectorID, (unsigned*)&iBufCount, false);
+      Directory_BufferedWrite(*pDiskDrive, uiCurrentSectorID, bSectorBuffer, bWriteBuffer, uiBufStartSectorID,
+                              uiBufPrecSectorID, iBufCount, false);
 
-      Directory_BufferedWrite(pDiskDrive, EOC, NULL, bWriteBuffer, &uiBufStartSectorID, &uiBufPrecSectorID, (unsigned*)&iBufCount, true);
+      Directory_BufferedWrite(*pDiskDrive, EOC, NULL, bWriteBuffer, uiBufStartSectorID, uiBufPrecSectorID, iBufCount, true);
 
       return;
 		}
 
-    Directory_BufferedWrite(pDiskDrive, uiCurrentSectorID, bDataBuffer + uiWrittenCount, bWriteBuffer,
-                            &uiBufStartSectorID, &uiBufPrecSectorID, (unsigned*)&iBufCount, false);
+    Directory_BufferedWrite(*pDiskDrive, uiCurrentSectorID, bDataBuffer + uiWrittenCount, bWriteBuffer,
+                            uiBufStartSectorID, uiBufPrecSectorID, iBufCount, false);
 		
 		uiWrittenCount += 512 ;
 		uiWriteRemainingCount -= 512 ;
 
 		if(uiWriteRemainingCount == 0)
 		{
-      Directory_BufferedWrite(pDiskDrive, EOC, NULL, bWriteBuffer, &uiBufStartSectorID, &uiBufPrecSectorID, (unsigned*)&iBufCount, true);
+      Directory_BufferedWrite(*pDiskDrive, EOC, NULL, bWriteBuffer, uiBufStartSectorID, uiBufPrecSectorID, iBufCount, true);
       return;
 		}
 
