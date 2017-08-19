@@ -333,17 +333,12 @@ void Directory_GetDirectoryContent(const char* szFileName, Process* processAddre
 		{
 			curDir = ((FileSystem_DIR_Entry*)bDirectoryBuffer) + bSectorPosIndex ;
 
-			if(curDir->usAttribute & ATTR_DELETED_DIR)
+      if(!(curDir->usAttribute & ATTR_DELETED_DIR))
 			{
-				continue ;
-			}
-			else
-			{
-        MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)curDir, MemUtil_GetDS(),
-                           (unsigned)&(pAddress[iScanDirCount]), sizeof(FileSystem_DIR_Entry)) ;
-				iScanDirCount++ ;
-				if(iScanDirCount >= *iListSize)
+        ++iScanDirCount;
+        if(iScanDirCount > *iListSize)
           return;
+        pAddress[iScanDirCount - 1] = *curDir;
 			}
 		}
 
