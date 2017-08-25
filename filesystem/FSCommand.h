@@ -31,8 +31,7 @@ typedef enum
 	FS_UNMOUNT
 } MOUNT_TYPE ;
 
-void FSCommand_Mounter(DiskDrive* pDiskDrive, MOUNT_TYPE mountType) ;
-void FSCommand_Format(DiskDrive&);
-void FSCommand_GetDriveSpace(DiskDrive* pDiskDrive, DriveStat* pDriveStat) ;
+void FSCommand_Mounter(DiskDrive* pDiskDrive, MOUNT_TYPE mountType);
+void FSCommand_GetDriveSpace(DiskDrive* pDiskDrive, DriveStat* pDriveStat);
 
 #endif
