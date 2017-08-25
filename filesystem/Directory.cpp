@@ -121,8 +121,7 @@ void Directory_Create(Process* processAddressSpace, int iDriveID, byte* bParentD
 		}
 	}
 
-  Directory_PopulateDirEntry(((FileSystem_DIR_Entry*)bSectorBuffer) + bSectorPos, szDirName, usDirAttribute,
-                             processAddressSpace->iUserID, pCWD->uiSectorNo, pCWD->bSectorEntryPosition) ;
+  ((FileSystem_DIR_Entry*)bSectorBuffer)[bSectorPos].Init(szDirName, usDirAttribute, processAddressSpace->iUserID, pCWD->uiSectorNo, pCWD->bSectorEntryPosition);
 
   pDiskDrive->xWrite(bSectorBuffer, uiSectorNo, 1);
 
@@ -344,25 +343,6 @@ void Directory_GetDirectoryContent(const char* szFileName, Process* processAddre
 
     uiCurrentSectorID = FileSystem_GetSectorEntryValue(pDiskDrive, uiCurrentSectorID);
 	}
-}
-
-void Directory_PopulateDirEntry(FileSystem_DIR_Entry* dirEntry, char* szDirName, unsigned short usDirAttribute, int iUserID, unsigned uiParentSecNo, byte bParentSecPos)
-{
-	strcpy((char*)dirEntry->Name, szDirName) ;
-	
-	dirEntry->usAttribute = usDirAttribute ;
-	
-	SystemUtil_GetTimeOfDay(&dirEntry->CreatedTime) ;
-	SystemUtil_GetTimeOfDay(&dirEntry->AccessedTime) ;
-	SystemUtil_GetTimeOfDay(&dirEntry->ModifiedTime) ;
-
-	dirEntry->uiStartSectorID = EOC ;
-	dirEntry->uiSize = 0 ;
-
-	dirEntry->uiParentSecID = uiParentSecNo ;
-	dirEntry->bParentSectorPos = bParentSecPos ;
-
-	dirEntry->iUserID = iUserID ;
 }
 
 bool Directory_FindDirectory(DiskDrive& diskDrive, const FileSystem_CWD& cwd, const char* szDirName, unsigned& uiSectorNo, byte& bSectorPos, byte* bDestSectorBuffer)

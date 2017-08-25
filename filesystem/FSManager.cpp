@@ -66,53 +66,6 @@ byte FSManager_BinarySearch(const upan::vector<SectorBlockEntry>& blocks, unsign
 
 /**************************************************************************************/
 
-uint32_t FSManager_GetSectorEntryValue(DiskDrive* pDiskDrive, const unsigned uiSectorID, byte bFromCahceOnly)
-{
-  FileSystemMountInfo& fsMountInfo = pDiskDrive->FSMountInfo ;
-  SectorBlockEntry* pSectorBlockEntry = fsMountInfo.GetSectorEntryFromCache(uiSectorID) ;
-
-	if(pSectorBlockEntry != NULL)
-    return pSectorBlockEntry->Read(uiSectorID);
-	
-	if(bFromCahceOnly)
-    throw upan::exception(XLOC, "sectory entry value not found in cache for sector:%u", uiSectorID);
-
-  fsMountInfo.AddToTableCache(uiSectorID);
-
-  return FSManager_GetSectorEntryValue(pDiskDrive, uiSectorID, true);
-}
-
-void FSManager_SetSectorEntryValue(DiskDrive* pDiskDrive, const unsigned uiSectorID, unsigned uiSectorEntryValue, byte bFromCahceOnly)
-{
-	if(!bFromCahceOnly)
-    pDiskDrive->FSMountInfo.UpdateUsedSectors((uiSectorEntryValue));
-
-  FileSystemMountInfo& fsMountInfo = pDiskDrive->FSMountInfo ;
-  SectorBlockEntry* pSectorBlockEntry = fsMountInfo.GetSectorEntryFromCache(uiSectorID) ;
-
-	if(pSectorBlockEntry != NULL)
-  {
-    pSectorBlockEntry->Write(uiSectorID, uiSectorEntryValue);
-    return;
-	}
-
-	if(bFromCahceOnly)
-    throw upan::exception(XLOC, "Sector block for sector id %d is not in cache", uiSectorID);
-	
-  fsMountInfo.AddToTableCache(uiSectorID);
-
-  FSManager_SetSectorEntryValue(pDiskDrive, uiSectorID, uiSectorEntryValue, true);
-}
-
-uint32_t FSManager_AllocateSector(DiskDrive* pDiskDrive)
-{
-  uint32_t uiFreeSectorID = pDiskDrive->FSMountInfo.AllocateSector();
-
-  FSManager_SetSectorEntryValue(pDiskDrive, uiFreeSectorID, EOC, false);
-
-  return uiFreeSectorID;
-}
-
 void SectorBlockEntry::Load(DiskDrive& diskDrive, uint32_t sectortId)
 {
   const FSBootBlock& fsBootBlock = diskDrive.FSMountInfo.GetBootBlock();
@@ -369,3 +322,49 @@ void FileSystemMountInfo::UpdateUsedSectors(unsigned uiSectorEntryValue)
   else if(uiSectorEntryValue == 0)
     _fsBootBlock.uiUsedSectors--;
 }
+
+uint32_t FileSystemMountInfo::GetSectorEntryValue(const unsigned uiSectorID, byte bFromCahceOnly)
+{
+  SectorBlockEntry* pSectorBlockEntry = GetSectorEntryFromCache(uiSectorID) ;
+
+  if(pSectorBlockEntry != NULL)
+    return pSectorBlockEntry->Read(uiSectorID);
+
+  if(bFromCahceOnly)
+    throw upan::exception(XLOC, "sectory entry value not found in cache for sector:%u", uiSectorID);
+
+  AddToTableCache(uiSectorID);
+
+  return GetSectorEntryValue(uiSectorID, true);
+}
+
+void FileSystemMountInfo::SetSectorEntryValue(const unsigned uiSectorID, unsigned uiSectorEntryValue, byte bFromCahceOnly)
+{
+  if(!bFromCahceOnly)
+    UpdateUsedSectors((uiSectorEntryValue));
+
+  SectorBlockEntry* pSectorBlockEntry = GetSectorEntryFromCache(uiSectorID) ;
+
+  if(pSectorBlockEntry != NULL)
+  {
+    pSectorBlockEntry->Write(uiSectorID, uiSectorEntryValue);
+    return;
+  }
+
+  if(bFromCahceOnly)
+    throw upan::exception(XLOC, "Sector block for sector id %d is not in cache", uiSectorID);
+
+  AddToTableCache(uiSectorID);
+
+  SetSectorEntryValue(uiSectorID, uiSectorEntryValue, true);
+}
+
+uint32_t FSManager_AllocateSector(DiskDrive* pDiskDrive)
+{
+  uint32_t uiFreeSectorID = pDiskDrive->FSMountInfo.AllocateSector();
+
+  FSManager_SetSectorEntryValue(pDiskDrive, uiFreeSectorID, EOC, false);
+
+  return uiFreeSectorID;
+}
+

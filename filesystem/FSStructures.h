@@ -72,6 +72,7 @@ typedef struct
 class FileSystem_DIR_Entry
 {
 public:
+  void Init(char* szDirName, unsigned short usDirAttribute, int iUserID, unsigned uiParentSecNo, byte bParentSecPos);
   void InitAsRoot(uint32_t parentSectorId);
 
 	byte			Name[33] ;
@@ -146,13 +147,16 @@ class FileSystemMountInfo
     uint32_t AllocateSector();
 
     uint32_t GetRealSectorNumber(uint32_t uiSectorID) const;
-    void UpdateUsedSectors(unsigned uiSectorEntryValue);
 
     void DisplayCache();
 
     //Ouput
     FileSystem_PresentWorkingDirectory FSpwd;
 private:
+    void UpdateUsedSectors(unsigned uiSectorEntryValue);
+    uint32_t GetSectorEntryValue(const unsigned uiSectorID, byte bFromCahceOnly);
+    void SetSectorEntryValue(const unsigned uiSectorID, unsigned uiSectorEntryValue, byte bFromCahceOnly);
+
     DiskDrive& _diskDrive;
     FSBootBlock _fsBootBlock;
     upan::queue<unsigned>* _freePoolQueue;

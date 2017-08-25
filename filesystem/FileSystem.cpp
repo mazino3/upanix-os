@@ -122,11 +122,11 @@ void FSBootBlock::Init(const DiskDrive& diskDrive)
   BPB_FSTableSize = (BPB_TotSec32 - BPB_RsvdSecCnt - 1) / (ENTRIES_PER_TABLE_SECTOR + 1) ;
 }
 
-void FileSystem_DIR_Entry::InitAsRoot(uint32_t parentSectorId)
+void FileSystem_DIR_Entry::Init(char* szDirName, unsigned short usDirAttribute, int iUserID, unsigned uiParentSecNo, byte bParentSecPos)
 {
-  strcpy((char*)Name, FS_ROOT_DIR) ;
+  strcpy((char*)Name, szDirName) ;
 
-  usAttribute = ATTR_DIR_DEFAULT | ATTR_TYPE_DIRECTORY ;
+  usAttribute = usDirAttribute ;
 
   SystemUtil_GetTimeOfDay(&CreatedTime) ;
   SystemUtil_GetTimeOfDay(&AccessedTime) ;
@@ -135,8 +135,13 @@ void FileSystem_DIR_Entry::InitAsRoot(uint32_t parentSectorId)
   uiStartSectorID = EOC ;
   uiSize = 0 ;
 
-  uiParentSecID = parentSectorId ;
-  bParentSectorPos = 0 ;
+  uiParentSecID = uiParentSecNo ;
+  bParentSectorPos = bParentSecPos ;
 
-  iUserID = ROOT_USER_ID ;
+  iUserID = iUserID ;
+}
+
+void FileSystem_DIR_Entry::InitAsRoot(uint32_t parentSectorId)
+{
+  Init(FS_ROOT_DIR, ATTR_DIR_DEFAULT | ATTR_TYPE_DIRECTORY, ROOT_USER_ID, parentSectorId, 0);
 }
