@@ -23,8 +23,11 @@
 
 #define ENTRIES_PER_TABLE_SECTOR	(128)
 
-typedef struct
+class DiskDrive;
+
+class FSBootBlock
 {
+public:
 	byte			BPB_jmpBoot[3] ;
 	
 	byte			BPB_Media ;
@@ -47,7 +50,10 @@ typedef struct
 	byte			BPB_VolLab[11 + 1] ;
 
 	unsigned		uiUsedSectors ;
-} PACKED FileSystem_BootBlock ;
+
+  void Init(const DiskDrive& diskDrive);
+
+} PACKED;
 
 /*
 typedef struct
@@ -63,8 +69,11 @@ typedef struct
 } PACKED FileSystem_Time ;
 */
 
-struct FileSystem_DIR_Entry
+class FileSystem_DIR_Entry
 {
+public:
+  void InitAsRoot(uint32_t parentSectorId);
+
 	byte			Name[33] ;
 	struct timeval			CreatedTime ;
 	struct timeval			AccessedTime ;
@@ -123,10 +132,10 @@ class FileSystemMountInfo
     {
       delete _freePoolQueue;
     }
-    const FileSystem_BootBlock& GetBootBlock() const { return _fsBootBlock; }
-    void InitBootBlock(FileSystem_BootBlock* bootBlock);
-    void UnallocateFreePoolQueue();
+    const FSBootBlock& GetBootBlock() const { return _fsBootBlock; }
+    void InitBootBlock(FSBootBlock* bootBlock);
     void AllocateFreePoolQueue(uint32_t size);
+    void UnallocateFreePoolQueue();
     void ReadFSBootBlock();
     void WriteFSBootBlock();
     void LoadFreeSectors();
@@ -145,7 +154,7 @@ class FileSystemMountInfo
     FileSystem_PresentWorkingDirectory FSpwd;
 private:
     DiskDrive& _diskDrive;
-    FileSystem_BootBlock _fsBootBlock;
+    FSBootBlock _fsBootBlock;
     upan::queue<unsigned>* _freePoolQueue;
     upan::vector<SectorBlockEntry> _fsTableCache;
 };

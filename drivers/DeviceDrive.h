@@ -95,10 +95,12 @@ class DiskDrive
   public:
     void Mount();
     void UnMount();
+    void Format();
     void Read(unsigned uiStartSector, unsigned uiNoOfSectors, byte* bDataBuffer);
     void xRead(byte* bDataBuffer, unsigned uiSector, unsigned uiNoOfSectors);
     void Write(unsigned uiStartSector, unsigned uiNoOfSectors, byte* bDataBuffer);
     void xWrite(byte* bDataBuffer, unsigned uiSector, unsigned uiNoOfSectors);
+    void InitFSBootBlock(FSBootBlock* pFSBootBlock);
     byte FlushDirtyCacheSectors(int iCount = -1);
     void ReleaseCache();
     unsigned GetFreeSector();
@@ -123,7 +125,6 @@ class DiskDrive
 
     void StopReleaseCacheTask(bool value) { _bStopReleaseCacheTask = value; }
     void FSType(FS_TYPE t) { _fsType = t; }
-    void Mounted(bool mounted);
 
     // FileSystem Mount Info
     FileSystemMountInfo	FSMountInfo ;

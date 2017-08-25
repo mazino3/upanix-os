@@ -111,7 +111,7 @@ void DiskDrive::Mount()
   FSMountInfo.LoadFreeSectors();
   ReadRootDirectory();
 
-	Mounted(true);
+  _mounted = true;
 }
 
 void DiskDrive::UnMount()
@@ -122,26 +122,20 @@ void DiskDrive::UnMount()
   FSMountInfo.WriteFSBootBlock();
   FSMountInfo.FlushTableCache(MAX_SECTORS_IN_TABLE_CACHE);
 	FlushDirtyCacheSectors();
-	Mounted(false);
+  FSMountInfo.UnallocateFreePoolQueue();
+
+  _mounted = false;
 }
 
 void DiskDrive::ReadRootDirectory()
 {
 	byte bDataBuffer[512];
-	FileSystem_PresentWorkingDirectory& FSpwd = FSMountInfo.FSpwd;
 
   xRead(bDataBuffer, 0, 1);
 	
-	MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)bDataBuffer, MemUtil_GetDS(), (unsigned)&FSpwd.DirEntry, sizeof(FileSystem_DIR_Entry));
-	FSpwd.uiSectorNo = 0;
-	FSpwd.bSectorEntryPosition = 0;
-}
-
-void DiskDrive::Mounted(bool mounted)
-{
-  _mounted = mounted;
-  if(!mounted)
-    FSMountInfo.UnallocateFreePoolQueue();
+  FSMountInfo.FSpwd.DirEntry = *reinterpret_cast<FileSystem_DIR_Entry*>(bDataBuffer);
+  FSMountInfo.FSpwd.uiSectorNo = 0;
+  FSMountInfo.FSpwd.bSectorEntryPosition = 0;
 }
 
 void DiskDrive::Read(unsigned uiStartSector, unsigned uiNoOfSectors, byte* bDataBuffer)
@@ -375,6 +369,58 @@ void DiskDrive::RawWrite(unsigned uiStartSector, unsigned uiNoOfSectors, byte* b
 	}
 }
 
+void DiskDrive::Format()
+{
+  if(DeviceType() == DEV_FLOPPY)
+  {
+;//		RETURN_IF_NOT(bStatus, Floppy_Format(pDiskDrive->driveNo), Floppy_SUCCESS) ;
+  }
+
+  byte bFSBootBlockBuffer[512] ;
+  byte bSectorBuffer[512] ;
+  FSBootBlock* pFSBootBlock = (FSBootBlock*)(bFSBootBlockBuffer) ;
+
+  /************************ FAT Boot Block [START] *******************************/
+  pFSBootBlock->Init(*this);
+
+  bFSBootBlockBuffer[510] = 0x55 ; /* BootSector Signature */
+  bFSBootBlockBuffer[511] = 0xAA ;
+
+  Write(1, 1, bFSBootBlockBuffer);
+  /************************* FAT Boot Block [END] **************************/
+
+  /*********************** FAT Table [START] *************************************/
+
+  unsigned i ;
+  for(i = 0; i < 512; i++)
+    bSectorBuffer[i] = 0 ;
+
+  for(i = 0; i < pFSBootBlock->BPB_FSTableSize; i++)
+  {
+    if(i == 0)
+      ((unsigned*)&bSectorBuffer)[0] = EOC ;
+
+    Write(i + pFSBootBlock->BPB_RsvdSecCnt + 1, 1, bSectorBuffer);
+
+    if(i == 0)
+      ((unsigned*)&bSectorBuffer)[0] = 0 ;
+  }
+  /*************************** FAT Table [END] **************************************/
+
+  /*************************** Root Directory [START] *******************************/
+  FSMountInfo.InitBootBlock(pFSBootBlock);
+
+  unsigned uiSec = FSMountInfo.GetRealSectorNumber(0);
+
+  ((FileSystem_DIR_Entry*)bSectorBuffer)->InitAsRoot(uiSec);
+
+  Write(uiSec, 1, bSectorBuffer);
+  /*************************** Root Directory [END] ********************************/
+
+  _mounted = false;
+  FlushDirtyCacheSectors();
+}
+
 byte DiskDrive::FlushDirtyCacheSectors(int iCount)
 {
 	if(!_bEnableDiskCache)
@@ -427,7 +473,7 @@ void DiskDrive::ReleaseCache()
 unsigned DiskDrive::GetFreeSector()
 {
 	byte bBuffer[512];
-  const FileSystem_BootBlock& fsBootBlock = FSMountInfo.GetBootBlock() ;
+  const FSBootBlock& fsBootBlock = FSMountInfo.GetBootBlock() ;
 	
 	for(unsigned i = 0; i < fsBootBlock.BPB_FSTableSize; ++i)
 	{
@@ -669,7 +715,7 @@ void DiskDriveManager::FormatDrive(const upan::string& szDriveName)
 {
   DiskDrive* pDiskDrive = GetByDriveName(szDriveName, false).goodValueOrThrow(XLOC);
 
-  FSCommand_Format(*pDiskDrive);
+  pDiskDrive->Format();
 
 	switch((int)pDiskDrive->DeviceType())
 	{

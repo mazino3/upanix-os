@@ -39,15 +39,9 @@ void FSCommand_Mounter(DiskDrive* pDiskDrive, MOUNT_TYPE mountType)
   }
 }
 
-void FSCommand_Format(DiskDrive& diskDrive)
-{	
-  FileSystem_Format(diskDrive);
-  diskDrive.FlushDirtyCacheSectors();
-}
-
 void FSCommand_GetDriveSpace(DiskDrive* pDiskDrive, DriveStat* pDriveStat)
 {
-  const FileSystem_BootBlock& fsBootBlock = pDiskDrive->FSMountInfo.GetBootBlock();
+  const FSBootBlock& fsBootBlock = pDiskDrive->FSMountInfo.GetBootBlock();
   pDriveStat->ulTotalSize = fsBootBlock.BPB_FSTableSize * ENTRIES_PER_TABLE_SECTOR * 512 ;
   pDriveStat->ulUsedSize = fsBootBlock.uiUsedSectors * 512 ;
 }

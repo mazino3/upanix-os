@@ -115,7 +115,7 @@ uint32_t FSManager_AllocateSector(DiskDrive* pDiskDrive)
 
 void SectorBlockEntry::Load(DiskDrive& diskDrive, uint32_t sectortId)
 {
-  const FileSystem_BootBlock& fsBootBlock = diskDrive.FSMountInfo.GetBootBlock();
+  const FSBootBlock& fsBootBlock = diskDrive.FSMountInfo.GetBootBlock();
   diskDrive.Read(fsBootBlock.BPB_RsvdSecCnt + BLOCK_ID(sectortId) + 1, 1, (byte*)_sectorBlock);
   _blockId = BLOCK_ID(sectortId);
   _readCount = _writeCount = 0;
@@ -158,7 +158,7 @@ void FileSystemMountInfo::ReadFSBootBlock()
   if(bArrFSBootBlock[510] != 0x55 || bArrFSBootBlock[511] != 0xAA)
     throw upan::exception(XLOC, "invalid BPB signature - %x, %x", bArrFSBootBlock[510], bArrFSBootBlock[511]);
 
-  memcpy(&_fsBootBlock, bArrFSBootBlock, sizeof(FileSystem_BootBlock));
+  memcpy(&_fsBootBlock, bArrFSBootBlock, sizeof(FSBootBlock));
 
   if(_fsBootBlock.BPB_BootSig != 0x29)
     throw upan::exception(XLOC, "invalid BOOT signature: %x", _fsBootBlock.BPB_BootSig);
@@ -210,7 +210,7 @@ void FileSystemMountInfo::WriteFSBootBlock()
   bSectorBuffer[510] = 0x55; /* BootSector Signature */
   bSectorBuffer[511] = 0xAA;
 
-  memcpy(bSectorBuffer, &_fsBootBlock, sizeof(FileSystem_BootBlock));
+  memcpy(bSectorBuffer, &_fsBootBlock, sizeof(FSBootBlock));
 
   _diskDrive.Write(1, 1, bSectorBuffer);
 }
@@ -357,9 +357,9 @@ uint32_t FileSystemMountInfo::GetRealSectorNumber(uint32_t uiSectorID) const
           + _fsBootBlock.BPB_FSTableSize;
 }
 
-void FileSystemMountInfo::InitBootBlock(FileSystem_BootBlock* bootBlock)
+void FileSystemMountInfo::InitBootBlock(FSBootBlock* bootBlock)
 {
-  memcpy(&_fsBootBlock, bootBlock, sizeof(FileSystem_BootBlock));
+  memcpy(&_fsBootBlock, bootBlock, sizeof(FSBootBlock));
 }
 
 void FileSystemMountInfo::UpdateUsedSectors(unsigned uiSectorEntryValue)
