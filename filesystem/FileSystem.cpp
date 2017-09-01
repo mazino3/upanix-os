@@ -120,3 +120,45 @@ void FileSystem_DIR_Entry::InitAsRoot(uint32_t parentSectorId)
 {
   Init(FS_ROOT_DIR, ATTR_DIR_DEFAULT | ATTR_TYPE_DIRECTORY, ROOT_USER_ID, parentSectorId, 0);
 }
+
+upan::string FileSystem_DIR_Entry::FullPath(DiskDrive& diskDrive)
+{
+  byte bSectorBuffer[512] ;
+
+  const FileSystem_DIR_Entry* pParseDirEntry = this;
+
+  upan::string fullPath = "";
+  upan::string temp = "";
+
+  bool bFirst = true ;
+
+  while(true)
+  {
+    if(strcmp((const char*)pParseDirEntry->Name, FS_ROOT_DIR) == 0)
+    {
+      return upan::string(FS_ROOT_DIR) + fullPath;
+    }
+    else
+    {
+      upan::string curDir = pParseDirEntry->Name;
+      if(!bFirst)
+      {
+        fullPath = curDir + FS_ROOT_DIR + fullPath;
+      }
+      else
+      {
+        fullPath = curDir;
+        bFirst = false ;
+      }
+    }
+
+    unsigned uiParSectorNo = pParseDirEntry->uiParentSecID ;
+    byte bParSectorPos = pParseDirEntry->bParentSectorPos ;
+
+    diskDrive.xRead(bSectorBuffer, uiParSectorNo, 1);
+
+    pParseDirEntry = &((const FileSystem_DIR_Entry*)bSectorBuffer)[bParSectorPos] ;
+  }
+
+  throw upan::exception(XLOC, "failed to find full path for directory/file %s", Name);
+}

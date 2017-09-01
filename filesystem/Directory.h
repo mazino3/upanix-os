@@ -58,7 +58,6 @@ void Directory_ReadDirEntryInfo(DiskDrive&, const FileSystem_CWD&, const char* s
 void Directory_Change(const char* szFileName, int iDriveID, Process* processAddressSpace) ;
 void Directory_PresentWorkingDirectory(Process* processAddressSpace, char** uiReturnDirPathAddress) ;
 const FileSystem_DIR_Entry Directory_GetDirEntry(const char* szFileName, Process* processAddressSpace, int iDriveID) ;
-void Directory_FindFullDirPath(DiskDrive* pDiskDrive, const FileSystem_DIR_Entry&, char* szFullDirPath) ;
 void Directory_SyncPWD(Process* processAddressSpace) ;
 
 #endif

@@ -84,17 +84,18 @@ class FileSystem_DIR_Entry
 public:
   void Init(char* szDirName, unsigned short usDirAttribute, int iUserID, unsigned uiParentSecNo, byte bParentSecPos);
   void InitAsRoot(uint32_t parentSectorId);
+  upan::string FullPath(DiskDrive& diskDrive);
 
-  byte			Name[33] ;
-  struct timeval			CreatedTime ;
-  struct timeval			AccessedTime ;
-  struct timeval			ModifiedTime ;
-  byte	 		bParentSectorPos ;
-  unsigned short	usAttribute ;
-  unsigned		uiSize ;
-  unsigned		uiStartSectorID ;
-  unsigned		uiParentSecID ;
-  int				iUserID ;
+  byte            Name[33] ;
+  struct timeval  CreatedTime ;
+  struct timeval  AccessedTime ;
+  struct timeval  ModifiedTime ;
+  byte            bParentSectorPos ;
+  unsigned short  usAttribute ;
+  unsigned        uiSize ;
+  unsigned        uiStartSectorID ;
+  unsigned        uiParentSecID ;
+  int             iUserID ;
 } PACKED;
 
 typedef struct

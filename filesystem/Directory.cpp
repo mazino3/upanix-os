@@ -953,51 +953,6 @@ const FileSystem_DIR_Entry Directory_GetDirEntry(const char* szFileName, Process
   return *dirFile;
 }
 
-void Directory_FindFullDirPath(DiskDrive* pDiskDrive, const FileSystem_DIR_Entry& dirEntry, char* szFullDirPath)
-{
-	byte bSectorBuffer[512] ;
-	char temp[256] ;
-
-  const FileSystem_DIR_Entry* pParseDirEntry = &dirEntry ;
-
-	strcpy(szFullDirPath, "") ;
-
-	byte bFirst = true ;
-
-	while(true)
-	{
-		if(strcmp((const char*)pParseDirEntry->Name, FS_ROOT_DIR) == 0)
-		{
-			strcpy(temp, szFullDirPath) ;
-			strcpy(szFullDirPath, FS_ROOT_DIR) ;
-			strcat(szFullDirPath, temp) ;
-      return;
-		}
-		else
-		{
-			strcpy(temp, szFullDirPath) ;
-			strcpy(szFullDirPath, (const char*)pParseDirEntry->Name) ;
-			
-			if(!bFirst)
-			{
-				strcat(szFullDirPath, FS_ROOT_DIR) ;
-				strcat(szFullDirPath, temp) ;
-			}
-			else
-				bFirst = false ;
-		}
-
-		unsigned uiParSectorNo = pParseDirEntry->uiParentSecID ;
-		byte bParSectorPos = pParseDirEntry->bParentSectorPos ;
-
-    pDiskDrive->xRead(bSectorBuffer, uiParSectorNo, 1);
-		
-		pParseDirEntry = &((const FileSystem_DIR_Entry*)bSectorBuffer)[bParSectorPos] ;
-	}
-
-  throw upan::exception(XLOC, "failed to find full path for directory/file %s", dirEntry.Name);
-}
-
 void Directory_SyncPWD(Process* processAddressSpace)
 {
   DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByID(processAddressSpace->iDriveID, true).goodValueOrThrow(XLOC);

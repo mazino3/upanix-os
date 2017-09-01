@@ -154,10 +154,7 @@ int FileOperations_Open(const char* szFileName, const byte mode)
     dirEntry = Directory_GetDirEntry(szFile, pPAS, iDriveID);
 	}
 
-	char szFullFilePath[256] ;
-  Directory_FindFullDirPath(pDiskDrive, dirEntry, szFullFilePath);
-
-  return ProcFileManager_AllocateFD(szFullFilePath, mode, iDriveID, dirEntry.uiSize, dirEntry.uiStartSectorID);
+  return ProcFileManager_AllocateFD(dirEntry.FullPath(*pDiskDrive).c_str(), mode, iDriveID, dirEntry.uiSize, dirEntry.uiStartSectorID);
 }
 
 byte FileOperations_Close(int fd)
@@ -404,13 +401,12 @@ void FileOperations_GetCWD(char* szPathBuf, int iBufSize)
 
   DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByID(iDriveID, true).goodValueOrThrow(XLOC);
 
-	char szFullFilePath[256] ;
-  Directory_FindFullDirPath(pDiskDrive, pPWD->DirEntry, szFullFilePath);
+  const upan::string& fullPath = pPWD->DirEntry.FullPath(*pDiskDrive);
 
-	if(strlen(szFullFilePath) > iBufSize)
-    throw upan::exception(XLOC, "%d buf-size is smaller than path size %d", iBufSize, strlen(szFullFilePath));
+  if(fullPath.length() > iBufSize)
+    throw upan::exception(XLOC, "%d buf-size is smaller than path size %d", iBufSize, fullPath.length());
 
-	strcpy(szPathBuf, szFullFilePath);
+  strcpy(szPathBuf, fullPath.c_str());
 }
 
 const FileSystem_DIR_Entry FileOperations_GetDirEntry(const char* szFileName)
