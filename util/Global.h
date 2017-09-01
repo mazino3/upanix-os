@@ -37,8 +37,6 @@ typedef unsigned			DWORD ;
 
 #define IS_FG_PROCESS_GROUP() (ProcessManager::Instance().GetCurrentPAS()._processGroup->IsFGProcessGroup())
 
-#define KERNEL_MOUNT_DRIVE true
-
 #define KERNEL_REAL_ADDRESS(ADDR) ((unsigned)ADDR + GLOBAL_DATA_SEGMENT_BASE)
 #define KERNEL_VIRTUAL_ADDRESS(ADDR) ((unsigned)ADDR - GLOBAL_DATA_SEGMENT_BASE) 
 

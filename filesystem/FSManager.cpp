@@ -15,20 +15,21 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
-# include <FSManager.h>
-# include <DMM.h>
-# include <Global.h>
-# include <FSStructures.h>
-# include <MemUtil.h>
-# include <Display.h>
-# include <FileSystem.h>
+#include <FSManager.h>
+#include <DMM.h>
+#include <Global.h>
+#include <FileSystem.h>
+#include <MemUtil.h>
+#include <Display.h>
+#include <FileSystem.h>
+#include <DeviceDrive.h>
 
 #define BLOCK_ID(SectorID) (SectorID / ENTRIES_PER_TABLE_SECTOR)
 #define BLOCK_OFFSET(SectorID) (SectorID % ENTRIES_PER_TABLE_SECTOR) 
 
 /**************************** static functions **************************************/
 
-byte FSManager_BinarySearch(const upan::vector<SectorBlockEntry>& blocks, unsigned uiBlockID, int* iPos)
+static byte FSManager_BinarySearch(const upan::vector<SectorBlockEntry>& blocks, unsigned uiBlockID, int* iPos)
 {
   int low, high, mid ;
 
@@ -293,7 +294,7 @@ uint32_t FileSystemMountInfo::AllocateSector()
   auto uiFreeSectorID = _freePoolQueue->front();
   _freePoolQueue->pop_front();
 
-  SetSectorEntryValue(uiFreeSectorID, EOC, false);
+  SetSectorEntryValue(uiFreeSectorID, EOC);
   return uiFreeSectorID;
 }
 
@@ -325,38 +326,42 @@ void FileSystemMountInfo::UpdateUsedSectors(unsigned uiSectorEntryValue)
     _fsBootBlock.uiUsedSectors--;
 }
 
-uint32_t FileSystemMountInfo::GetSectorEntryValue(const unsigned uiSectorID, byte bFromCahceOnly)
+uint32_t FileSystemMountInfo::GetSectorEntryValue(const unsigned uiSectorID)
 {
-  SectorBlockEntry* pSectorBlockEntry = GetSectorEntryFromCache(uiSectorID) ;
-
-  if(pSectorBlockEntry != NULL)
-    return pSectorBlockEntry->Read(uiSectorID);
-
-  if(bFromCahceOnly)
-    throw upan::exception(XLOC, "sectory entry value not found in cache for sector:%u", uiSectorID);
-
-  AddToTableCache(uiSectorID);
-
-  return GetSectorEntryValue(uiSectorID, true);
-}
-
-void FileSystemMountInfo::SetSectorEntryValue(const unsigned uiSectorID, unsigned uiSectorEntryValue, byte bFromCahceOnly)
-{
-  if(!bFromCahceOnly)
-    UpdateUsedSectors((uiSectorEntryValue));
+  if(uiSectorID > (_fsBootBlock.BPB_FSTableSize * _fsBootBlock.BPB_BytesPerSec / 4))
+    throw upan::exception(XLOC, "invalid cluster id: %u", uiSectorID);
 
   SectorBlockEntry* pSectorBlockEntry = GetSectorEntryFromCache(uiSectorID) ;
 
-  if(pSectorBlockEntry != NULL)
+  if(pSectorBlockEntry == NULL)
   {
-    pSectorBlockEntry->Write(uiSectorID, uiSectorEntryValue);
-    return;
+    AddToTableCache(uiSectorID);
+    pSectorBlockEntry = GetSectorEntryFromCache(uiSectorID) ;
   }
 
-  if(bFromCahceOnly)
+  if(pSectorBlockEntry == NULL)
+    throw upan::exception(XLOC, "sectory entry value not found in cache for sector:%u", uiSectorID);
+
+  return pSectorBlockEntry->Read(uiSectorID);
+}
+
+void FileSystemMountInfo::SetSectorEntryValue(const unsigned uiSectorID, unsigned uiSectorEntryValue)
+{
+  if(uiSectorID > (_fsBootBlock.BPB_FSTableSize * _fsBootBlock.BPB_BytesPerSec / 4))
+    throw upan::exception(XLOC, "invalid cluster id: %u", uiSectorID);
+
+  UpdateUsedSectors((uiSectorEntryValue));
+
+  SectorBlockEntry* pSectorBlockEntry = GetSectorEntryFromCache(uiSectorID) ;
+
+  if(pSectorBlockEntry == NULL)
+  {
+    AddToTableCache(uiSectorID);
+    pSectorBlockEntry = GetSectorEntryFromCache(uiSectorID) ;
+  }
+
+  if(pSectorBlockEntry == NULL)
     throw upan::exception(XLOC, "Sector block for sector id %d is not in cache", uiSectorID);
 
-  AddToTableCache(uiSectorID);
-
-  SetSectorEntryValue(uiSectorID, uiSectorEntryValue, true);
+  pSectorBlockEntry->Write(uiSectorID, uiSectorEntryValue);
 }

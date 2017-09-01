@@ -16,6 +16,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
 
+#include <MemUtil.h>
 #include <UHCIController.h>
 #include <ProcessManager.h>
 #include <UHCIDevice.h>

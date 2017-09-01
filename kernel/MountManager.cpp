@@ -15,7 +15,6 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
-# include <FSCommand.h>
 # include <DMM.h>
 # include <Display.h>
 # include <MemUtil.h>
@@ -85,7 +84,7 @@ static void MountManager_MountDrive(char* szDriveName)
   DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByDriveName(szDriveName, false).goodValueOrThrow(XLOC);
 
 	// Mount Drive
-  FSCommand_Mounter(pDiskDrive, FS_MOUNT);
+  pDiskDrive->Mount();
 
 	// Set Process Drive
 	ProcessManager::Instance().GetCurrentPAS().iDriveID = pDiskDrive->Id();

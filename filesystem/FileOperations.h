@@ -26,7 +26,7 @@
 #define FileOperations_FAILURE					5
 
 # include <Global.h>
-# include <FSStructures.h>
+# include <FileSystem.h>
 
 #define ATTR_DIR_DEFAULT	0x01ED  //0000 0001 1110 1101 => 0000(Rsv) 000(Dir) 111(u:rwx) 101(g:r-x) 101(o:r-x)
 #define ATTR_FILE_DEFAULT	0x03A4  //0000(Rsv) 001(File) 110(u:rw-) 100(g:r--) 100(o:r--)

@@ -19,7 +19,8 @@
 #define _DEVICE_DRIVE_H_
 
 #include <Global.h>
-#include <FSStructures.h>
+#include <FileSystem.h>
+#include <FSManager.h>
 #include <Atomic.h>
 #include <DiskCache.h>
 #include <string.h>

@@ -115,7 +115,7 @@ void Directory_Create(Process* processAddressSpace, int iDriveID, byte* bParentD
 		if(bSectorPos == EOC_B)
 		{
       uiFreeSectorID = pDiskDrive->FSMountInfo.AllocateSector();
-      FileSystem_SetSectorEntryValue(pDiskDrive, uiSectorNo, uiFreeSectorID);
+      pDiskDrive->FSMountInfo.SetSectorEntryValue(uiSectorNo, uiFreeSectorID);
 			uiSectorNo = uiFreeSectorID ;
 			bSectorPos = 0 ;
 		}
@@ -341,7 +341,7 @@ void Directory_GetDirectoryContent(const char* szFileName, Process* processAddre
 			}
 		}
 
-    uiCurrentSectorID = FileSystem_GetSectorEntryValue(pDiskDrive, uiCurrentSectorID);
+    uiCurrentSectorID = pDiskDrive->FSMountInfo.GetSectorEntryValue(uiCurrentSectorID);
 	}
 }
 
@@ -428,7 +428,7 @@ bool Directory_FindDirectory(DiskDrive& diskDrive, const FileSystem_CWD& cwd, co
 			}
 		}
 
-    uiNextSectorID = FileSystem_GetSectorEntryValue(&diskDrive, uiCurrentSectorID);
+    uiNextSectorID = diskDrive.FSMountInfo.GetSectorEntryValue(uiCurrentSectorID);
 
 		if(uiScanDirCount >= pDirEntry->uiSize)
 		{
@@ -518,7 +518,7 @@ void Directory_ActualFileWrite(DiskDrive* pDiskDrive, byte* bDataBuffer, ProcFil
 	
 	while(iSectorIndex < iStartWriteSectorNo && uiCurrentSectorID != EOC)
 	{
-    uiNextSectorID = FileSystem_GetSectorEntryValue(pDiskDrive, uiCurrentSectorID);
+    uiNextSectorID = pDiskDrive->FSMountInfo.GetSectorEntryValue(uiCurrentSectorID);
 
 		iSectorIndex++ ;
 		uiPrevSectorID = uiCurrentSectorID ;
@@ -539,7 +539,7 @@ void Directory_ActualFileWrite(DiskDrive* pDiskDrive, byte* bDataBuffer, ProcFil
 			}
 			else
 			{
-         FileSystem_SetSectorEntryValue(pDiskDrive, uiPrevSectorID, uiCurrentSectorID);
+        pDiskDrive->FSMountInfo.SetSectorEntryValue(uiPrevSectorID, uiCurrentSectorID);
 			}
 			
 			uiPrevSectorID = uiCurrentSectorID ;
@@ -576,7 +576,7 @@ void Directory_ActualFileWrite(DiskDrive* pDiskDrive, byte* bDataBuffer, ProcFil
 		if(uiWrittenCount == uiDataSize)
       return;
 
-    uiNextSectorID = FileSystem_GetSectorEntryValue(pDiskDrive, uiCurrentSectorID);
+    uiNextSectorID = pDiskDrive->FSMountInfo.GetSectorEntryValue(uiCurrentSectorID);
 
     uiPrevSectorID = uiCurrentSectorID ;
     uiCurrentSectorID = uiNextSectorID ;
@@ -596,7 +596,7 @@ void Directory_ActualFileWrite(DiskDrive* pDiskDrive, byte* bDataBuffer, ProcFil
 		{
 			bStartAllocation = true ;
       uiCurrentSectorID = pDiskDrive->FSMountInfo.AllocateSector();
-      FileSystem_SetSectorEntryValue(pDiskDrive, uiPrevSectorID, uiCurrentSectorID);
+      pDiskDrive->FSMountInfo.SetSectorEntryValue(uiPrevSectorID, uiCurrentSectorID);
 		}
 		
 		if(uiWriteRemainingCount < 512)
@@ -628,7 +628,7 @@ void Directory_ActualFileWrite(DiskDrive* pDiskDrive, byte* bDataBuffer, ProcFil
       return;
 		}
 
-    uiNextSectorID = FileSystem_GetSectorEntryValue(pDiskDrive, uiCurrentSectorID);
+    uiNextSectorID = pDiskDrive->FSMountInfo.GetSectorEntryValue(uiCurrentSectorID);
 		uiPrevSectorID = uiCurrentSectorID ;
 		uiCurrentSectorID = uiNextSectorID ;
 	}
@@ -684,7 +684,7 @@ int Directory_FileRead(DiskDrive* pDiskDrive, FileSystem_CWD* pCWD, ProcFileDesc
 	
 	while(iSectorIndex != iStartReadSectorNo)
 	{
-    uiNextSectorID = FileSystem_GetSectorEntryValue(pDiskDrive, uiCurrentSectorID);
+    uiNextSectorID = pDiskDrive->FSMountInfo.GetSectorEntryValue(uiCurrentSectorID);
 		iSectorIndex++ ;
 		uiCurrentSectorID = uiNextSectorID ;
 	}
@@ -715,7 +715,7 @@ int Directory_FileRead(DiskDrive* pDiskDrive, FileSystem_CWD* pCWD, ProcFileDesc
 
 		for(;;)
 		{
-      uiNextSectorID = FileSystem_GetSectorEntryValue(pDiskDrive, uiCurrentSectorID);
+      uiNextSectorID = pDiskDrive->FSMountInfo.GetSectorEntryValue(uiCurrentSectorID);
 
 			if(uiCurrentSectorID + 1 == uiNextSectorID)
 			{
@@ -735,7 +735,7 @@ int Directory_FileRead(DiskDrive* pDiskDrive, FileSystem_CWD* pCWD, ProcFileDesc
 
 				if(iSectorCount == MAX_SECTORS_PER_RW)
 				{
-          uiNextSectorID = FileSystem_GetSectorEntryValue(pDiskDrive, uiCurrentSectorID);
+          uiNextSectorID = pDiskDrive->FSMountInfo.GetSectorEntryValue(uiCurrentSectorID);
 					uiCurrentSectorID = uiNextSectorID ;
 					break ;	
 				}

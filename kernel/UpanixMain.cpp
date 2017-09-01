@@ -29,7 +29,6 @@
 # include <Floppy.h>
 # include <MemUtil.h>
 # include <StringUtil.h>
-# include <FSCommand.h>
 # include <KernelService.h>
 # include <ATADeviceController.h>
 # include <ProcFileManager.h>

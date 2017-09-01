@@ -18,12 +18,69 @@
 #ifndef _FS_MANAGER_H_
 #define _FS_MANAGER_H_
 
-#define FSManager_SUCCESS	0
-#define FSManager_FAILURE	1
+#include <vector.h>
+#include <FileSystem.h>
 
-# include <DeviceDrive.h>
-# include <vector.h>
+class DiskDrive;
 
-byte FSManager_BinarySearch(const upan::vector<SectorBlockEntry>& blocks, unsigned uiBlockID, int* iPos) ;
+class SectorBlockEntry
+{
+public:
+  uint32_t* SectorBlock() { return _sectorBlock; }
+  const uint32_t* SectorBlock() const { return _sectorBlock; }
+  const uint32_t BlockId() const { return _blockId; }
+  const uint32_t ReadCount() const { return _readCount; }
+  const uint32_t WriteCount() const { return _writeCount; }
+
+  void Load(DiskDrive& diskDrive, uint32_t sectortId);
+  uint32_t Read(uint32_t sectorId);
+  void Write(uint32_t sectorId, uint32_t value);
+
+private:
+  uint32_t _sectorBlock[ENTRIES_PER_TABLE_SECTOR];
+  uint32_t _blockId;
+  uint32_t _readCount;
+  uint32_t _writeCount;
+} PACKED;
+
+class FileSystemMountInfo
+{
+  public:
+    FileSystemMountInfo(DiskDrive& diskDrive) : _diskDrive(diskDrive), _freePoolQueue(nullptr)
+    {
+    }
+    ~FileSystemMountInfo()
+    {
+      delete _freePoolQueue;
+    }
+    const FSBootBlock& GetBootBlock() const { return _fsBootBlock; }
+    void InitBootBlock(FSBootBlock* bootBlock);
+    void AllocateFreePoolQueue(uint32_t size);
+    void UnallocateFreePoolQueue();
+    void ReadFSBootBlock();
+    void WriteFSBootBlock();
+    void LoadFreeSectors();
+    void FlushTableCache(int iFlushSize);
+    void AddToFreePoolCache(uint32_t sectorId) { _freePoolQueue->push_back(sectorId); }
+    void AddToTableCache(unsigned uiSectorEntry);
+    SectorBlockEntry* GetSectorEntryFromCache(unsigned uiSectorEntry);
+    uint32_t AllocateSector();
+
+    uint32_t GetRealSectorNumber(uint32_t uiSectorID) const;
+    uint32_t GetSectorEntryValue(const unsigned uiSectorID);
+    void SetSectorEntryValue(const unsigned uiSectorID, unsigned uiSectorEntryValue);
+
+    void DisplayCache();
+
+    //Ouput
+    FileSystem_PresentWorkingDirectory FSpwd;
+private:
+    void UpdateUsedSectors(unsigned uiSectorEntryValue);
+
+    DiskDrive& _diskDrive;
+    FSBootBlock _fsBootBlock;
+    upan::queue<unsigned>* _freePoolQueue;
+    upan::vector<SectorBlockEntry> _fsTableCache;
+};
 
 #endif

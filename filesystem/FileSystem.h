@@ -19,30 +19,8 @@
 #define _FileSystem_H_
 
 #include <Global.h>
-#include <FSStructures.h>
-#include <DeviceDrive.h>
-
-#define FileSystem_SUCCESS								0
-#define FileSystem_ERR_INVALID_BPB_SIGNATURE			1
-#define FileSystem_ERR_INVALID_BOOT_SIGNATURE			2
-#define FileSystem_ERR_INVALID_SECTORS_PER_TRACK		3
-#define FileSystem_ERR_INVALID_NO_OF_HEADS				4
-#define FileSystem_ERR_INVALID_DRIVE_SIZE_IN_SECTORS	5
-#define FileSystem_ERR_INVALID_CLUSTER_ID				6
-#define FileSystem_ERR_ZERO_FATSZ32						7
-
-#define FileSystem_ERR_UNSUPPORTED_SECTOR_SIZE			9
-#define FileSystem_ERR_NO_FREE_CLUSTER					10
-#define FileSystem_ERR_BPB_JMP							11
-#define FileSystem_ERR_UNSUPPORTED_MEDIA				12
-#define FileSystem_ERR_INVALID_EXTFLAG					13
-#define FileSystem_ERR_FS_VERSION						14
-#define FileSystem_ERR_FSINFO_SECTOR					15
-#define FileSystem_ERR_INVALID_VOL_ID					16
-#define FileSystem_ERR_ALREADY_MOUNTED					17
-#define FileSystem_ERR_NOT_MOUNTED						18
-#define FileSystem_ERR_INSUF_MOUNT_SPACE				19
-#define FileSystem_FAILURE								20
+#include <queue.h>
+#include <vector.h>
 
 #define MEDIA_REMOVABLE	0xF0
 #define MEDIA_FIXED		0xF8
@@ -53,8 +31,105 @@
 
 #define FS_ROOT_DIR "/"
 
-uint32_t FileSystem_GetSectorEntryValue(DiskDrive* pDiskDrive, const unsigned uiSectorID);
-void FileSystem_SetSectorEntryValue(DiskDrive* pDiskDrive, const unsigned uiSectorID, unsigned uiSectorEntryValue) ;
+#define ENTRIES_PER_TABLE_SECTOR	(128)
+
+class DiskDrive;
+
+class FSBootBlock
+{
+public:
+  byte			BPB_jmpBoot[3] ;
+
+  byte			BPB_Media ;
+  unsigned short	BPB_SecPerTrk ;
+  unsigned short	BPB_NumHeads ;
+
+  unsigned short	BPB_BytesPerSec ;
+  unsigned		BPB_TotSec32 ;
+  unsigned		BPB_HiddSec ;
+
+  unsigned short	BPB_RsvdSecCnt ;
+  unsigned		BPB_FSTableSize ;
+
+  unsigned short	BPB_ExtFlags ;
+  unsigned short	BPB_FSVer ;
+  unsigned short	BPB_FSInfo ;
+
+  byte			BPB_BootSig ;
+  unsigned		BPB_VolID ;
+  byte			BPB_VolLab[11 + 1] ;
+
+  unsigned		uiUsedSectors ;
+
+  void Init(const DiskDrive& diskDrive);
+
+} PACKED;
+
+/*
+typedef struct
+{
+  byte bSecond ;
+  byte bMinute ;
+  byte bHour ;
+
+  byte bDayOfWeek_Month ;
+  byte bDayOfMonth ;
+  byte bCentury ;
+  byte bYear ;
+} PACKED FileSystem_Time ;
+*/
+
+class FileSystem_DIR_Entry
+{
+public:
+  void Init(char* szDirName, unsigned short usDirAttribute, int iUserID, unsigned uiParentSecNo, byte bParentSecPos);
+  void InitAsRoot(uint32_t parentSectorId);
+
+  byte			Name[33] ;
+  struct timeval			CreatedTime ;
+  struct timeval			AccessedTime ;
+  struct timeval			ModifiedTime ;
+  byte	 		bParentSectorPos ;
+  unsigned short	usAttribute ;
+  unsigned		uiSize ;
+  unsigned		uiStartSectorID ;
+  unsigned		uiParentSecID ;
+  int				iUserID ;
+} PACKED;
+
+typedef struct
+{
+  FileSystem_DIR_Entry DirEntry ;
+  unsigned uiSectorNo ;
+  byte bSectorEntryPosition ;
+} PACKED FileSystem_PresentWorkingDirectory ;
+
+typedef struct
+{
+  FileSystem_DIR_Entry* pDirEntry ;
+  unsigned uiSectorNo ;
+  byte bSectorEntryPosition ;
+} PACKED FileSystem_CWD ;
+
+class DiskDrive;
+
+typedef struct
+{
+  int 	    st_dev;     /* ID of device containing file */
+  int     	st_ino;     /* inode number */
+  unsigned short    	st_mode;    /* protection */
+  int   		st_nlink;   /* number of hard links */
+  int     	st_uid;     /* user ID of owner */
+  int     	st_gid;     /* group ID of owner */
+  int     	st_rdev;    /* device ID (if special file) */
+  unsigned    st_size;    /* total size, in bytes */
+  unsigned	st_blksize; /* blocksize for filesystem I/O */
+  unsigned  	st_blocks;  /* number of blocks allocated */
+
+  struct timeval    	st_atime;   /* time of last access */
+  struct timeval    	st_mtime;   /* time of last modification */
+  struct timeval   	st_ctime;   /* time of last status change */
+} FileSystem_FileStat ;
 
 uint32_t FileSystem_DeAllocateSector(DiskDrive* pDiskDrive, unsigned uiCurrentSectorID) ;
 unsigned FileSystem_GetSizeForTableCache(unsigned uiNoOfSectorsInTableCache) ;

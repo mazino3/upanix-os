@@ -26,7 +26,6 @@
 #include <ProcessManager.h>
 #include <FileSystem.h>
 #include <Directory.h>
-#include <FSCommand.h>
 #include <MemManager.h>
 #include <DMM.h>
 #include <ATADrive.h>
@@ -228,15 +227,13 @@ void ConsoleCommands_ShowDrive()
 
 void ConsoleCommands_MountDrive()
 {
-  DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByDriveName(CommandLineParser::Instance().GetParameterAt(0), false).goodValueOrThrow(XLOC);
-  FSCommand_Mounter(pDiskDrive, FS_MOUNT);
+  DiskDriveManager::Instance().GetByDriveName(CommandLineParser::Instance().GetParameterAt(0), false).goodValueOrThrow(XLOC)->Mount();
   printf("\nDrive Mounted");
 }
 
 void ConsoleCommands_UnMountDrive()
 {
-  DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByDriveName(CommandLineParser::Instance().GetParameterAt(0), false).goodValueOrThrow(XLOC);
-  FSCommand_Mounter(pDiskDrive, FS_UNMOUNT);
+  DiskDriveManager::Instance().GetByDriveName(CommandLineParser::Instance().GetParameterAt(0), false).goodValueOrThrow(XLOC)->UnMount();
   printf("\nDrive UnMounted");
 }
 

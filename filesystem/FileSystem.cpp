@@ -34,30 +34,10 @@
 #include <KernelUtil.h>
 #include <DiskCache.h>
 
-uint32_t FileSystem_GetSectorEntryValue(DiskDrive* pDiskDrive, const unsigned uiSectorID)
-{
-  const FSBootBlock& fsBootBlock = pDiskDrive->FSMountInfo.GetBootBlock();
-	
-  if(uiSectorID > (fsBootBlock.BPB_FSTableSize * fsBootBlock.BPB_BytesPerSec / 4))
-    throw upan::exception(XLOC, "invalid cluster id: %u", uiSectorID);
-
-  return pDiskDrive->FSMountInfo.GetSectorEntryValue(uiSectorID, false);
-}
-
-void FileSystem_SetSectorEntryValue(DiskDrive* pDiskDrive, const unsigned uiSectorID, unsigned uiSectorEntryValue)
-{
-  const FSBootBlock& fsBootBlock = pDiskDrive->FSMountInfo.GetBootBlock();
-	
-  if(uiSectorID > (fsBootBlock.BPB_FSTableSize * fsBootBlock.BPB_BytesPerSec / 4))
-    throw upan::exception(XLOC, "invalid cluster id: %u", uiSectorID);
-	
-  pDiskDrive->FSMountInfo.SetSectorEntryValue(uiSectorID, uiSectorEntryValue, false);
-}
-
 uint32_t FileSystem_DeAllocateSector(DiskDrive* pDiskDrive, unsigned uiCurrentSectorID)
 {
-  auto uiNextSectorID = FileSystem_GetSectorEntryValue(pDiskDrive, uiCurrentSectorID);
-  FileSystem_SetSectorEntryValue(pDiskDrive, uiCurrentSectorID, 0);
+  auto uiNextSectorID = pDiskDrive->FSMountInfo.GetSectorEntryValue(uiCurrentSectorID);
+  pDiskDrive->FSMountInfo.SetSectorEntryValue(uiCurrentSectorID, 0);
   pDiskDrive->FSMountInfo.AddToFreePoolCache(uiCurrentSectorID);
   return uiNextSectorID;
 }

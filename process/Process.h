@@ -3,7 +3,7 @@
 
 #include <Atomic.h>
 #include <TaskStructures.h>
-#include <FSStructures.h>
+#include <FileSystem.h>
 
 class ProcessGroup;
 class IRQ;

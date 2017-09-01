@@ -16,7 +16,6 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
 # include <SystemUtil.h>
-# include <FSCommand.h>
 # include <DMM.h>
 # include <BuiltInKeyboardDriver.h>
 # include <RTC.h>
@@ -26,6 +25,7 @@
 # include <ProcessManager.h>
 # include <DiskCache.h>
 # include <try.h>
+# include <DeviceDrive.h>
 
 void SystemUtil_Reboot()
 {
@@ -34,7 +34,7 @@ void SystemUtil_Reboot()
 		if(pDiskDrive->Mounted())
 		{
 			printf("\n UnMounting Drive: %-20s", pDiskDrive->DriveName().c_str());
-      const auto& result = upan::trycall([&]() { FSCommand_Mounter(pDiskDrive, FS_UNMOUNT); });
+      const auto& result = upan::trycall([&]() { pDiskDrive->UnMount(); });
 			pDiskDrive->StopReleaseCacheTask(true);
       pDiskDrive->FlushDirtyCacheSectors();
       if(result.isBad())

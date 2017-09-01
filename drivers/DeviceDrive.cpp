@@ -25,7 +25,6 @@
 # include <StringUtil.h>
 # include <MemUtil.h>
 # include <ProcessEnv.h>
-# include <FSCommand.h>
 # include <ProcessManager.h>
 # include <SCSIHandler.h>
 # include <stdio.h>
@@ -577,7 +576,7 @@ void DiskDriveManager::RemoveEntryByCondition(const DriveRemoveClause& removeCla
 		if(removeClause(*it))
 		{
 			if((*it)->Mounted())
-				FSCommand_Mounter(*it, FS_UNMOUNT) ;
+        (*it)->UnMount();
       delete *it;
       _driveList.erase(it++);
 		}
@@ -683,7 +682,11 @@ byte DiskDriveManager::GetList(DriveStat** pDriveList, int* iListSize)
 		pAddress[i].ulUsedSize = 0;
 
 		if(d->Mounted())
-			FSCommand_GetDriveSpace(d, &(pAddress[i])) ;
+    {
+      const FSBootBlock& fsBootBlock = d->FSMountInfo.GetBootBlock();
+      pAddress[i].ulTotalSize = fsBootBlock.BPB_FSTableSize * ENTRIES_PER_TABLE_SECTOR * 512 ;
+      pAddress[i].ulUsedSize = fsBootBlock.uiUsedSectors * 512 ;
+    }
 		
 		++i;
 	}
@@ -693,8 +696,7 @@ byte DiskDriveManager::GetList(DriveStat** pDriveList, int* iListSize)
 
 void DiskDriveManager::MountDrive(const upan::string& szDriveName)
 {
-  DiskDrive* pDiskDrive = GetByDriveName(szDriveName, false).goodValueOrThrow(XLOC);
-  FSCommand_Mounter(pDiskDrive, FS_MOUNT);
+  GetByDriveName(szDriveName, false).goodValueOrThrow(XLOC)->Mount();
 }
 
 void DiskDriveManager::UnMountDrive(const upan::string& szDriveName)
@@ -708,7 +710,7 @@ void DiskDriveManager::UnMountDrive(const upan::string& szDriveName)
       throw upan::exception(XLOC, "can't unmount current drive: %s", szDriveName.c_str());
 	}
 
-  FSCommand_Mounter(pDiskDrive, FS_UNMOUNT);
+  pDiskDrive->UnMount();
 }
 
 void DiskDriveManager::FormatDrive(const upan::string& szDriveName)
