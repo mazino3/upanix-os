@@ -102,7 +102,7 @@ void Directory_Create(Process* processAddressSpace, int iDriveID, byte* bParentD
 
 	if(pCWD->pDirEntry->uiStartSectorID == EOC)
 	{
-    uiFreeSectorID = FileSystem_AllocateSector(pDiskDrive);
+    uiFreeSectorID = pDiskDrive->FSMountInfo.AllocateSector();
 		uiSectorNo = uiFreeSectorID ;
 		bSectorPos = 0 ;
 		pCWD->pDirEntry->uiStartSectorID = uiFreeSectorID ;
@@ -114,7 +114,7 @@ void Directory_Create(Process* processAddressSpace, int iDriveID, byte* bParentD
 
 		if(bSectorPos == EOC_B)
 		{
-      uiFreeSectorID = FileSystem_AllocateSector(pDiskDrive);
+      uiFreeSectorID = pDiskDrive->FSMountInfo.AllocateSector();
       FileSystem_SetSectorEntryValue(pDiskDrive, uiSectorNo, uiFreeSectorID);
 			uiSectorNo = uiFreeSectorID ;
 			bSectorPos = 0 ;
@@ -531,7 +531,7 @@ void Directory_ActualFileWrite(DiskDrive* pDiskDrive, byte* bDataBuffer, ProcFil
 
 		do
 		{
-      uiCurrentSectorID = FileSystem_AllocateSector(pDiskDrive);
+      uiCurrentSectorID = pDiskDrive->FSMountInfo.AllocateSector();
 
 			if(dirFile->uiStartSectorID == EOC)
 			{
@@ -595,7 +595,7 @@ void Directory_ActualFileWrite(DiskDrive* pDiskDrive, byte* bDataBuffer, ProcFil
 		if(uiCurrentSectorID == EOC || bStartAllocation == true)
 		{
 			bStartAllocation = true ;
-      uiCurrentSectorID = FileSystem_AllocateSector(pDiskDrive);
+      uiCurrentSectorID = pDiskDrive->FSMountInfo.AllocateSector();
       FileSystem_SetSectorEntryValue(pDiskDrive, uiPrevSectorID, uiCurrentSectorID);
 		}
 		

@@ -25,8 +25,5 @@
 # include <vector.h>
 
 byte FSManager_BinarySearch(const upan::vector<SectorBlockEntry>& blocks, unsigned uiBlockID, int* iPos) ;
-uint32_t FSManager_GetSectorEntryValue(DiskDrive* pDiskDrive, const unsigned uiSectorID, byte bFromCahceOnly) ;
-void FSManager_SetSectorEntryValue(DiskDrive* pDiskDrive, const unsigned uiSectorID, unsigned uiSectorEntryValue, byte bFromCahceOnly) ;
-uint32_t FSManager_AllocateSector(DiskDrive* pDiskDrive) ;
 
 #endif

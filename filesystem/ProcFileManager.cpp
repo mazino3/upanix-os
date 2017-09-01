@@ -38,23 +38,29 @@ constexpr int PROC_SYS_MAX_OPEN_FILES((PAGE_SIZE - sizeof(ProcFileManager_FDHead
 #define NORMAL_FILES_START_FD 3
 #define IS_VALID_PROC_FD(fd) (fd >= 0 && fd < PROC_SYS_MAX_OPEN_FILES)
 
-static Mutex& ProcFileManager_GetFDMutex()
+class FDTableGuard
 {
-	static Mutex mFDMutex ;
-	return mFDMutex ;
-}
+public:
+  FDTableGuard()
+  {
+    if(ProcessManager::Instance().IsKernelProcess(ProcessManager::Instance().GetCurProcId()))
+      _fdMutex.Lock();
+  }
 
-static void ProcFileManager_FDTableLock()
-{
-	if(ProcessManager::Instance().IsKernelProcess(ProcessManager::Instance().GetCurProcId()))
-		ProcFileManager_GetFDMutex().Lock() ;
-}
+  ~FDTableGuard()
+  {
+    if(ProcessManager::Instance().IsKernelProcess(ProcessManager::Instance().GetCurProcId()))
+      _fdMutex.UnLock();
+  }
 
-static void ProcFileManager_FDTableUnLock()
-{
-	if(ProcessManager::Instance().IsKernelProcess(ProcessManager::Instance().GetCurProcId()))
-		ProcFileManager_GetFDMutex().UnLock() ;
-}
+  FDTableGuard(const FDTableGuard&) = delete;
+  FDTableGuard& operator=(const FDTableGuard&) = delete;
+
+private:
+  static Mutex _fdMutex;
+};
+
+Mutex FDTableGuard::_fdMutex;
 
 static unsigned ProcFileManager_GetPage(Process* processAddressSpace)
 {
@@ -154,13 +160,10 @@ void ProcFileManager_InitForKernel()
 
 int ProcFileManager_GetFD()
 {
-	ProcFileManager_FDTableLock() ;
+  FDTableGuard g;
 
 	if(PROCESS_FD_TABLE_HEADER->TotalFDCount == PROC_SYS_MAX_OPEN_FILES)
-	{
-		ProcFileManager_FDTableUnLock() ;
     throw upan::exception(XLOC, "can't open new file - max open files limit %d reached", PROC_SYS_MAX_OPEN_FILES);
-	}
 
 	if(PROCESS_FD_TABLE_HEADER->LastFDAssigned == PROC_SYS_MAX_OPEN_FILES - 1 || PROCESS_FD_TABLE_HEADER->LastFDAssigned == -1)
 		PROCESS_FD_TABLE_HEADER->LastFDAssigned = NORMAL_FILES_START_FD ;
@@ -173,13 +176,10 @@ int ProcFileManager_GetFD()
 
       PROCESS_FD_TABLE_HEADER->TotalFDCount++ ;
 
-      ProcFileManager_FDTableUnLock() ;
-
       return i;
 		}
 	}
-	
-  ProcFileManager_FDTableUnLock() ;
+
   throw upan::exception(XLOC, "can't open new file - max open files limit %d reached", PROC_SYS_MAX_OPEN_FILES);
 }
 
@@ -209,25 +209,16 @@ int ProcFileManager_AllocateFD(const char* szFileName, const byte mode, int iDri
 
 byte ProcFileManager_FreeFD(int fd)
 {
-	ProcFileManager_FDTableLock() ;
+  FDTableGuard g;
 
 	if(!IS_VALID_PROC_FD(fd))
-	{
-		ProcFileManager_FDTableUnLock() ;
 		return ProcFileManager_ERR_INVALID_FD ;
-	}
 
 	if(PROCESS_FD_TABLE[fd].iDriveID == PROC_FREE_FD)
-	{
-		ProcFileManager_FDTableUnLock() ;
 		return ProcFileManager_FAILURE;
-	}
 
 	if(PROCESS_FD_TABLE[fd].RefCount > 1)
-	{
-		ProcFileManager_FDTableUnLock() ;
 		return ProcFileManager_ERR_REF_OPEN ;
-	}
 
 	PROCESS_FD_TABLE[fd].RefCount-- ;
 		
@@ -240,8 +231,6 @@ byte ProcFileManager_FreeFD(int fd)
 	PROCESS_FD_TABLE[fd].iDriveID = PROC_FREE_FD ;
 
 	PROCESS_FD_TABLE_HEADER->TotalFDCount-- ;
-
-	ProcFileManager_FDTableUnLock() ;
 
 	return ProcFileManager_SUCCESS ;
 }

@@ -292,6 +292,8 @@ uint32_t FileSystemMountInfo::AllocateSector()
   }
   auto uiFreeSectorID = _freePoolQueue->front();
   _freePoolQueue->pop_front();
+
+  SetSectorEntryValue(uiFreeSectorID, EOC, false);
   return uiFreeSectorID;
 }
 
@@ -358,13 +360,3 @@ void FileSystemMountInfo::SetSectorEntryValue(const unsigned uiSectorID, unsigne
 
   SetSectorEntryValue(uiSectorID, uiSectorEntryValue, true);
 }
-
-uint32_t FSManager_AllocateSector(DiskDrive* pDiskDrive)
-{
-  uint32_t uiFreeSectorID = pDiskDrive->FSMountInfo.AllocateSector();
-
-  FSManager_SetSectorEntryValue(pDiskDrive, uiFreeSectorID, EOC, false);
-
-  return uiFreeSectorID;
-}
-

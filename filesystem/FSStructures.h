@@ -147,6 +147,8 @@ class FileSystemMountInfo
     uint32_t AllocateSector();
 
     uint32_t GetRealSectorNumber(uint32_t uiSectorID) const;
+    uint32_t GetSectorEntryValue(const unsigned uiSectorID, byte bFromCahceOnly);
+    void SetSectorEntryValue(const unsigned uiSectorID, unsigned uiSectorEntryValue, byte bFromCahceOnly);
 
     void DisplayCache();
 
@@ -154,8 +156,6 @@ class FileSystemMountInfo
     FileSystem_PresentWorkingDirectory FSpwd;
 private:
     void UpdateUsedSectors(unsigned uiSectorEntryValue);
-    uint32_t GetSectorEntryValue(const unsigned uiSectorID, byte bFromCahceOnly);
-    void SetSectorEntryValue(const unsigned uiSectorID, unsigned uiSectorEntryValue, byte bFromCahceOnly);
 
     DiskDrive& _diskDrive;
     FSBootBlock _fsBootBlock;

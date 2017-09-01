@@ -56,7 +56,6 @@
 uint32_t FileSystem_GetSectorEntryValue(DiskDrive* pDiskDrive, const unsigned uiSectorID);
 void FileSystem_SetSectorEntryValue(DiskDrive* pDiskDrive, const unsigned uiSectorID, unsigned uiSectorEntryValue) ;
 
-uint32_t FileSystem_AllocateSector(DiskDrive* pDiskDrive) ;
 uint32_t FileSystem_DeAllocateSector(DiskDrive* pDiskDrive, unsigned uiCurrentSectorID) ;
 unsigned FileSystem_GetSizeForTableCache(unsigned uiNoOfSectorsInTableCache) ;
 

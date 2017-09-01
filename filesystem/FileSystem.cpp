@@ -41,7 +41,7 @@ uint32_t FileSystem_GetSectorEntryValue(DiskDrive* pDiskDrive, const unsigned ui
   if(uiSectorID > (fsBootBlock.BPB_FSTableSize * fsBootBlock.BPB_BytesPerSec / 4))
     throw upan::exception(XLOC, "invalid cluster id: %u", uiSectorID);
 
-  return FSManager_GetSectorEntryValue(pDiskDrive, uiSectorID, false);
+  return pDiskDrive->FSMountInfo.GetSectorEntryValue(uiSectorID, false);
 }
 
 void FileSystem_SetSectorEntryValue(DiskDrive* pDiskDrive, const unsigned uiSectorID, unsigned uiSectorEntryValue)
@@ -51,12 +51,7 @@ void FileSystem_SetSectorEntryValue(DiskDrive* pDiskDrive, const unsigned uiSect
   if(uiSectorID > (fsBootBlock.BPB_FSTableSize * fsBootBlock.BPB_BytesPerSec / 4))
     throw upan::exception(XLOC, "invalid cluster id: %u", uiSectorID);
 	
-  FSManager_SetSectorEntryValue(pDiskDrive, uiSectorID, uiSectorEntryValue, false);
-}
-
-uint32_t FileSystem_AllocateSector(DiskDrive* pDiskDrive)
-{
-  return FSManager_AllocateSector(pDiskDrive);
+  pDiskDrive->FSMountInfo.SetSectorEntryValue(uiSectorID, uiSectorEntryValue, false);
 }
 
 uint32_t FileSystem_DeAllocateSector(DiskDrive* pDiskDrive, unsigned uiCurrentSectorID)
