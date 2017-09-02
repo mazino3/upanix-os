@@ -587,7 +587,7 @@ byte ProcessManager::CreateKernelImage(const unsigned uiTaskAddress, int iParent
 
       MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&(parentPAS.processPWD),
       MemUtil_GetDS(), (unsigned)&(newPAS.processPWD),
-      sizeof(FileSystem_PresentWorkingDirectory)) ;
+      sizeof(FileSystem::PresentWorkingDirectory)) ;
     }
     else
     {
@@ -614,7 +614,7 @@ byte ProcessManager::CreateKernelImage(const unsigned uiTaskAddress, int iParent
   //	DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByID(GetAddressSpace(iNewProcessID).iDriveID) ;
   //
   //	MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&(pDiskDrive->FSMountInfo.FSpwd),
-  //	MemUtil_GetDS(), (unsigned)&GetAddressSpace(iNewProcessID).processPWD, sizeof(FileSystem_PresentWorkingDirectory)) ;
+  //	MemUtil_GetDS(), (unsigned)&GetAddressSpace(iNewProcessID).processPWD, sizeof(FileSystem::PresentWorkingDirectory)) ;
 
     unsigned uiStackTop = uiStackAddress - GLOBAL_DATA_SEGMENT_BASE + (PROCESS_KERNEL_STACK_PAGES * PAGE_SIZE) - 1 ;
 
@@ -868,7 +868,7 @@ void ProcessManager::WaitOnKernelService()
 	ProcessManager_Yield() ;
 }
 
-bool ProcessManager::CopyDiskDrive(int iProcessID, int& iOldDriveId, FileSystem_PresentWorkingDirectory& mOldPWD)
+bool ProcessManager::CopyDiskDrive(int iProcessID, int& iOldDriveId, FileSystem::PresentWorkingDirectory& mOldPWD)
 {
 	if(GetCurProcId() < 0)
 		return false ;
@@ -877,11 +877,11 @@ bool ProcessManager::CopyDiskDrive(int iProcessID, int& iOldDriveId, FileSystem_
   Process* pDestPAS = &GetCurrentPAS();
 
 	iOldDriveId = pDestPAS->iDriveID ;
-	MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&(pDestPAS->processPWD), MemUtil_GetDS(), (unsigned)&(mOldPWD), sizeof(FileSystem_PresentWorkingDirectory)) ;
+	MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&(pDestPAS->processPWD), MemUtil_GetDS(), (unsigned)&(mOldPWD), sizeof(FileSystem::PresentWorkingDirectory)) ;
 
 	pDestPAS->iDriveID = pSrcPAS->iDriveID ;
 	MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&(pSrcPAS->processPWD), MemUtil_GetDS(), (unsigned)&(pDestPAS->processPWD), 
-		sizeof(FileSystem_PresentWorkingDirectory)) ;
+		sizeof(FileSystem::PresentWorkingDirectory)) ;
 
 	return true ;
 }

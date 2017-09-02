@@ -88,7 +88,7 @@ void Directory_SetLastReadSectorDetails(ProcFileDescriptor* pFDEntry, int iSecto
 
 /**********************************************************************************************/
 
-void Directory_Create(Process* processAddressSpace, int iDriveID, byte* bParentDirectoryBuffer, const FileSystem_CWD* pCWD,
+void Directory_Create(Process* processAddressSpace, int iDriveID, byte* bParentDirectoryBuffer, const FileSystem::CWD* pCWD,
                       char* szDirName, unsigned short usDirAttribute)
 {
 	byte bSectorBuffer[512] ;
@@ -98,7 +98,7 @@ void Directory_Create(Process* processAddressSpace, int iDriveID, byte* bParentD
 
   DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByID(iDriveID, true).goodValueOrThrow(XLOC);
 
-	FileSystem_PresentWorkingDirectory* pPWD = &(processAddressSpace->processPWD) ;
+  FileSystem::PresentWorkingDirectory* pPWD = &(processAddressSpace->processPWD) ;
 
 	if(pCWD->pDirEntry->uiStartSectorID == EOC)
 	{
@@ -121,7 +121,7 @@ void Directory_Create(Process* processAddressSpace, int iDriveID, byte* bParentD
 		}
 	}
 
-  ((FileSystem_DIR_Entry*)bSectorBuffer)[bSectorPos].Init(szDirName, usDirAttribute, processAddressSpace->iUserID, pCWD->uiSectorNo, pCWD->bSectorEntryPosition);
+  ((FileSystem::Node*)bSectorBuffer)[bSectorPos].Init(szDirName, usDirAttribute, processAddressSpace->iUserID, pCWD->uiSectorNo, pCWD->bSectorEntryPosition);
 
   pDiskDrive->xWrite(bSectorBuffer, uiSectorNo, 1);
 
@@ -139,7 +139,7 @@ void Directory_Create(Process* processAddressSpace, int iDriveID, byte* bParentD
     pDiskDrive->_fileSystem.FSpwd.DirEntry = *pCWD->pDirEntry;
 }
 
-void Directory_Delete(Process* processAddressSpace, int iDriveID, byte* bParentDirectoryBuffer, const FileSystem_CWD* pCWD, const char* szDirName)
+void Directory_Delete(Process* processAddressSpace, int iDriveID, byte* bParentDirectoryBuffer, const FileSystem::CWD* pCWD, const char* szDirName)
 {
 	byte bSectorBuffer[512] ;
 	unsigned uiSectorNo ;
@@ -147,7 +147,7 @@ void Directory_Delete(Process* processAddressSpace, int iDriveID, byte* bParentD
 
   DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByID(iDriveID, true).goodValueOrThrow(XLOC);
 
-	FileSystem_PresentWorkingDirectory* pPWD = &(processAddressSpace->processPWD) ;
+  FileSystem::PresentWorkingDirectory* pPWD = &(processAddressSpace->processPWD) ;
 
 	if(pCWD->pDirEntry->uiStartSectorID == EOC)
 	{
@@ -159,7 +159,7 @@ void Directory_Delete(Process* processAddressSpace, int iDriveID, byte* bParentD
       throw upan::exception(XLOC, "directory %s doesn't exists to delete", szDirName);
 	}
 
-	FileSystem_DIR_Entry* delDir = ((FileSystem_DIR_Entry*)bSectorBuffer) + bSectorPos ;
+  FileSystem::Node* delDir = ((FileSystem::Node*)bSectorBuffer) + bSectorPos ;
 
 	if((delDir->usAttribute & ATTR_TYPE_DIRECTORY) == ATTR_TYPE_DIRECTORY)
 	{
@@ -196,7 +196,7 @@ void Directory_Delete(Process* processAddressSpace, int iDriveID, byte* bParentD
 
 void Directory_GetDirEntryForCreateDelete(const Process* processAddressSpace, int iDriveID, const char* szDirPath, char* szDirName, unsigned& uiSectorNo, byte& bSectorPos, byte* bDirectoryBuffer)
 {
-	FileSystem_CWD CWD ;
+  FileSystem::CWD CWD ;
 
   DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByID(iDriveID, true).goodValueOrThrow(XLOC);
 
@@ -213,7 +213,7 @@ void Directory_GetDirEntryForCreateDelete(const Process* processAddressSpace, in
 	}
 	else
 	{
-		CWD.pDirEntry = const_cast<FileSystem_DIR_Entry*>(&(processAddressSpace->processPWD.DirEntry)) ;
+    CWD.pDirEntry = const_cast<FileSystem::Node*>(&(processAddressSpace->processPWD.DirEntry)) ;
     CWD.uiSectorNo = uiSectorNo = processAddressSpace->processPWD.uiSectorNo ;
     CWD.bSectorEntryPosition = bSectorPos = processAddressSpace->processPWD.bSectorEntryPosition ;
 	}
@@ -226,13 +226,13 @@ void Directory_GetDirEntryForCreateDelete(const Process* processAddressSpace, in
 
 	String_Tokenize(szDirPath, '/', &iListSize, tokenizer) ;
 
-  FileSystem_DIR_Entry tempDirEntry;
+  FileSystem::Node tempDirEntry;
   for(int i = 0; i < iListSize - 1; i++)
 	{
     if(!Directory_FindDirectory(*pDiskDrive, CWD, tokenizer.szToken[i], uiSectorNo, bSectorPos, bDirectoryBuffer))
       throw upan::exception(XLOC, "directory %s is not found", tokenizer.szToken[i]);
 
-    tempDirEntry = *(((FileSystem_DIR_Entry*)bDirectoryBuffer) + bSectorPos);
+    tempDirEntry = *(((FileSystem::Node*)bDirectoryBuffer) + bSectorPos);
     CWD.pDirEntry = &tempDirEntry;
     CWD.uiSectorNo = uiSectorNo ;
     CWD.bSectorEntryPosition = bSectorPos ;
@@ -244,12 +244,12 @@ void Directory_GetDirEntryForCreateDelete(const Process* processAddressSpace, in
     throw upan::exception(XLOC, "%s is a special directory", szDirName);
 }
 
-void Directory_GetDirectoryContent(const char* szFileName, Process* processAddressSpace, int iDriveID, FileSystem_DIR_Entry** pDirList, int* iListSize)
+void Directory_GetDirectoryContent(const char* szFileName, Process* processAddressSpace, int iDriveID, FileSystem::Node** pDirList, int* iListSize)
 {
 	byte bDirectoryBuffer[512] ;
 
   DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByID(iDriveID, true).goodValueOrThrow(XLOC);
-	FileSystem_CWD CWD ;
+  FileSystem::CWD CWD ;
 	if(processAddressSpace->iDriveID == iDriveID)
 	{
 		CWD.pDirEntry = &(processAddressSpace->processPWD.DirEntry) ;
@@ -263,8 +263,8 @@ void Directory_GetDirectoryContent(const char* szFileName, Process* processAddre
     CWD.bSectorEntryPosition = pDiskDrive->_fileSystem.FSpwd.bSectorEntryPosition ;
 	}
 
-	FileSystem_DIR_Entry* dirFile ;
-	FileSystem_DIR_Entry* pAddress ;
+  FileSystem::Node* dirFile ;
+  FileSystem::Node* pAddress ;
 
 	if(strlen(szFileName) == 0)
 	{
@@ -277,7 +277,7 @@ void Directory_GetDirectoryContent(const char* szFileName, Process* processAddre
 
     Directory_ReadDirEntryInfo(*pDiskDrive, CWD, szFileName, uiSectorNo, bSectorPos, bDirectoryBuffer);
 
-		dirFile = ((FileSystem_DIR_Entry*)bDirectoryBuffer) + bSectorPos ;
+    dirFile = ((FileSystem::Node*)bDirectoryBuffer) + bSectorPos ;
 
 		if(dirFile->usAttribute & ATTR_DELETED_DIR)
       throw upan::exception(XLOC, "directory/file %s doesn't exists - it's deleted", szFileName);
@@ -288,16 +288,16 @@ void Directory_GetDirectoryContent(const char* szFileName, Process* processAddre
 
 			if(processAddressSpace->bIsKernelProcess == true)
 			{
-				*pDirList = (FileSystem_DIR_Entry*)DMM_AllocateForKernel(sizeof(FileSystem_DIR_Entry)) ;
+        *pDirList = (FileSystem::Node*)DMM_AllocateForKernel(sizeof(FileSystem::Node)) ;
 				pAddress = *pDirList ;
 			}
 			else
 			{
-				*pDirList = (FileSystem_DIR_Entry*)DMM_Allocate(processAddressSpace, sizeof(FileSystem_DIR_Entry)) ;
-				pAddress = (FileSystem_DIR_Entry*)(((unsigned)*pDirList + PROCESS_BASE) - GLOBAL_DATA_SEGMENT_BASE) ;
+        *pDirList = (FileSystem::Node*)DMM_Allocate(processAddressSpace, sizeof(FileSystem::Node)) ;
+        pAddress = (FileSystem::Node*)(((unsigned)*pDirList + PROCESS_BASE) - GLOBAL_DATA_SEGMENT_BASE) ;
 			}
 
-			MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)dirFile, MemUtil_GetDS(), (unsigned)pAddress, sizeof(FileSystem_DIR_Entry)) ;
+      MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)dirFile, MemUtil_GetDS(), (unsigned)pAddress, sizeof(FileSystem::Node)) ;
 
       return;
 		}
@@ -307,7 +307,7 @@ void Directory_GetDirectoryContent(const char* szFileName, Process* processAddre
 	int iScanDirCount = 0;
 	byte bSectorPosIndex ;
 
-	FileSystem_DIR_Entry* curDir ;
+  FileSystem::Node* curDir ;
 
 	iScanDirCount = 0 ;
 	uiCurrentSectorID = dirFile->uiStartSectorID ;
@@ -315,13 +315,13 @@ void Directory_GetDirectoryContent(const char* szFileName, Process* processAddre
 
 	if(processAddressSpace->bIsKernelProcess == true)
 	{
-		*pDirList = (FileSystem_DIR_Entry*)DMM_AllocateForKernel(sizeof(FileSystem_DIR_Entry) * (*iListSize)) ;
+    *pDirList = (FileSystem::Node*)DMM_AllocateForKernel(sizeof(FileSystem::Node) * (*iListSize)) ;
 		pAddress = *pDirList ;
 	}
 	else
 	{
-		*pDirList = (FileSystem_DIR_Entry*)DMM_Allocate(processAddressSpace, sizeof(FileSystem_DIR_Entry) * (*iListSize)) ;
-		pAddress = (FileSystem_DIR_Entry*)(((unsigned)*pDirList + PROCESS_BASE) - GLOBAL_DATA_SEGMENT_BASE) ;
+    *pDirList = (FileSystem::Node*)DMM_Allocate(processAddressSpace, sizeof(FileSystem::Node) * (*iListSize)) ;
+    pAddress = (FileSystem::Node*)(((unsigned)*pDirList + PROCESS_BASE) - GLOBAL_DATA_SEGMENT_BASE) ;
 	}
 
 	while(uiCurrentSectorID != EOC)
@@ -330,7 +330,7 @@ void Directory_GetDirectoryContent(const char* szFileName, Process* processAddre
 
 		for(bSectorPosIndex = 0; bSectorPosIndex < DIR_ENTRIES_PER_SECTOR; bSectorPosIndex++)
 		{
-			curDir = ((FileSystem_DIR_Entry*)bDirectoryBuffer) + bSectorPosIndex ;
+      curDir = ((FileSystem::Node*)bDirectoryBuffer) + bSectorPosIndex ;
 
       if(!(curDir->usAttribute & ATTR_DELETED_DIR))
 			{
@@ -345,9 +345,9 @@ void Directory_GetDirectoryContent(const char* szFileName, Process* processAddre
 	}
 }
 
-bool Directory_FindDirectory(DiskDrive& diskDrive, const FileSystem_CWD& cwd, const char* szDirName, unsigned& uiSectorNo, byte& bSectorPos, byte* bDestSectorBuffer)
+bool Directory_FindDirectory(DiskDrive& diskDrive, const FileSystem::CWD& cwd, const char* szDirName, unsigned& uiSectorNo, byte& bSectorPos, byte* bDestSectorBuffer)
 {
-  FileSystem_DIR_Entry* pDirEntry = cwd.pDirEntry;
+  FileSystem::Node* pDirEntry = cwd.pDirEntry;
   if((pDirEntry->usAttribute & ATTR_TYPE_DIRECTORY) == 0)
     throw upan::exception(XLOC, "%s is not a directory", szDirName);
 
@@ -385,7 +385,7 @@ bool Directory_FindDirectory(DiskDrive& diskDrive, const FileSystem_CWD& cwd, co
 	unsigned uiScanDirCount ;
 	byte bSectorPosIndex ;
 
-	FileSystem_DIR_Entry* curDir ;
+  FileSystem::Node* curDir ;
 
   uiSectorNo = EOC ;
   bSectorPos = EOC_B ;
@@ -400,7 +400,7 @@ bool Directory_FindDirectory(DiskDrive& diskDrive, const FileSystem_CWD& cwd, co
 
 		for(bSectorPosIndex = 0; bSectorPosIndex < DIR_ENTRIES_PER_SECTOR; bSectorPosIndex++)
 		{
-			curDir = ((FileSystem_DIR_Entry*)bSectorBuffer) + bSectorPosIndex ;
+      curDir = ((FileSystem::Node*)bSectorBuffer) + bSectorPosIndex ;
 
 			if(strcmp(szDirName, (const char*)curDir->Name) == 0 && !(curDir->usAttribute & ATTR_DELETED_DIR))
 			{
@@ -463,7 +463,7 @@ bool Directory_FindDirectory(DiskDrive& diskDrive, const FileSystem_CWD& cwd, co
   return false;
 }
 
-void Directory_FileWrite(DiskDrive* pDiskDrive, FileSystem_CWD* pCWD, ProcFileDescriptor* pFDEntry, byte* bDataBuffer, unsigned uiDataSize)
+void Directory_FileWrite(DiskDrive* pDiskDrive, FileSystem::CWD* pCWD, ProcFileDescriptor* pFDEntry, byte* bDataBuffer, unsigned uiDataSize)
 {
 	if(uiDataSize == 0)
     return throw upan::exception(XLOC, "zero byte file write");
@@ -476,7 +476,7 @@ void Directory_FileWrite(DiskDrive* pDiskDrive, FileSystem_CWD* pCWD, ProcFileDe
 
   Directory_ReadDirEntryInfo(*pDiskDrive, *pCWD, szFileName, uiSectorNo, bSectorPos, bDirectoryBuffer);
 
-	FileSystem_DIR_Entry* dirFile = ((FileSystem_DIR_Entry*)bDirectoryBuffer) + bSectorPos ;
+  FileSystem::Node* dirFile = ((FileSystem::Node*)bDirectoryBuffer) + bSectorPos ;
 
 	if((dirFile->usAttribute & ATTR_TYPE_DIRECTORY) != 0)
     throw upan::exception(XLOC, "%s is a directory - can't do file-write", szFileName);
@@ -491,7 +491,7 @@ void Directory_FileWrite(DiskDrive* pDiskDrive, FileSystem_CWD* pCWD, ProcFileDe
 }
 
 void Directory_ActualFileWrite(DiskDrive* pDiskDrive, byte* bDataBuffer, ProcFileDescriptor* pFDEntry,
-                               unsigned uiDataSize, FileSystem_DIR_Entry* dirFile)
+                               unsigned uiDataSize, FileSystem::Node* dirFile)
 {
 	unsigned uiCurrentSectorID, uiNextSectorID, uiPrevSectorID = EOC ;
 	int iStartWriteSectorNo, iStartWriteSectorPos ;
@@ -636,19 +636,19 @@ void Directory_ActualFileWrite(DiskDrive* pDiskDrive, byte* bDataBuffer, ProcFil
   throw upan::exception(XLOC, "fs table is corrupted for drive:%s", pDiskDrive->DriveName().c_str());
 }
 
-int Directory_FileRead(DiskDrive* pDiskDrive, FileSystem_CWD* pCWD, ProcFileDescriptor* pFDEntry, byte* bDataBuffer, unsigned uiDataSize)
+int Directory_FileRead(DiskDrive* pDiskDrive, FileSystem::CWD* pCWD, ProcFileDescriptor* pFDEntry, byte* bDataBuffer, unsigned uiDataSize)
 {
 	const char* szFileName = pFDEntry->szFileName ;
 	unsigned uiOffset = pFDEntry->uiOffset ;
 
-	FileSystem_DIR_Entry* pDirFile ;
+  FileSystem::Node* pDirFile ;
 	byte bDirectoryBuffer[512] ;
 	unsigned uiSectorNo ;
 	byte bSectorPos ;
 
   Directory_ReadDirEntryInfo(*pDiskDrive, *pCWD, szFileName, uiSectorNo, bSectorPos, bDirectoryBuffer);
 		
-	pDirFile = ((FileSystem_DIR_Entry*)bDirectoryBuffer) + bSectorPos ;
+  pDirFile = ((FileSystem::Node*)bDirectoryBuffer) + bSectorPos ;
 	if((pDirFile->usAttribute & ATTR_TYPE_DIRECTORY) != 0)
     throw upan::exception(XLOC, "%s is a directory - can't file-read", szFileName);
 
@@ -771,10 +771,10 @@ int Directory_FileRead(DiskDrive* pDiskDrive, FileSystem_CWD* pCWD, ProcFileDesc
   throw upan::exception(XLOC, "fs table is corrupted for drive:%s", pDiskDrive->DriveName().c_str());
 }
 
-void Directory_ReadDirEntryInfo(DiskDrive& diskDrive, const FileSystem_CWD& cwd, const char* szFileName, unsigned& uiSectorNo, byte& bSectorPos, byte* bDirectoryBuffer)
+void Directory_ReadDirEntryInfo(DiskDrive& diskDrive, const FileSystem::CWD& cwd, const char* szFileName, unsigned& uiSectorNo, byte& bSectorPos, byte* bDirectoryBuffer)
 {
-	FileSystem_CWD CWD ;
-  FileSystem_PresentWorkingDirectory& fsPwd = diskDrive._fileSystem.FSpwd;
+  FileSystem::CWD CWD ;
+  FileSystem::PresentWorkingDirectory& fsPwd = diskDrive._fileSystem.FSpwd;
 
 	if(strlen(szFileName) == 0)
     throw upan::exception(XLOC, "file name can't be empty");
@@ -806,13 +806,13 @@ void Directory_ReadDirEntryInfo(DiskDrive& diskDrive, const FileSystem_CWD& cwd,
 
 	String_Tokenize(szFileName, '/', &iListSize, tokenizer) ;
 
-  FileSystem_DIR_Entry tempDirEntry;
+  FileSystem::Node tempDirEntry;
   for(int i = 0; i < iListSize; i++)
 	{
     if (!Directory_FindDirectory(diskDrive, CWD, tokenizer.szToken[i], uiSectorNo, bSectorPos, bDirectoryBuffer))
       throw upan::exception(XLOC, "file/directory %s doesn't exist", szFileName);
 
-    tempDirEntry = *(((FileSystem_DIR_Entry*)bDirectoryBuffer) + bSectorPos);
+    tempDirEntry = *(((FileSystem::Node*)bDirectoryBuffer) + bSectorPos);
     CWD.pDirEntry = &tempDirEntry;
     CWD.uiSectorNo = uiSectorNo ;
     CWD.bSectorEntryPosition = bSectorPos ;
@@ -827,8 +827,8 @@ void Directory_Change(const char* szFileName, int iDriveID, Process* processAddr
 
   DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByID(iDriveID, true).goodValueOrThrow(XLOC);
 
-	FileSystem_CWD CWD ;
-	FileSystem_PresentWorkingDirectory* pPWD = &(processAddressSpace->processPWD) ;
+  FileSystem::CWD CWD ;
+  FileSystem::PresentWorkingDirectory* pPWD = &(processAddressSpace->processPWD) ;
 	if(iDriveID == processAddressSpace->iDriveID)
 	{
 		CWD.pDirEntry = &pPWD->DirEntry ;
@@ -844,14 +844,14 @@ void Directory_Change(const char* szFileName, int iDriveID, Process* processAddr
 
   Directory_ReadDirEntryInfo(*pDiskDrive, CWD, szFileName, uiSectorNo, bSectorPos, bDirectoryBuffer);
 
-	FileSystem_DIR_Entry* dirFile = ((FileSystem_DIR_Entry*)bDirectoryBuffer) + bSectorPos ;
+  FileSystem::Node* dirFile = ((FileSystem::Node*)bDirectoryBuffer) + bSectorPos ;
 
 	if((dirFile->usAttribute & ATTR_TYPE_DIRECTORY) == 0)
     throw upan::exception(XLOC, "%s is not a directory", szFileName);
 
 	processAddressSpace->iDriveID = iDriveID ;
 
-	MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)(((FileSystem_DIR_Entry*)bDirectoryBuffer) + bSectorPos), MemUtil_GetDS(), (unsigned)&pPWD->DirEntry, sizeof(FileSystem_DIR_Entry)) ;
+  MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)(((FileSystem::Node*)bDirectoryBuffer) + bSectorPos), MemUtil_GetDS(), (unsigned)&pPWD->DirEntry, sizeof(FileSystem::Node)) ;
 	pPWD->uiSectorNo = uiSectorNo ;
 	pPWD->bSectorEntryPosition = bSectorPos ;
 	
@@ -876,7 +876,7 @@ void Directory_Change(const char* szFileName, int iDriveID, Process* processAddr
 
       pDiskDrive->xRead(bDirectoryBuffer, uiSecNo, 1);
 
-			dirFile = ((FileSystem_DIR_Entry*)bDirectoryBuffer) + bSecPos ;
+      dirFile = ((FileSystem::Node*)bDirectoryBuffer) + bSecPos ;
 
 			if(strcmp((const char*)dirFile->Name, FS_ROOT_DIR) == 0)
 				break ;
@@ -918,13 +918,13 @@ void Directory_PresentWorkingDirectory(Process* processAddressSpace, char** uiRe
 	strcpy(pAddress, szPWD) ;
 }
 
-const FileSystem_DIR_Entry Directory_GetDirEntry(const char* szFileName, Process* processAddressSpace, int iDriveID)
+const FileSystem::Node Directory_GetDirEntry(const char* szFileName, Process* processAddressSpace, int iDriveID)
 {
 	byte bDirectoryBuffer[512] ;
 
   DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByID(iDriveID, true).goodValueOrThrow(XLOC);
 
-	FileSystem_CWD CWD ;
+  FileSystem::CWD CWD ;
 	if(processAddressSpace->iDriveID == iDriveID)
 	{
 		CWD.pDirEntry = &(processAddressSpace->processPWD.DirEntry) ;
@@ -938,14 +938,14 @@ const FileSystem_DIR_Entry Directory_GetDirEntry(const char* szFileName, Process
     CWD.bSectorEntryPosition = pDiskDrive->_fileSystem.FSpwd.bSectorEntryPosition ;
 	}
 
-	FileSystem_DIR_Entry* dirFile ;
+  FileSystem::Node* dirFile ;
 
 	unsigned uiSectorNo ;
 	byte bSectorPos ;
 
   Directory_ReadDirEntryInfo(*pDiskDrive, CWD, szFileName, uiSectorNo, bSectorPos, bDirectoryBuffer);
 
-	dirFile = ((FileSystem_DIR_Entry*)bDirectoryBuffer) + bSectorPos ;
+  dirFile = ((FileSystem::Node*)bDirectoryBuffer) + bSectorPos ;
 
 	if(dirFile->usAttribute & ATTR_DELETED_DIR)
     throw upan::exception(XLOC, "directory %s doesn't exists - it's deleted", szFileName);
@@ -963,6 +963,6 @@ void Directory_SyncPWD(Process* processAddressSpace)
 	byte bSectorBuffer[512] ;
   pDiskDrive->xRead(bSectorBuffer, uiSectorNo, 1);
 
-  processAddressSpace->processPWD.DirEntry = (((FileSystem_DIR_Entry*)bSectorBuffer)[bSectorEntryPos]);
+  processAddressSpace->processPWD.DirEntry = (((FileSystem::Node*)bSectorBuffer)[bSectorEntryPos]);
 }
 

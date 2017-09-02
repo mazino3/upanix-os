@@ -95,7 +95,7 @@ private:
   unsigned _processBase ;
 
   int iDriveID ;
-  FileSystem_PresentWorkingDirectory processPWD ;
+  FileSystem::PresentWorkingDirectory processPWD ;
 
   unsigned uiNoOfPagesForDLLPTE ;
   unsigned _startPDEForDLL ;

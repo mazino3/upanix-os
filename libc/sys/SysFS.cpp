@@ -46,7 +46,7 @@ int SysFS_DeleteDirectory(const char* szDirPath)
 	return iRetStatus ;
 }
 
-int SysFS_GetDirContent(const char* szDirPath, FileSystem_DIR_Entry** pDirList, int* iListSize)
+int SysFS_GetDirContent(const char* szDirPath, FileSystem::Node** pDirList, int* iListSize)
 {
 	int iRetStatus ;
 	SysCallFile_Handle(&iRetStatus, SYS_CALL_GET_DIR_LIST, false, (unsigned)szDirPath, (unsigned)pDirList, (unsigned)iListSize, 

@@ -48,7 +48,7 @@ ProcessLoader::ProcessLoader() :
 
 byte* ProcessLoader::LoadInitSection(unsigned& uiSectionSize, const upan::string& szSectionName)
 {
-  const FileSystem_DIR_Entry& DirEntry = FileOperations_GetDirEntry(szSectionName.c_str());
+  const FileSystem::Node& DirEntry = FileOperations_GetDirEntry(szSectionName.c_str());
 	
 	if((DirEntry.usAttribute & ATTR_TYPE_DIRECTORY) == ATTR_TYPE_DIRECTORY)
     throw upan::exception(XLOC, "%s is a directory!", szSectionName.c_str());

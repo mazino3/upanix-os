@@ -35,40 +35,133 @@
 
 class DiskDrive;
 
-class FileSystem_DIR_Entry
+class SectorBlockEntry
 {
 public:
-  void Init(char* szDirName, unsigned short usDirAttribute, int iUserID, unsigned uiParentSecNo, byte bParentSecPos);
-  void InitAsRoot(uint32_t parentSectorId);
-  upan::string FullPath(DiskDrive& diskDrive);
+  uint32_t* SectorBlock() { return _sectorBlock; }
+  const uint32_t* SectorBlock() const { return _sectorBlock; }
+  const uint32_t BlockId() const { return _blockId; }
+  const uint32_t ReadCount() const { return _readCount; }
+  const uint32_t WriteCount() const { return _writeCount; }
 
-  byte            Name[33] ;
-  struct timeval  CreatedTime ;
-  struct timeval  AccessedTime ;
-  struct timeval  ModifiedTime ;
-  byte            bParentSectorPos ;
-  unsigned short  usAttribute ;
-  unsigned        uiSize ;
-  unsigned        uiStartSectorID ;
-  unsigned        uiParentSecID ;
-  int             iUserID ;
+  void Load(DiskDrive& diskDrive, uint32_t sectortId);
+  uint32_t Read(uint32_t sectorId);
+  void Write(uint32_t sectorId, uint32_t value);
+
+private:
+  uint32_t _sectorBlock[ENTRIES_PER_TABLE_SECTOR];
+  uint32_t _blockId;
+  uint32_t _readCount;
+  uint32_t _writeCount;
 } PACKED;
 
-typedef struct
+class FileSystem
 {
-  FileSystem_DIR_Entry DirEntry ;
-  unsigned uiSectorNo ;
-  byte bSectorEntryPosition ;
-} PACKED FileSystem_PresentWorkingDirectory ;
+  public:
+    FileSystem(DiskDrive& diskDrive) : _diskDrive(diskDrive), _freePoolQueue(nullptr)
+    {
+    }
+    ~FileSystem()
+    {
+      delete _freePoolQueue;
+    }
 
-typedef struct
-{
-  FileSystem_DIR_Entry* pDirEntry ;
-  unsigned uiSectorNo ;
-  byte bSectorEntryPosition ;
-} PACKED FileSystem_CWD ;
+    uint64_t TotalSize() const { return _fsBootBlock.BPB_FSTableSize * ENTRIES_PER_TABLE_SECTOR * 512; }
+    uint64_t UsedSize() const { return _fsBootBlock.uiUsedSectors * 512; }
 
-class DiskDrive;
+    void Format();
+    void AllocateFreePoolQueue(uint32_t size);
+    void UnallocateFreePoolQueue();
+    void ReadFSBootBlock();
+    void WriteFSBootBlock();
+    void LoadFreeSectors();
+    void FlushTableCache(int iFlushSize);
+    void AddToFreePoolCache(uint32_t sectorId) { _freePoolQueue->push_back(sectorId); }
+    void AddToTableCache(unsigned uiSectorEntry);
+    SectorBlockEntry* GetSectorEntryFromCache(unsigned uiSectorEntry);
+    uint32_t AllocateSector();
+
+    uint32_t GetTableSectorId(uint32_t uiSectorID) const;
+    uint32_t GetRealSectorNumber(uint32_t uiSectorID) const;
+    uint32_t GetSectorEntryValue(const unsigned uiSectorID);
+    void SetSectorEntryValue(const unsigned uiSectorID, unsigned uiSectorEntryValue);
+
+    void DisplayCache();
+
+public:
+    class Node
+    {
+    public:
+      void Init(char* szDirName, unsigned short usDirAttribute, int iUserID, unsigned uiParentSecNo, byte bParentSecPos);
+      void InitAsRoot(uint32_t parentSectorId);
+      upan::string FullPath(DiskDrive& diskDrive);
+
+      byte            Name[33] ;
+      struct timeval  CreatedTime ;
+      struct timeval  AccessedTime ;
+      struct timeval  ModifiedTime ;
+      byte            bParentSectorPos ;
+      unsigned short  usAttribute ;
+      unsigned        uiSize ;
+      unsigned        uiStartSectorID ;
+      unsigned        uiParentSecID ;
+      int             iUserID ;
+    } PACKED;
+
+
+    typedef struct
+    {
+      Node DirEntry ;
+      unsigned uiSectorNo ;
+      byte bSectorEntryPosition ;
+    } PACKED PresentWorkingDirectory ;
+
+    typedef struct
+    {
+      Node* pDirEntry ;
+      unsigned uiSectorNo ;
+      byte bSectorEntryPosition ;
+    } PACKED CWD ;
+
+    //Ouput
+    PresentWorkingDirectory FSpwd;
+
+private:
+    struct BootBlock
+    {
+      byte			BPB_jmpBoot[3] ;
+
+      byte			BPB_Media ;
+      unsigned short	BPB_SecPerTrk ;
+      unsigned short	BPB_NumHeads ;
+
+      unsigned short	BPB_BytesPerSec ;
+      unsigned		BPB_TotSec32 ;
+      unsigned		BPB_HiddSec ;
+
+      unsigned short	BPB_RsvdSecCnt ;
+      unsigned		BPB_FSTableSize ;
+
+      unsigned short	BPB_ExtFlags ;
+      unsigned short	BPB_FSVer ;
+      unsigned short	BPB_FSInfo ;
+
+      byte			BPB_BootSig ;
+      unsigned		BPB_VolID ;
+      byte			BPB_VolLab[11 + 1] ;
+
+      unsigned		uiUsedSectors ;
+    } PACKED;
+
+private:
+    void InitBootBlock(BootBlock&);
+    void UpdateUsedSectors(unsigned uiSectorEntryValue);
+
+    DiskDrive& _diskDrive;
+    BootBlock _fsBootBlock;
+    upan::queue<unsigned>* _freePoolQueue;
+    upan::vector<SectorBlockEntry> _fsTableCache;
+};
 
 typedef struct
 {

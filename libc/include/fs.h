@@ -120,7 +120,7 @@ extern int SysFS_ChangeDirectory(const char* szDirPath) ;
 extern void SysFS_PWD(char** uiReturnDirPathAddress) ;
 extern int SysFS_CreateDirectory(const char* szDirPath, unsigned short usAttribute) ;
 extern int SysFS_DeleteDirectory(const char* szDirPath) ;
-extern int SysFS_GetDirContent(const char* szDirPath, FileSystem_DIR_Entry** pDirList, int* iListSize) ;
+extern int SysFS_GetDirContent(const char* szDirPath, FileSystem::Node** pDirList, int* iListSize) ;
 extern int SysFS_CreateFile(const char* szDirPath, unsigned short usAttribute) ;
 extern int SysFS_FileOpen(const char* szFileName, byte bMode) ;
 extern int SysFS_FileClose(int fd) ;

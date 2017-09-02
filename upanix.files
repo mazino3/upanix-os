@@ -130,8 +130,6 @@ filesystem/FileOperations.cpp
 filesystem/FileOperations.h
 filesystem/FileSystem.cpp
 filesystem/FileSystem.h
-filesystem/FSManager.cpp
-filesystem/FSManager.h
 filesystem/Makefile
 filesystem/ProcFileManager.cpp
 filesystem/ProcFileManager.h

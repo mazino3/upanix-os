@@ -105,7 +105,7 @@ KernelService::ProcessExec::~ProcessExec()
 void KernelService::ProcessExec::Execute()
 {
 	int iOldDDriveID ;
-	FileSystem_PresentWorkingDirectory mOldPWD ;
+	FileSystem::PresentWorkingDirectory mOldPWD ;
 	ProcessManager::Instance().CopyDiskDrive(GetRequestProcessID(), iOldDDriveID, mOldPWD) ;
 
 	byte bStatus = ProcessManager::Instance().Create(_szFile.c_str(), GetRequestProcessID(), true, &m_iNewProcId, DERIVE_FROM_PARENT, m_iNoOfArgs, m_szArgs) ;
@@ -115,7 +115,7 @@ void KernelService::ProcessExec::Execute()
 	int iPID = ProcessManager::Instance().GetCurProcId() ;
 	ProcessManager::Instance().GetAddressSpace( iPID ).iDriveID = iOldDDriveID ;
 	MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&(mOldPWD), MemUtil_GetDS(), (unsigned)&(ProcessManager::Instance().GetAddressSpace( iPID ).processPWD),
-				sizeof(FileSystem_PresentWorkingDirectory));
+				sizeof(FileSystem::PresentWorkingDirectory));
 }
 
 bool KernelService::RequestDLLAlloCopy(int iDLLEntryIndex, unsigned uiAllocPageCnt, unsigned uiNoOfPages)

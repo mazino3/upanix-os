@@ -31,7 +31,7 @@
 # include <MountManager.h>
 # include <DiskCache.h>
 # include <KernelUtil.h>
-# include <FSManager.h>
+# include <FileSystem.h>
 # include <try.h>
 
 static unsigned uiTotalFloppyDiskReads = 0;
@@ -132,7 +132,7 @@ void DiskDrive::ReadRootDirectory()
 
   xRead(bDataBuffer, 0, 1);
 	
-  _fileSystem.FSpwd.DirEntry = *reinterpret_cast<FileSystem_DIR_Entry*>(bDataBuffer);
+  _fileSystem.FSpwd.DirEntry = *reinterpret_cast<FileSystem::Node*>(bDataBuffer);
   _fileSystem.FSpwd.uiSectorNo = 0;
   _fileSystem.FSpwd.bSectorEntryPosition = 0;
 }
@@ -578,7 +578,7 @@ byte DiskDriveManager::Change(const upan::string& szDriveName)
   (unsigned)&(pDiskDrive->_fileSystem.FSpwd),
 	MemUtil_GetDS(), 
 	(unsigned)&ProcessManager::Instance().GetCurrentPAS().processPWD, 
-	sizeof(FileSystem_PresentWorkingDirectory)) ;
+  sizeof(FileSystem::PresentWorkingDirectory)) ;
 
   ProcessEnv_Set("PWD", (const char*)pDiskDrive->_fileSystem.FSpwd.DirEntry.Name) ;
 

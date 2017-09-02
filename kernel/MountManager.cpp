@@ -92,7 +92,7 @@ static void MountManager_MountDrive(char* szDriveName)
 	MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&(pDiskDrive->_fileSystem.FSpwd), 
 	MemUtil_GetDS(), 
 	(unsigned)&ProcessManager::Instance().GetCurrentPAS().processPWD, 
-	sizeof(FileSystem_PresentWorkingDirectory)) ;
+	sizeof(FileSystem::PresentWorkingDirectory)) ;
 
 	// Change To Root Directory
   FileOperations_ChangeDir(FS_ROOT_DIR);

@@ -144,7 +144,7 @@ __volatile__ unsigned uiP9)
 			// P3 => Ret Dir Content List Size Address
 			{
 				char* szPathAddress = KERNEL_ADDR(bDoAddrTranslation, char*, uiP1) ;
-				FileSystem_DIR_Entry** pRetDirContentList = KERNEL_ADDR(bDoAddrTranslation, FileSystem_DIR_Entry**, uiP2) ;
+				FileSystem::Node** pRetDirContentList = KERNEL_ADDR(bDoAddrTranslation, FileSystem::Node**, uiP2) ;
 				int* pRetDirContentListSize = KERNEL_ADDR(bDoAddrTranslation, int*, uiP3) ;
 				*piRetVal = 0 ;
 
