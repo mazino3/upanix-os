@@ -129,7 +129,6 @@ class DiskDrive
 
     // FileSystem Mount Info
     FileSystem	FSMountInfo ;
-    byte					bFSCacheFlag ;
 
     static const int MAX_SECTORS_IN_TABLE_CACHE = 2048;
 
