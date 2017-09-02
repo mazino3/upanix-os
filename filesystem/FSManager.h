@@ -43,13 +43,13 @@ private:
   uint32_t _writeCount;
 } PACKED;
 
-class FileSystemMountInfo
+class FileSystem
 {
   public:
-    FileSystemMountInfo(DiskDrive& diskDrive) : _diskDrive(diskDrive), _freePoolQueue(nullptr)
+    FileSystem(DiskDrive& diskDrive) : _diskDrive(diskDrive), _freePoolQueue(nullptr)
     {
     }
-    ~FileSystemMountInfo()
+    ~FileSystem()
     {
       delete _freePoolQueue;
     }

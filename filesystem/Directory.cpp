@@ -200,7 +200,7 @@ void Directory_GetDirEntryForCreateDelete(const Process* processAddressSpace, in
 
   DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByID(iDriveID, true).goodValueOrThrow(XLOC);
 
-	FileSystemMountInfo* pFSMountInfo = &pDiskDrive->FSMountInfo ;
+  FileSystem* pFSMountInfo = &pDiskDrive->FSMountInfo ;
 
 	if(strlen(szDirPath) == 0 ||	strcmp(FS_ROOT_DIR, szDirPath) == 0)
     throw upan::exception(XLOC, "can't create/delete current/root directory");

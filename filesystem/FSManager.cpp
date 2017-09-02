@@ -89,7 +89,7 @@ void SectorBlockEntry::Write(uint32_t sectorId, uint32_t value)
   ++_writeCount;
 }
 
-void FileSystemMountInfo::UnallocateFreePoolQueue()
+void FileSystem::UnallocateFreePoolQueue()
 {
   if(_freePoolQueue)
   {
@@ -98,12 +98,12 @@ void FileSystemMountInfo::UnallocateFreePoolQueue()
   }
 }
 
-void FileSystemMountInfo::AllocateFreePoolQueue(uint32_t size)
+void FileSystem::AllocateFreePoolQueue(uint32_t size)
 {
   _freePoolQueue = new upan::queue<unsigned>(size);
 }
 
-void FileSystemMountInfo::ReadFSBootBlock()
+void FileSystem::ReadFSBootBlock()
 {
   byte bArrFSBootBlock[512];
 
@@ -157,7 +157,7 @@ void FileSystemMountInfo::ReadFSBootBlock()
     throw upan::exception(XLOC, "invalid BPB_VolID: %x", _fsBootBlock.BPB_VolID);
 }
 
-void FileSystemMountInfo::WriteFSBootBlock()
+void FileSystem::WriteFSBootBlock()
 {
   byte bSectorBuffer[512];
 
@@ -169,7 +169,7 @@ void FileSystemMountInfo::WriteFSBootBlock()
   _diskDrive.Write(1, 1, bSectorBuffer);
 }
 
-void FileSystemMountInfo::LoadFreeSectors()
+void FileSystem::LoadFreeSectors()
 {
   if(_freePoolQueue->full())
     return;
@@ -238,7 +238,7 @@ void FileSystemMountInfo::LoadFreeSectors()
   }
 }
 
-void FileSystemMountInfo::FlushTableCache(int iFlushSize)
+void FileSystem::FlushTableCache(int iFlushSize)
 {
   if(iFlushSize > _fsTableCache.size())
     iFlushSize = _fsTableCache.size();
@@ -257,7 +257,7 @@ void FileSystemMountInfo::FlushTableCache(int iFlushSize)
     _fsTableCache.erase(0, iFlushSize);
 }
 
-void FileSystemMountInfo::AddToTableCache(unsigned uiSectorEntry)
+void FileSystem::AddToTableCache(unsigned uiSectorEntry)
 {
   if((unsigned)_fsTableCache.size() == DiskDrive::MAX_SECTORS_IN_TABLE_CACHE)
     FlushTableCache(1);
@@ -271,7 +271,7 @@ void FileSystemMountInfo::AddToTableCache(unsigned uiSectorEntry)
 
 }
 
-SectorBlockEntry* FileSystemMountInfo::GetSectorEntryFromCache(unsigned uiSectorEntry)
+SectorBlockEntry* FileSystem::GetSectorEntryFromCache(unsigned uiSectorEntry)
 {
   if(_fsTableCache.empty())
     return NULL ;
@@ -283,7 +283,7 @@ SectorBlockEntry* FileSystemMountInfo::GetSectorEntryFromCache(unsigned uiSector
   return &_fsTableCache[iPos] ;
 }
 
-uint32_t FileSystemMountInfo::AllocateSector()
+uint32_t FileSystem::AllocateSector()
 {
   if(_freePoolQueue->empty())
   {
@@ -298,7 +298,7 @@ uint32_t FileSystemMountInfo::AllocateSector()
   return uiFreeSectorID;
 }
 
-void FileSystemMountInfo::DisplayCache()
+void FileSystem::DisplayCache()
 {
   printf("\nSTART\n");
   for(const auto& block : _fsTableCache)
@@ -306,19 +306,19 @@ void FileSystemMountInfo::DisplayCache()
   printf(" :: SIZE = %d", _fsTableCache.size());
 }
 
-uint32_t FileSystemMountInfo::GetRealSectorNumber(uint32_t uiSectorID) const
+uint32_t FileSystem::GetRealSectorNumber(uint32_t uiSectorID) const
 {
   return uiSectorID + 1/*BPB*/
           + _fsBootBlock.BPB_RsvdSecCnt
           + _fsBootBlock.BPB_FSTableSize;
 }
 
-void FileSystemMountInfo::InitBootBlock(FSBootBlock* bootBlock)
+void FileSystem::InitBootBlock(FSBootBlock* bootBlock)
 {
   memcpy(&_fsBootBlock, bootBlock, sizeof(FSBootBlock));
 }
 
-void FileSystemMountInfo::UpdateUsedSectors(unsigned uiSectorEntryValue)
+void FileSystem::UpdateUsedSectors(unsigned uiSectorEntryValue)
 {
   if(uiSectorEntryValue == EOC)
     _fsBootBlock.uiUsedSectors++;
@@ -326,7 +326,7 @@ void FileSystemMountInfo::UpdateUsedSectors(unsigned uiSectorEntryValue)
     _fsBootBlock.uiUsedSectors--;
 }
 
-uint32_t FileSystemMountInfo::GetSectorEntryValue(const unsigned uiSectorID)
+uint32_t FileSystem::GetSectorEntryValue(const unsigned uiSectorID)
 {
   if(uiSectorID > (_fsBootBlock.BPB_FSTableSize * _fsBootBlock.BPB_BytesPerSec / 4))
     throw upan::exception(XLOC, "invalid cluster id: %u", uiSectorID);
@@ -345,7 +345,7 @@ uint32_t FileSystemMountInfo::GetSectorEntryValue(const unsigned uiSectorID)
   return pSectorBlockEntry->Read(uiSectorID);
 }
 
-void FileSystemMountInfo::SetSectorEntryValue(const unsigned uiSectorID, unsigned uiSectorEntryValue)
+void FileSystem::SetSectorEntryValue(const unsigned uiSectorID, unsigned uiSectorEntryValue)
 {
   if(uiSectorID > (_fsBootBlock.BPB_FSTableSize * _fsBootBlock.BPB_BytesPerSec / 4))
     throw upan::exception(XLOC, "invalid cluster id: %u", uiSectorID);
