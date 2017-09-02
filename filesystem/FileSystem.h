@@ -35,50 +35,6 @@
 
 class DiskDrive;
 
-class FSBootBlock
-{
-public:
-  byte			BPB_jmpBoot[3] ;
-
-  byte			BPB_Media ;
-  unsigned short	BPB_SecPerTrk ;
-  unsigned short	BPB_NumHeads ;
-
-  unsigned short	BPB_BytesPerSec ;
-  unsigned		BPB_TotSec32 ;
-  unsigned		BPB_HiddSec ;
-
-  unsigned short	BPB_RsvdSecCnt ;
-  unsigned		BPB_FSTableSize ;
-
-  unsigned short	BPB_ExtFlags ;
-  unsigned short	BPB_FSVer ;
-  unsigned short	BPB_FSInfo ;
-
-  byte			BPB_BootSig ;
-  unsigned		BPB_VolID ;
-  byte			BPB_VolLab[11 + 1] ;
-
-  unsigned		uiUsedSectors ;
-
-  void Init(const DiskDrive& diskDrive);
-
-} PACKED;
-
-/*
-typedef struct
-{
-  byte bSecond ;
-  byte bMinute ;
-  byte bHour ;
-
-  byte bDayOfWeek_Month ;
-  byte bDayOfMonth ;
-  byte bCentury ;
-  byte bYear ;
-} PACKED FileSystem_Time ;
-*/
-
 class FileSystem_DIR_Entry
 {
 public:

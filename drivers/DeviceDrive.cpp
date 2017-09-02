@@ -374,48 +374,7 @@ void DiskDrive::Format()
   {
 ;//		RETURN_IF_NOT(bStatus, Floppy_Format(pDiskDrive->driveNo), Floppy_SUCCESS) ;
   }
-
-  byte bFSBootBlockBuffer[512] ;
-  byte bSectorBuffer[512] ;
-  FSBootBlock* pFSBootBlock = (FSBootBlock*)(bFSBootBlockBuffer) ;
-
-  /************************ FAT Boot Block [START] *******************************/
-  pFSBootBlock->Init(*this);
-
-  bFSBootBlockBuffer[510] = 0x55 ; /* BootSector Signature */
-  bFSBootBlockBuffer[511] = 0xAA ;
-
-  Write(1, 1, bFSBootBlockBuffer);
-  /************************* FAT Boot Block [END] **************************/
-
-  /*********************** FAT Table [START] *************************************/
-
-  unsigned i ;
-  for(i = 0; i < 512; i++)
-    bSectorBuffer[i] = 0 ;
-
-  for(i = 0; i < pFSBootBlock->BPB_FSTableSize; i++)
-  {
-    if(i == 0)
-      ((unsigned*)&bSectorBuffer)[0] = EOC ;
-
-    Write(i + pFSBootBlock->BPB_RsvdSecCnt + 1, 1, bSectorBuffer);
-
-    if(i == 0)
-      ((unsigned*)&bSectorBuffer)[0] = 0 ;
-  }
-  /*************************** FAT Table [END] **************************************/
-
-  /*************************** Root Directory [START] *******************************/
-  _fileSystem.InitBootBlock(pFSBootBlock);
-
-  unsigned uiSec = _fileSystem.GetRealSectorNumber(0);
-
-  ((FileSystem_DIR_Entry*)bSectorBuffer)->InitAsRoot(uiSec);
-
-  Write(uiSec, 1, bSectorBuffer);
-  /*************************** Root Directory [END] ********************************/
-
+  _fileSystem.Format();
   _mounted = false;
   FlushDirtyCacheSectors();
 }
@@ -467,25 +426,6 @@ void DiskDrive::ReleaseCache()
 {
   if(Mounted())
     _mCache.LFUCacheCleanUp();
-}
-
-unsigned DiskDrive::GetFreeSector()
-{
-	byte bBuffer[512];
-  const FSBootBlock& fsBootBlock = _fileSystem.GetBootBlock() ;
-	
-	for(unsigned i = 0; i < fsBootBlock.BPB_FSTableSize; ++i)
-	{
-    Read(i + fsBootBlock.BPB_RsvdSecCnt + 1, 1, (byte*)bBuffer);
-
-	  unsigned* pTable = (unsigned*)bBuffer;
-		for(unsigned j = 0; j < ENTRIES_PER_TABLE_SECTOR; ++j)
-		{
-			if(!(pTable[j] & EOC))
-        return i * ENTRIES_PER_TABLE_SECTOR + j;
-		}
-	}
-  throw upan::exception(XLOC, "%s disk drive is full - no more free space available!", DriveName().c_str());
 }
 
 RawDiskDrive::RawDiskDrive(const upan::string& name, RAW_DISK_TYPES type, void* device)
@@ -683,9 +623,8 @@ byte DiskDriveManager::GetList(DriveStat** pDriveList, int* iListSize)
 
 		if(d->Mounted())
     {
-      const FSBootBlock& fsBootBlock = d->_fileSystem.GetBootBlock();
-      pAddress[i].ulTotalSize = fsBootBlock.BPB_FSTableSize * ENTRIES_PER_TABLE_SECTOR * 512 ;
-      pAddress[i].ulUsedSize = fsBootBlock.uiUsedSectors * 512 ;
+      pAddress[i].ulTotalSize = d->_fileSystem.TotalSize();
+      pAddress[i].ulUsedSize = d->_fileSystem.UsedSize();
     }
 		
 		++i;

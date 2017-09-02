@@ -101,10 +101,8 @@ class DiskDrive
     void xRead(byte* bDataBuffer, unsigned uiSector, unsigned uiNoOfSectors);
     void Write(unsigned uiStartSector, unsigned uiNoOfSectors, byte* bDataBuffer);
     void xWrite(byte* bDataBuffer, unsigned uiSector, unsigned uiNoOfSectors);
-    void InitFSBootBlock(FSBootBlock* pFSBootBlock);
     byte FlushDirtyCacheSectors(int iCount = -1);
     void ReleaseCache();
-    unsigned GetFreeSector();
 
     const upan::string& DriveName() const { return _driveName; }
     DEVICE_TYPE DeviceType() const { return _deviceType; }

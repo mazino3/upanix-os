@@ -69,8 +69,8 @@ static byte FSManager_BinarySearch(const upan::vector<SectorBlockEntry>& blocks,
 
 void SectorBlockEntry::Load(DiskDrive& diskDrive, uint32_t sectortId)
 {
-  const FSBootBlock& fsBootBlock = diskDrive._fileSystem.GetBootBlock();
-  diskDrive.Read(fsBootBlock.BPB_RsvdSecCnt + BLOCK_ID(sectortId) + 1, 1, (byte*)_sectorBlock);
+  const auto tableSectorId = diskDrive._fileSystem.GetTableSectorId(BLOCK_ID(sectortId));
+  diskDrive.Read(tableSectorId, 1, (byte*)_sectorBlock);
   _blockId = BLOCK_ID(sectortId);
   _readCount = _writeCount = 0;
 }
@@ -87,6 +87,79 @@ void SectorBlockEntry::Write(uint32_t sectorId, uint32_t value)
   _sectorBlock[index] = _sectorBlock[index] & 0xF0000000;
   _sectorBlock[index] = _sectorBlock[index] | (value & EOC);
   ++_writeCount;
+}
+
+void FileSystem::InitBootBlock(FSBootBlock& fsBootBlock)
+{
+  fsBootBlock.BPB_jmpBoot[0] = 0xEB ; /****************/
+  fsBootBlock.BPB_jmpBoot[1] = 0xFE ; /* JMP $ -- ARR */
+  fsBootBlock.BPB_jmpBoot[2] = 0x90 ; /****************/
+
+  fsBootBlock.BPB_BytesPerSec = 0x200; // 512 ;
+  fsBootBlock.BPB_RsvdSecCnt = 2 ;
+
+  if(_diskDrive.DeviceType() == DEV_FLOPPY)
+    fsBootBlock.BPB_Media  = MEDIA_REMOVABLE ;
+  else
+    fsBootBlock.BPB_Media  = MEDIA_FIXED ;
+
+  fsBootBlock.BPB_SecPerTrk = _diskDrive.SectorsPerTrack();
+  fsBootBlock.BPB_NumHeads = _diskDrive.NoOfHeads();
+  fsBootBlock.BPB_HiddSec  = 0 ;
+  fsBootBlock.BPB_TotSec32 = _diskDrive.SizeInSectors();
+
+/*	pFSBootBlock->BPB_FSTableSize ; ---> Calculated */
+  fsBootBlock.BPB_ExtFlags  = 0x0080 ;
+  fsBootBlock.BPB_FSVer = 0x0100 ;  //version 1.0
+  fsBootBlock.BPB_FSInfo  = 1 ;  //Typical Value for FSInfo Sector
+
+  fsBootBlock.BPB_BootSig = 0x29 ;
+  fsBootBlock.BPB_VolID = 0x01 ;  //TODO: Required to be set to current Date/Time of system ---- Not Mandatory
+  strcpy((char*)fsBootBlock.BPB_VolLab, "No Name   ") ;  //10 + 1(\0) characters only -- ARR
+
+  fsBootBlock.uiUsedSectors = 1 ;
+
+  fsBootBlock.BPB_FSTableSize = (fsBootBlock.BPB_TotSec32 - fsBootBlock.BPB_RsvdSecCnt - 1) / (ENTRIES_PER_TABLE_SECTOR + 1) ;
+}
+
+void FileSystem::Format()
+{
+  /************************ FAT Boot Block [START] *******************************/
+  byte bFSBootBlockBuffer[512] ;
+  FSBootBlock* pFSBootBlock = (FSBootBlock*)(bFSBootBlockBuffer) ;
+  InitBootBlock(*pFSBootBlock);
+
+  bFSBootBlockBuffer[510] = 0x55 ; /* BootSector Signature */
+  bFSBootBlockBuffer[511] = 0xAA ;
+
+  _diskDrive.Write(1, 1, bFSBootBlockBuffer);
+  /************************* FAT Boot Block [END] **************************/
+
+  /*********************** FAT Table [START] *************************************/
+  byte bSectorBuffer[512] ;
+  memset(bSectorBuffer, 0, 512);
+
+  for(uint32_t i = 0; i < pFSBootBlock->BPB_FSTableSize; i++)
+  {
+    if(i == 0)
+      ((unsigned*)&bSectorBuffer)[0] = EOC ;
+
+    _diskDrive.Write(i + pFSBootBlock->BPB_RsvdSecCnt + 1, 1, bSectorBuffer);
+
+    if(i == 0)
+      ((unsigned*)&bSectorBuffer)[0] = 0 ;
+  }
+  /*************************** FAT Table [END] **************************************/
+
+  /*************************** Root Directory [START] *******************************/
+  memcpy(&_fsBootBlock, pFSBootBlock, sizeof(FSBootBlock));
+
+  unsigned uiSec = GetRealSectorNumber(0);
+
+  ((FileSystem_DIR_Entry*)bSectorBuffer)->InitAsRoot(uiSec);
+
+  _diskDrive.Write(uiSec, 1, bSectorBuffer);
+  /*************************** Root Directory [END] ********************************/
 }
 
 void FileSystem::UnallocateFreePoolQueue()
@@ -306,16 +379,16 @@ void FileSystem::DisplayCache()
   printf(" :: SIZE = %d", _fsTableCache.size());
 }
 
+uint32_t FileSystem::GetTableSectorId(uint32_t uiSectorID) const
+{
+  return uiSectorID + 1/*BPB*/ + _fsBootBlock.BPB_RsvdSecCnt;
+}
+
 uint32_t FileSystem::GetRealSectorNumber(uint32_t uiSectorID) const
 {
   return uiSectorID + 1/*BPB*/
           + _fsBootBlock.BPB_RsvdSecCnt
           + _fsBootBlock.BPB_FSTableSize;
-}
-
-void FileSystem::InitBootBlock(FSBootBlock* bootBlock)
-{
-  memcpy(&_fsBootBlock, bootBlock, sizeof(FSBootBlock));
 }
 
 void FileSystem::UpdateUsedSectors(unsigned uiSectorEntryValue)

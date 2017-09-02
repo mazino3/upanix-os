@@ -53,8 +53,11 @@ class FileSystem
     {
       delete _freePoolQueue;
     }
-    const FSBootBlock& GetBootBlock() const { return _fsBootBlock; }
-    void InitBootBlock(FSBootBlock* bootBlock);
+
+    uint64_t TotalSize() const { return _fsBootBlock.BPB_FSTableSize * ENTRIES_PER_TABLE_SECTOR * 512; }
+    uint64_t UsedSize() const { return _fsBootBlock.uiUsedSectors * 512; }
+
+    void Format();
     void AllocateFreePoolQueue(uint32_t size);
     void UnallocateFreePoolQueue();
     void ReadFSBootBlock();
@@ -66,6 +69,7 @@ class FileSystem
     SectorBlockEntry* GetSectorEntryFromCache(unsigned uiSectorEntry);
     uint32_t AllocateSector();
 
+    uint32_t GetTableSectorId(uint32_t uiSectorID) const;
     uint32_t GetRealSectorNumber(uint32_t uiSectorID) const;
     uint32_t GetSectorEntryValue(const unsigned uiSectorID);
     void SetSectorEntryValue(const unsigned uiSectorID, unsigned uiSectorEntryValue);
@@ -74,7 +78,36 @@ class FileSystem
 
     //Ouput
     FileSystem_PresentWorkingDirectory FSpwd;
+
 private:
+    struct FSBootBlock
+    {
+      byte			BPB_jmpBoot[3] ;
+
+      byte			BPB_Media ;
+      unsigned short	BPB_SecPerTrk ;
+      unsigned short	BPB_NumHeads ;
+
+      unsigned short	BPB_BytesPerSec ;
+      unsigned		BPB_TotSec32 ;
+      unsigned		BPB_HiddSec ;
+
+      unsigned short	BPB_RsvdSecCnt ;
+      unsigned		BPB_FSTableSize ;
+
+      unsigned short	BPB_ExtFlags ;
+      unsigned short	BPB_FSVer ;
+      unsigned short	BPB_FSInfo ;
+
+      byte			BPB_BootSig ;
+      unsigned		BPB_VolID ;
+      byte			BPB_VolLab[11 + 1] ;
+
+      unsigned		uiUsedSectors ;
+    } PACKED;
+
+private:
+    void InitBootBlock(FSBootBlock&);
     void UpdateUsedSectors(unsigned uiSectorEntryValue);
 
     DiskDrive& _diskDrive;
