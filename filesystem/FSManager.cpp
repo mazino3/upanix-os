@@ -89,7 +89,7 @@ void SectorBlockEntry::Write(uint32_t sectorId, uint32_t value)
   ++_writeCount;
 }
 
-void FileSystem::InitBootBlock(FSBootBlock& fsBootBlock)
+void FileSystem::InitBootBlock(BootBlock& fsBootBlock)
 {
   fsBootBlock.BPB_jmpBoot[0] = 0xEB ; /****************/
   fsBootBlock.BPB_jmpBoot[1] = 0xFE ; /* JMP $ -- ARR */
@@ -126,7 +126,7 @@ void FileSystem::Format()
 {
   /************************ FAT Boot Block [START] *******************************/
   byte bFSBootBlockBuffer[512] ;
-  FSBootBlock* pFSBootBlock = (FSBootBlock*)(bFSBootBlockBuffer) ;
+  BootBlock* pFSBootBlock = (BootBlock*)(bFSBootBlockBuffer) ;
   InitBootBlock(*pFSBootBlock);
 
   bFSBootBlockBuffer[510] = 0x55 ; /* BootSector Signature */
@@ -152,7 +152,7 @@ void FileSystem::Format()
   /*************************** FAT Table [END] **************************************/
 
   /*************************** Root Directory [START] *******************************/
-  memcpy(&_fsBootBlock, pFSBootBlock, sizeof(FSBootBlock));
+  memcpy(&_fsBootBlock, pFSBootBlock, sizeof(BootBlock));
 
   unsigned uiSec = GetRealSectorNumber(0);
 
@@ -185,7 +185,7 @@ void FileSystem::ReadFSBootBlock()
   if(bArrFSBootBlock[510] != 0x55 || bArrFSBootBlock[511] != 0xAA)
     throw upan::exception(XLOC, "invalid BPB signature - %x, %x", bArrFSBootBlock[510], bArrFSBootBlock[511]);
 
-  memcpy(&_fsBootBlock, bArrFSBootBlock, sizeof(FSBootBlock));
+  memcpy(&_fsBootBlock, bArrFSBootBlock, sizeof(BootBlock));
 
   if(_fsBootBlock.BPB_BootSig != 0x29)
     throw upan::exception(XLOC, "invalid BOOT signature: %x", _fsBootBlock.BPB_BootSig);
@@ -237,7 +237,7 @@ void FileSystem::WriteFSBootBlock()
   bSectorBuffer[510] = 0x55; /* BootSector Signature */
   bSectorBuffer[511] = 0xAA;
 
-  memcpy(bSectorBuffer, &_fsBootBlock, sizeof(FSBootBlock));
+  memcpy(bSectorBuffer, &_fsBootBlock, sizeof(BootBlock));
 
   _diskDrive.Write(1, 1, bSectorBuffer);
 }
