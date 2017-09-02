@@ -599,7 +599,7 @@ byte ProcessManager::CreateKernelImage(const unsigned uiTaskAddress, int iParent
         DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByID(iDriveID, false).goodValueOrThrow(XLOC);
 
         if(pDiskDrive->Mounted())
-          newPAS.processPWD = pDiskDrive->FSMountInfo.FSpwd;
+          newPAS.processPWD = pDiskDrive->_fileSystem.FSpwd;
       }
     }
 
@@ -685,7 +685,7 @@ byte ProcessManager::Create(const char* szProcessName, int iParentProcessID, byt
       {
         DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByID(iDriveID, false).goodValueOrThrow(XLOC);
         if(pDiskDrive->Mounted())
-          newPAS.processPWD = pDiskDrive->FSMountInfo.FSpwd;
+          newPAS.processPWD = pDiskDrive->_fileSystem.FSpwd;
       }
     }
 

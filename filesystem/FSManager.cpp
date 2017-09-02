@@ -69,7 +69,7 @@ static byte FSManager_BinarySearch(const upan::vector<SectorBlockEntry>& blocks,
 
 void SectorBlockEntry::Load(DiskDrive& diskDrive, uint32_t sectortId)
 {
-  const FSBootBlock& fsBootBlock = diskDrive.FSMountInfo.GetBootBlock();
+  const FSBootBlock& fsBootBlock = diskDrive._fileSystem.GetBootBlock();
   diskDrive.Read(fsBootBlock.BPB_RsvdSecCnt + BLOCK_ID(sectortId) + 1, 1, (byte*)_sectorBlock);
   _blockId = BLOCK_ID(sectortId);
   _readCount = _writeCount = 0;

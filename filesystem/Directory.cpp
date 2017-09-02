@@ -102,7 +102,7 @@ void Directory_Create(Process* processAddressSpace, int iDriveID, byte* bParentD
 
 	if(pCWD->pDirEntry->uiStartSectorID == EOC)
 	{
-    uiFreeSectorID = pDiskDrive->FSMountInfo.AllocateSector();
+    uiFreeSectorID = pDiskDrive->_fileSystem.AllocateSector();
 		uiSectorNo = uiFreeSectorID ;
 		bSectorPos = 0 ;
 		pCWD->pDirEntry->uiStartSectorID = uiFreeSectorID ;
@@ -114,8 +114,8 @@ void Directory_Create(Process* processAddressSpace, int iDriveID, byte* bParentD
 
 		if(bSectorPos == EOC_B)
 		{
-      uiFreeSectorID = pDiskDrive->FSMountInfo.AllocateSector();
-      pDiskDrive->FSMountInfo.SetSectorEntryValue(uiSectorNo, uiFreeSectorID);
+      uiFreeSectorID = pDiskDrive->_fileSystem.AllocateSector();
+      pDiskDrive->_fileSystem.SetSectorEntryValue(uiSectorNo, uiFreeSectorID);
 			uiSectorNo = uiFreeSectorID ;
 			bSectorPos = 0 ;
 		}
@@ -136,7 +136,7 @@ void Directory_Create(Process* processAddressSpace, int iDriveID, byte* bParentD
 
 	//TODO: Required Only If "/" Dir Entry is Created
 	if(strcmp((const char*)pCWD->pDirEntry->Name, FS_ROOT_DIR) == 0)
-    pDiskDrive->FSMountInfo.FSpwd.DirEntry = *pCWD->pDirEntry;
+    pDiskDrive->_fileSystem.FSpwd.DirEntry = *pCWD->pDirEntry;
 }
 
 void Directory_Delete(Process* processAddressSpace, int iDriveID, byte* bParentDirectoryBuffer, const FileSystem_CWD* pCWD, const char* szDirName)
@@ -191,7 +191,7 @@ void Directory_Delete(Process* processAddressSpace, int iDriveID, byte* bParentD
 
 	//TODO: Required Only If "/" Dir Entry is Created
 	if(strcmp((const char*)pCWD->pDirEntry->Name, FS_ROOT_DIR) == 0)
-    pDiskDrive->FSMountInfo.FSpwd.DirEntry = *pCWD->pDirEntry;
+    pDiskDrive->_fileSystem.FSpwd.DirEntry = *pCWD->pDirEntry;
 }
 
 void Directory_GetDirEntryForCreateDelete(const Process* processAddressSpace, int iDriveID, const char* szDirPath, char* szDirName, unsigned& uiSectorNo, byte& bSectorPos, byte* bDirectoryBuffer)
@@ -200,7 +200,7 @@ void Directory_GetDirEntryForCreateDelete(const Process* processAddressSpace, in
 
   DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByID(iDriveID, true).goodValueOrThrow(XLOC);
 
-  FileSystem* pFSMountInfo = &pDiskDrive->FSMountInfo ;
+  FileSystem* pFSMountInfo = &pDiskDrive->_fileSystem ;
 
 	if(strlen(szDirPath) == 0 ||	strcmp(FS_ROOT_DIR, szDirPath) == 0)
     throw upan::exception(XLOC, "can't create/delete current/root directory");
@@ -258,9 +258,9 @@ void Directory_GetDirectoryContent(const char* szFileName, Process* processAddre
 	}
 	else
 	{
-		CWD.pDirEntry = &(pDiskDrive->FSMountInfo.FSpwd.DirEntry) ;
-		CWD.uiSectorNo = pDiskDrive->FSMountInfo.FSpwd.uiSectorNo ;
-		CWD.bSectorEntryPosition = pDiskDrive->FSMountInfo.FSpwd.bSectorEntryPosition ;
+    CWD.pDirEntry = &(pDiskDrive->_fileSystem.FSpwd.DirEntry) ;
+    CWD.uiSectorNo = pDiskDrive->_fileSystem.FSpwd.uiSectorNo ;
+    CWD.bSectorEntryPosition = pDiskDrive->_fileSystem.FSpwd.bSectorEntryPosition ;
 	}
 
 	FileSystem_DIR_Entry* dirFile ;
@@ -341,7 +341,7 @@ void Directory_GetDirectoryContent(const char* szFileName, Process* processAddre
 			}
 		}
 
-    uiCurrentSectorID = pDiskDrive->FSMountInfo.GetSectorEntryValue(uiCurrentSectorID);
+    uiCurrentSectorID = pDiskDrive->_fileSystem.GetSectorEntryValue(uiCurrentSectorID);
 	}
 }
 
@@ -428,7 +428,7 @@ bool Directory_FindDirectory(DiskDrive& diskDrive, const FileSystem_CWD& cwd, co
 			}
 		}
 
-    uiNextSectorID = diskDrive.FSMountInfo.GetSectorEntryValue(uiCurrentSectorID);
+    uiNextSectorID = diskDrive._fileSystem.GetSectorEntryValue(uiCurrentSectorID);
 
 		if(uiScanDirCount >= pDirEntry->uiSize)
 		{
@@ -518,7 +518,7 @@ void Directory_ActualFileWrite(DiskDrive* pDiskDrive, byte* bDataBuffer, ProcFil
 	
 	while(iSectorIndex < iStartWriteSectorNo && uiCurrentSectorID != EOC)
 	{
-    uiNextSectorID = pDiskDrive->FSMountInfo.GetSectorEntryValue(uiCurrentSectorID);
+    uiNextSectorID = pDiskDrive->_fileSystem.GetSectorEntryValue(uiCurrentSectorID);
 
 		iSectorIndex++ ;
 		uiPrevSectorID = uiCurrentSectorID ;
@@ -531,7 +531,7 @@ void Directory_ActualFileWrite(DiskDrive* pDiskDrive, byte* bDataBuffer, ProcFil
 
 		do
 		{
-      uiCurrentSectorID = pDiskDrive->FSMountInfo.AllocateSector();
+      uiCurrentSectorID = pDiskDrive->_fileSystem.AllocateSector();
 
 			if(dirFile->uiStartSectorID == EOC)
 			{
@@ -539,7 +539,7 @@ void Directory_ActualFileWrite(DiskDrive* pDiskDrive, byte* bDataBuffer, ProcFil
 			}
 			else
 			{
-        pDiskDrive->FSMountInfo.SetSectorEntryValue(uiPrevSectorID, uiCurrentSectorID);
+        pDiskDrive->_fileSystem.SetSectorEntryValue(uiPrevSectorID, uiCurrentSectorID);
 			}
 			
 			uiPrevSectorID = uiCurrentSectorID ;
@@ -576,7 +576,7 @@ void Directory_ActualFileWrite(DiskDrive* pDiskDrive, byte* bDataBuffer, ProcFil
 		if(uiWrittenCount == uiDataSize)
       return;
 
-    uiNextSectorID = pDiskDrive->FSMountInfo.GetSectorEntryValue(uiCurrentSectorID);
+    uiNextSectorID = pDiskDrive->_fileSystem.GetSectorEntryValue(uiCurrentSectorID);
 
     uiPrevSectorID = uiCurrentSectorID ;
     uiCurrentSectorID = uiNextSectorID ;
@@ -595,8 +595,8 @@ void Directory_ActualFileWrite(DiskDrive* pDiskDrive, byte* bDataBuffer, ProcFil
 		if(uiCurrentSectorID == EOC || bStartAllocation == true)
 		{
 			bStartAllocation = true ;
-      uiCurrentSectorID = pDiskDrive->FSMountInfo.AllocateSector();
-      pDiskDrive->FSMountInfo.SetSectorEntryValue(uiPrevSectorID, uiCurrentSectorID);
+      uiCurrentSectorID = pDiskDrive->_fileSystem.AllocateSector();
+      pDiskDrive->_fileSystem.SetSectorEntryValue(uiPrevSectorID, uiCurrentSectorID);
 		}
 		
 		if(uiWriteRemainingCount < 512)
@@ -628,7 +628,7 @@ void Directory_ActualFileWrite(DiskDrive* pDiskDrive, byte* bDataBuffer, ProcFil
       return;
 		}
 
-    uiNextSectorID = pDiskDrive->FSMountInfo.GetSectorEntryValue(uiCurrentSectorID);
+    uiNextSectorID = pDiskDrive->_fileSystem.GetSectorEntryValue(uiCurrentSectorID);
 		uiPrevSectorID = uiCurrentSectorID ;
 		uiCurrentSectorID = uiNextSectorID ;
 	}
@@ -684,7 +684,7 @@ int Directory_FileRead(DiskDrive* pDiskDrive, FileSystem_CWD* pCWD, ProcFileDesc
 	
 	while(iSectorIndex != iStartReadSectorNo)
 	{
-    uiNextSectorID = pDiskDrive->FSMountInfo.GetSectorEntryValue(uiCurrentSectorID);
+    uiNextSectorID = pDiskDrive->_fileSystem.GetSectorEntryValue(uiCurrentSectorID);
 		iSectorIndex++ ;
 		uiCurrentSectorID = uiNextSectorID ;
 	}
@@ -715,7 +715,7 @@ int Directory_FileRead(DiskDrive* pDiskDrive, FileSystem_CWD* pCWD, ProcFileDesc
 
 		for(;;)
 		{
-      uiNextSectorID = pDiskDrive->FSMountInfo.GetSectorEntryValue(uiCurrentSectorID);
+      uiNextSectorID = pDiskDrive->_fileSystem.GetSectorEntryValue(uiCurrentSectorID);
 
 			if(uiCurrentSectorID + 1 == uiNextSectorID)
 			{
@@ -735,7 +735,7 @@ int Directory_FileRead(DiskDrive* pDiskDrive, FileSystem_CWD* pCWD, ProcFileDesc
 
 				if(iSectorCount == MAX_SECTORS_PER_RW)
 				{
-          uiNextSectorID = pDiskDrive->FSMountInfo.GetSectorEntryValue(uiCurrentSectorID);
+          uiNextSectorID = pDiskDrive->_fileSystem.GetSectorEntryValue(uiCurrentSectorID);
 					uiCurrentSectorID = uiNextSectorID ;
 					break ;	
 				}
@@ -774,7 +774,7 @@ int Directory_FileRead(DiskDrive* pDiskDrive, FileSystem_CWD* pCWD, ProcFileDesc
 void Directory_ReadDirEntryInfo(DiskDrive& diskDrive, const FileSystem_CWD& cwd, const char* szFileName, unsigned& uiSectorNo, byte& bSectorPos, byte* bDirectoryBuffer)
 {
 	FileSystem_CWD CWD ;
-  FileSystem_PresentWorkingDirectory& fsPwd = diskDrive.FSMountInfo.FSpwd;
+  FileSystem_PresentWorkingDirectory& fsPwd = diskDrive._fileSystem.FSpwd;
 
 	if(strlen(szFileName) == 0)
     throw upan::exception(XLOC, "file name can't be empty");
@@ -837,9 +837,9 @@ void Directory_Change(const char* szFileName, int iDriveID, Process* processAddr
 	}
 	else
 	{
-		CWD.pDirEntry = &(pDiskDrive->FSMountInfo.FSpwd.DirEntry) ;
-		CWD.uiSectorNo = pDiskDrive->FSMountInfo.FSpwd.uiSectorNo ;
-		CWD.bSectorEntryPosition = pDiskDrive->FSMountInfo.FSpwd.bSectorEntryPosition ;
+    CWD.pDirEntry = &(pDiskDrive->_fileSystem.FSpwd.DirEntry) ;
+    CWD.uiSectorNo = pDiskDrive->_fileSystem.FSpwd.uiSectorNo ;
+    CWD.bSectorEntryPosition = pDiskDrive->_fileSystem.FSpwd.bSectorEntryPosition ;
 	}
 
   Directory_ReadDirEntryInfo(*pDiskDrive, CWD, szFileName, uiSectorNo, bSectorPos, bDirectoryBuffer);
@@ -933,9 +933,9 @@ const FileSystem_DIR_Entry Directory_GetDirEntry(const char* szFileName, Process
 	}
 	else
 	{
-		CWD.pDirEntry = &(pDiskDrive->FSMountInfo.FSpwd.DirEntry) ;
-		CWD.uiSectorNo = pDiskDrive->FSMountInfo.FSpwd.uiSectorNo ;
-		CWD.bSectorEntryPosition = pDiskDrive->FSMountInfo.FSpwd.bSectorEntryPosition ;
+    CWD.pDirEntry = &(pDiskDrive->_fileSystem.FSpwd.DirEntry) ;
+    CWD.uiSectorNo = pDiskDrive->_fileSystem.FSpwd.uiSectorNo ;
+    CWD.bSectorEntryPosition = pDiskDrive->_fileSystem.FSpwd.bSectorEntryPosition ;
 	}
 
 	FileSystem_DIR_Entry* dirFile ;

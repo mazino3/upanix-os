@@ -36,9 +36,9 @@
 
 uint32_t FileSystem_DeAllocateSector(DiskDrive* pDiskDrive, unsigned uiCurrentSectorID)
 {
-  auto uiNextSectorID = pDiskDrive->FSMountInfo.GetSectorEntryValue(uiCurrentSectorID);
-  pDiskDrive->FSMountInfo.SetSectorEntryValue(uiCurrentSectorID, 0);
-  pDiskDrive->FSMountInfo.AddToFreePoolCache(uiCurrentSectorID);
+  auto uiNextSectorID = pDiskDrive->_fileSystem.GetSectorEntryValue(uiCurrentSectorID);
+  pDiskDrive->_fileSystem.SetSectorEntryValue(uiCurrentSectorID, 0);
+  pDiskDrive->_fileSystem.AddToFreePoolCache(uiCurrentSectorID);
   return uiNextSectorID;
 }
 

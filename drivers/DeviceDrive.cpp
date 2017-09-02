@@ -94,7 +94,7 @@ DiskDrive::DiskDrive(int id,
     _uiMaxSectorsInFreePoolCache(uiMaxSectorsInFreePoolCache),
     _fsType(FS_UNKNOWN),
     _mounted(false),
-    FSMountInfo(*this)
+    _fileSystem(*this)
 {
 	StartReleaseCacheTask();
 }
@@ -104,10 +104,10 @@ void DiskDrive::Mount()
 	if(Mounted())
     throw upan::exception(XLOC, "Drive %s is already mounted", _driveName.c_str());
 
-  FSMountInfo.AllocateFreePoolQueue(MaxSectorsInFreePoolCache());
+  _fileSystem.AllocateFreePoolQueue(MaxSectorsInFreePoolCache());
 
-  FSMountInfo.ReadFSBootBlock();
-  FSMountInfo.LoadFreeSectors();
+  _fileSystem.ReadFSBootBlock();
+  _fileSystem.LoadFreeSectors();
   ReadRootDirectory();
 
   _mounted = true;
@@ -118,10 +118,10 @@ void DiskDrive::UnMount()
 	if(!Mounted())
     throw upan::exception(XLOC, "drive %s is not mounted", _driveName.c_str());
 
-  FSMountInfo.WriteFSBootBlock();
-  FSMountInfo.FlushTableCache(MAX_SECTORS_IN_TABLE_CACHE);
+  _fileSystem.WriteFSBootBlock();
+  _fileSystem.FlushTableCache(MAX_SECTORS_IN_TABLE_CACHE);
 	FlushDirtyCacheSectors();
-  FSMountInfo.UnallocateFreePoolQueue();
+  _fileSystem.UnallocateFreePoolQueue();
 
   _mounted = false;
 }
@@ -132,9 +132,9 @@ void DiskDrive::ReadRootDirectory()
 
   xRead(bDataBuffer, 0, 1);
 	
-  FSMountInfo.FSpwd.DirEntry = *reinterpret_cast<FileSystem_DIR_Entry*>(bDataBuffer);
-  FSMountInfo.FSpwd.uiSectorNo = 0;
-  FSMountInfo.FSpwd.bSectorEntryPosition = 0;
+  _fileSystem.FSpwd.DirEntry = *reinterpret_cast<FileSystem_DIR_Entry*>(bDataBuffer);
+  _fileSystem.FSpwd.uiSectorNo = 0;
+  _fileSystem.FSpwd.bSectorEntryPosition = 0;
 }
 
 void DiskDrive::Read(unsigned uiStartSector, unsigned uiNoOfSectors, byte* bDataBuffer)
@@ -223,7 +223,7 @@ void DiskDrive::Read(unsigned uiStartSector, unsigned uiNoOfSectors, byte* bData
 
 void DiskDrive::xRead(byte* bDataBuffer, unsigned uiSector, unsigned uiNoOfSectors)
 {
-  Read(FSMountInfo.GetRealSectorNumber(uiSector), uiNoOfSectors, bDataBuffer);
+  Read(_fileSystem.GetRealSectorNumber(uiSector), uiNoOfSectors, bDataBuffer);
 }
 
 void DiskDrive::RawRead(unsigned uiStartSector, unsigned uiNoOfSectors, byte* bDataBuffer)
@@ -344,7 +344,7 @@ void DiskDrive::Write(unsigned uiStartSector, unsigned uiNoOfSectors, byte* bDat
 
 void DiskDrive::xWrite(byte* bDataBuffer, unsigned uiSector, unsigned uiNoOfSectors)
 {
-  Write(FSMountInfo.GetRealSectorNumber(uiSector), uiNoOfSectors, bDataBuffer);
+  Write(_fileSystem.GetRealSectorNumber(uiSector), uiNoOfSectors, bDataBuffer);
 }
 
 void DiskDrive::RawWrite(unsigned uiStartSector, unsigned uiNoOfSectors, byte* bDataBuffer)
@@ -407,9 +407,9 @@ void DiskDrive::Format()
   /*************************** FAT Table [END] **************************************/
 
   /*************************** Root Directory [START] *******************************/
-  FSMountInfo.InitBootBlock(pFSBootBlock);
+  _fileSystem.InitBootBlock(pFSBootBlock);
 
-  unsigned uiSec = FSMountInfo.GetRealSectorNumber(0);
+  unsigned uiSec = _fileSystem.GetRealSectorNumber(0);
 
   ((FileSystem_DIR_Entry*)bSectorBuffer)->InitAsRoot(uiSec);
 
@@ -472,7 +472,7 @@ void DiskDrive::ReleaseCache()
 unsigned DiskDrive::GetFreeSector()
 {
 	byte bBuffer[512];
-  const FSBootBlock& fsBootBlock = FSMountInfo.GetBootBlock() ;
+  const FSBootBlock& fsBootBlock = _fileSystem.GetBootBlock() ;
 	
 	for(unsigned i = 0; i < fsBootBlock.BPB_FSTableSize; ++i)
 	{
@@ -635,12 +635,12 @@ byte DiskDriveManager::Change(const upan::string& szDriveName)
 	ProcessManager::Instance().GetCurrentPAS().iDriveID = pDiskDrive->Id();
 
 	MemUtil_CopyMemory(MemUtil_GetDS(), 
-	(unsigned)&(pDiskDrive->FSMountInfo.FSpwd), 
+  (unsigned)&(pDiskDrive->_fileSystem.FSpwd),
 	MemUtil_GetDS(), 
 	(unsigned)&ProcessManager::Instance().GetCurrentPAS().processPWD, 
 	sizeof(FileSystem_PresentWorkingDirectory)) ;
 
-	ProcessEnv_Set("PWD", (const char*)pDiskDrive->FSMountInfo.FSpwd.DirEntry.Name) ;
+  ProcessEnv_Set("PWD", (const char*)pDiskDrive->_fileSystem.FSpwd.DirEntry.Name) ;
 
 	return DeviceDrive_SUCCESS ;
 }
@@ -683,7 +683,7 @@ byte DiskDriveManager::GetList(DriveStat** pDriveList, int* iListSize)
 
 		if(d->Mounted())
     {
-      const FSBootBlock& fsBootBlock = d->FSMountInfo.GetBootBlock();
+      const FSBootBlock& fsBootBlock = d->_fileSystem.GetBootBlock();
       pAddress[i].ulTotalSize = fsBootBlock.BPB_FSTableSize * ENTRIES_PER_TABLE_SECTOR * 512 ;
       pAddress[i].ulUsedSize = fsBootBlock.uiUsedSectors * 512 ;
     }

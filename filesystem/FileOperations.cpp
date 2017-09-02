@@ -222,9 +222,9 @@ int FileOperations_Read(int fd, char* buffer, int len)
 	}
 	else
 	{
-		CWD.pDirEntry = &(pDiskDrive->FSMountInfo.FSpwd.DirEntry) ;
-		CWD.uiSectorNo = pDiskDrive->FSMountInfo.FSpwd.uiSectorNo ;
-		CWD.bSectorEntryPosition = pDiskDrive->FSMountInfo.FSpwd.bSectorEntryPosition ;
+		CWD.pDirEntry = &(pDiskDrive->_fileSystem.FSpwd.DirEntry) ;
+		CWD.uiSectorNo = pDiskDrive->_fileSystem.FSpwd.uiSectorNo ;
+		CWD.bSectorEntryPosition = pDiskDrive->_fileSystem.FSpwd.bSectorEntryPosition ;
 	}
 
   int readLen = Directory_FileRead(pDiskDrive, &CWD, pFDEntry, (byte*)buffer, len);
@@ -269,9 +269,9 @@ void FileOperations_Write(int fd, const char* buffer, int len, int* pWriteLen)
 	}
 	else
 	{
-		CWD.pDirEntry = &(pDiskDrive->FSMountInfo.FSpwd.DirEntry) ;
-		CWD.uiSectorNo = pDiskDrive->FSMountInfo.FSpwd.uiSectorNo ;
-		CWD.bSectorEntryPosition = pDiskDrive->FSMountInfo.FSpwd.bSectorEntryPosition ;
+		CWD.pDirEntry = &(pDiskDrive->_fileSystem.FSpwd.DirEntry) ;
+		CWD.uiSectorNo = pDiskDrive->_fileSystem.FSpwd.uiSectorNo ;
+		CWD.bSectorEntryPosition = pDiskDrive->_fileSystem.FSpwd.bSectorEntryPosition ;
 	}
 
 	unsigned uiIncLen = len ;
@@ -427,9 +427,9 @@ const FileSystem_DIR_Entry FileOperations_GetDirEntry(const char* szFileName)
 	}
 	else
 	{
-		CWD.pDirEntry = &(pDiskDrive->FSMountInfo.FSpwd.DirEntry) ;
-		CWD.uiSectorNo = pDiskDrive->FSMountInfo.FSpwd.uiSectorNo ;
-		CWD.bSectorEntryPosition = pDiskDrive->FSMountInfo.FSpwd.bSectorEntryPosition ;
+		CWD.pDirEntry = &(pDiskDrive->_fileSystem.FSpwd.DirEntry) ;
+		CWD.uiSectorNo = pDiskDrive->_fileSystem.FSpwd.uiSectorNo ;
+		CWD.bSectorEntryPosition = pDiskDrive->_fileSystem.FSpwd.bSectorEntryPosition ;
 	}
 
 	unsigned uiSectorNo ;
@@ -466,9 +466,9 @@ const FileSystem_FileStat FileOperations_GetStat(const char* szFileName, int iDr
 	}
 	else
 	{
-		CWD.pDirEntry = &(pDiskDrive->FSMountInfo.FSpwd.DirEntry) ;
-		CWD.uiSectorNo = pDiskDrive->FSMountInfo.FSpwd.uiSectorNo ;
-		CWD.bSectorEntryPosition = pDiskDrive->FSMountInfo.FSpwd.bSectorEntryPosition ;
+		CWD.pDirEntry = &(pDiskDrive->_fileSystem.FSpwd.DirEntry) ;
+		CWD.uiSectorNo = pDiskDrive->_fileSystem.FSpwd.uiSectorNo ;
+		CWD.bSectorEntryPosition = pDiskDrive->_fileSystem.FSpwd.bSectorEntryPosition ;
 	}
 
 	unsigned uiSectorNo ;
@@ -525,9 +525,9 @@ void FileOperations_UpdateTime(const char* szFileName, int iDriveID, byte bTimeT
 	}
 	else
 	{
-		CWD.pDirEntry = &(pDiskDrive->FSMountInfo.FSpwd.DirEntry) ;
-		CWD.uiSectorNo = pDiskDrive->FSMountInfo.FSpwd.uiSectorNo ;
-		CWD.bSectorEntryPosition = pDiskDrive->FSMountInfo.FSpwd.bSectorEntryPosition ;
+		CWD.pDirEntry = &(pDiskDrive->_fileSystem.FSpwd.DirEntry) ;
+		CWD.uiSectorNo = pDiskDrive->_fileSystem.FSpwd.uiSectorNo ;
+		CWD.bSectorEntryPosition = pDiskDrive->_fileSystem.FSpwd.bSectorEntryPosition ;
 	}
 
 	unsigned uiSectorNo ;

@@ -89,7 +89,7 @@ static void MountManager_MountDrive(char* szDriveName)
 	// Set Process Drive
 	ProcessManager::Instance().GetCurrentPAS().iDriveID = pDiskDrive->Id();
 
-	MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&(pDiskDrive->FSMountInfo.FSpwd), 
+	MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&(pDiskDrive->_fileSystem.FSpwd), 
 	MemUtil_GetDS(), 
 	(unsigned)&ProcessManager::Instance().GetCurrentPAS().processPWD, 
 	sizeof(FileSystem_PresentWorkingDirectory)) ;
