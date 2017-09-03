@@ -64,8 +64,14 @@ __volatile__ unsigned uiP9)
 				struct timeval* tv = KERNEL_ADDR(bDoAddrTranslation, struct timeval*, uiP1) ;
 
 				*piRetVal = 0 ;
-				if(SystemUtil_GetTimeOfDay(tv) == FAILURE)
+        try
+        {
+          tv->tSec = SystemUtil_GetTimeOfDay();
+        }
+        catch(...)
+        {
 					*piRetVal = -1 ;
+        }
 			}
 			break ;
 	}

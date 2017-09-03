@@ -33,6 +33,12 @@
 
 #define ENTRIES_PER_TABLE_SECTOR	(128)
 
+#define ATTR_DIR_DEFAULT	0x01ED  //0000 0001 1110 1101 => 0000(Rsv) 000(Dir) 111(u:rwx) 101(g:r-x) 101(o:r-x)
+#define ATTR_FILE_DEFAULT	0x03A4  //0000(Rsv) 001(File) 110(u:rw-) 100(g:r--) 100(o:r--)
+#define ATTR_DELETED_DIR	0x1000
+#define ATTR_TYPE_DIRECTORY	0x2000
+#define ATTR_TYPE_FILE		0x4000
+
 class DiskDrive;
 
 class SectorBlockEntry
@@ -96,16 +102,46 @@ public:
       void InitAsRoot(uint32_t parentSectorId);
       upan::string FullPath(DiskDrive& diskDrive);
 
-      byte            Name[33] ;
-      struct timeval  CreatedTime ;
-      struct timeval  AccessedTime ;
-      struct timeval  ModifiedTime ;
-      byte            bParentSectorPos ;
-      unsigned short  usAttribute ;
-      unsigned        uiSize ;
-      unsigned        uiStartSectorID ;
-      unsigned        uiParentSecID ;
-      int             iUserID ;
+      bool IsDirectory() const { return (_attribute & ATTR_TYPE_DIRECTORY) == ATTR_TYPE_DIRECTORY; }
+      bool IsFile() const { return (_attribute & ATTR_TYPE_FILE) == ATTR_TYPE_FILE; }
+
+      const char* Name() const { return (const char*)_name; }
+      const struct timeval& CreatedTime() const { return _createdTime; }
+
+      const struct timeval& AccessedTime() const { return _accessedTime; }
+      void AccessedTime(const uint32_t tSec) { _accessedTime.tSec = tSec; }
+
+      const struct timeval& ModifiedTime() const { return _modifiedTime; }
+      void ModifiedTime(const uint32_t tSec) { _modifiedTime.tSec = tSec; }
+
+      uint16_t ParentSectorPos() const { return _parentSectorPos; }
+
+      uint16_t Attribute() const { return _attribute; }
+      bool IsDeleted() const { return (_attribute & ATTR_DELETED_DIR) != 0; }
+      void MarkAsDeleted() { _attribute |= ATTR_DELETED_DIR ; }
+
+      uint32_t Size() const { return _size; }
+      void Size(uint32_t s) { _size = s; }
+      void AddNode() { ++_size; }
+      void RemoveNode() { --_size; }
+
+      uint32_t StartSectorID() const { return _startSectorID; }
+      void StartSectorID(const uint32_t sectorId) { _startSectorID = sectorId; }
+
+      uint32_t ParentSectorID() const { return _parentSectorID; }
+      int UserID() const { return _userID; }
+
+    private:
+      byte            _name[33] ;
+      struct timeval  _createdTime ;
+      struct timeval  _accessedTime ;
+      struct timeval  _modifiedTime ;
+      byte            _parentSectorPos ;
+      unsigned short  _attribute ;
+      unsigned        _size ;
+      unsigned        _startSectorID ;
+      unsigned        _parentSectorID ;
+      int             _userID ;
     } PACKED;
 
 

@@ -480,21 +480,21 @@ void FileSystem::SetSectorEntryValue(const unsigned uiSectorID, unsigned uiSecto
 
 void FileSystem::Node::Init(char* szDirName, unsigned short usDirAttribute, int iUserID, unsigned uiParentSecNo, byte bParentSecPos)
 {
-  strcpy((char*)Name, szDirName) ;
+  strcpy((char*)_name, szDirName) ;
 
-  usAttribute = usDirAttribute ;
+  _attribute = usDirAttribute ;
 
-  SystemUtil_GetTimeOfDay(&CreatedTime) ;
-  SystemUtil_GetTimeOfDay(&AccessedTime) ;
-  SystemUtil_GetTimeOfDay(&ModifiedTime) ;
+  _createdTime.tSec = SystemUtil_GetTimeOfDay();
+  _accessedTime.tSec = _createdTime.tSec;
+  _modifiedTime.tSec = _createdTime.tSec;
 
-  uiStartSectorID = EOC ;
-  uiSize = 0 ;
+  _startSectorID = EOC ;
+  _size = 0 ;
 
-  uiParentSecID = uiParentSecNo ;
-  bParentSectorPos = bParentSecPos ;
+  _parentSectorID = uiParentSecNo ;
+  _parentSectorPos = bParentSecPos ;
 
-  iUserID = iUserID ;
+  _userID = iUserID ;
 }
 
 void FileSystem::Node::InitAsRoot(uint32_t parentSectorId)
@@ -515,13 +515,13 @@ upan::string FileSystem::Node::FullPath(DiskDrive& diskDrive)
 
   while(true)
   {
-    if(strcmp((const char*)pParseDirEntry->Name, FS_ROOT_DIR) == 0)
+    if(strcmp(pParseDirEntry->Name(), FS_ROOT_DIR) == 0)
     {
       return upan::string(FS_ROOT_DIR) + fullPath;
     }
     else
     {
-      upan::string curDir = pParseDirEntry->Name;
+      upan::string curDir = pParseDirEntry->Name();
       if(!bFirst)
       {
         fullPath = curDir + FS_ROOT_DIR + fullPath;
@@ -533,13 +533,13 @@ upan::string FileSystem::Node::FullPath(DiskDrive& diskDrive)
       }
     }
 
-    unsigned uiParSectorNo = pParseDirEntry->uiParentSecID ;
-    byte bParSectorPos = pParseDirEntry->bParentSectorPos ;
+    unsigned uiParSectorNo = pParseDirEntry->ParentSectorID() ;
+    byte bParSectorPos = pParseDirEntry->ParentSectorPos() ;
 
     diskDrive.xRead(bSectorBuffer, uiParSectorNo, 1);
 
     pParseDirEntry = &((const FileSystem::Node*)bSectorBuffer)[bParSectorPos] ;
   }
 
-  throw upan::exception(XLOC, "failed to find full path for directory/file %s", Name);
+  throw upan::exception(XLOC, "failed to find full path for directory/file %s", _name);
 }

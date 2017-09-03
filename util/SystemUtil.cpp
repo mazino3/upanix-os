@@ -47,7 +47,7 @@ void SystemUtil_Reboot()
   BuiltInKeyboardDriver::Instance().Reboot() ;
 }
 
-byte SystemUtil_GetTimeOfDay(struct timeval* tv)
+uint32_t SystemUtil_GetTimeOfDay()
 {
 	RTCDateTime rtcTime ;
 	RTC::GetDateTime(rtcTime) ;
@@ -57,11 +57,10 @@ byte SystemUtil_GetTimeOfDay(struct timeval* tv)
 	
 	int days ;	
 	if(!mdate_SeedDateDifference(&dt, &days))
-		return FAILURE ;
+    throw upan::exception(XLOC, "invalid time");
 
-	tv->tSec = days * 24 * 60 * 60 + rtcTime.bHour * 60 * 60 + rtcTime.bMinute * 60 + rtcTime.bSecond ;
+  return days * 24 * 60 * 60 + rtcTime.bHour * 60 * 60 + rtcTime.bMinute * 60 + rtcTime.bSecond ;
 	//tv->uimSec = tv->tSec * 1000 ;
-	return SUCCESS ;
 }
 
 void SystemUtil_GetRTCTimeFromTime(RTCTime* pRTCTime, const struct timeval* tv)

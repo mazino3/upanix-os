@@ -50,10 +50,10 @@ byte* ProcessLoader::LoadInitSection(unsigned& uiSectionSize, const upan::string
 {
   const FileSystem::Node& DirEntry = FileOperations_GetDirEntry(szSectionName.c_str());
 	
-	if((DirEntry.usAttribute & ATTR_TYPE_DIRECTORY) == ATTR_TYPE_DIRECTORY)
+  if(DirEntry.IsDirectory())
     throw upan::exception(XLOC, "%s is a directory!", szSectionName.c_str());
 
-	uiSectionSize = DirEntry.uiSize ;
+  uiSectionSize = DirEntry.Size();
   upan::uniq_ptr<byte[]> bSectionImage(new byte[sizeof(char) * uiSectionSize]);
 
   const int fd = FileOperations_Open(szSectionName.c_str(), O_RDONLY);

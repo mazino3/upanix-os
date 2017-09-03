@@ -580,7 +580,7 @@ byte DiskDriveManager::Change(const upan::string& szDriveName)
 	(unsigned)&ProcessManager::Instance().GetCurrentPAS().processPWD, 
   sizeof(FileSystem::PresentWorkingDirectory)) ;
 
-  ProcessEnv_Set("PWD", (const char*)pDiskDrive->_fileSystem.FSpwd.DirEntry.Name) ;
+  ProcessEnv_Set("PWD", (const char*)pDiskDrive->_fileSystem.FSpwd.DirEntry.Name()) ;
 
 	return DeviceDrive_SUCCESS ;
 }

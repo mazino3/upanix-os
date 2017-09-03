@@ -138,23 +138,22 @@ int FileOperations_Open(const char* szFileName, const byte mode)
 
   FileSystem::Node dirEntry = Directory_GetDirEntry(szFile, pPAS, iDriveID);
 
-	unsigned short usFileAttr = dirEntry.usAttribute ;
-	if(FILE_TYPE(usFileAttr) != ATTR_TYPE_FILE)
+  if(!dirEntry.IsFile())
     throw upan::exception(XLOC, "%s file doesn't exist", szFileName);
 
-	int userType = FileOperations_GetUserType(pPAS->bIsKernelProcess, pPAS->iUserID, dirEntry.iUserID) ;
+  int userType = FileOperations_GetUserType(pPAS->bIsKernelProcess, pPAS->iUserID, dirEntry.UserID()) ;
 
-	if(!FileOperations_HasPermission(userType, usFileAttr, mode))
+  if(!FileOperations_HasPermission(userType, dirEntry.Attribute(), mode))
     throw upan::exception(XLOC, "insufficient permission to open file %s", szFileName);
 
 	if( (mode & O_TRUNC) )
 	{
     FileOperations_Delete(szFileName);
-    FileOperations_Create(szFileName, FILE_TYPE(dirEntry.usAttribute), FILE_PERM(dirEntry.usAttribute));
+    FileOperations_Create(szFileName, FILE_TYPE(dirEntry.Attribute()), FILE_PERM(dirEntry.Attribute()));
     dirEntry = Directory_GetDirEntry(szFile, pPAS, iDriveID);
 	}
 
-  return ProcFileManager_AllocateFD(dirEntry.FullPath(*pDiskDrive).c_str(), mode, iDriveID, dirEntry.uiSize, dirEntry.uiStartSectorID);
+  return ProcFileManager_AllocateFD(dirEntry.FullPath(*pDiskDrive).c_str(), mode, iDriveID, dirEntry.Size(), dirEntry.StartSectorID());
 }
 
 byte FileOperations_Close(int fd)
@@ -319,10 +318,9 @@ void FileOperations_Create(const char* szFilePath, unsigned short usFileType, un
 	CWD.uiSectorNo = uiParentSectorNo ;
 	CWD.bSectorEntryPosition = bParentSectorPos ;
 
-	unsigned short usParentDirAttr = CWD.pDirEntry->usAttribute ;
-	int userType = FileOperations_GetUserType(pPAS->bIsKernelProcess, pPAS->iUserID, CWD.pDirEntry->iUserID) ;
+  int userType = FileOperations_GetUserType(pPAS->bIsKernelProcess, pPAS->iUserID, CWD.pDirEntry->UserID()) ;
 
-	if(!FileOperations_HasPermission(userType, usParentDirAttr, O_RDWR))
+  if(!FileOperations_HasPermission(userType, CWD.pDirEntry->Attribute(), O_RDWR))
     throw upan::exception(XLOC, "insufficient permission to create file: %s", szFilePath);
 
   Directory_Create(pPAS, iDriveID, bParentDirectoryBuffer, &CWD, szDirName, usFileAttr);
@@ -348,15 +346,14 @@ void FileOperations_Delete(const char* szFilePath)
 	CWD.uiSectorNo = uiParentSectorNo ;
 	CWD.bSectorEntryPosition = bParentSectorPos ;
 
-	unsigned short usParentDirAttr = CWD.pDirEntry->usAttribute ;
-	int userType = FileOperations_GetUserType(pPAS->bIsKernelProcess, pPAS->iUserID, CWD.pDirEntry->iUserID) ;
+  int userType = FileOperations_GetUserType(pPAS->bIsKernelProcess, pPAS->iUserID, CWD.pDirEntry->UserID()) ;
 
-	if(!FileOperations_HasPermission(userType, usParentDirAttr, O_RDWR))
+  if(!FileOperations_HasPermission(userType, CWD.pDirEntry->Attribute(), O_RDWR))
     throw upan::exception(XLOC, "insufficient permission to delete file: %s", szFilePath);
 
   const FileSystem::Node& fileDirEntry = FileOperations_GetDirEntry(szFilePath);
 
-	if(FileOperations_GetUserType(pPAS->bIsKernelProcess, pPAS->iUserID, fileDirEntry.iUserID) != USER_OWNER)
+  if(FileOperations_GetUserType(pPAS->bIsKernelProcess, pPAS->iUserID, fileDirEntry.UserID()) != USER_OWNER)
     throw upan::exception(XLOC, "insufficient permission to delete file: %s", szFilePath);
 
   Directory_Delete(pPAS, iDriveID, bParentDirectoryBuffer, &CWD, szDirName);
@@ -373,7 +370,7 @@ bool FileOperations_Exists(const char* szFileName, unsigned short usFileType)
     Process* pPAS = &ProcessManager::Instance().GetCurrentPAS() ;
 
     const FileSystem::Node dirEntry = Directory_GetDirEntry(szFile, pPAS, iDriveID);
-    if((dirEntry.usAttribute & usFileType) != usFileType)
+    if((dirEntry.Attribute() & usFileType) != usFileType)
       return false;
   }
   catch(const upan::exception& ex)
@@ -483,15 +480,15 @@ const FileSystem_FileStat FileOperations_GetStat(const char* szFileName, int iDr
   FileSystem_FileStat fileStat;
 
   fileStat.st_dev = pDiskDrive->DriveNumber();
-  fileStat.st_mode = pSrcDirEntry->usAttribute ;
-  fileStat.st_uid = pSrcDirEntry->iUserID ;
-  fileStat.st_size = pSrcDirEntry->uiSize ;
-  fileStat.st_atime = pSrcDirEntry->AccessedTime ;
-  fileStat.st_mtime = pSrcDirEntry->ModifiedTime ;
-  fileStat.st_ctime = pSrcDirEntry->CreatedTime ;
+  fileStat.st_mode = pSrcDirEntry->Attribute() ;
+  fileStat.st_uid = pSrcDirEntry->UserID() ;
+  fileStat.st_size = pSrcDirEntry->Size() ;
+  fileStat.st_atime = pSrcDirEntry->AccessedTime() ;
+  fileStat.st_mtime = pSrcDirEntry->ModifiedTime() ;
+  fileStat.st_ctime = pSrcDirEntry->CreatedTime() ;
 
   fileStat.st_blksize = 512 ;
-  fileStat.st_blocks = (pSrcDirEntry->uiSize / 512) + ((pSrcDirEntry->uiSize % 512) ? 1 : 0 ) ;
+  fileStat.st_blocks = (pSrcDirEntry->Size() / 512) + ((pSrcDirEntry->Size() % 512) ? 1 : 0 ) ;
 
   fileStat.st_rdev = 0 ;
   fileStat.st_gid = 1 ;
@@ -538,10 +535,10 @@ void FileOperations_UpdateTime(const char* szFileName, int iDriveID, byte bTimeT
 
   FileSystem::Node* pSrcDirEntry = &((FileSystem::Node*)bDirectoryBuffer)[bSectorPos] ;
 	if(bTimeType & DIR_ACCESS_TIME)
-		SystemUtil_GetTimeOfDay(&(pSrcDirEntry->AccessedTime)) ;
+    pSrcDirEntry->AccessedTime(SystemUtil_GetTimeOfDay());
 
 	if(bTimeType & DIR_MODIFIED_TIME)
-		SystemUtil_GetTimeOfDay(&(pSrcDirEntry->ModifiedTime)) ;
+    pSrcDirEntry->ModifiedTime(SystemUtil_GetTimeOfDay());
 
   pDiskDrive->xWrite(bDirectoryBuffer, uiSectorNo, 1);
 }
@@ -596,12 +593,11 @@ bool FileOperations_FileAccess(const char* szFileName, int iDriveID, int mode)
 
     const FileSystem::Node& dirEntry = Directory_GetDirEntry(szFile, pPAS, iDriveID);
 
-    unsigned short usFileAttr = dirEntry.usAttribute ;
-    if(FILE_TYPE(usFileAttr) != ATTR_TYPE_FILE)
+    if(!dirEntry.IsFile())
       return false;
-    int userType = FileOperations_GetUserType(pPAS->bIsKernelProcess, pPAS->iUserID, dirEntry.iUserID) ;
+    int userType = FileOperations_GetUserType(pPAS->bIsKernelProcess, pPAS->iUserID, dirEntry.UserID()) ;
 
-    if(!FileOperations_HasPermission(userType, usFileAttr, mode))
+    if(!FileOperations_HasPermission(userType, dirEntry.Attribute(), mode))
       return false;
   }
   catch(const upan::exception& ex)

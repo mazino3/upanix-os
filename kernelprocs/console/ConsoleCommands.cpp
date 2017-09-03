@@ -275,7 +275,7 @@ void ConsoleCommands_ListDirContent()
 	{
 		if(!(i % 3))
 			KC::MDisplay().NextLine() ;
-		printf("%-20s", pDirList[i].Name) ;
+    printf("%-20s", pDirList[i].Name()) ;
 	}
 
 	DMM_DeAllocateForKernel((unsigned)pDirList) ;
