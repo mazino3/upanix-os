@@ -67,7 +67,7 @@ typedef enum
 	USER_OWNER,
 	USER_GROUP,
 	USER_OTHERS
-} USER_TYPE ;
+} FILE_USER_TYPE ;
 
 int FileOperations_Open(const char* szFileName, const byte mode) ;
 byte FileOperations_Close(int fd) ;

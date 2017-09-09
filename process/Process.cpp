@@ -8,6 +8,8 @@
 #include <ElfRelocationSection.h>
 #include <ElfSymbolTable.h>
 #include <ElfDynamicSection.h>
+#include <UserManager.h>
+#include <ProcFileManager.h>
 
 #define INIT_NAME "_stdio_init-NOTINUSE"
 #define TERM_NAME "_stdio_term-NOTINUSE"
@@ -337,6 +339,47 @@ uint32_t Process::GetDLLPageAddressForKernel()
   unsigned uiPageNumber = (((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPTEIndex] & 0xFFFFF000) / PAGE_SIZE ;
 
   return (uiPageNumber * PAGE_SIZE) - GLOBAL_DATA_SEGMENT_BASE ;
+}
+
+FILE_USER_TYPE Process::FileUserType(const FileSystem::Node &node) const
+{
+  if(bIsKernelProcess || iUserID == ROOT_USER_ID || node.UserID() == iUserID)
+    return USER_OWNER ;
+
+  return USER_OTHERS ;
+}
+
+bool Process::HasFilePermission(const FileSystem::Node& node, byte mode) const
+{
+  unsigned short usMode = FILE_PERM(node.Attribute());
+
+  bool bHasRead, bHasWrite;
+
+  switch(FileUserType(node))
+  {
+    case FILE_USER_TYPE::USER_OWNER:
+        bHasRead = HAS_READ_PERM(G_OWNER(usMode));
+        bHasWrite = HAS_WRITE_PERM(G_OWNER(usMode));
+        break;
+
+    case FILE_USER_TYPE::USER_OTHERS:
+        bHasRead = HAS_READ_PERM(G_OTHERS(usMode));
+        bHasWrite = HAS_WRITE_PERM(G_OTHERS(usMode));
+        break;
+
+    default:
+      return false;
+  }
+
+  if(mode & O_RDONLY)
+  {
+    return bHasRead || bHasWrite;
+  }
+  else if((mode & O_WRONLY) || (mode & O_RDWR) || (mode & O_APPEND))
+  {
+    return bHasWrite;
+  }
+  return false;
 }
 
 ProcessStateInfo::ProcessStateInfo() :

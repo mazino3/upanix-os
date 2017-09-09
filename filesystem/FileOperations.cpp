@@ -43,50 +43,6 @@ static upan::result<unsigned short> FileOperations_ValidateAndGetFileAttr(unsign
   return upan::good((unsigned short)(usFileType | usMode));
 }
 
-static byte FileOperations_HasPermission(int userType, unsigned short usFileAttr, byte mode)
-{	
-	unsigned short usMode = FILE_PERM(usFileAttr) ;
-	
-	byte bHasRead, bHasWrite ;
-
-	switch(userType)
-	{
-		case USER_OWNER:
-				bHasRead = HAS_READ_PERM(G_OWNER(usMode)) ;
-				bHasWrite = HAS_WRITE_PERM(G_OWNER(usMode)) ;
-				break ;
-
-		case USER_OTHERS:
-				bHasRead = HAS_READ_PERM(G_OTHERS(usMode)) ;
-				bHasWrite = HAS_WRITE_PERM(G_OTHERS(usMode)) ;
-				break ;
-
-		default:
-			return false ;
-	}
-
-	if(mode & O_RDONLY)
-	{
-			if(bHasRead || bHasWrite)
-				return true ;
-	}
-	else if((mode & O_WRONLY) || (mode & O_RDWR) || (mode & O_APPEND))
-	{
-			if(bHasWrite)
-				return true ;
-	}
-
-	return false ;
-}
-
-static int FileOperations_GetUserType(byte bIsKernelProcess, int iProcessUserID, int iFileUserID)
-{
-	if(bIsKernelProcess || iProcessUserID == ROOT_USER_ID || iFileUserID == iProcessUserID)
-		return USER_OWNER ;
-
-	return USER_OTHERS ;
-}
-
 static void FileOperations_ParseFilePathWithDrive(const char* szFileNameWithDrive, char* szFileName, unsigned* pDriveID)
 {
 	int i = String_Chr(szFileNameWithDrive, '@') ;
@@ -141,9 +97,7 @@ int FileOperations_Open(const char* szFileName, const byte mode)
   if(!dirEntry.IsFile())
     throw upan::exception(XLOC, "%s file doesn't exist", szFileName);
 
-  int userType = FileOperations_GetUserType(pPAS->bIsKernelProcess, pPAS->iUserID, dirEntry.UserID()) ;
-
-  if(!FileOperations_HasPermission(userType, dirEntry.Attribute(), mode))
+  if(!pPAS->HasFilePermission(dirEntry, mode))
     throw upan::exception(XLOC, "insufficient permission to open file %s", szFileName);
 
 	if( (mode & O_TRUNC) )
@@ -318,9 +272,7 @@ void FileOperations_Create(const char* szFilePath, unsigned short usFileType, un
 	CWD.uiSectorNo = uiParentSectorNo ;
 	CWD.bSectorEntryPosition = bParentSectorPos ;
 
-  int userType = FileOperations_GetUserType(pPAS->bIsKernelProcess, pPAS->iUserID, CWD.pDirEntry->UserID()) ;
-
-  if(!FileOperations_HasPermission(userType, CWD.pDirEntry->Attribute(), O_RDWR))
+  if(!pPAS->HasFilePermission(*CWD.pDirEntry, O_RDWR))
     throw upan::exception(XLOC, "insufficient permission to create file: %s", szFilePath);
 
   Directory_Create(pPAS, iDriveID, bParentDirectoryBuffer, &CWD, szDirName, usFileAttr);
@@ -346,14 +298,12 @@ void FileOperations_Delete(const char* szFilePath)
 	CWD.uiSectorNo = uiParentSectorNo ;
 	CWD.bSectorEntryPosition = bParentSectorPos ;
 
-  int userType = FileOperations_GetUserType(pPAS->bIsKernelProcess, pPAS->iUserID, CWD.pDirEntry->UserID()) ;
-
-  if(!FileOperations_HasPermission(userType, CWD.pDirEntry->Attribute(), O_RDWR))
+  if(!pPAS->HasFilePermission(*CWD.pDirEntry, O_RDWR))
     throw upan::exception(XLOC, "insufficient permission to delete file: %s", szFilePath);
 
   const FileSystem::Node& fileDirEntry = FileOperations_GetDirEntry(szFilePath);
 
-  if(FileOperations_GetUserType(pPAS->bIsKernelProcess, pPAS->iUserID, fileDirEntry.UserID()) != USER_OWNER)
+  if(pPAS->FileUserType(fileDirEntry) != USER_OWNER)
     throw upan::exception(XLOC, "insufficient permission to delete file: %s", szFilePath);
 
   Directory_Delete(pPAS, iDriveID, bParentDirectoryBuffer, &CWD, szDirName);
@@ -595,9 +545,8 @@ bool FileOperations_FileAccess(const char* szFileName, int iDriveID, int mode)
 
     if(!dirEntry.IsFile())
       return false;
-    int userType = FileOperations_GetUserType(pPAS->bIsKernelProcess, pPAS->iUserID, dirEntry.UserID()) ;
 
-    if(!FileOperations_HasPermission(userType, dirEntry.Attribute(), mode))
+    if(!pPAS->HasFilePermission(dirEntry, mode))
       return false;
   }
   catch(const upan::exception& ex)

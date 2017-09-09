@@ -286,7 +286,7 @@ void Directory_GetDirectoryContent(const char* szFileName, Process* processAddre
 		{
 			*iListSize = 1 ;
 
-			if(processAddressSpace->bIsKernelProcess == true)
+      if(processAddressSpace->bIsKernelProcess)
 			{
         *pDirList = (FileSystem::Node*)DMM_AllocateForKernel(sizeof(FileSystem::Node)) ;
 				pAddress = *pDirList ;
@@ -297,8 +297,7 @@ void Directory_GetDirectoryContent(const char* szFileName, Process* processAddre
         pAddress = (FileSystem::Node*)(((unsigned)*pDirList + PROCESS_BASE) - GLOBAL_DATA_SEGMENT_BASE) ;
 			}
 
-      MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)dirFile, MemUtil_GetDS(), (unsigned)pAddress, sizeof(FileSystem::Node)) ;
-
+      *pAddress = *dirFile;
       return;
 		}
 	}
@@ -313,7 +312,7 @@ void Directory_GetDirectoryContent(const char* szFileName, Process* processAddre
   uiCurrentSectorID = dirFile->StartSectorID();
   *iListSize = dirFile->Size();
 
-	if(processAddressSpace->bIsKernelProcess == true)
+  if(processAddressSpace->bIsKernelProcess)
 	{
     *pDirList = (FileSystem::Node*)DMM_AllocateForKernel(sizeof(FileSystem::Node) * (*iListSize)) ;
 		pAddress = *pDirList ;

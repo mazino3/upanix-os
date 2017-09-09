@@ -3,7 +3,7 @@
 
 #include <Atomic.h>
 #include <TaskStructures.h>
-#include <FileSystem.h>
+#include <FileOperations.h>
 
 class ProcessGroup;
 class IRQ;
@@ -60,6 +60,9 @@ public:
             unsigned* uiProcessEntryStackSize, int iNumberOfParameters, char** szArgumentList);
   void DeAllocateAddressSpace();
   uint32_t GetDLLPageAddressForKernel();
+
+  FILE_USER_TYPE FileUserType(const FileSystem::Node&) const;
+  bool HasFilePermission(const FileSystem::Node&, byte mode) const;
 
 private:
   void PushProgramInitStackData(unsigned uiPDEAddr, unsigned* uiProcessEntryStackSize, unsigned uiProgramStartAddress,
