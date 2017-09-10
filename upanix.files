@@ -49,8 +49,6 @@ drivers/mouse/MouseDriver.h
 drivers/net/Makefile
 drivers/net/NetworkManager.cpp
 drivers/net/NetworkManager.h
-drivers/net/NIC.cpp
-drivers/net/NIC.h
 drivers/net/RealtekNIC.cpp
 drivers/net/RealtekNIC.h
 drivers/usb/disk/Makefile
@@ -573,3 +571,5 @@ test/test_list.C
 test/test_map.C
 test/test_queue.C
 libmcpp/ds/vector.h
+drivers/net/NetworkDevice.cpp
+drivers/net/NetworkDevice.h

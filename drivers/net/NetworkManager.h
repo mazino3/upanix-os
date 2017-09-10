@@ -19,7 +19,7 @@
 #define _UPANIX_NETWORK_H_
 
 #include <list.h>
-class NIC ;
+#include <NetworkDevice.h>
 
 class NetworkManager
 {
@@ -27,7 +27,7 @@ class NetworkManager
 		NetworkManager() ;
 
 	private:
-		upan::list<NIC*> m_NICList ;
+    upan::list<NetworkDevice*> _devices;
 } ;
 
 #endif

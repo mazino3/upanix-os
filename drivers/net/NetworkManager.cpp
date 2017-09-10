@@ -16,29 +16,19 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
 #include <NetworkManager.h>
-#include <RealtekNIC.h>
 #include <PCIBusHandler.h>
-#include <Display.h>
-#include <PortCom.h>
 #include <stdio.h>
 
 NetworkManager::NetworkManager()
 {
-	byte bControllerFound = false ;
-
 	for(auto pPCIEntry : PCIBusHandler::Instance().PCIEntries())
 	{
 		if(pPCIEntry->bHeaderType & PCI_HEADER_BRIDGE)
 			continue ;
 
-		NIC* pNIC = NIC::Create(pPCIEntry) ;
-		if(pNIC)
-		{
-			bControllerFound = true ;
-			m_NICList.push_back(pNIC) ;
-		}
+    auto device = NetworkDevice::Probe(*pPCIEntry);
+    if(device)
+      _devices.push_back(device);
 	}
-	
-	KC::MDisplay().LoadMessage("Network controller setup", bControllerFound ? Success : Failure);
 }
 
