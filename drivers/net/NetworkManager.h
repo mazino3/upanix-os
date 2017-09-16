@@ -23,11 +23,24 @@
 
 class NetworkManager
 {
-	public:
-		NetworkManager() ;
+private:
+  NetworkManager() ;
+  NetworkManager(const NetworkManager&) = delete;
+  NetworkManager& operator=(const NetworkManager&) = delete;
 
-	private:
-    upan::list<NetworkDevice*> _devices;
+public:
+  static NetworkManager& Instance()
+  {
+    static NetworkManager instance;
+    return instance;
+  }
+
+  void Probe();
+
+private:
+  NetworkDevice* Probe(PCIEntry& pciEntry);
+
+  upan::list<NetworkDevice*> _devices;
 } ;
 
 #endif

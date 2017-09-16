@@ -143,8 +143,9 @@ UPANIX_OBJS = \
   ./drivers/usb/devices/USBKeyboard.o \
 	./drivers/video/GraphicsVideo.o \
 	./drivers/video/GraphicsFont.o \
+        ./drivers/net/ath9k/ATH9K.o \
         ./drivers/net/NetworkDevice.o \
-	./drivers/net/NetworkManager.o \
+        ./drivers/net/NetworkManager.o \
 \
 	./testsuite/TestSuite.o \
 \

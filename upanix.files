@@ -573,3 +573,10 @@ test/test_queue.C
 libmcpp/ds/vector.h
 drivers/net/NetworkDevice.cpp
 drivers/net/NetworkDevice.h
+drivers/net/ath9k/ATH9K.cpp
+drivers/net/ath9k/ATH9K.h
+drivers/net/NetworkDevice.cpp
+drivers/net/NetworkDevice.h
+drivers/net/NetworkManager.cpp
+drivers/net/NetworkManager.h
+drivers/net/ath9k/Makefile

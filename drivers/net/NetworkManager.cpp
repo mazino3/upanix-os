@@ -15,20 +15,39 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
-#include <NetworkManager.h>
-#include <PCIBusHandler.h>
 #include <stdio.h>
+#include <PCIBusHandler.h>
+#include <ATH9K.h>
+#include <NetworkManager.h>
 
 NetworkManager::NetworkManager()
 {
-	for(auto pPCIEntry : PCIBusHandler::Instance().PCIEntries())
-	{
-		if(pPCIEntry->bHeaderType & PCI_HEADER_BRIDGE)
-			continue ;
-
-    auto device = NetworkDevice::Probe(*pPCIEntry);
-    if(device)
-      _devices.push_back(device);
-	}
+  //Probe();
 }
 
+void NetworkManager::Probe()
+{
+  for(auto pPCIEntry : PCIBusHandler::Instance().PCIEntries())
+  {
+    if(pPCIEntry->bHeaderType & PCI_HEADER_BRIDGE)
+      continue ;
+
+    auto device = Probe(*pPCIEntry);
+    if(device)
+      _devices.push_back(device);
+  }
+}
+
+NetworkDevice* NetworkManager::Probe(PCIEntry& pciEntry)
+{
+  try
+  {
+    if(pciEntry.usVendorID == 0x168C && pciEntry.usDeviceID == 0x36)
+      return new ATH9K(pciEntry);
+  }
+  catch(const upan::exception& e)
+  {
+    e.Print();
+  }
+  return nullptr;
+}

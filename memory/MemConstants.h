@@ -137,13 +137,11 @@ extern unsigned RAM_SIZE ;
 #define MMAP_APIC_BASE 0x8BC000 // 8MB + 187 pages + 1 page
 #define MMAP_IOAPIC_BASE 0x8BD000 // 8MB + 188 pages + 1 page
 
-/********** There is unused space between 8 MB + 241 KB + 6 * PAGE_SIZE to 9 MB. Can be used as required */
-
-//#define MEM_HDD_DMA_START	0x900000 // 9 MB 
-//#define MEM_HDD_DMA_END		0xA00000 // 10 MB
-
 #define MEM_GRAPHICS_TEXT_BUFFER_START 0x900000 // 9 MB
 #define MEM_GRAPHICS_TEXT_BUFFER_END   0x90C800 // 9 MB + 50 KB
+
+#define NET_ATH9K_MMIO_BASE_ADDR 0x919000 // 9 MB + 100 KB
+#define NET_ATH9K_MMIO_BASE_ADDR_END 0xA00000 // 10 MB
 
 #define MEM_FD1_FS_START	0xA00000 // 10 MB
 #define MEM_FD1_FS_END		0xA06400 // 10 MB + 25 KB

@@ -46,10 +46,3 @@ MouseDriver& KC::MMouseDriver()
 	}
 	return kMouseDriver ;
 }
-
-NetworkManager& KC::MNetworkManager()
-{
-	static NetworkManager kNetworkManager ;
-	return kNetworkManager ;
-}
-

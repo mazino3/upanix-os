@@ -30,7 +30,6 @@ class KC
 		static Display& MDisplay(); 
 		static KernelService& MKernelService();
 		static MouseDriver& MMouseDriver();
-		static NetworkManager& MNetworkManager();
 
   private:
     static void SetDisplay(Display& dm) { _dm = &dm; }

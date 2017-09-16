@@ -37,6 +37,7 @@ export INCLUDE="-I./ \
 -I${UPANIX_HOME}/drivers/usb/devices \
 -I${UPANIX_HOME}/drivers/video \
 -I${UPANIX_HOME}/drivers/net \
+-I${UPANIX_HOME}/drivers/net/ath9k \
 -I${UPANIX_HOME}/drivers/ \
 \
 -I${UPANIX_HOME}/util \

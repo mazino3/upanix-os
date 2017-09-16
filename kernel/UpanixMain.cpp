@@ -52,6 +52,7 @@
 # include <Acpi.h>
 # include <Cpu.h>
 # include <IrqManager.h>
+# include <NetworkManager.h>
 
 /**** Global Variable declaration/definition *****/
 byte KERNEL_MODE ;
@@ -195,6 +196,8 @@ void Initialize()
 
     USBDiskDriver::Register();
     USBKeyboardDriver::Register();
+
+    NetworkManager::Instance();
 
     KeyboardHandler::Instance().Getch();
 

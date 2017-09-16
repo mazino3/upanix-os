@@ -84,6 +84,9 @@ typedef enum {
 #define MSI_64BITADDR 0x80
 #define PCI_INTERRUPTDISABLE 0x400
 
+#define PCI_CACHE_LINE_SIZE 0x0C
+#define PCI_LATENCY_TIMER 0x0D
+
 class PCIEntry
 {
   public:

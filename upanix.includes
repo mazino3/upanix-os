@@ -41,3 +41,4 @@ util/bak
 .
 drivers/usb/devices
 test
+drivers/net/ath9k
