@@ -32,11 +32,14 @@ typedef unsigned char byte ;
 #ifdef __GNUC__
 #define PACKED __attribute__((packed))
 #define UNUSED __attribute__((unused))
+#define ALIGNED(x) __attribute__((aligned(x)))
 #else
 #define PACKED
 #warning __GNUC__ Not Defined ---> PACKED is Masked
 #define UNUSED
 #warning __GNUC__ Not Defined ---> UNUSED is Masked
+#define ALIGNED(x)
+#warning __GNUC__ Not Defined ---> ALIGNED is Masked
 #endif
 
 #ifndef L_strtoll_l

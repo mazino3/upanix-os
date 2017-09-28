@@ -26,6 +26,20 @@ typedef enum {
   PCI_TYPE_TWO = 2,
 } PCI_TYPE;
 
+typedef enum {
+  XHCI_IRQ_NO = 3,
+  WIFINET_IRQ_NO = 4
+} PCI_IRQ;
+
+#define PCI_VENDOR_ID_FOXCONN 0x105b
+#define PCI_VENDOR_ID_WNC 0x185F
+#define PCI_VENDOR_ID_LITEON 0x11AD
+#define PCI_VENDOR_ID_XAVI 0x1B9A
+#define PCI_VENDOR_ID_AZWAVE 0x1A3B
+#define PCI_VENDOR_ID_ATHEROS 0x168C
+#define PCI_VENDOR_ID_HP 0x103C
+#define PCI_VENDOR_ID_DELL 0x1028
+
 #define PCI_REG_1	0xCFB
 #define PCI_REG_2	0xCF8
 #define PCI_REG_3	0xCFA
@@ -42,6 +56,8 @@ typedef enum {
 #define PCI_LATENCY			0x0D
 #define PCI_HEADER_TYPE		0x0E
 #define PCI_BASE_REGISTERS	0x10
+#define PCI_SUBSYS_VENDOR_ID 0x2C
+#define PCI_SUBSYS_DEVICE_ID 0x2E
 #define PCI_CAPLIST         0x34
 #define PCI_INTERRUPT_LINE	0x3C
 #define PCI_INTERRUPT_PIN	0x3D
@@ -225,7 +241,7 @@ class PCIEntry
   unsigned GetPCIMemSize(int iAddressIndex) const;
   unsigned PCISize(unsigned uiBase, unsigned uiMask) const;
   void EnableBusMaster() const;
-  bool SetupMsiInterrupt(int irqNo);
+  bool SetupMsiInterrupt(const PCI_IRQ irqNo);
   void SwitchToMsi();
 
   PCIEntry(unsigned uiBusNumber, unsigned uiDeviceNumber, unsigned uiFunction, byte bHeaderType);

@@ -1,16 +1,38 @@
+/*
+ *	Upanix - An x86 based Operating System
+ *  Copyright (C) 2011 'Prajwala Prabhakar' 'srinivasa_prajwal@yahoo.co.in'
+ *                                                                          
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *                                                                          
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *                                                                          
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/
+ */
 #pragma once
 
 #include <NetworkDevice.h>
 
-class PCIEntry;
+class ATH9KHardware;
 
-class ATH9K : public NetworkDevice
+class ATH9KDevice : public NetworkDevice
 {
-  public:
-    ATH9K(PCIEntry& pciEntry);
-    ~ATH9K() {}
+public:
+  ATH9KDevice(PCIEntry& pciEntry);
+  ~ATH9KDevice() {}
+
+  virtual void NotifyEvent();
+
+//int ath9k_config(struct ieee80211_hw *hw, u32 changed)
+  virtual int Configure();
 //void ath9k_tx(struct ieee80211_hw *hw, struct ieee80211_tx_control *control, struct sk_buff *skb)
-  virtual void Tx();
+  virtual void Tx(SocketBuffer& socketBuffer);
 //int ath9k_start(struct ieee80211_hw *hw)
   virtual int Start();
 //void ath9k_stop(struct ieee80211_hw *hw)
@@ -21,8 +43,6 @@ class ATH9K : public NetworkDevice
   virtual int ChangeInterface();
 //void ath9k_remove_interface(struct ieee80211_hw *hw, struct ieee80211_vif *vif)
   virtual void RemoveInterface();
-//int ath9k_config(struct ieee80211_hw *hw, u32 changed)
-  virtual int Configure();
 //void ath9k_configure_filter(struct ieee80211_hw *hw, unsigned int changed_flags, unsigned int *total_flags, u64 multicast)
   virtual void ConfigureFilter();
 //int ath9k_sta_state(struct ieee80211_hw *hw, struct ieee80211_vif *vif, struct ieee80211_sta *sta, enum ieee80211_sta_state old_state, enum ieee80211_sta_state new_state)
@@ -65,4 +85,14 @@ class ATH9K : public NetworkDevice
 	virtual void SWScanComplete();
 //void ath9k_wake_tx_queue(struct ieee80211_hw *hw, struct ieee80211_txq *queue)
 	virtual void WakeTxQueue();
+
+private:
+  enum ANTENNA_TYPE { SINGLE, DOUBLE };
+  void DetectDevice();
+  //u16 devid, struct ath_softc *sc, const struct ath_bus_ops *bus_ops)
+  void Initialize();
+
+  ATH9KHardware* _hw;
+  ANTENNA_TYPE _antennaType;
+  bool _btAntennaDiversity;
 };

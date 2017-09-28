@@ -15,36 +15,33 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
-#ifndef _XHCI_MANAGER_H_
-#define _XHCI_MANAGER_H_
+#pragma once
 
-# include <Global.h>
-# include <list.h>
+#include <stdlib.h>
 
-class XHCIController;
+#define AR_SREV_ID_MASK 0x000000FF
 
-class XHCIManager
+class PCIEntry;
+
+class ATH9KHardware
 {
-  private:
-    XHCIManager();
-  public:
-    enum EventMode { Poll, Interrupt };
+public:
+  enum REG_OFFSET
+  {
+    SREV = 0x4020
+  };
 
-    static XHCIManager& Instance()
-    {
-      static XHCIManager instance;
-      return instance;
-    }
-    void Initialize();
-    void SetEventMode(EventMode e) { _eventMode = e; }
-    EventMode GetEventMode() const { return _eventMode; }
-    bool Initialized() const { return _initialized; }
-    void ProbeDevice();
-    const upan::list<XHCIController*>& Controllers() { return _controllers; }
-  private:
-    bool _initialized;
-    EventMode _eventMode;
-    upan::list<XHCIController*> _controllers;    
+  ATH9KHardware(PCIEntry& pciEntry);
+  uint32_t Read(const REG_OFFSET regOffset);
+  void MultiRead(REG_OFFSET* addr, uint32_t* val, uint16_t count);
+  void Write(uint32_t value, const REG_OFFSET regOffset);
+	uint32_t ReadMofidyWrite(const REG_OFFSET regOffset, const uint32_t set, const uint32_t clr);
+
+private:
+  void ReadCacheLineSize();
+  void ReadRevisions();
+
+  PCIEntry& _pciEntry;
+  uint32_t  _regBase;
+  int       _cacheLineSize;
 };
-
-#endif

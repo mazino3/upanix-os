@@ -354,6 +354,10 @@ void PCIEntry::ReadNonBridgePCIHeader()
   ReadPCIConfig(PCI_BASE_REGISTERS + 16, 4, &BusEntity.NonBridge.uiBaseAddress4);
 
   ReadPCIConfig(PCI_BASE_REGISTERS + 20, 4, &BusEntity.NonBridge.uiBaseAddress5);
+
+  ReadPCIConfig(PCI_SUBSYS_VENDOR_ID, 2, &BusEntity.NonBridge.usSubsystemVendorID);
+
+  ReadPCIConfig(PCI_SUBSYS_DEVICE_ID, 2, &BusEntity.NonBridge.usSubsystemDeviceID);
 	
   ReadPCIConfig(PCI_INTERRUPT_LINE, 1, &BusEntity.NonBridge.bInterruptLine);
 
@@ -469,7 +473,7 @@ void PCIEntry::EnableBusMaster() const
 	WritePCIConfig(PCI_LATENCY, 1, bLat);
 }
 
-bool PCIEntry::SetupMsiInterrupt(int irqNo)
+bool PCIEntry::SetupMsiInterrupt(const PCI_IRQ irqNo)
 {
   if(!IrqManager::Instance().IsApic())
     return false;

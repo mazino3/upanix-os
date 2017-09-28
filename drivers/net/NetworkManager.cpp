@@ -16,16 +16,44 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
 #include <stdio.h>
+#include <AsmUtil.h>
+#include <IrqManager.h>
 #include <PCIBusHandler.h>
-#include <ATH9K.h>
+#include <ATH9KDevice.h>
 #include <NetworkManager.h>
 
-NetworkManager::NetworkManager()
+static void WIFINET_IRQHandler()
 {
-  //Probe();
+  unsigned GPRStack[NO_OF_GPR];
+  AsmUtil_STORE_GPR(GPRStack);
+  AsmUtil_SET_KERNEL_DATA_SEGMENTS
+
+  printf("\n WIFINET IRQ");
+  if(NetworkManager::Instance().Initialized())
+  {
+    for(auto d : NetworkManager::Instance().Devices())
+      d->NotifyEvent();
+  }
+
+  IrqManager::Instance().SendEOI(NetworkManager::Instance().WifiIrq());
+
+  AsmUtil_REVOKE_KERNEL_DATA_SEGMENTS
+  AsmUtil_RESTORE_GPR(GPRStack);
+
+  asm("leave");
+  asm("IRET");
 }
 
-void NetworkManager::Probe()
+NetworkManager::NetworkManager() : _initialized(false), _wifiIrq(nullptr)
+{
+  _wifiIrq = IrqManager::Instance().RegisterIRQ(PCI_IRQ::WIFINET_IRQ_NO, (unsigned)WIFINET_IRQHandler);
+  if(!_wifiIrq)
+    throw upan::exception(XLOC, "Failed to register wifi-net irq: %d", WIFINET_IRQ_NO);
+  IrqManager::Instance().DisableIRQ(*_wifiIrq);
+  //Initialize();
+}
+
+void NetworkManager::Initialize()
 {
   for(auto pPCIEntry : PCIBusHandler::Instance().PCIEntries())
   {
@@ -36,6 +64,8 @@ void NetworkManager::Probe()
     if(device)
       _devices.push_back(device);
   }
+  IrqManager::Instance().EnableIRQ(*_wifiIrq);
+  _initialized = true;
 }
 
 NetworkDevice* NetworkManager::Probe(PCIEntry& pciEntry)
@@ -43,7 +73,7 @@ NetworkDevice* NetworkManager::Probe(PCIEntry& pciEntry)
   try
   {
     if(pciEntry.usVendorID == 0x168C && pciEntry.usDeviceID == 0x36)
-      return new ATH9K(pciEntry);
+      return new ATH9KDevice(pciEntry);
   }
   catch(const upan::exception& e)
   {

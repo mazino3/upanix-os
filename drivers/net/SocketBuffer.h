@@ -15,36 +15,17 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
-#ifndef _XHCI_MANAGER_H_
-#define _XHCI_MANAGER_H_
+#pragma once
 
-# include <Global.h>
-# include <list.h>
+#include <IEEE80211.h>
 
-class XHCIController;
-
-class XHCIManager
+class SocketBuffer
 {
-  private:
-    XHCIManager();
   public:
-    enum EventMode { Poll, Interrupt };
+    SocketBuffer() {}
+    ~SocketBuffer() {}
 
-    static XHCIManager& Instance()
-    {
-      static XHCIManager instance;
-      return instance;
-    }
-    void Initialize();
-    void SetEventMode(EventMode e) { _eventMode = e; }
-    EventMode GetEventMode() const { return _eventMode; }
-    bool Initialized() const { return _initialized; }
-    void ProbeDevice();
-    const upan::list<XHCIController*>& Controllers() { return _controllers; }
+    IEEE80211Header* Header() { return _header; }
   private:
-    bool _initialized;
-    EventMode _eventMode;
-    upan::list<XHCIController*> _controllers;    
+    IEEE80211Header* _header;
 };
-
-#endif

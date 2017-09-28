@@ -21,6 +21,8 @@
 #include <list.h>
 #include <NetworkDevice.h>
 
+class IRQ;
+
 class NetworkManager
 {
 private:
@@ -35,11 +37,18 @@ public:
     return instance;
   }
 
-  void Probe();
+  const IRQ& WifiIrq() const { return *_wifiIrq; }
+
+  void Initialize();
+  bool Initialized() const { return _initialized; }
+
+  upan::list<NetworkDevice*>& Devices() { return _devices; }
 
 private:
   NetworkDevice* Probe(PCIEntry& pciEntry);
 
+  bool _initialized;
+  const IRQ* _wifiIrq;
   upan::list<NetworkDevice*> _devices;
 } ;
 

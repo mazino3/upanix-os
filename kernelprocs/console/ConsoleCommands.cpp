@@ -770,7 +770,7 @@ void ConsoleCommands_ProbeXHCIUSB()
 
 void ConsoleCommands_ProbeNetwork()
 {
-  NetworkManager::Instance().Probe();
+  NetworkManager::Instance().Initialize();
 }
 
 void ConsoleCommands_SetXHCIEventMode()
