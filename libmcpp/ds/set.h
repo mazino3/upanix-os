@@ -30,13 +30,17 @@ class _set_type
   public:
     typedef const K value_type;
     typedef const K key_type;
-    class _key_accessor
+    struct _key_accessor
     {
-      public:
-        const K& operator()(const K& key) const
-        {
-          return key;
-        }
+      const K& operator()(const K& key) const { return key; }
+    };
+
+    struct _element_assigner
+    {
+      void operator()(value_type& lhs, const value_type& rhs) const
+      {
+        const_cast<K&>(lhs) = rhs;
+      }
     };
 };
 

@@ -30,13 +30,18 @@ class _map_type
   public:
     typedef pair<const K, V> value_type;
     typedef const K key_type;
-    class _key_accessor
+    struct _key_accessor
     {
-      public:
-        const K& operator()(const pair<const K, V>& e) const
-        {
-          return e.first;
-        }
+      const K& operator()(const value_type& e) const { return e.first; }
+    };
+
+    struct _element_assigner
+    {
+      void operator()(value_type& lhs, const value_type& rhs) const
+      {
+        const_cast<K&>(lhs.first) = rhs.first;
+        lhs.second = rhs.second;
+      }
     };
 };
 
@@ -48,18 +53,11 @@ class map : public _tree<_map_type<K, V>>
     typedef typename _parent_::node node;
     typedef typename _parent_::value_type value_type;
 
-    V& operator[](const K& key);
+    V& operator[](const K& key)
+    {
+      return this->insert(value_type(key, V())).first->second;
+    }
 };
-
-template <typename K, typename V>
-V& map<K, V>::operator[](const K& key)
-{
-  pair<node*, bool> ret = this->find_node(key);
-  if(ret.second)
-    return ret.first->element().second;
-  return this->insert_at_node(ret.first, value_type(key, V())).first->second;
 }
-
-};
 
 #endif

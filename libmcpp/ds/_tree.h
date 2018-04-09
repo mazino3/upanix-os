@@ -20,6 +20,7 @@
 
 #include <exception.h>
 #include <pair.h>
+#include <algorithm.h>
 
 class TestSuite;
 
@@ -30,27 +31,55 @@ class _tree
 {
   protected:
     class _tree_iterator;
+    class _const_tree_iterator;
     typename _c_type::_key_accessor get_key;
+    typename _c_type::_element_assigner element_assignee;
     typedef typename _c_type::value_type value_type;
     typedef typename _c_type::key_type key_type;
+    using insert_result_t = upan::pair<_tree_iterator, bool>;
 
   public:
-    typedef _tree_iterator iterator;
-    typedef const _tree_iterator const_iterator;
+    using iterator = _tree_iterator;
+    using const_iterator = _const_tree_iterator;
 
-    pair<iterator, bool> insert(const value_type& element);
+    insert_result_t insert(const value_type& element)
+    {
+      insert_result_t r(end(), false);
+      _root = insert(_root, element, r);
+      if(_root) _root->parent(nullptr);
+      if(r.second) ++_size;
+      return r;
+    }
 
-    bool erase(iterator it);
-    bool erase(key_type& key) { return erase(find(key)); }
+    bool erase(iterator it)
+    {
+      return erase(get_key(*it));
+    }
 
-    iterator find(key_type& key);
-    const_iterator find(key_type& key) const { return const_cast<_tree*>(this)->find(key); }
-    bool exists(key_type& key) const;
+    bool erase(const key_type& key)
+    {
+      bool deleted = false;
+      _root = erase(_root, key, deleted);
+      if(_root) _root->parent(nullptr);
+      if(deleted) --_size;
+      return deleted;
+    }
 
-    iterator begin() { return iterator(this, first_node()); }
-    iterator end() { return iterator(this, nullptr); }
-    const_iterator begin() const { return const_cast<_tree*>(this)->begin(); }
-    const_iterator end() const { return const_cast<_tree*>(this)->end(); }
+    iterator find(key_type& key) { return iterator(find_node(key)); }
+    const_iterator find(key_type& key) const { return const_iterator(find_node(key)); }
+    bool exists(key_type& key) const { return find_node(key) != nullptr; }
+
+    iterator begin() { return iterator(first_node()); }
+    iterator end() { return iterator(nullptr); }
+
+    const_iterator cbegin() { return const_iterator(first_node()); }
+    const_iterator cend() { return const_iterator(nullptr); }
+
+    const_iterator cbegin() const { return const_iterator(first_node()); }
+    const_iterator cend() const { return const_iterator(nullptr); }
+
+    const_iterator begin() const { return cbegin(); }
+    const_iterator end() const { return cend(); }
 
     void clear() 
     { 
@@ -81,7 +110,7 @@ class _tree
       public:
         node(const value_type& element) : 
           _element(element),
-          _balance_factor(0),
+          _height(1),
           _parent(nullptr),
           _left(nullptr), 
           _right(nullptr)
@@ -89,492 +118,322 @@ class _tree
         }
 
         value_type& element() { return _element; }
-
         node* parent() { return _parent; }
+        node* left() { return _left; }
+        node* right() { return _right; }
+        int height() { return _height; }
+
         void parent(node* p) { _parent = p; }
 
-        node* left() { return _left; }
-        void left(node* l) { _left = l; }
+        void left(node* l) 
+        { 
+          _left = l; 
+          if(_left)
+            _left->parent(this);
+        }
 
-        node* right() { return _right; }
-        void right(node* r) { _right = r; }
+        void right(node* r) 
+        { 
+          _right = r;
+          if(_right)
+            _right->parent(this);
+        }
 
-        int balance_factor() const { return _balance_factor; }
-        void balance_factor(int f) { _balance_factor = f; }
-        bool is_leaf() const { return _left == nullptr && _right == nullptr; }
+        int balance_factor() const { return _tree::height(_left) - _tree::height(_right); }
+        void update_height() 
+        { 
+          _height = upan::max(_tree::height(_left), _tree::height(_right)) + 1; 
+        }
+        void update_value(const value_type& element, const typename _c_type::_element_assigner& ea)
+        {
+          ea(_element, element);
+        }
 
-        node* next();
+        node* successor()
+        {
+          if(_right)
+          {
+            auto cur = _right;
+            while(cur->left() != nullptr) cur = cur->left();
+            return cur;
+          }
+
+          auto p = _parent;
+          auto c = this;
+          while(p && p->right() == c) 
+          {
+            c = p;
+            p = p->parent();
+          }
+          return p;
+        }
+
+        node* predecessor()
+        {
+          if(_left)
+          {
+            auto cur = _left;
+            while(cur->right() != nullptr) cur = cur->right();
+            return cur;
+          }
+
+          auto p = _parent;
+          auto c = this;
+          while(p && p->left() == c)
+          {
+            c = p;
+            p = p->parent();
+          }
+          return p;
+        }
 
       private:
         value_type _element;
-        int   _balance_factor;
+        int   _height;
         node* _parent;
         node* _left;
         node* _right;
     };
 
-    class _tree_iterator
+    class _base_tree_iterator
     {
-      public:
-        _tree_iterator(_tree* parent, node* n) : _parent(parent), _node(n)
+      protected:
+        _base_tree_iterator(node* n) : _node(n) { }
+
+        inline void check_end()
         {
+          if(!_node) throw exception(XLOC, "accessing end iterator");
         }
-      
-        value_type& operator*() { return value(); }
-        const value_type& operator*() const { return const_cast<_tree_iterator*>(this)->value(); }
 
-        value_type* operator->() { return &value(); }
-        const value_type* operator->() const { return &const_cast<_tree_iterator*>(this)->value(); }
-
-        _tree_iterator& operator++() { return pre_inc(); }
-        const_iterator& operator++() const { return const_cast<_tree_iterator*>(this)->pre_inc(); }
-
-        iterator operator++(int) { return post_inc(); }
-        const_iterator operator++(int) const { return const_cast<_tree_iterator*>(this)->post_inc(); }
-
-        bool operator==(const _tree_iterator& rhs) const 
-        { 
-          return _parent == rhs._parent && _node == rhs._node;
-        }
-        bool operator!=(const _tree_iterator& rhs) const { return !operator==(rhs); }
-      private:
-        void check_end()
-        {
-          if(*this == _parent->end())
-            throw exception(XLOC, "accessing end iterator");
-        }
-        
         value_type& value()
         {
           check_end();
           return _node->element();
         }
 
-        iterator& pre_inc()
+        node* pre_inc()
         {
           check_end();
-          _node = _node->next();
-          return *this;
+          _node = _node->successor();
+          return _node;
         }
 
-        iterator post_inc()
+        node* post_inc()
         {
-          iterator tmp(*this);
+          auto tmp = _node;
           pre_inc();
           return tmp;
         }
-      private:
-        _tree* _parent; 
-      public:
+
+        node* pre_dec()
+        {
+          check_end();
+          _node = _node->predecessor();
+          return _node;
+        }
+
+        node* post_dec()
+        {
+          auto tmp = _node;
+          pre_dec();
+          return tmp;
+        }
+
         node* _node;
+    };
+
+    class _tree_iterator : public _base_tree_iterator
+    {
+      public:
+        _tree_iterator(node* n) : _base_tree_iterator(n) { }
+
+        bool operator==(const _tree_iterator& r) { return this->_node == r._node; }
+        bool operator!=(const _tree_iterator& r) { return !(*this == r); }
+      
+        value_type& operator*() { return this->value(); }
+        value_type* operator->() { return &this->value(); }
+        _tree_iterator operator++() { return this->pre_inc(); }
+        _tree_iterator operator++(int) { return this->post_inc(); }
+        _tree_iterator operator--() { return this->pre_dec(); }
+        _tree_iterator operator--(int) { return this->post_dec(); }
 
       friend class _tree;
       friend class ::TestSuite;
     };
 
-    node* first_node();
-    int height(node* n) const;
-    void rotate_left(node* n);
-    void rotate_right(node* n);
-    void rebalance_on_insert(node*);
-    void rebalance_on_delete(bool is_right_child, node*);
-    void refresh_balance_factor(node* n) const;
-    void clear(node* n);
-    void print_diagnosis(node* n, int depth);
+    class _const_tree_iterator : public _base_tree_iterator
+    {
+      public:
+        _const_tree_iterator(node* n) : _base_tree_iterator(n) { }
 
-    pair<node*, bool> find_node(key_type& key) const;
-    pair<iterator, bool> insert_at_node(node* parent, const value_type& element);
+        bool operator==(const _const_tree_iterator& r) { return this->_node == r._node; }
+        bool operator!=(const _const_tree_iterator& r) { return !(*this == r); }
+      
+        const value_type& operator*() { return this->value(); }
+        const value_type* operator->() { return &this->value(); }
+        _const_tree_iterator operator++() { return this->pre_inc(); }
+        _const_tree_iterator operator++(int) { return this->post_inc(); }
+        _const_tree_iterator operator--() { return this->pre_dec(); }
+        _const_tree_iterator operator--(int) { return this->post_dec(); }
+
+      friend class _tree;
+      friend class ::TestSuite;
+    };
+
+    node* first_node() const
+    {
+      if(_root == nullptr)
+        return nullptr;
+      auto cur = _root;
+      while(cur->left() != nullptr) cur = cur->left();
+      return cur;
+    }
+
+    node* rotate_left(node* n)
+    {
+      auto r = n->right();
+      n->right(r->left());
+      r->left(n);
+
+      n->update_height();
+      r->update_height();
+
+      return r;
+    }
+
+    node* rotate_right(node* n)
+    {
+      auto l = n->left();
+      n->left(l->right());
+      l->right(n);
+
+      n->update_height();
+      l->update_height();
+
+      return l;
+    }
+
+    node* rebalance(node* n)
+    {
+      if(n == nullptr)
+        return n;
+
+      n->update_height();
+      int bf = n->balance_factor();
+
+      //left - left
+      if(bf > 1 && n->left()->balance_factor() >= 0)
+        return rotate_right(n);
+
+      //right - right
+      if(bf < -1 && n->right()->balance_factor() <= 0)
+        return rotate_left(n);
+
+      //left - right
+      if(bf > 1 && n->left()->balance_factor() < 0)
+      {
+        n->left(rotate_left(n->left()));
+        return rotate_right(n);
+      }
+
+      //right - left
+      if(bf < -1 && n->right()->balance_factor() > 0)
+      {
+        n->right(rotate_right(n->right()));
+        return rotate_left(n);
+      }
+
+      return n;
+    }
+
+    node* insert(node* n, const value_type& element, insert_result_t& r)
+    {
+      if(n == nullptr)
+      {
+        auto nw = new node(element);
+        r = insert_result_t(_tree_iterator(nw), true);
+        return nw;
+      }
+
+      if(get_key(element) < get_key(n->element()))
+        n->left(insert(n->left(), element, r));
+      else if(get_key(n->element()) < get_key(element))
+        n->right(insert(n->right(), element, r));
+      else
+        r = insert_result_t(_tree_iterator(n), false);
+
+      if(!r.second)
+        return n;
+
+      return rebalance(n);
+    }
+    
+    node* erase(node* n, const key_type& key, bool& deleted)
+    {
+      if(n == nullptr)
+      {
+        deleted = false;
+        return n;
+      }
+      
+      if(get_key(n->element()) < key)
+        n->left(erase(n->left(), key, deleted));
+      else if(key < get_key(n->element()))
+        n->right(erase(n->right(), key, deleted));
+      else
+      {
+        deleted = true;
+        if(n->left() == nullptr || n->right() == nullptr)
+        {
+          auto c = n->left() ? n->left() : n->right();
+          delete n;
+          return c;
+        }
+        else
+        {
+          auto c = n->successor();
+          n->update_value(c->element(), element_assignee);
+          n->right(erase(n->right(), get_key(c->element()), deleted));
+        }
+      }
+
+      if(!deleted)
+        return n;
+
+      return rebalance(n);
+    }
+
+    //post-order traversal to delete the nodes
+    void clear(node* n)
+    {
+      if(n == nullptr) return;
+      clear(n->left());
+      clear(n->right());
+      delete n;
+    }
+
+    void print_diagnosis(node* n, int depth);
+    static int height(node* n) { return n ? n->height() : 0; }
+
+    node* find_node(key_type& key) const
+    {
+      node* cur = _root;
+      while(cur)
+      {
+        if(key < get_key(cur->element()))
+          cur = cur->left();
+        else if(get_key(cur->element()) < key)
+          cur = cur->right();
+        else
+          break;
+      }
+      return cur;
+    }
 
   private:
     node* _root;
     int   _size;
 };
-
-//post-order traversal to delete the nodes
-template <typename _c_type>
-void _tree<_c_type>::clear(node* n)
-{
-  if(n == nullptr)
-    return;
-  clear(n->left());
-  clear(n->right());
-  delete n;
-}
-
-template <typename _c_type>
-pair<typename _tree<_c_type>::iterator, bool> _tree<_c_type>::insert(const value_type& element)
-{
-  pair<node*, bool> ret = find_node(get_key(element));
-  if(ret.second)
-    return pair<iterator, bool>(iterator(this, ret.first), false);
-  return insert_at_node(ret.first, element);
-}
-
-template <typename _c_type>
-bool _tree<_c_type>::exists(key_type& key) const
-{
-  return find_node(key).second;
-}
-
-template <typename _c_type>
-pair<typename _tree<_c_type>::node*, bool> _tree<_c_type>::find_node(key_type& key) const
-{
-  node* cur = _root;
-  node* parent = nullptr;
-  while(cur != nullptr)
-  {
-    node* next;
-    if(key < get_key(cur->element()))
-      next = cur->left();
-    else if(get_key(cur->element()) < key)
-      next = cur->right();
-    else
-      return pair<node*, bool>(cur, true);
-    parent = cur;
-    cur = next;
-  }
-  return pair<node*, bool>(parent, false);
-}
-
-template <typename _c_type>
-pair<typename _tree<_c_type>::iterator, bool> _tree<_c_type>::insert_at_node(node* parent, const value_type& element)
-{
-  if(parent == nullptr)
-  {
-    _root = new node(element);
-    ++_size;
-    return pair<iterator, bool>(iterator(this, _root), true);
-  }
-  node* new_node = new node(element);
-  new_node->parent(parent);
-  if(get_key(element) < get_key(parent->element()))
-    parent->left(new_node);
-  else
-    parent->right(new_node);
-  ++_size;
-  rebalance_on_insert(new_node);
-  return pair<iterator, bool>(iterator(this, new_node), true);
-}
-
-
-template <typename _c_type>
-void _tree<_c_type>::rebalance_on_insert(node* child)
-{
-  if(child == nullptr)
-    return;
-  node* parent = child->parent();
-  while(parent != nullptr)
-  {
-    if(child == parent->left())
-    {
-      if(parent->balance_factor() == 1)
-      {
-        if(child->balance_factor() == -1) //left-right case
-          rotate_left(child);
-        //left-left case
-        rotate_right(parent);
-        break;
-      }
-      if(parent->balance_factor() == -1)
-      {
-        parent->balance_factor(0);
-        break;
-      }
-      parent->balance_factor(1);
-    }
-    else
-    {
-      if(parent->balance_factor() == -1)
-      {
-        if(child->balance_factor() == 1) //right-left case
-          rotate_right(child);
-        //right-right case
-        rotate_left(parent);
-        break;
-      }
-      if(parent->balance_factor() == 1)
-      {
-        parent->balance_factor(0);
-        break;
-      }
-      parent->balance_factor(-1);
-    }
-    child = parent;
-    parent = child->parent();
-  }
-}
-
-template <typename _c_type>
-void _tree<_c_type>::rebalance_on_delete(bool is_right_child, node* parent)
-{
-  while(parent != nullptr)
-  {
-    if(is_right_child)
-    {
-      if(parent->balance_factor() == 1) //going to be 2
-      {
-        node* sibling = parent->left();
-        if(!sibling)
-          throw exception(XLOC, "no left node for parent with balance factor 1 - tree is corrupted!");
-        int bf_sibling = sibling->balance_factor();
-        if(bf_sibling == -1)
-          rotate_left(sibling);
-        rotate_right(parent);
-        if(bf_sibling == 0)
-        {
-          parent->balance_factor(1);
-          break;
-        }
-        parent = parent->parent();
-      }
-      else if(parent->balance_factor() == 0)
-      {
-        parent->balance_factor(1);
-        break;
-      }
-      else
-        parent->balance_factor(0);
-    } 
-    else
-    {
-      if(parent->balance_factor() == -1)
-      {
-        node* sibling = parent->right();
-        if(!sibling)
-          throw exception(XLOC, "no right node for parent with balance factor -1 - tree is corrupted!");
-        int bf_sibling = sibling->balance_factor();
-        if(bf_sibling == 1)
-          rotate_right(sibling);
-        rotate_left(parent);
-        if(bf_sibling == 0)
-        {
-          parent->balance_factor(-1);
-          break;
-        }
-        parent = parent->parent();
-      }
-      else if(parent->balance_factor() == 0)
-      {
-        parent->balance_factor(-1);
-        break;
-      }
-      else
-        parent->balance_factor(0);
-    }
-    if(parent->parent())
-      is_right_child = parent->parent()->right() == parent;
-    parent = parent->parent();
-  }
-}
-
-template <typename _c_type>
-void _tree<_c_type>::rotate_left(node* n)
-{
-  if(n == nullptr)
-    return;
-  node* right = n->right();
-  if(right == nullptr)
-    throw exception(XLOC, "tree is corrupt. right child of left rotating node is null!");
-
-  node* parent = n->parent();
-  right->parent(parent);
-  if(parent == nullptr)
-    _root = right;
-  else
-  {
-    if(n == parent->left())
-      parent->left(right);
-    else
-      parent->right(right);
-  }
-  n->right(right->left());
-  if(right->left() != nullptr)
-    right->left()->parent(n);
-  n->parent(right);
-  right->left(n);
-
-  refresh_balance_factor(n);
-  refresh_balance_factor(right);
-}
-
-template <typename _c_type>
-void _tree<_c_type>::rotate_right(node* n)
-{
-  if(n == nullptr)
-    return;
-  node* left = n->left();
-  if(left == nullptr)
-    throw exception(XLOC, "tree is corrupt. left child of right rotating node is null!");
-
-  node* parent = n->parent();
-  left->parent(parent);
-  if(parent == nullptr)
-    _root = left;
-  else
-  {
-    if(n == parent->left())
-      parent->left(left);
-    else
-      parent->right(left);
-  }
-  n->left(left->right());
-  if(left->right() != nullptr)
-    left->right()->parent(n);
-  n->parent(left);
-  left->right(n);
-
-  refresh_balance_factor(n);
-  refresh_balance_factor(left);
-}
-
-template <typename _c_type>
-bool _tree<_c_type>::erase(iterator it)
-{
-  if(it == end())
-    return false;
-
-  node* n = it._node;
-  
-  if((n->left() && n->right())
-    || (n->left() && !n->left()->is_leaf())
-    || (n->right() && !n->right()->is_leaf()))
-  {
-    node* y;
-    bool deleteFromLeft;
-    if(n->left() && !n->right())
-      deleteFromLeft = true;
-    else if(n->right() && !n->left())
-      deleteFromLeft = false;
-    else
-      deleteFromLeft = n->left() && n->right() && n->balance_factor() > 0;
-    //find in-order predecessor
-    if(deleteFromLeft)
-    {
-      y = n->left();
-      while(y->right() != nullptr)
-        y = y->right();
-    }
-    else //find in-order successor
-    {
-      y = n->right();
-      while(y->left() != nullptr)
-        y = y->left();
-    }
-
-    node* n_parent = n->parent();
-    node* n_left = n->left();
-    node* n_right = n->right();
-
-    node* y_parent = y->parent();
-    node* y_left = y->left();
-    node* y_right = y->right();
-
-    y->parent(n_parent);
-    if(n_parent != nullptr)
-    {
-      if(n_parent->left() == n)
-        n_parent->left(y);
-      else
-        n_parent->right(y);
-    }
-
-    n->left(y_left);
-    if(y_left)
-      y_left->parent(n);
-    n->right(y_right);
-    if(y_right)
-      y_right->parent(n);
-
-    if(y_parent == n)
-    {
-      n->parent(y);
-      if(n_left == y)
-      {
-        y->left(n);
-        y->right(n_right);
-        if(n_right)
-          n_right->parent(y);
-      }
-      else
-      {
-        y->right(n);
-        y->left(n_left);
-        if(n_left)
-          n_left->parent(y);
-      }
-    }
-    else
-    {
-      y->left(n_left);
-      if(n_left)
-        n_left->parent(y);
-      y->right(n_right);
-      if(n_right)
-        n_right->parent(y);
-
-      n->parent(y_parent);
-      if(y_parent != nullptr)
-      {
-        if(y_parent->left() == y)
-          y_parent->left(n);
-        else
-          y_parent->right(n);
-      }
-    }
-
-    y->balance_factor(n->balance_factor());
-    if(n == _root)
-      _root = y;
-  }
-
-  node* parent = n->parent();
-
-  node* subtree = nullptr;
-  if(n->left())
-    subtree = n->left();
-  else if(n->right())
-    subtree = n->right();
-
-  if(subtree)
-    subtree->parent(parent);
-
-  if(parent == nullptr)
-  {
-    _root = subtree;
-  }
-  else
-  {
-    bool is_right_child = parent->right() == n;
-    if(is_right_child)
-      parent->right(subtree);
-    else
-      parent->left(subtree);
-    rebalance_on_delete(is_right_child, parent);
-  }
-  delete n;
-  --_size;
-  return true;
-}
-
-template <typename _c_type>
-typename _tree<_c_type>::iterator _tree<_c_type>::find(key_type& key)
-{
-  pair<node*, bool> ret = find_node(key);
-  if(ret.second)
-    return iterator(this, ret.first);
-  return end();
-}
-
-template <typename _c_type>
-typename _tree<_c_type>::node* _tree<_c_type>::first_node()
-{
-  if(_root == nullptr)
-    return nullptr;
-  node* cur = _root;
-  while(cur->left() != nullptr)
-    cur = cur->left();
-  return cur;
-}
 
 template <typename _c_type>
 bool _tree<_c_type>::verify_balance_factor()
@@ -586,50 +445,6 @@ bool _tree<_c_type>::verify_balance_factor()
       return false;
   }
   return true;
-}
-
-template <typename _c_type>
-int _tree<_c_type>::height(node* n) const
-{
-  if(n == nullptr)
-    return 0;
-  int lh = height(n->left());
-  int rh = height(n->right());
-  return (lh > rh ? lh : rh) + 1;
-}
-
-template <typename _c_type>
-void _tree<_c_type>::refresh_balance_factor(node* n) const
-{
-  n->balance_factor(height(n->left()) - height(n->right()));
-}
-
-//in-order successor of a given node
-template <typename _c_type>
-typename _tree<_c_type>::node* _tree<_c_type>::node::next()
-{
-  if(_right != nullptr)
-  {
-    node* cur = _right;
-    while(cur->left() != nullptr)
-      cur = cur->left();
-    return cur;
-  }
-
-  if(_parent == nullptr)
-    return nullptr;
-
-  if(this == _parent->left())
-    return _parent;
-
-  node* cur = _parent;
-  while(cur->parent() != nullptr)
-  {
-    if(cur == cur->parent()->left())
-      return cur->parent();
-    cur = cur->parent();
-  }
-  return nullptr;
 }
 
 template <typename _c_type>
@@ -650,6 +465,6 @@ void _tree<_c_type>::print_diagnosis(node* n, int depth)
     printf("\n INBALANCE NODE: %d - %d", get_key(n->element()), depth);
 }
 
-};
+}
 
 #endif
