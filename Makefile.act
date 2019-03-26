@@ -79,8 +79,6 @@ UPANIX_OBJS = \
  \
 	./filesystem/BufferedReader.o \
 	./filesystem/ProcFileManager.o \
-	./filesystem/FSManager.o \
-	./filesystem/FSCommand.o \
 	./filesystem/Directory.o \
 	./filesystem/FileSystem.o \
 	./filesystem/FileOperations.o \
