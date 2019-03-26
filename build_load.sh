@@ -80,7 +80,7 @@ then
 fi
 
 echo $SUDO_PW | sudo -S cp -f bin/upanix.elf usb_boot/MntUSB/efi/boot/
-
+sleep 2
 echo $SUDO_PW | sudo -S umount usb_boot/MntUSB
 
 echo "installed..."
