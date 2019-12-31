@@ -1,3 +1,4 @@
+#!/bin/bash
 . ${UPANIX_HOME}/setup.sh $@
 
 # -D_GLIBCXX_PROFILE
