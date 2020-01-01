@@ -16,6 +16,8 @@
 cmake_minimum_required(VERSION 3.10)
 project(Upanix)
 
+set(TARGET_BIN "upanix.elf")
+
 set(CMAKE_CXX_COMPILER i686-elf-g++)
 set(CMAKE_C_COMPILER i686-elf-gcc)
 
@@ -104,14 +106,15 @@ SET(OTHER_OBJS memory/Mem.o)
 
 set(CMAKE_CXX_LINK_EXECUTABLE "<CMAKE_CXX_COMPILER> ${CMAKE_CXX_FLAGS} ${CMAKE_EXE_LINKER_FLAGS} boot/fpu_init.obj boot/UpanixStart_Main.grub ${CRTINIT_OBJ} <OBJECTS> -o <TARGET> <LINK_LIBRARIES> ${CRTFINI_OBJ}")
 
-add_executable(upanix.elf ${OTHER_OBJS} ${UPANIX_SRCS})
+add_executable(${TARGET_BIN} ${OTHER_OBJS} ${UPANIX_SRCS})
 
-add_dependencies(upanix.elf osutils)
-add_dependencies(upanix.elf boot)
+add_dependencies(${TARGET_BIN} osutils)
+add_dependencies(${TARGET_BIN} boot)
 
-target_link_libraries(upanix.elf cxxrt)
-target_link_libraries(upanix.elf mcpp)
-target_link_libraries(upanix.elf c)
-target_link_libraries(upanix.elf gcceh)
+target_link_libraries(${TARGET_BIN} cxxrt)
+target_link_libraries(${TARGET_BIN} mcpp)
+target_link_libraries(${TARGET_BIN} c)
+target_link_libraries(${TARGET_BIN} gcceh)
 
-SET_SOURCE_FILES_PROPERTIES(${OTHER_OBJS} PROPERTIES EXTERNAL_OBJECT true GENERATED true)
+set_source_files_properties(${OTHER_OBJS} PROPERTIES EXTERNAL_OBJECT true GENERATED true)
+set_target_properties(${TARGET_BIN} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
