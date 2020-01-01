@@ -1,3 +1,4 @@
+#!/bin/bash
 #	 Upanix - An x86 based Operating System
 #	 Copyright (C) 2011 'Prajwala Prabhakar' 'srinivasa_prajwal@yahoo.co.in'
 #																			 
@@ -13,18 +14,22 @@
 #																			 
 #	 You should have received a copy of the GNU General Public License
 #	 along with this program.  If not, see <http://www.gnu.org/licenses/
-ASM = nasm
 
-MEMORY_ASM_SRC = Mem.asm
-MEMORY_ASM_OBJ = Mem.o
+SRC_DIRS="
+  display 
+  drivers
+  exeparser
+  filesystem
+  kernel
+  kernelprocs
+  memory
+  process
+  syscall
+  testsuite
+  users
+  util"
 
-build: ${MEMORY_ASM_OBJ}
-
-${MEMORY_ASM_OBJ}: ${MEMORY_ASM_SRC}
-	${ASM} -felf ${MEMORY_ASM_SRC}
-
-clean:
-	rm -f *.o
-
-distclean:
-	rm -f *.o
+for i in $SRC_DIRS
+do
+  find $i -name "*.cpp"
+done

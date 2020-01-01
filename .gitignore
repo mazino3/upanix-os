@@ -12,3 +12,6 @@ test_list
 test_map
 test_vector
 test_queue
+CMakeCache.txt
+CMakeFiles
+cmake_install.cmake

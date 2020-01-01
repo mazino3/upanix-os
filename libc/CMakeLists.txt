@@ -13,18 +13,11 @@
 #																			 
 #	 You should have received a copy of the GNU General Public License
 #	 along with this program.  If not, see <http://www.gnu.org/licenses/
-ASM = nasm
+cmake_minimum_required(VERSION 3.10)
 
-MEMORY_ASM_SRC = Mem.asm
-MEMORY_ASM_OBJ = Mem.o
+set(LIBC_DIR $ENV{UPANIX_HOME}/libc)
 
-build: ${MEMORY_ASM_OBJ}
+execute_process(COMMAND bash -c "cd ${LIBC_DIR}; find . -name '*.cpp' | grep -v CMakeFile" OUTPUT_VARIABLE LIBC_SRC)
+string(REPLACE "\n" ";" LIBC_SRC ${LIBC_SRC})
 
-${MEMORY_ASM_OBJ}: ${MEMORY_ASM_SRC}
-	${ASM} -felf ${MEMORY_ASM_SRC}
-
-clean:
-	rm -f *.o
-
-distclean:
-	rm -f *.o
+add_library(c STATIC "${LIBC_SRC}")

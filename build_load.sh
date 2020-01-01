@@ -70,9 +70,11 @@ else
 fi
 
 echo $SUDO_PW | sudo -S kpartx -d "$DEV"
-echo $SUDO_PW | sudo -S kpartx -av "$DEV"
+MOUNTP=`echo $SUDO_PW | sudo -S kpartx -av "$DEV" | head -1 | cut -d" " -f3`
+echo $MOUNTP
+
 sleep 2
-echo $SUDO_PW | sudo -S mount /dev/mapper/$MOUNTP usb_boot/MntUSB 
+echo $SUDO_PW | sudo -S mount /dev/mapper/$MOUNTP usb_boot/MntUSB
 
 if [ $? -ne 0 ]
 then
