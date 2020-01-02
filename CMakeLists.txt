@@ -91,11 +91,11 @@ add_subdirectory(libc)
 add_subdirectory(libcxxrt)
 add_subdirectory(libmcpp)
 
-add_custom_target(osutils COMMAND make WORKING_DIRECTORY osutils)
-add_custom_target(boot COMMAND make boot_elf WORKING_DIRECTORY boot)
-add_custom_target(mem COMMAND make WORKING_DIRECTORY memory)
+add_custom_target(osutils COMMAND make WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/osutils)
+add_custom_target(boot COMMAND make boot_elf WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/boot)
+add_custom_target(mem COMMAND make WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/memory)
 
-execute_process(COMMAND bash ./upanix_src_files.sh OUTPUT_VARIABLE UPANIX_SRCS)
+execute_process(COMMAND bash ${PROJECT_SOURCE_DIR}/upanix_src_files.sh OUTPUT_VARIABLE UPANIX_SRCS)
 string(REPLACE "\n" ";" UPANIX_SRCS ${UPANIX_SRCS})
 
 execute_process(COMMAND bash -c "${CMAKE_CXX_COMPILER} -print-file-name=crtbegin.o" OUTPUT_VARIABLE CRTBEGIN_OBJ)
@@ -114,6 +114,7 @@ add_executable(${TARGET_BIN} ${OTHER_OBJS} ${UPANIX_SRCS})
 
 add_dependencies(${TARGET_BIN} osutils)
 add_dependencies(${TARGET_BIN} boot)
+add_dependencies(${TARGET_BIN} mem)
 
 target_link_libraries(${TARGET_BIN} cxxrt)
 target_link_libraries(${TARGET_BIN} mcpp)
