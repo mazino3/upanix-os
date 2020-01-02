@@ -15,7 +15,7 @@
 #	 along with this program.  If not, see <http://www.gnu.org/licenses/
 cmake_minimum_required(VERSION 3.10)
 
-set(CXXRT_DIR $ENV{UPANIX_HOME}/libcxxrt)
+set(CXXRT_DIR ${PROJECT_SOURCE_DIR}/libcxxrt)
 
 execute_process(COMMAND bash -c "cd ${CXXRT_DIR}; find . -name '*.c' | grep -v CMakeFile" OUTPUT_VARIABLE CXXRT_SRC1)
 string(REPLACE "\n" ";" CXXRT_SRC1 ${CXXRT_SRC1})

@@ -15,7 +15,7 @@
 #	 along with this program.  If not, see <http://www.gnu.org/licenses/
 cmake_minimum_required(VERSION 3.10)
 
-set(GCCEH_DIR $ENV{UPANIX_HOME}/libgcceh)
+set(GCCEH_DIR ${PROJECT_SOURCE_DIR}/libgcceh)
 
 string(APPEND CMAKE_C_FLAGS " -DIN_GCC -DIN_LIBGCC2 -Dinhibit_libc -fbuilding-libgcc -fno-stack-protector")
 

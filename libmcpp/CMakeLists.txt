@@ -15,7 +15,7 @@
 #	 along with this program.  If not, see <http://www.gnu.org/licenses/
 cmake_minimum_required(VERSION 3.10)
 
-set(MCPP_DIR $ENV{UPANIX_HOME}/libmcpp)
+set(MCPP_DIR ${PROJECT_SOURCE_DIR}/libmcpp)
 
 execute_process(COMMAND bash -c "cd ${MCPP_DIR}; find . -name '*.cpp' | grep -v CMakeFile" OUTPUT_VARIABLE MCPP_SRC)
 string(REPLACE "\n" ";" MCPP_SRC ${MCPP_SRC})

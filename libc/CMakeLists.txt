@@ -15,7 +15,7 @@
 #	 along with this program.  If not, see <http://www.gnu.org/licenses/
 cmake_minimum_required(VERSION 3.10)
 
-set(LIBC_DIR $ENV{UPANIX_HOME}/libc)
+set(LIBC_DIR ${PROJECT_SOURCE_DIR}/libc)
 
 execute_process(COMMAND bash -c "cd ${LIBC_DIR}; find . -name '*.cpp' | grep -v CMakeFile" OUTPUT_VARIABLE LIBC_SRC)
 string(REPLACE "\n" ";" LIBC_SRC ${LIBC_SRC})
