@@ -13,7 +13,7 @@
 #																			 
 #	 You should have received a copy of the GNU General Public License
 #	 along with this program.  If not, see <http://www.gnu.org/licenses/
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.15)
 project(Upanix)
 
 set(TARGET_BIN "upanix.elf")
@@ -86,11 +86,6 @@ include_directories(${PROJECT_SOURCE_DIR}/libmcpp/cal)
 
 include_directories(${PROJECT_SOURCE_DIR}/libcxxrt)
 
-add_subdirectory(libgcceh)
-add_subdirectory(libc)
-add_subdirectory(libcxxrt)
-add_subdirectory(libmcpp)
-
 add_custom_target(osutils COMMAND make WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/osutils)
 add_custom_target(boot COMMAND make boot_elf WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/boot)
 add_custom_target(mem COMMAND make WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/memory)
@@ -110,8 +105,36 @@ SET(OTHER_OBJS memory/Mem.o)
 
 set(CMAKE_CXX_LINK_EXECUTABLE "<CMAKE_CXX_COMPILER> ${CMAKE_CXX_FLAGS} ${CMAKE_EXE_LINKER_FLAGS} boot/fpu_init.obj boot/UpanixStart_Main.grub ${CRTINIT_OBJ} <OBJECTS> -o <TARGET> <LINK_LIBRARIES> ${CRTFINI_OBJ}")
 
+#LIBC
+execute_process(COMMAND bash -c "cd ${PROJECT_SOURCE_DIR}; find ./libc -name '*.cpp' | grep -v CMakeFile" OUTPUT_VARIABLE LIBC_SRC)
+string(REPLACE "\n" ";" LIBC_SRC ${LIBC_SRC})
+add_library(c STATIC "${LIBC_SRC}")
+
+#LIBGCCEH
+execute_process(COMMAND bash -c "cd ${PROJECT_SOURCE_DIR}; find ./libgcceh -name '*.c' | grep -v CMakeFile" OUTPUT_VARIABLE GCCEH_SRC)
+string(REPLACE "\n" ";" GCCEH_SRC ${GCCEH_SRC})
+add_library(gcceh STATIC "${GCCEH_SRC}")
+target_compile_options(gcceh PRIVATE -DIN_GCC -DIN_LIBGCC2 -Dinhibit_libc -fbuilding-libgcc -fno-stack-protector)
+
+#LIBCXXRT
+execute_process(COMMAND bash -c "cd ${PROJECT_SOURCE_DIR}; find ./libcxxrt -name '*.c' | grep -v CMakeFile" OUTPUT_VARIABLE CXXRT_SRC1)
+string(REPLACE "\n" ";" CXXRT_SRC1 ${CXXRT_SRC1})
+execute_process(COMMAND bash -c "cd ${PROJECT_SOURCE_DIR}; find ./libcxxrt -name '*.cc' | grep -v CMakeFile" OUTPUT_VARIABLE CXXRT_SRC2)
+string(REPLACE "\n" ";" CXXRT_SRC2 ${CXXRT_SRC2})
+add_library(cxxrt STATIC ${CXXRT_SRC1} ${CXXRT_SRC2})
+
+#LIBMCPP
+execute_process(COMMAND bash -c "cd ${PROJECT_SOURCE_DIR}; find ./libmcpp -name '*.cpp' | grep -v CMakeFile" OUTPUT_VARIABLE MCPP_SRC)
+string(REPLACE "\n" ";" MCPP_SRC ${MCPP_SRC})
+add_library(mcpp STATIC "${MCPP_SRC}")
+
+#UPANIX
 add_executable(${TARGET_BIN} ${OTHER_OBJS} ${UPANIX_SRCS})
 
+add_dependencies(${TARGET_BIN} c)
+add_dependencies(${TARGET_BIN} gcceh)
+add_dependencies(${TARGET_BIN} cxxrt)
+add_dependencies(${TARGET_BIN} mcpp)
 add_dependencies(${TARGET_BIN} osutils)
 add_dependencies(${TARGET_BIN} boot)
 add_dependencies(${TARGET_BIN} mem)
