@@ -71,7 +71,8 @@ fi
 
 echo $SUDO_PW | sudo -S kpartx -d "$DEV"
 MOUNTP=`echo $SUDO_PW | sudo -S kpartx -av "$DEV" | head -1 | cut -d" " -f3`
-echo $MOUNTP
+echo "MOUNT DEVICE: $MOUNTP"
+echo "BIN FILE: `ls -l bin/upanix.elf`"
 
 sleep 2
 echo $SUDO_PW | sudo -S mount /dev/mapper/$MOUNTP usb_boot/MntUSB
