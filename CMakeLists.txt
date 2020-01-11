@@ -38,6 +38,11 @@ set(CMAKE_EXE_LINKER_FLAGS " -Tkernel.ld")
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
+set(OUTPUT_DIR "${CMAKE_BINARY_DIR}/bin")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${OUTPUT_DIR})
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${OUTPUT_DIR})
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_DIR})
+
 include_directories(${PROJECT_SOURCE_DIR}/bin)
 include_directories(${PROJECT_SOURCE_DIR}/kernel)
 include_directories(${PROJECT_SOURCE_DIR}/process)
@@ -145,4 +150,3 @@ target_link_libraries(${TARGET_BIN} c)
 target_link_libraries(${TARGET_BIN} gcceh)
 
 set_source_files_properties(${OTHER_OBJS} PROPERTIES EXTERNAL_OBJECT true GENERATED true)
-set_target_properties(${TARGET_BIN} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
