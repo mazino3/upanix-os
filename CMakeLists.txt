@@ -34,7 +34,7 @@ endif()
 
 set(CMAKE_CXX_FLAGS " -O0 -Wall -ffreestanding -nodefaultlibs -nostdlib -nostartfiles -nostdinc -std=c++11 -nostdinc++ -fno-threadsafe-statics -fpermissive ${EXCEPTION_SUP}")
 set(CMAKE_C_FLAGS " -std=c11 -O0 -Wall -ffreestanding -nodefaultlibs -nostdlib -nostartfiles -nostdinc")
-set(CMAKE_EXE_LINKER_FLAGS " -Tkernel.ld")
+set(CMAKE_EXE_LINKER_FLAGS " -Tkernel.ld -O0 -nostdlib")
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
@@ -65,6 +65,7 @@ include_directories(${PROJECT_SOURCE_DIR}/drivers/usb/xhci)
 include_directories(${PROJECT_SOURCE_DIR}/drivers/usb/devices)
 include_directories(${PROJECT_SOURCE_DIR}/drivers/video)
 include_directories(${PROJECT_SOURCE_DIR}/drivers/net)
+include_directories(${PROJECT_SOURCE_DIR}/drivers/net/e1000)
 include_directories(${PROJECT_SOURCE_DIR}/drivers/net/mac80211)
 include_directories(${PROJECT_SOURCE_DIR}/drivers/net/ath9k)
 include_directories(${PROJECT_SOURCE_DIR}/drivers/)
@@ -106,9 +107,10 @@ string(REPLACE "\n" "" CRTEND_OBJ ${CRTEND_OBJ})
 set(CRTINIT_OBJ "./osutils/crti.o ${CRTBEGIN_OBJ}")
 set(CRTFINI_OBJ "${CRTEND_OBJ} ./osutils/crtn.o")
 
-SET(OTHER_OBJS memory/Mem.o)
+set(OTHER_OBJS memory/Mem.o)
 
 set(CMAKE_CXX_LINK_EXECUTABLE "<CMAKE_CXX_COMPILER> ${CMAKE_CXX_FLAGS} ${CMAKE_EXE_LINKER_FLAGS} boot/fpu_init.obj boot/UpanixStart_Main.grub ${CRTINIT_OBJ} <OBJECTS> -o <TARGET> <LINK_LIBRARIES> ${CRTFINI_OBJ}")
+#set(CMAKE_CXX_LINK_EXECUTABLE "<CMAKE_CXX_COMPILER> ${CMAKE_EXE_LINKER_FLAGS} boot/fpu_init.obj boot/UpanixStart_Main.grub ${CRTINIT_OBJ} <OBJECTS> -o <TARGET> <LINK_LIBRARIES> ${CRTFINI_OBJ}")
 
 #LIBC
 execute_process(COMMAND bash -c "cd ${PROJECT_SOURCE_DIR}; find ./libc -name '*.cpp' | grep -v CMakeFile" OUTPUT_VARIABLE LIBC_SRC)
@@ -150,3 +152,9 @@ target_link_libraries(${TARGET_BIN} c)
 target_link_libraries(${TARGET_BIN} gcceh)
 
 set_source_files_properties(${OTHER_OBJS} PROPERTIES EXTERNAL_OBJECT true GENERATED true)
+
+##LOAD BINARY
+#add_custom_command(
+#	TARGET ${TARGET_BIN}
+#	POST_BUILD
+#	COMMAND bash -c "./build_load.sh")

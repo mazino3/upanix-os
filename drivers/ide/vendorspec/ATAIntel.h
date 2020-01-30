@@ -25,7 +25,6 @@
 #define ATAIntel_FAILURE		1
 
 #define INTEL_SATA_DEVICE_ID	0x24D1
-#define INTEL_VENDOR_ID			0x8086
 
 #define INTEL_UDMA			0x00F
 #define INTEL_UDMA_33		0x001

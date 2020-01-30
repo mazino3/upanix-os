@@ -18,7 +18,7 @@
 #include <PCIBusHandler.h>
 #include <NetworkDevice.h>
 
-NetworkDevice::NetworkDevice(PCIEntry& pciEntry) : _pciEntry(pciEntry)
+NetworkDevice::NetworkDevice(const PCIEntry& pciEntry) : _pciEntry(pciEntry)
 {
 }
 

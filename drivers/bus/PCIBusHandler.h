@@ -103,6 +103,9 @@ typedef enum {
 #define PCI_CACHE_LINE_SIZE 0x0C
 #define PCI_LATENCY_TIMER 0x0D
 
+// Vendor IDs
+#define INTEL_VENDOR_ID 0x8086
+
 class PCIEntry
 {
   public:

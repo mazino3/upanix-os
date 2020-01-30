@@ -117,7 +117,7 @@ unsigned DMM_Allocate(Process* processAddressSpace, unsigned uiSizeInBytes, unsi
 
 				//Make sure that all pages are allocated in the requested mem block
 				unsigned addr = uiAddress + sizeof(AllocationUnitTracker) ;
-				__volatile__ int x ;
+				UNUSED __volatile__ int x;
 				while(addr < (uiAddress + aut->uiSize))
 				{
 					x = ((char*)addr)[0] ; // A read would cause a page fault

@@ -24,66 +24,66 @@ class SocketBuffer;
 class NetworkDevice
 {
 public:
-  NetworkDevice(PCIEntry& pciEntry);
+  NetworkDevice(const PCIEntry& pciEntry);
   virtual ~NetworkDevice() = 0;
   
   virtual void NotifyEvent() = 0;
 
-  virtual int Configure() = 0;
-  virtual void Tx(SocketBuffer& socketBuffer) = 0;
+  // virtual int Configure() = 0;
+  // virtual void Tx(SocketBuffer& socketBuffer) = 0;
 
-  virtual int Start() = 0;
+  // virtual int Start() = 0;
 
-  virtual void Stop() = 0;
+  // virtual void Stop() = 0;
 
-  virtual int AddInterface() = 0;
+  // virtual int AddInterface() = 0;
 
-  virtual int ChangeInterface() = 0;
+  // virtual int ChangeInterface() = 0;
 
-  virtual void RemoveInterface() = 0;
+  // virtual void RemoveInterface() = 0;
 
-  virtual void ConfigureFilter() = 0;
+  // virtual void ConfigureFilter() = 0;
 
-  virtual int STAState() = 0;
+  // virtual int STAState() = 0;
 
-  virtual void STANotify() = 0;
+  // virtual void STANotify() = 0;
 
-  virtual void ConfigureTx() = 0;
+  // virtual void ConfigureTx() = 0;
 
-  virtual void BSSInfoChanged() = 0;
+  // virtual void BSSInfoChanged() = 0;
 
-  virtual int SetKey() = 0;
+  // virtual int SetKey() = 0;
 
-	virtual uint64_t GetTSF() = 0;
+	// virtual uint64_t GetTSF() = 0;
 
-  virtual void SetTFS() = 0;
+  // virtual void SetTFS() = 0;
 
-	virtual void ResetTSF() = 0;
+	// virtual void ResetTSF() = 0;
 
-	virtual int AMPDUAction() = 0;
+	// virtual int AMPDUAction() = 0;
 
-	virtual int GetSurvey() = 0;
+	// virtual int GetSurvey() = 0;
 
-	virtual void SetCoverageClass() = 0;
+	// virtual void SetCoverageClass() = 0;
 
-	virtual void Flush() = 0;
+	// virtual void Flush() = 0;
 
-	virtual bool TxFramesPending() = 0;
+	// virtual bool TxFramesPending() = 0;
 
-	virtual int TxLastBeacon() = 0;
+	// virtual int TxLastBeacon() = 0;
 
-	virtual int GetStats() = 0;
+	// virtual int GetStats() = 0;
 
-	virtual int GetAntenna() = 0;
+	// virtual int GetAntenna() = 0;
 
-	virtual void ReleaseBufferedFrames() = 0;
+	// virtual void ReleaseBufferedFrames() = 0;
 
-	virtual void SWScanStart() = 0;
+	// virtual void SWScanStart() = 0;
 
-	virtual void SWScanComplete() = 0;
+	// virtual void SWScanComplete() = 0;
 
-	virtual void WakeTxQueue() = 0;
+	// virtual void WakeTxQueue() = 0;
 
 protected:
-  PCIEntry& _pciEntry;
+  const PCIEntry& _pciEntry;
 };

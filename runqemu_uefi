@@ -20,13 +20,15 @@ clear
 
 OVMF_VERSION=$1
 
-SUDO_PW=""
-if [ -f .sudopw ]
+LOAD_BINARY=$2
+
+if [ "$LOAD_BINARY" = "load" ]
 then
-  SUDO_PW=`cat .sudopw`
-else
-  echo "Don't find .sudopw file. Create a (secure) file .sudopw containing sudo password"
-  exit 1
+  $UPANIX_HOME/build_load.sh
+  if [ $? -ne 0 ]
+  then
+    exit 1
+  fi
 fi
 
 if [ "$BOOT_USB_DEVICE_NAME" = "" -a "$BOOT_USB_DEVICE_ID" != "" ]
@@ -58,15 +60,13 @@ sleep 1
 #-drive if=none,id=usbdrive,file=/dev/sdb \
 #-drive if=none,id=usbdrive,file=$UPANIX_HOME/USBImage/300MUSB.img \
 
-QEMU_PATH=
-#echo $SUDO_PW | sudo -S qemu-system-x86_64 \
 qemu-system-x86_64 \
 -serial file:serial_debug.log \
 -L $UPANIX_HOME/ovmf.$OVMF_VERSION \
 -bios OVMF.fd \
 -m 256 \
 -smp 1 \
--net none \
+-net nic,model=e1000 \
 -usb \
 -drive if=none,id=usbbootdrive,file=$BOOT_DRIVE \
 -drive if=none,id=usbdrive1,file=$UPANIX_HOME/USBImage/300MUSB.img \

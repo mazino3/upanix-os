@@ -95,7 +95,7 @@ $SUDO qemu-system-x86_64 \
 -fda $FDA \
 -fdb $FDB \
 -boot a \
--m 128 \
+-m 256 \
 -smp 1 \
 -net none \
 \

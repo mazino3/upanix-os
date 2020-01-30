@@ -171,6 +171,7 @@ void Initialize()
     PCIBusHandler::Instance().Initialize();
 
     IrqManager::Initialize();
+
     PIT_Initialize();
     IrqManager::Instance().EnableIRQ(StdIRQ::Instance().TIMER_IRQ) ;
 

@@ -32,7 +32,7 @@ then
 
   if [ $? -ne 0 ]
   then
-  exit 100
+    exit 100
   fi
 
   echo $SUDO_PW | sudo -S cp -f bin/upanix.elf floppy/MntFloppy/boot
@@ -84,6 +84,6 @@ fi
 
 echo $SUDO_PW | sudo -S cp -f bin/upanix.elf usb_boot/MntUSB/efi/boot/
 sleep 2
-echo $SUDO_PW | sudo -S umount usb_boot/MntUSB
+echo $SUDO_PW | sudo -S umount /dev/mapper/$MOUNTP
 
 echo "installed..."

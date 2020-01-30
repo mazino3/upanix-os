@@ -20,6 +20,7 @@
 #include <IrqManager.h>
 #include <PCIBusHandler.h>
 #include <ATH9KDevice.h>
+#include <E1000NICDevice.h>
 #include <NetworkManager.h>
 
 static void WIFINET_IRQHandler()
@@ -73,7 +74,17 @@ NetworkDevice* NetworkManager::Probe(PCIEntry& pciEntry)
   try
   {
     if(pciEntry.usVendorID == 0x168C && pciEntry.usDeviceID == 0x36)
+    {
       return new ATH9KDevice(pciEntry);
+    }
+    else if(pciEntry.usVendorID == INTEL_VENDOR_ID && pciEntry.usDeviceID == 0x100E)
+    {
+      return new E1000NICDevice(pciEntry);
+    }
+    else if(pciEntry.usVendorID == INTEL_VENDOR_ID && pciEntry.usDeviceID == 0x153A)
+    {
+      printf("Ethernet i217-v network-card detected");
+    }
   }
   catch(const upan::exception& e)
   {

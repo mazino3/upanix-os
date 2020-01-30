@@ -106,6 +106,17 @@ SECTIONS
 		*(.gcc_except_table*)
 	}
 
+	.debug_info BLOCK(4K) : ALIGN(4K) { *(.debug_info*) }
+	.debug_abbrev BLOCK(4K) : ALIGN(4K) { *(.debug_abbrev*) }
+	.debug_aranges BLOCK(4K) : ALIGN(4K) { *(.debug_aranges*) }
+	.debug_ranges BLOCK(4K) : ALIGN(4K) { *(.debug_ranges*) }
+	.debug_line BLOCK(4K) : ALIGN(4K) { *(.debug_line*) }
+	.debug_str BLOCK(4K) : ALIGN(4K) { *(.debug_str*) }
+
+	.shstrtab BLOCK(4K) : ALIGN(4K) { *(.shstrtab*) }
+	.symtab BLOCK(4K) : ALIGN(4K) { *(.symtab*) }
+	.strtab BLOCK(4K) : ALIGN(4K) { *(.strtab*) }
+
 	/* The compiler may produce other sections, by default it will put them in
 	   a segment with the same name. Simply add stuff here as needed. */
 }

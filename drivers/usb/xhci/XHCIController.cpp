@@ -78,8 +78,7 @@ XHCIController::XHCIController(PCIEntry* pPCIEntry)
   _capReg->Print();
 
   //Enable Ports for Intel PanthorPoint XHCI
-  if(pPCIEntry->usVendorID == 0x8086
-    && pPCIEntry->usDeviceID == 0x1E31)
+  if(pPCIEntry->usVendorID == INTEL_VENDOR_ID && pPCIEntry->usDeviceID == 0x1E31)
   {
     unsigned portsAvailable;
 
