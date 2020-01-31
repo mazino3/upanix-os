@@ -36,7 +36,7 @@ private:
       uint32_t readEEPROM(const int wordPos);
   private:
       const uint32_t REG_EEPROM = 0x14;
-      volatile uint32_t* _eeprom;
+      volatile uint32_t* const _eeprom;
       upan::vector<uint8_t> _macAddress;
   };
 
@@ -55,15 +55,14 @@ private:
     const static uint32_t REG_RADV = 0x282C; // RX Int. Absolute Delay Timer
     const static uint32_t REG_RSRPD = 0x2C00; // RX Small Packet Detect Interrupt
 
-    volatile uint32_t* _icr;
-    volatile uint32_t* _itr;
-    volatile uint32_t* _ics;
-    volatile uint32_t* _ims;
-    volatile uint32_t* _imc;
-    volatile uint32_t* _rdtr;
-    volatile uint32_t* _radv;
-    volatile uint32_t* _rsrpd;
-    uint32_t x;
+    volatile uint32_t* const _icr;
+    volatile uint32_t* const _itr;
+    volatile uint32_t* const _ics;
+    volatile uint32_t* const _ims;
+    volatile uint32_t* const _imc;
+    volatile uint32_t* const _rdtr;
+    volatile uint32_t* const _radv;
+    volatile uint32_t* const _rsrpd;
   };
 
   class RegControl {
@@ -76,10 +75,10 @@ private:
     const static uint32_t REG_CTRL = 0x0000; // Control Register
     const static uint32_t REG_MTA = 0x5200; // MTA
 
-    volatile uint32_t* _pba;
-    volatile uint32_t* _txcw;
-    volatile uint32_t* _ctrl;
-    volatile uint32_t* _mta;
+    volatile uint32_t* const _pba;
+    volatile uint32_t* const _txcw;
+    volatile uint32_t* const _ctrl;
+    volatile uint32_t* const _mta;
   };
 
   class RXDescriptor {
@@ -105,12 +104,12 @@ private:
     const static uint32_t REG_RDT = 0x2818; // RX Descriptor Tail
     const static uint32_t REG_RCTL = 0x0100; // Receive Control Register
 
-    volatile uint32_t* _alow;
-    volatile uint32_t* _ahigh;
-    volatile uint32_t* _len;
-    volatile uint32_t* _head;
-    volatile uint32_t* _tail;
-    volatile uint32_t* _rxctrl;
+    volatile uint32_t* const _alow;
+    volatile uint32_t* const _ahigh;
+    volatile uint32_t* const _len;
+    volatile uint32_t* const _head;
+    volatile uint32_t* const _tail;
+    volatile uint32_t* const _rxctrl;
 
     const uint32_t NUM_OF_DESC = 32;
     const RXDescriptor* _rxDescriptors;
@@ -146,13 +145,13 @@ private:
     const static uint32_t REG_TCTL = 0x0400; // Transmit Control Register
     const static uint32_t REG_TIPG = 0x0410; // Transmit Inter Packet Gap
 
-    volatile uint32_t* _alow;
-    volatile uint32_t* _ahigh;
-    volatile uint32_t* _len;
-    volatile uint32_t* _head;
-    volatile uint32_t* _tail;
-    volatile uint32_t* _txctrl;
-    volatile uint32_t* _tipg;
+    volatile uint32_t* const _alow;
+    volatile uint32_t* const _ahigh;
+    volatile uint32_t* const _len;
+    volatile uint32_t* const _head;
+    volatile uint32_t* const _tail;
+    volatile uint32_t* const _txctrl;
+    volatile uint32_t* const _tipg;
 
     const uint32_t NUM_OF_DESC = 16;
     const TXDescriptor* _txDescriptors;

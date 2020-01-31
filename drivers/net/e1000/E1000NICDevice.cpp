@@ -86,7 +86,7 @@ E1000NICDevice::E1000NICDevice(const PCIEntry& pciEntry) : NetworkDevice(pciEntr
   _memIOBase = KERNEL_VIRTUAL_ADDRESS(NET_E1000_MMIO_BASE_ADDR + (ioAddr % PAGE_SIZE));
 
     /* Enable busmaster */
-  unsigned short usCommand ;
+  unsigned short usCommand;
   pciEntry.ReadPCIConfig(PCI_COMMAND, 2, &usCommand);
   pciEntry.WritePCIConfig(PCI_COMMAND, 2, usCommand | PCI_COMMAND_IO | PCI_COMMAND_MASTER) ;
   printf("\n Enabled PCI bus master for NIC");
@@ -107,9 +107,11 @@ E1000NICDevice::E1000NICDevice(const PCIEntry& pciEntry) : NetworkDevice(pciEntr
   printf("\n E1000 NIC initialization done, enabling interrupts");
   regIntControl.enable();
   printf("\n E1000 NIC interrupt enabled");
+  
   ProcessManager::Instance().Sleep(100);
-  //volatile uint32_t* rstat = (volatile uint32_t*)(_memIOBase + 0x8);
-  //printf("\n NIC Status: %x", *rstat);
+
+  volatile uint32_t* rstat = (volatile uint32_t*)(_memIOBase + 0x8);
+  printf("\n NIC Status: %x", *rstat);
 }
 
 void E1000NICDevice::NotifyEvent() {
@@ -151,8 +153,10 @@ E1000NICDevice::RegIntControl::RegIntControl(const uint32_t memIOBase) :
   _itr(REG(memIOBase, REG_ITR)),
   _ics(REG(memIOBase, REG_ICS)),
   _ims(REG(memIOBase, REG_IMS)),
-  _imc(REG(memIOBase, REG_IMC)) {
-    x = memIOBase;
+  _imc(REG(memIOBase, REG_IMC)),
+  _rdtr(REG(memIOBase, REG_RDTR)),
+  _radv(REG(memIOBase, REG_RADV)),
+  _rsrpd(REG(memIOBase, REG_RSRPD)) {
 }
 
 void E1000NICDevice::RegIntControl::disable() {
@@ -170,7 +174,7 @@ void E1000NICDevice::RegIntControl::enable() {
   *_ims = 0x1F6DC;
   *_ims = 0xFF & ~4;
 
-  *((volatile uint32_t*)(x + 0xC0));
+  *_icr;
 }
 
 E1000NICDevice::RegControl::RegControl(const uint32_t memIOBase) : 
@@ -215,7 +219,9 @@ E1000NICDevice::RegRXDescriptor::RegRXDescriptor(const uint32_t memIOBase) :
   _ahigh(REG(memIOBase, REG_RDBAH)),
   _len(REG(memIOBase, REG_RDLEN)),
   _head(REG(memIOBase, REG_RDH)),
-  _tail(REG(memIOBase, REG_RDT)) {
+  _tail(REG(memIOBase, REG_RDT)),
+  _rxctrl(REG(memIOBase, REG_RCTL)) {
+  //_rxctrl(REG(memIOBase, REG_RCTL)) {
   _rxDescriptors = new ((void*)DMM_AllocateForKernel(sizeof(RXDescriptor) * NUM_OF_DESC, 16))RXDescriptor[NUM_OF_DESC];
   *_alow = KERNEL_REAL_ADDRESS(_rxDescriptors);
   *_ahigh = 0;
@@ -246,7 +252,9 @@ E1000NICDevice::RegTXDescriptor::RegTXDescriptor(const uint32_t memIOBase) :
   _ahigh(REG(memIOBase, REG_TDBAH)),
   _len(REG(memIOBase, REG_TDLEN)),
   _head(REG(memIOBase, REG_TDH)),
-  _tail(REG(memIOBase, REG_TDT)) {
+  _tail(REG(memIOBase, REG_TDT)),
+  _txctrl(REG(memIOBase, REG_TCTL)),
+  _tipg(REG(memIOBase, REG_TIPG)) {
   _txDescriptors = new ((void*)DMM_AllocateForKernel(sizeof(TXDescriptor) * NUM_OF_DESC, 16))TXDescriptor[NUM_OF_DESC];
   *_alow = KERNEL_REAL_ADDRESS(_txDescriptors);
   *_ahigh = 0;
