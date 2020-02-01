@@ -2,7 +2,7 @@
 #include <MemManager.h>
 #include <ATH9KHardware.h>
 
-ATH9KHardware::ATH9KHardware(PCIEntry& pciEntry) : _pciEntry(pciEntry)
+ATH9KHardware::ATH9KHardware(const PCIEntry& pciEntry) : _pciEntry(pciEntry)
 {
   unsigned uiIOAddr = pciEntry.BusEntity.NonBridge.uiBaseAddress0;
   printf("\n PCI BaseAddr: %x", uiIOAddr);

@@ -473,7 +473,7 @@ void PCIEntry::EnableBusMaster() const
 	WritePCIConfig(PCI_LATENCY, 1, bLat);
 }
 
-bool PCIEntry::SetupMsiInterrupt(const PCI_IRQ irqNo)
+bool PCIEntry::SetupMsiInterrupt(const PCI_IRQ irqNo) const
 {
   if(!IrqManager::Instance().IsApic())
     return false;
@@ -527,7 +527,7 @@ bool PCIEntry::SetupMsiInterrupt(const PCI_IRQ irqNo)
   return true;
 }
 
-void PCIEntry::SwitchToMsi()
+void PCIEntry::SwitchToMsi() const
 {
   // Get PCI capability for MSI
   auto msiCap = GetExtendedCapability(MSI_CAP_ID);

@@ -244,8 +244,8 @@ class PCIEntry
   unsigned GetPCIMemSize(int iAddressIndex) const;
   unsigned PCISize(unsigned uiBase, unsigned uiMask) const;
   void EnableBusMaster() const;
-  bool SetupMsiInterrupt(const PCI_IRQ irqNo);
-  void SwitchToMsi();
+  bool SetupMsiInterrupt(const PCI_IRQ irqNo) const;
+  void SwitchToMsi() const;
 
   PCIEntry(unsigned uiBusNumber, unsigned uiDeviceNumber, unsigned uiFunction, byte bHeaderType);
 

@@ -83,6 +83,7 @@ class IrqManager
 
 		const IRQ* RegisterIRQ(const int& iIRQNo, unsigned pHandler);
 		bool RegisterIRQ(const IRQ& irq, unsigned pHandler);
+    bool UnregisterIRQ(const IRQ& irq);
 		const IRQ* GetIRQ(const IRQ& irq);
 		const IRQ* GetIRQ(const int& iIRQNo);
 		void DisplayIRQList();

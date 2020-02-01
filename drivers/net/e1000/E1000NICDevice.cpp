@@ -25,33 +25,62 @@
 #include <NetworkDevice.h>
 #include <MemManager.h>
 #include <ProcessManager.h>
+#include <NetworkManager.h>
 #include <E1000NICDevice.h>
 
-static IRQ* E1000_IRQ = nullptr;
+#define ICR_TRANSMIT    (1 << 0)
+#define ICR_LINK_CHANGE (1 << 2)
+#define ICR_RECEIVE     (1 << 7)
+#define STATUS_LINK_UP  (1 << 1)
 
-static void irq_handler() {
-	unsigned GPRStack[NO_OF_GPR] ;
-	AsmUtil_STORE_GPR(GPRStack) ;
-	AsmUtil_SET_KERNEL_DATA_SEGMENTS
+E1000NICDevice* E1000NICDevice::_instance = nullptr;
 
-	printf("\n NIC E1000 IRQ \n");
-	//ProcessManager_SignalInterruptOccured(*E1000_IRQ) ;
-
-	IrqManager::Instance().SendEOI(*E1000_IRQ) ;
-	
-	AsmUtil_REVOKE_KERNEL_DATA_SEGMENTS
-	AsmUtil_RESTORE_GPR(GPRStack) ;
-	
-	asm("leave") ;
-	asm("IRET") ;
+void E1000NICDevice::Create(const PCIEntry& pciEntry) {
+  if (_instance != nullptr) {
+    printf("\n Deleting previously initialized E1000 NIC device");
+    delete _instance;
+  }
+  _instance = new E1000NICDevice(pciEntry);
+  _instance->Initialize();
 }
 
-E1000NICDevice::E1000NICDevice(const PCIEntry& pciEntry) : NetworkDevice(pciEntry) {
-  unsigned ioAddr = pciEntry.BusEntity.NonBridge.uiBaseAddress0;
+E1000NICDevice& E1000NICDevice::Instance() {
+  if (_instance == nullptr) {
+    throw upan::exception(XLOC, "E1000 NIC device is not initialized yet");
+  }
+  return *_instance;
+}
+
+void E1000NICDevice::InterruptHandler()
+{
+  unsigned GPRStack[NO_OF_GPR];
+  AsmUtil_STORE_GPR(GPRStack);
+  AsmUtil_SET_KERNEL_DATA_SEGMENTS
+
+  E1000NICDevice::Instance().NotifyEvent();
+
+  AsmUtil_REVOKE_KERNEL_DATA_SEGMENTS
+  AsmUtil_RESTORE_GPR(GPRStack);
+
+  asm("leave");
+  asm("IRET");
+}
+
+E1000NICDevice::E1000NICDevice(const PCIEntry& pciEntry) : NetworkDevice(pciEntry), _irq(nullptr) {
+}
+
+E1000NICDevice::~E1000NICDevice() {
+  if (_irq) {
+    IrqManager::Instance().UnregisterIRQ(*_irq);
+  }
+}
+
+void E1000NICDevice::Initialize() {
+  unsigned ioAddr = _pciEntry.BusEntity.NonBridge.uiBaseAddress0;
 	printf("\n PCI BaseAddr: %x", ioAddr);
 
 	ioAddr &= PCI_ADDRESS_MEMORY_32_MASK;
-	const unsigned ioSize = pciEntry.GetPCIMemSize(0);
+	const unsigned ioSize = _pciEntry.GetPCIMemSize(0);
   const unsigned availableMemMapSize = NET_E1000_MMIO_BASE_ADDR_END - NET_E1000_MMIO_BASE_ADDR;
 
 	printf(", Raw MMIO BaseAddr: %x, IOSize: %d, AvailableIOSize: %d", ioAddr, ioSize, availableMemMapSize);
@@ -87,35 +116,42 @@ E1000NICDevice::E1000NICDevice(const PCIEntry& pciEntry) : NetworkDevice(pciEntr
 
     /* Enable busmaster */
   unsigned short usCommand;
-  pciEntry.ReadPCIConfig(PCI_COMMAND, 2, &usCommand);
-  pciEntry.WritePCIConfig(PCI_COMMAND, 2, usCommand | PCI_COMMAND_IO | PCI_COMMAND_MASTER) ;
+  _pciEntry.ReadPCIConfig(PCI_COMMAND, 2, &usCommand);
+  _pciEntry.WritePCIConfig(PCI_COMMAND, 2, usCommand | PCI_COMMAND_IO | PCI_COMMAND_MASTER) ;
   printf("\n Enabled PCI bus master for NIC");
 
-  E1000_IRQ = IrqManager::Instance().RegisterIRQ(pciEntry.BusEntity.NonBridge.bInterruptLine, irq_handler);
-  IrqManager::Instance().EnableIRQ(*E1000_IRQ);
+  _irq = IrqManager::Instance().RegisterIRQ(_pciEntry.BusEntity.NonBridge.bInterruptLine, (uint32_t)E1000NICDevice::InterruptHandler);
+  IrqManager::Instance().EnableIRQ(*_irq);
 
-  const RegEEPROM regEEPROM(_memIOBase);
-  regEEPROM.print();
+  regEEPROM = new RegEEPROM(_memIOBase);
+  regEEPROM->print();
 
-  RegIntControl regIntControl(_memIOBase);
-  regIntControl.disable();
+  regIntControl = new RegIntControl(_memIOBase);
+  regIntControl->disable();
 
-  RegControl regControl(_memIOBase);
-  RegRXDescriptor regRx(_memIOBase);
-  RegTXDescriptor regTx(_memIOBase);
+  regControl = new RegControl(_memIOBase);
+  regRx = new RegRXDescriptor(_memIOBase);
+  regTx = new RegTXDescriptor(_memIOBase);
   
   printf("\n E1000 NIC initialization done, enabling interrupts");
-  regIntControl.enable();
+  regIntControl->enable();
   printf("\n E1000 NIC interrupt enabled");
-  
-  ProcessManager::Instance().Sleep(100);
-
   volatile uint32_t* rstat = (volatile uint32_t*)(_memIOBase + 0x8);
   printf("\n NIC Status: %x", *rstat);
 }
 
 void E1000NICDevice::NotifyEvent() {
-    
+  const uint32_t icrVal = regIntControl->readICR();
+  if (icrVal & ICR_RECEIVE) {
+    printf("\n Packet Received");
+  } else if (icrVal & ICR_LINK_CHANGE) {
+    printf("\n Link status changed");
+  } else if (icrVal & ICR_TRANSMIT) {
+    printf("\n Packet Transmitted");
+  } else {
+    printf("\n Int on Other Reason: %x", icrVal);
+  }
+  IrqManager::Instance().SendEOI(*_irq);
 }
 
 constexpr volatile uint32_t* REG(const uint32_t base, const uint32_t offset) {
@@ -131,7 +167,7 @@ E1000NICDevice::RegEEPROM::RegEEPROM(const uint32_t memIOBase) : _eeprom(REG(mem
 }
 
 void E1000NICDevice::RegEEPROM::print() const {
-  printf ("\n MAC ADDRESS: ");
+  printf("\n MAC ADDRESS: ");
   for(const auto& b : _macAddress) {
     printf("%x ", b);
   }
@@ -170,11 +206,10 @@ void E1000NICDevice::RegIntControl::enable() {
   *_radv = 0;
   *_rsrpd = 0;
 
-  //*_ims = 0x1FFFF;
-  *_ims = 0x1F6DC;
-  *_ims = 0xFF & ~4;
-
-  *_icr;
+  *_ims = 0x1FFFF;
+  //*_ims = 0x1F6DC;
+  //*_ims = 0xFF & ~4;
+  //UNUSED volatile uint32_t x = *_icr;
 }
 
 E1000NICDevice::RegControl::RegControl(const uint32_t memIOBase) : 

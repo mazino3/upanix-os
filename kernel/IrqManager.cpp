@@ -114,6 +114,17 @@ bool IrqManager::RegisterIRQ(const IRQ& irq, unsigned pHandler)
 	return true;
 }
 
+bool IrqManager::UnregisterIRQ(const IRQ& irq)
+{
+  auto it = upan::find_if(_irqs.begin(), _irqs.end(), [&irq](const IRQ* i) { return i->GetIRQNo() == irq.GetIRQNo(); });
+  if (it == _irqs.end()) {
+    return false;
+  }
+  DisableIRQ(irq);
+  _irqs.erase(it);
+	return true;
+}
+
 const IRQ* IrqManager::GetIRQ(const IRQ& irq)
 {
 	return GetIRQ(irq.GetIRQNo());

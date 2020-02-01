@@ -27,6 +27,7 @@ public:
   ATH9KDevice(PCIEntry& pciEntry);
   ~ATH9KDevice() {}
 
+  virtual void Initialize();
   virtual void NotifyEvent();
 
 //int ath9k_config(struct ieee80211_hw *hw, u32 changed)
@@ -90,7 +91,6 @@ private:
   enum ANTENNA_TYPE { SINGLE, DOUBLE };
   void DetectDevice();
   //u16 devid, struct ath_softc *sc, const struct ath_bus_ops *bus_ops)
-  void Initialize();
 
   ATH9KHardware* _hw;
   ANTENNA_TYPE _antennaType;

@@ -20,11 +20,21 @@
 #include <vector.h>
 
 class E1000NICDevice : public NetworkDevice {
-public:
+private:
+  static E1000NICDevice* _instance;
   E1000NICDevice(const PCIEntry&);
+  ~E1000NICDevice();
+
+public:
+  static void Create(const PCIEntry&);
+  static E1000NICDevice& Instance();
+  static void InterruptHandler();
+
+  virtual void Initialize();
   virtual void NotifyEvent();
 
 private:
+
   class RegEEPROM {
   public:
     RegEEPROM(const uint32_t memIOBase);
@@ -45,6 +55,9 @@ private:
     RegIntControl(const uint32_t memIOBase);
     void disable();
     void enable();
+    uint32_t readICR() {
+      return *_icr;
+    }
   private:
     const static uint32_t REG_ICR = 0x00C0; // Interrupt Cause Read
     const static uint32_t REG_ITR	= 0x00C4; // Interrupt Throttling Register
@@ -159,4 +172,10 @@ private:
 
   private:
     uint32_t _memIOBase;
+    const IRQ* _irq;
+    const RegEEPROM* regEEPROM;
+    RegIntControl* regIntControl;
+    RegControl* regControl;
+    RegRXDescriptor* regRx;
+    RegTXDescriptor* regTx;
 };

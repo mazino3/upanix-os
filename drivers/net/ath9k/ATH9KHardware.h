@@ -31,7 +31,7 @@ public:
     SREV = 0x4020
   };
 
-  ATH9KHardware(PCIEntry& pciEntry);
+  ATH9KHardware(const PCIEntry& pciEntry);
   uint32_t Read(const REG_OFFSET regOffset);
   void MultiRead(REG_OFFSET* addr, uint32_t* val, uint16_t count);
   void Write(uint32_t value, const REG_OFFSET regOffset);
@@ -41,7 +41,7 @@ private:
   void ReadCacheLineSize();
   void ReadRevisions();
 
-  PCIEntry& _pciEntry;
+  const PCIEntry& _pciEntry;
   uint32_t  _regBase;
   int       _cacheLineSize;
 };

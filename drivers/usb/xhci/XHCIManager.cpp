@@ -67,6 +67,11 @@ void XHCIManager::Initialize()
   if(!XHCI_IRQ)
     return;
 
+  for(auto c : _controllers) {
+    delete c;
+  }
+  _controllers.clear();
+  
   for(auto pPCIEntry : PCIBusHandler::Instance().PCIEntries())
   {
     if(pPCIEntry->bHeaderType & PCI_HEADER_BRIDGE)

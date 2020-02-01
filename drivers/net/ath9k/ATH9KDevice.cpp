@@ -64,83 +64,6 @@ static SupportedDevices SINGLE_BT_DIV_ANTENNA_DEVICES[] = {
 
 ATH9KDevice::ATH9KDevice(PCIEntry& pciEntry) : NetworkDevice(pciEntry)
 {
-//  struct ath_softc *sc;
-//  struct ieee80211_hw *hw;
-//  char hw_name[64];
-  printf("\n Bus: %d, Dev: %d, Func: %d", pciEntry.uiBusNumber, pciEntry.uiDeviceNumber, pciEntry.uiFunction);
-  printf("\n Vendor: %x, Device: %x, Rev: %x", pciEntry.usVendorID, pciEntry.usDeviceID, pciEntry.bRevisionID);
-  printf("\n Sub-Vendor: %x, Sub-Device: %x", pciEntry.BusEntity.NonBridge.usSubsystemVendorID, pciEntry.BusEntity.NonBridge.usSubsystemDeviceID);
-
-  DetectDevice();
-
-  uint16_t usCommand;
-  pciEntry.ReadPCIConfig(PCI_COMMAND, 2, &usCommand);
-  printf("\n CurVal of PCI_COMMAND: %x", usCommand);
-  pciEntry.WritePCIConfig(PCI_COMMAND, 2, usCommand | PCI_COMMAND_MMIO);
-
-  /*
-   * The default setting of latency timer yields poor results,
-   * set it to the value used by other systems. It may be worth
-   * tweaking this setting more.
-   */
-  pciEntry.WritePCIConfig(PCI_LATENCY_TIMER, 1, 0xa8);
-
-  pciEntry.ReadPCIConfig(PCI_COMMAND, 2, &usCommand);
-  printf("\n CurVal of PCI_COMMAND: %x", usCommand);
-  pciEntry.WritePCIConfig(PCI_COMMAND, 2, usCommand | PCI_COMMAND_MASTER);
-
-  /*
-   * Disable the RETRY_TIMEOUT register (0x41) to keep
-   * PCI Tx retries from interfering with C3 CPU state.
-   */
-  uint32_t val;
-  pciEntry.ReadPCIConfig(0x40, 4, &val);
-  if ((val & 0x0000ff00) != 0)
-    pciEntry.WritePCIConfig(0x40, 4, val & 0xffff00ff);
-
-  _hw = new ATH9KHardware(pciEntry);
-
-//  ath9k_fill_chanctx_ops();
-//  hw = ieee80211_alloc_hw(sizeof(struct ath_softc), &ath9k_ops);
-//  if (!hw) {
-//    dev_err(&pdev->dev, "No memory for ieee80211_hw\n");
-//    return -ENOMEM;
-//  }
-
-//  SET_IEEE80211_DEV(hw, &pdev->dev);
-//  pci_set_drvdata(pdev, hw);
-
-//  sc = hw->priv;
-//  sc->hw = hw;
-//  sc->dev = &pdev->dev;
-//  sc->mem = pcim_iomap_table(pdev)[0];
-//  sc->driver_data = id->driver_data;
-
-  //Can only support MSI capable ATH
-  if(!pciEntry.SetupMsiInterrupt(WIFINET_IRQ_NO))
-    throw upan::exception(XLOC, "ATH WIFI Adaptor is not capable of MSI interrupts!");
-  pciEntry.SwitchToMsi();
-
-//  sc->irq = pdev->irq;
-
-  Initialize();
-//  ret = ath9k_init_device(id->device, sc, &ath_pci_bus_ops);
-//  if (ret) {
-//    dev_err(&pdev->dev, "Failed to initialize device\n");
-//    goto err_init;
-//  }
-
-//  ath9k_hw_name(sc->sc_ah, hw_name, sizeof(hw_name));
-//  wiphy_info(hw->wiphy, "%s mem=0x%lx, irq=%d\n",
-//       hw_name, (unsigned long)sc->mem, pdev->irq);
-
-//  return 0;
-
-//err_init:
-//  free_irq(sc->irq, sc);
-//err_irq:
-//  ieee80211_free_hw(hw);
-//  return ret;
 }
 
 void ATH9KDevice::DetectDevice()
@@ -171,6 +94,83 @@ void ATH9KDevice::DetectDevice()
 
 void ATH9KDevice::Initialize()//u16 devid, struct ath_softc *sc, const struct ath_bus_ops *bus_ops)
 {
+  //  struct ath_softc *sc;
+//  struct ieee80211_hw *hw;
+//  char hw_name[64];
+  printf("\n Bus: %d, Dev: %d, Func: %d", _pciEntry.uiBusNumber, _pciEntry.uiDeviceNumber, _pciEntry.uiFunction);
+  printf("\n Vendor: %x, Device: %x, Rev: %x", _pciEntry.usVendorID, _pciEntry.usDeviceID, _pciEntry.bRevisionID);
+  printf("\n Sub-Vendor: %x, Sub-Device: %x", _pciEntry.BusEntity.NonBridge.usSubsystemVendorID, _pciEntry.BusEntity.NonBridge.usSubsystemDeviceID);
+
+  DetectDevice();
+
+  uint16_t usCommand;
+  _pciEntry.ReadPCIConfig(PCI_COMMAND, 2, &usCommand);
+  printf("\n CurVal of PCI_COMMAND: %x", usCommand);
+  _pciEntry.WritePCIConfig(PCI_COMMAND, 2, usCommand | PCI_COMMAND_MMIO);
+
+  /*
+   * The default setting of latency timer yields poor results,
+   * set it to the value used by other systems. It may be worth
+   * tweaking this setting more.
+   */
+  _pciEntry.WritePCIConfig(PCI_LATENCY_TIMER, 1, 0xa8);
+
+  _pciEntry.ReadPCIConfig(PCI_COMMAND, 2, &usCommand);
+  printf("\n CurVal of PCI_COMMAND: %x", usCommand);
+  _pciEntry.WritePCIConfig(PCI_COMMAND, 2, usCommand | PCI_COMMAND_MASTER);
+
+  /*
+   * Disable the RETRY_TIMEOUT register (0x41) to keep
+   * PCI Tx retries from interfering with C3 CPU state.
+   */
+  uint32_t val;
+  _pciEntry.ReadPCIConfig(0x40, 4, &val);
+  if ((val & 0x0000ff00) != 0)
+    _pciEntry.WritePCIConfig(0x40, 4, val & 0xffff00ff);
+
+  _hw = new ATH9KHardware(_pciEntry);
+
+//  ath9k_fill_chanctx_ops();
+//  hw = ieee80211_alloc_hw(sizeof(struct ath_softc), &ath9k_ops);
+//  if (!hw) {
+//    dev_err(&pdev->dev, "No memory for ieee80211_hw\n");
+//    return -ENOMEM;
+//  }
+
+//  SET_IEEE80211_DEV(hw, &pdev->dev);
+//  pci_set_drvdata(pdev, hw);
+
+//  sc = hw->priv;
+//  sc->hw = hw;
+//  sc->dev = &pdev->dev;
+//  sc->mem = pcim_iomap_table(pdev)[0];
+//  sc->driver_data = id->driver_data;
+
+  //Can only support MSI capable ATH
+  if(!_pciEntry.SetupMsiInterrupt(WIFINET_IRQ_NO))
+    throw upan::exception(XLOC, "ATH WIFI Adaptor is not capable of MSI interrupts!");
+  _pciEntry.SwitchToMsi();
+
+//  sc->irq = pdev->irq;
+
+//  ret = ath9k_init_device(id->device, sc, &ath_pci_bus_ops);
+//  if (ret) {
+//    dev_err(&pdev->dev, "Failed to initialize device\n");
+//    goto err_init;
+//  }
+
+//  ath9k_hw_name(sc->sc_ah, hw_name, sizeof(hw_name));
+//  wiphy_info(hw->wiphy, "%s mem=0x%lx, irq=%d\n",
+//       hw_name, (unsigned long)sc->mem, pdev->irq);
+
+//  return 0;
+
+//err_init:
+//  free_irq(sc->irq, sc);
+//err_irq:
+//  ieee80211_free_hw(hw);
+//  return ret;
+
 //	struct ieee80211_hw *hw = sc->hw;
 //	struct ath_common *common;
 //	struct ath_hw *ah;
