@@ -27,6 +27,7 @@ public:
   NetworkDevice(const PCIEntry& pciEntry);
   virtual ~NetworkDevice() = 0;
   
+  virtual void Initialize() = 0;
   virtual void NotifyEvent() = 0;
 
   // virtual int Configure() = 0;

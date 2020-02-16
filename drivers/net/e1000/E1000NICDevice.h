@@ -18,6 +18,9 @@
 #pragma once
 
 #include <vector.h>
+#include <option.h>
+#include <RawNetPacket.h>
+#include <EthernetHandler.h>
 
 class E1000NICDevice : public NetworkDevice {
 private:
@@ -34,6 +37,8 @@ public:
   virtual void NotifyEvent();
 
 private:
+
+  void ProcessRxQueue();
 
   class RegEEPROM {
   public:
@@ -108,7 +113,8 @@ private:
   class RegRXDescriptor {
   public:
     RegRXDescriptor(const uint32_t memIOBase);
-    
+    upan::option<RawNetPacket> GetNextPacket();
+
   private:
     const static uint32_t REG_RDBAL = 0x2800; // RX Descriptor Base Address Low
     const static uint32_t REG_RDBAH = 0x2804; // RX Descriptor Base Address High
@@ -125,7 +131,8 @@ private:
     volatile uint32_t* const _rxctrl;
 
     const uint32_t NUM_OF_DESC = 32;
-    const RXDescriptor* _rxDescriptors;
+    RXDescriptor* _rxDescriptors;
+    uint32_t _index;
   };
 
   class TXDescriptor {
@@ -178,4 +185,5 @@ private:
     RegControl* regControl;
     RegRXDescriptor* regRx;
     RegTXDescriptor* regTx;
+    EthernetHandler _ethernetHandler;
 };

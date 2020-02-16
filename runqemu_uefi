@@ -60,6 +60,9 @@ sleep 1
 #-drive if=none,id=usbdrive,file=/dev/sdb \
 #-drive if=none,id=usbdrive,file=$UPANIX_HOME/USBImage/300MUSB.img \
 
+#-netdev user,id=u1 -device e1000,netdev=u1 \
+#-object filter-dump,id=f1,netdev=u1,file=dump.dat \
+
 qemu-system-x86_64 \
 -serial file:serial_debug.log \
 -L $UPANIX_HOME/ovmf.$OVMF_VERSION \
@@ -67,6 +70,7 @@ qemu-system-x86_64 \
 -m 256 \
 -smp 1 \
 -net nic,model=e1000 \
+-net tap,ifname=tap0 \
 -usb \
 -drive if=none,id=usbbootdrive,file=$BOOT_DRIVE \
 -drive if=none,id=usbdrive1,file=$UPANIX_HOME/USBImage/300MUSB.img \

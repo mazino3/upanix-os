@@ -143,7 +143,7 @@ void E1000NICDevice::Initialize() {
 void E1000NICDevice::NotifyEvent() {
   const uint32_t icrVal = regIntControl->readICR();
   if (icrVal & ICR_RECEIVE) {
-    printf("\n Packet Received");
+    ProcessRxQueue();
   } else if (icrVal & ICR_LINK_CHANGE) {
     printf("\n Link status changed");
   } else if (icrVal & ICR_TRANSMIT) {
@@ -152,6 +152,16 @@ void E1000NICDevice::NotifyEvent() {
     printf("\n Int on Other Reason: %x", icrVal);
   }
   IrqManager::Instance().SendEOI(*_irq);
+}
+
+void E1000NICDevice::ProcessRxQueue() {
+  while(true) {
+    const auto& packet = regRx->GetNextPacket();
+    if (packet.isEmpty()) {
+      break;
+    }
+    _ethernetHandler.Process(packet.value());
+  }
 }
 
 constexpr volatile uint32_t* REG(const uint32_t base, const uint32_t offset) {
@@ -256,7 +266,6 @@ E1000NICDevice::RegRXDescriptor::RegRXDescriptor(const uint32_t memIOBase) :
   _head(REG(memIOBase, REG_RDH)),
   _tail(REG(memIOBase, REG_RDT)),
   _rxctrl(REG(memIOBase, REG_RCTL)) {
-  //_rxctrl(REG(memIOBase, REG_RCTL)) {
   _rxDescriptors = new ((void*)DMM_AllocateForKernel(sizeof(RXDescriptor) * NUM_OF_DESC, 16))RXDescriptor[NUM_OF_DESC];
   *_alow = KERNEL_REAL_ADDRESS(_rxDescriptors);
   *_ahigh = 0;
@@ -269,7 +278,28 @@ E1000NICDevice::RegRXDescriptor::RegRXDescriptor(const uint32_t memIOBase) :
   *_rxctrl = 0x602801E;
   // Receiver Enable, Store Bad Packets, Broadcast Accept Mode, Strip Ethernet CRC from incoming packet
   //*_rxctrl = 0x04008006;
-  
+  _index = 0;
+}
+
+upan::option<RawNetPacket> E1000NICDevice::RegRXDescriptor::GetNextPacket() {
+  auto& desc = _rxDescriptors[_index];
+  bool hasData = false;
+  if (desc.status & 0x1) {
+    if (desc.errors) {
+      printf("\n Received packet has error: %x", desc.errors);
+    } else {
+      hasData = true;
+    }
+    desc.status = 0;
+    *_tail = _index;
+    _index = (_index + 1) % NUM_OF_DESC;
+  }
+
+  if (hasData) {
+    return upan::option<RawNetPacket>(RawNetPacket(desc.addr, desc.length));
+  } else {
+    return upan::option<RawNetPacket>::empty();
+  }
 }
 
 E1000NICDevice::TXDescriptor::TXDescriptor() {
