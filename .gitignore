@@ -9,7 +9,6 @@ UpanixStart_Main.grub
 .procinit
 .realmode
 .idea
-.vscode
 test_list
 test_map
 test_vector

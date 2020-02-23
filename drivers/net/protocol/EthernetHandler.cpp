@@ -18,15 +18,18 @@
 
 #include <exception.h>
 
+#include <RawNetPacket.h>
+#include <EthernetHandler.h>
+
 void EthernetHandler::Process(const RawNetPacket& packet) {
   if (packet.len() < MIN_ETHERNET_PACKET_LEN) {
     throw upan::exception(XLOC, "Invalid packet: Len %d < min ethernet-packet len %d", packet.len(), MIN_ETHERNET_PACKET_LEN);
   }
-  const EthernetPacket ethernetPacket = reinterpret_cast<EthernetPacket*>(packet.buf());
-  ethernetPacket.Print();
+  const EthernetPacket* ethernetPacket = reinterpret_cast<const EthernetPacket*>(packet.buf());
+  ethernetPacket->Print();
 }
 
-void EthernetHandler::EthernetPacket::Print() {
+void EthernetHandler::EthernetPacket::Print() const {
   printf("\n ETHERNET PACKET: D:");
   for(int i = 0; i < 6; i++) {
     printf("%x ", _destinationMAC[i]);

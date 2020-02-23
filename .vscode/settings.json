@@ -1,0 +1,22 @@
+{
+    "C_Cpp.default.configurationProvider": "vector-of-bool.cmake-tools",
+    "editor.tabSize": 2,
+    "files.associations": {
+      "vector": "cpp",
+      "*.inc": "cpp",
+      "*.def": "cpp",
+      "*.tcc": "cpp",
+      "fstream": "cpp",
+      "sstream": "cpp",
+      "optional": "cpp",
+      "string": "cpp",
+      "test_list.C": "cpp",
+      "exception": "cpp",
+      "algorithm": "cpp",
+      "memory": "cpp",
+      "limits": "cpp",
+      "streambuf": "cpp",
+      "tuple": "cpp",
+      "type_traits": "cpp"
+    }
+}

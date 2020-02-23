@@ -17,12 +17,14 @@
  */
 #pragma once
 
+class RawNetPacket;
+
 class EthernetHandler {
 public:
   void Process(const RawNetPacket& packet);
 private:
   struct EthernetPacket {
-    void Print();
+    void Print() const;
     
     const uint8_t _destinationMAC[6];
     const uint8_t _sourceMAC[6];
