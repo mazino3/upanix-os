@@ -15,27 +15,34 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
+#pragma once
+  
+#include <stdlib.h>
+#include <EtherType.h>
 
-#include <exception.h>
+class EthernetPacket {
+  public:
+  EthernetPacket(const uint8_t* packetBuf);
+  void Print() const;
 
-#include <RawNetPacket.h>
-#include <EthernetPacket.h>
-#include <ARPHandler.h>
-#include <EthernetHandler.h>
-
-EthernetHandler::EthernetHandler() {
-  _etherPacketHandlers.insert(EtherPacketHandlerMap::value_type(EtherType::ARP, new ARPHandler()));
-}
-
-void EthernetHandler::Process(const RawNetPacket& packet) {
-  if (packet.len() < MIN_ETHERNET_PACKET_LEN) {
-    throw upan::exception(XLOC, "Invalid packet: Len %d < min ethernet-packet len %d", packet.len(), MIN_ETHERNET_PACKET_LEN);
+  EtherType Type() const {
+    return _type;
   }
-  const EthernetPacket ethernetPacket(packet.buf());
-  ethernetPacket.Print();
-  EtherPacketHandlerMap::const_iterator it = _etherPacketHandlers.find(ethernetPacket.Type());
-  if (it == _etherPacketHandlers.end()) {
-    throw upan::exception(XLOC, "Unhandled Ethernet Packet Type: %x", ethernetPacket.Type());
+
+  const uint8_t* Payload() {
+    return _payload;
   }
-  it->second->Process(ethernetPacket);
-}
+  
+  private:
+    uint8_t _destinationMAC[6];
+    uint8_t _sourceMAC[6];
+    EtherType _type;
+    const uint8_t* _payload;
+  
+  struct _RawPacket {
+    const uint8_t _destinationMAC[6];
+    const uint8_t _sourceMAC[6];
+    const uint16_t _type;
+    const uint8_t* _payload;
+  } PACKED;
+};

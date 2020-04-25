@@ -15,8 +15,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
-#ifndef _MEMUTIL_H_
-#define _MEMUTIL_H_
+#pragma once
 
 #include <Global.h>
 
@@ -80,4 +79,10 @@ void MemUtil_PutCMOS(const byte bAddr, const byte bValue) ;
 unsigned MemUtil_GetExtendedMemorySize() ;
 void MemUtil_Set(byte* pBuffer, byte bVal, unsigned uiLen) ;
 
-#endif
+#define LITTLE_ENDIAN 1
+
+class MemUtil {
+  public:
+  static uint16_t SwitchEndian(const uint16_t val);
+  static uint32_t SwitchEndian(const uint32_t val);
+};

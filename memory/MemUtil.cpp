@@ -187,3 +187,11 @@ void MemUtil_Set(byte* pBuffer, byte bVal, unsigned uiLen)
 	for(i = 0; i < uiLen; i++)
 		pBuffer[i] = bVal ;
 }
+
+uint16_t MemUtil::SwitchEndian(const uint16_t val) {
+  return (val >> 8) | (val << 8);
+}
+
+uint32_t MemUtil::SwitchEndian(const uint32_t val) {
+  return ((val >> 24) & 0xFF) | ((val >> 8) & 0xFF00) | ((val << 8) & 0xFF0000) | ((val << 24) & 0xFF000000);
+}

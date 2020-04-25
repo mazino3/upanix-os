@@ -257,6 +257,9 @@ class _tree
         _tree_iterator operator--() { return this->pre_dec(); }
         _tree_iterator operator--(int) { return this->post_dec(); }
 
+        operator _const_tree_iterator() {
+          return _const_tree_iterator(_base_tree_iterator::_node);
+        };
       friend class _tree;
       friend class ::TestSuite;
     };

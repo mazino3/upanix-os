@@ -16,26 +16,27 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
 
-#include <exception.h>
-
-#include <RawNetPacket.h>
+#include <stdio.h>
+#include <string.h>
+#include <MemUtil.h>
 #include <EthernetPacket.h>
-#include <ARPHandler.h>
-#include <EthernetHandler.h>
 
-EthernetHandler::EthernetHandler() {
-  _etherPacketHandlers.insert(EtherPacketHandlerMap::value_type(EtherType::ARP, new ARPHandler()));
+EthernetPacket::EthernetPacket(const uint8_t* packetBuf) {
+  const EthernetPacket::_RawPacket& rawPacket = reinterpret_cast<const EthernetPacket::_RawPacket&>(*packetBuf);
+  memcpy(_destinationMAC, rawPacket._destinationMAC, 6);
+  memcpy(_sourceMAC, rawPacket._sourceMAC, 6);
+  _type = static_cast<EtherType>(MemUtil::SwitchEndian(rawPacket._type));
+  _payload = rawPacket._payload;
 }
 
-void EthernetHandler::Process(const RawNetPacket& packet) {
-  if (packet.len() < MIN_ETHERNET_PACKET_LEN) {
-    throw upan::exception(XLOC, "Invalid packet: Len %d < min ethernet-packet len %d", packet.len(), MIN_ETHERNET_PACKET_LEN);
+void EthernetPacket::Print() const {
+  printf("\n ETHERNET PACKET: D:");
+  for(int i = 0; i < 6; i++) {
+    printf("%x ", _destinationMAC[i]);
   }
-  const EthernetPacket ethernetPacket(packet.buf());
-  ethernetPacket.Print();
-  EtherPacketHandlerMap::const_iterator it = _etherPacketHandlers.find(ethernetPacket.Type());
-  if (it == _etherPacketHandlers.end()) {
-    throw upan::exception(XLOC, "Unhandled Ethernet Packet Type: %x", ethernetPacket.Type());
+  printf(", S:");
+  for(int i = 0; i < 6; i++) {
+    printf("%x ", _sourceMAC[i]);
   }
-  it->second->Process(ethernetPacket);
+  printf(", LEN: %d", _type);
 }

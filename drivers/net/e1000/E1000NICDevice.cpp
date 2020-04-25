@@ -160,7 +160,11 @@ void E1000NICDevice::ProcessRxQueue() {
     if (packet.isEmpty()) {
       break;
     }
-    _ethernetHandler.Process(packet.value());
+    try {
+      _ethernetHandler.Process(packet.value());
+    } catch(const upan::exception& e) {
+      e.Print();
+    }
   }
 }
 

@@ -16,21 +16,19 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
 #pragma once
+#include <map.h>
+#include <EtherType.h>
 
 class RawNetPacket;
+class EtherPacketHandler;
 
 class EthernetHandler {
 public:
+  EthernetHandler();
   void Process(const RawNetPacket& packet);
-private:
-  struct EthernetPacket {
-    void Print() const;
-    
-    const uint8_t _destinationMAC[6];
-    const uint8_t _sourceMAC[6];
-    const uint16_t _type;
-    const uint8_t* _payload;
-  } PACKED;
 
-  const static uint32_t MIN_ETHERNET_PACKET_LEN = 6 /*dmac*/ + 6 /*smac*/ + 2 /*eType*/ + 1 /*payload*/;
+  private:
+    typedef upan::map<EtherType, EtherPacketHandler*> EtherPacketHandlerMap;
+    EtherPacketHandlerMap _etherPacketHandlers;
+    const static uint32_t MIN_ETHERNET_PACKET_LEN = 6 /*dmac*/ + 6 /*smac*/ + 2 /*eType*/ + 1 /*payload*/;
 };
