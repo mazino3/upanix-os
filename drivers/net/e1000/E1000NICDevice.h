@@ -36,7 +36,7 @@ public:
 
   virtual void Initialize();
   virtual void NotifyEvent();
-  virtual upan::string GetAddress() {
+  virtual upan::string GetMacAddress() {
     return regEEPROM->getMacAddressStr();
   };
 

@@ -777,7 +777,7 @@ void ConsoleCommands_ProbeNetwork()
 
 void ConsoleCommands_ListNetworkDevices() {
   for(const auto d : NetworkManager::Instance().Devices()) {
-    printf("\n%s", d->GetAddress().c_str());
+    printf("\n%s", d->GetMacAddress().c_str());
   }
 }
 
