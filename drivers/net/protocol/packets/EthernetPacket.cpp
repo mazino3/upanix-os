@@ -21,22 +21,19 @@
 #include <MemUtil.h>
 #include <EthernetPacket.h>
 
-EthernetPacket::EthernetPacket(const uint8_t* packetBuf) {
-  const EthernetPacket::_RawPacket& rawPacket = reinterpret_cast<const EthernetPacket::_RawPacket&>(*packetBuf);
-  memcpy(_destinationMAC, rawPacket._destinationMAC, 6);
-  memcpy(_sourceMAC, rawPacket._sourceMAC, 6);
-  _type = static_cast<EtherType>(MemUtil::SwitchEndian(rawPacket._type));
-  _payload = rawPacket._payload;
+EthernetPacket::EthernetPacket(const uint8_t* packetBuf) : 
+  _rawPacket(reinterpret_cast<const EthernetPacket::_RawPacket&>(*packetBuf)) {
+  _type = static_cast<EtherType>(MemUtil::SwitchEndian(_rawPacket._type));
 }
 
 void EthernetPacket::Print() const {
   printf("\n ETHERNET PACKET: D:");
   for(int i = 0; i < 6; i++) {
-    printf("%x ", _destinationMAC[i]);
+    printf("%x ", _rawPacket._destinationMAC[i]);
   }
   printf(", S:");
   for(int i = 0; i < 6; i++) {
-    printf("%x ", _sourceMAC[i]);
+    printf("%x ", _rawPacket._sourceMAC[i]);
   }
-  printf(", LEN: %d", _type);
+  printf(", Type: %d", _type);
 }
