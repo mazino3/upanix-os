@@ -178,13 +178,16 @@ E1000NICDevice::RegEEPROM::RegEEPROM(const uint32_t memIOBase) : _eeprom(REG(mem
     _macAddress.push_back(word & 0xFF);
     _macAddress.push_back(word >> 8);
   }
+  char c[5];
+  const int len = _macAddress.size();
+  for(int i = 0; i < len; ++i) {
+    sprintf(c, "%02x%s", _macAddress[i], i < len - 1 ? ":" : "");
+    _macAddressStr += c;
+  }
 }
 
 void E1000NICDevice::RegEEPROM::print() const {
-  printf("\n MAC ADDRESS: ");
-  for(const auto& b : _macAddress) {
-    printf("%x ", b);
-  }
+  printf("\n MAC ADDRESS: %s", _macAddressStr.c_str());
 }
 
 uint32_t E1000NICDevice::RegEEPROM::readEEPROM(const int wordPos) {

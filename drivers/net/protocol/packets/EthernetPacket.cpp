@@ -27,13 +27,13 @@ EthernetPacket::EthernetPacket(const uint8_t* packetBuf) :
 }
 
 void EthernetPacket::Print() const {
-  printf("\n ETHERNET PACKET: D:");
+  printf("\n ETHERNET PACKET: D ");
   for(int i = 0; i < 6; i++) {
-    printf("%x ", _rawPacket._destinationMAC[i]);
+    printf("%02x%s", _rawPacket._destinationMAC[i], i < 5 ? ":" : "");
   }
-  printf(", S:");
+  printf(", S ");
   for(int i = 0; i < 6; i++) {
-    printf("%x ", _rawPacket._sourceMAC[i]);
+    printf("%02x%s", _rawPacket._sourceMAC[i], i < 5 ? ":" : "");
   }
   printf(", Type: %d", _type);
 }

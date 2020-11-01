@@ -17,6 +17,8 @@
  */
 #pragma once
 
+#include <string.h>
+
 class PCIEntry;
 class SocketBuffer;
 
@@ -29,6 +31,8 @@ public:
   
   virtual void Initialize() = 0;
   virtual void NotifyEvent() = 0;
+
+  virtual upan::string GetAddress() = 0;
 
   // virtual int Configure() = 0;
   // virtual void Tx(SocketBuffer& socketBuffer) = 0;

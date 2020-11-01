@@ -50,6 +50,7 @@ void NetworkManager::Probe(const PCIEntry& pciEntry)
     else if(pciEntry.usVendorID == INTEL_VENDOR_ID && pciEntry.usDeviceID == 0x100E)
     {
       E1000NICDevice::Create(pciEntry);
+      _devices.push_back(&E1000NICDevice::Instance());
     }
     else if(pciEntry.usVendorID == INTEL_VENDOR_ID && pciEntry.usDeviceID == 0x153A)
     {

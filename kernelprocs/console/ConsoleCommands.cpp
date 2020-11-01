@@ -106,6 +106,7 @@ static void ConsoleCommands_PerformECHIHandoff() ;
 static void ConsoleCommands_ProbeEHCIUSB() ;
 static void ConsoleCommands_ProbeXHCIUSB() ;
 static void ConsoleCommands_ProbeNetwork() ;
+static void ConsoleCommands_ListNetworkDevices() ;
 static void ConsoleCommands_SetXHCIEventMode();
 static void ConsoleCommands_ShowRawDiskList() ;
 static void ConsoleCommands_InitFloppyController() ;
@@ -174,6 +175,7 @@ static const ConsoleCommand ConsoleCommands_CommandList[] = {
 	{ "xusbprobe",	&ConsoleCommands_ProbeXHCIUSB },
   { "xhciemode", &ConsoleCommands_SetXHCIEventMode },
   { "netprobe", &ConsoleCommands_ProbeNetwork },
+  { "lsnet", &ConsoleCommands_ListNetworkDevices },
 	{ "showdisk",	&ConsoleCommands_ShowRawDiskList },
 	{ "initfdc",	&ConsoleCommands_InitFloppyController },
 	{ "initata",	&ConsoleCommands_InitATAController },
@@ -771,6 +773,12 @@ void ConsoleCommands_ProbeXHCIUSB()
 void ConsoleCommands_ProbeNetwork()
 {
   NetworkManager::Instance().Initialize();
+}
+
+void ConsoleCommands_ListNetworkDevices() {
+  for(const auto d : NetworkManager::Instance().Devices()) {
+    printf("\n%s", d->GetAddress().c_str());
+  }
 }
 
 void ConsoleCommands_SetXHCIEventMode()

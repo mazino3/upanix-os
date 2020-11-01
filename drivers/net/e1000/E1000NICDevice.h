@@ -19,6 +19,7 @@
 
 #include <vector.h>
 #include <option.h>
+#include <string.h>
 #include <RawNetPacket.h>
 #include <EthernetHandler.h>
 
@@ -35,6 +36,9 @@ public:
 
   virtual void Initialize();
   virtual void NotifyEvent();
+  virtual upan::string GetAddress() {
+    return regEEPROM->getMacAddressStr();
+  };
 
 private:
 
@@ -46,6 +50,9 @@ private:
     const upan::vector<uint8_t>& getMacAddress() const {
       return _macAddress;
     }
+    const upan::string& getMacAddressStr() const {
+      return _macAddressStr;
+    }
     void print() const;
   private:
       uint32_t readEEPROM(const int wordPos);
@@ -53,6 +60,7 @@ private:
       const uint32_t REG_EEPROM = 0x14;
       volatile uint32_t* const _eeprom;
       upan::vector<uint8_t> _macAddress;
+      upan::string _macAddressStr;
   };
 
   class RegIntControl {
