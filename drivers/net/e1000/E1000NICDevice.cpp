@@ -174,10 +174,10 @@ constexpr volatile uint32_t* REG(const uint32_t base, const uint32_t offset) {
 
 E1000NICDevice::RegEEPROM::RegEEPROM(const uint32_t memIOBase) : _eeprom(REG(memIOBase, REG_EEPROM)) {
   for(int i = 0; i < 3; ++i) {
-    uint32_t word = readEEPROM(i);
+    uint16_t word = readEEPROM(i);
     _macAddress.push_back(word & 0xFF);
     _macAddress.push_back(word >> 8);
-  }
+}
   char c[5];
   const int len = _macAddress.size();
   for(int i = 0; i < len; ++i) {
@@ -190,7 +190,7 @@ void E1000NICDevice::RegEEPROM::print() const {
   printf("\n MAC ADDRESS: %s", _macAddressStr.c_str());
 }
 
-uint32_t E1000NICDevice::RegEEPROM::readEEPROM(const int wordPos) {
+uint16_t E1000NICDevice::RegEEPROM::readEEPROM(const int wordPos) {
   *_eeprom = 0x001 | (wordPos << 8);
   ProcessManager::Instance().Sleep(10);
   uint32_t val = *_eeprom;

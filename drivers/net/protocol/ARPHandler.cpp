@@ -18,7 +18,10 @@
 #include <stdio.h>
 #include <EthernetPacket.h>
 #include <ARPHandler.h>
+#include <ARPPacket.h>
 
 void ARPHandler::Process(const EthernetPacket& packet) {
   printf("\n Handling ARP packet");
+  ARPPacket arpPacket(packet);
+  arpPacket.Print();
 }

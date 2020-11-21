@@ -17,23 +17,23 @@
  */
 
 #include <stdio.h>
-#include <string.h>
-#include <MemUtil.h>
+#include <NetworkUtil.h>
 #include <EthernetPacket.h>
 
-EthernetPacket::EthernetPacket(const uint8_t* packetBuf) : 
-  _rawPacket(reinterpret_cast<const EthernetPacket::_RawPacket&>(*packetBuf)) {
-  _type = static_cast<EtherType>(MemUtil::SwitchEndian(_rawPacket._type));
+EthernetPacket::EthernetPacket(const RawNetPacket& rawNetPacket) : 
+  _rawNetPacket(rawNetPacket),
+  _thisPacket(reinterpret_cast<EthernetPacket::_ThisPacket&>(*rawNetPacket.PacketData())) {
+    _thisPacket._type = NetworkUtil::SwitchEndian(_thisPacket._type);
 }
 
 void EthernetPacket::Print() const {
   printf("\n ETHERNET PACKET: D ");
   for(int i = 0; i < 6; i++) {
-    printf("%02x%s", _rawPacket._destinationMAC[i], i < 5 ? ":" : "");
+    printf("%02x%s", _thisPacket._destinationMAC[i], i < 5 ? ":" : "");
   }
   printf(", S ");
   for(int i = 0; i < 6; i++) {
-    printf("%02x%s", _rawPacket._sourceMAC[i], i < 5 ? ":" : "");
+    printf("%02x%s", _thisPacket._sourceMAC[i], i < 5 ? ":" : "");
   }
-  printf(", Type: %d", _type);
+  printf(", Type: %x", _thisPacket._type);
 }

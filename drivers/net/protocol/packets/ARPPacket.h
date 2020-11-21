@@ -16,20 +16,38 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
 #pragma once
+  
+#include <stdlib.h>
+#include <EthernetPacket.h>
 
-class RawNetPacket {
-public:
-  RawNetPacket();
-  RawNetPacket(const uint32_t addr, const uint32_t len);
-  ~RawNetPacket();
-  RawNetPacket(const RawNetPacket& o);
-  RawNetPacket& operator=(const RawNetPacket& o);
+class ARPPacket {
+  public:
+  struct _ThisPacket {
+    uint16_t _hType;
+    uint16_t _pType;
+    uint8_t _hLen;
+    uint8_t _pLen;
+    uint16_t _opCode;
+  } PACKED;
 
-  uint8_t* PacketData() const { return _buf; }
-  uint32_t len() const { return _len; }
+  struct _ThisIPV4PacketData {
+      uint8_t _senderHardwareAddress[6];
+      uint8_t _senderProtocolAddress[4];
+      uint8_t _targetHardwareAddress[6];
+      uint8_t _targetProtocolAddress[4];
+  } PACKED;
 
-private:
-  void assign(const RawNetPacket& o);
-  uint8_t* _buf;
-  uint32_t _len; 
+  private:
+  const EthernetPacket& _ethernetPacket;
+  _ThisPacket& _thisPacket;
+  _ThisIPV4PacketData* _thisIPV4PacketData;
+
+  public:
+  ARPPacket(const EthernetPacket& ethernetPacket);
+
+  EtherType Type() const {
+      return static_cast<EtherType>(_thisPacket._pType);
+  }
+
+  void Print() const;
 };

@@ -55,7 +55,7 @@ private:
     }
     void print() const;
   private:
-      uint32_t readEEPROM(const int wordPos);
+      uint16_t readEEPROM(const int wordPos);
   private:
       const uint32_t REG_EEPROM = 0x14;
       volatile uint32_t* const _eeprom;

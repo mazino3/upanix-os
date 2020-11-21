@@ -19,29 +19,29 @@
   
 #include <stdlib.h>
 #include <EtherType.h>
+#include <RawNetPacket.h>
 
 class EthernetPacket {
   private:
-  struct _RawPacket {
-    const uint8_t _destinationMAC[6];
-    const uint8_t _sourceMAC[6];
-    const uint16_t _type;
-    const uint8_t* _payload;
+  struct _ThisPacket {
+    uint8_t _destinationMAC[6];
+    uint8_t _sourceMAC[6];
+    uint16_t _type;
   } PACKED;
 
   private:
-  const _RawPacket& _rawPacket;
-  EtherType _type;
+  const RawNetPacket& _rawNetPacket;
+  _ThisPacket& _thisPacket;
 
   public:
-  EthernetPacket(const uint8_t* packetBuf);
+  EthernetPacket(const RawNetPacket& rawNetPacket);
   void Print() const;
 
   EtherType Type() const {
-    return _type;
+    return static_cast<EtherType>(_thisPacket._type);
   }
 
-  const uint8_t* Payload() {
-    return _rawPacket._payload;
+  uint8_t* PacketData() const {
+    return _rawNetPacket.PacketData() + sizeof(_ThisPacket);
   }
 };

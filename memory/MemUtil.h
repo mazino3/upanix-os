@@ -78,11 +78,3 @@ unsigned MemUtil_GetCMOS(const byte bAddr) ;
 void MemUtil_PutCMOS(const byte bAddr, const byte bValue) ;
 unsigned MemUtil_GetExtendedMemorySize() ;
 void MemUtil_Set(byte* pBuffer, byte bVal, unsigned uiLen) ;
-
-#define LITTLE_ENDIAN 1
-
-class MemUtil {
-  public:
-  static uint16_t SwitchEndian(const uint16_t val);
-  static uint32_t SwitchEndian(const uint32_t val);
-};

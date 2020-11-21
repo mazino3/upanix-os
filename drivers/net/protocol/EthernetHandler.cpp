@@ -31,7 +31,7 @@ void EthernetHandler::Process(const RawNetPacket& packet) {
   if (packet.len() < MIN_ETHERNET_PACKET_LEN) {
     throw upan::exception(XLOC, "Invalid packet: Len %d < min ethernet-packet len %d", packet.len(), MIN_ETHERNET_PACKET_LEN);
   }
-  const EthernetPacket ethernetPacket(packet.buf());
+  const EthernetPacket ethernetPacket(packet);
   ethernetPacket.Print();
   EtherPacketHandlerMap::const_iterator it = _etherPacketHandlers.find(ethernetPacket.Type());
   if (it == _etherPacketHandlers.end()) {
