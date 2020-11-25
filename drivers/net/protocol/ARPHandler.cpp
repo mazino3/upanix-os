@@ -16,12 +16,29 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
 #include <stdio.h>
-#include <EthernetPacket.h>
+#include <EthernetRecvPacket.h>
 #include <ARPHandler.h>
-#include <ARPPacket.h>
+#include <ARPRecvPacket.h>
+#include <ARPSendPacket.h>
+#include <EthernetHandler.h>
+#include <NetworkDevice.h>
 
-void ARPHandler::Process(const EthernetPacket& packet) {
+ARPHandler::ARPHandler(EthernetHandler &ethernetHandler) : _ethernetHandler(ethernetHandler) {
+}
+
+void ARPHandler::Process(const EthernetRecvPacket& packet) {
   printf("\n Handling ARP packet");
-  ARPPacket arpPacket(packet);
+  ARPRecvPacket arpPacket(packet);
   arpPacket.Print();
+}
+
+void ARPHandler::SendRequestForMAC(const uint8_t* targetIPAddr) {
+  const uint8_t spa[] = { 0, 0, 0, 0 };
+  const uint8_t tha[] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+
+  ARPSendPacket arpSendPacket(1, EtherType::IPV4,
+                              NetworkPacket::MAC_ADDR_LEN, NetworkPacket::IPV4_ADDR_LEN, 1,
+                              _ethernetHandler.GetNetworkDevice().GetMacAddress(),
+                              spa, tha, targetIPAddr);
+  _ethernetHandler.SendPacket(arpSendPacket, EtherType::ARP, tha);
 }

@@ -8,7 +8,6 @@ UpanixStart_Main.grub
 .dll
 .procinit
 .realmode
-.idea
 test_list
 test_map
 test_vector
@@ -22,3 +21,5 @@ bin
 Upanix.cbp
 Makefile
 *.log
+.idea/workspace.xml
+.cmake

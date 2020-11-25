@@ -31,8 +31,10 @@ public:
   
   virtual void Initialize() = 0;
   virtual void NotifyEvent() = 0;
+  virtual void SendPacket(const uint8_t* data, uint32_t len) = 0;
+  virtual const uint8_t* GetMacAddress() const = 0;
+  virtual upan::string GetMacAddressStr() const = 0;
 
-  virtual upan::string GetMacAddress() = 0;
 
   // virtual int Configure() = 0;
   // virtual void Tx(SocketBuffer& socketBuffer) = 0;

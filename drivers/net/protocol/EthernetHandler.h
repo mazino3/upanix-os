@@ -18,17 +18,26 @@
 #pragma once
 #include <map.h>
 #include <EtherType.h>
+#include <drivers/net/protocol/packets/NetworkPacketComponents.h>
 
 class RawNetPacket;
 class EtherPacketHandler;
+class NetworkDevice;
+class ARPSendPacket;
 
 class EthernetHandler {
 public:
-  EthernetHandler();
+  EthernetHandler(NetworkDevice& networkDevice);
   void Process(const RawNetPacket& packet);
+  NetworkDevice& GetNetworkDevice() {
+    return _networkDevice;
+  }
+  void SendPacket(ARPSendPacket& arpPacket, EtherType pType, const uint8_t* destMac);
 
   private:
     typedef upan::map<EtherType, EtherPacketHandler*> EtherPacketHandlerMap;
     EtherPacketHandlerMap _etherPacketHandlers;
-    const static uint32_t MIN_ETHERNET_PACKET_LEN = 6 /*dmac*/ + 6 /*smac*/ + 2 /*eType*/ + 1 /*payload*/;
+    NetworkDevice& _networkDevice;
+
+    const static uint32_t MIN_ETHERNET_PACKET_LEN = NetworkPacket::MAC_ADDR_LEN /*dmac*/ + NetworkPacket::MAC_ADDR_LEN /*smac*/ + 2 /*eType*/ + 1 /*payload*/;
 };

@@ -25,8 +25,8 @@
 
 class NetworkUtil {
 public:
-    static uint16_t SwitchEndian(const uint16_t val);
-    static uint32_t SwitchEndian(const uint32_t val);
+  static uint16_t SwitchEndian(const uint16_t val);
+  static uint32_t SwitchEndian(const uint32_t val);
 
-    static upan::string MacAddressToString();
+  static upan::string MacAddressToString();
 };

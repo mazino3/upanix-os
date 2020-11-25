@@ -22,6 +22,7 @@
 #include <string.h>
 #include <RawNetPacket.h>
 #include <EthernetHandler.h>
+#include <drivers/net/protocol/packets/NetworkPacketComponents.h>
 
 class E1000NICDevice : public NetworkDevice {
 private:
@@ -34,9 +35,14 @@ public:
   static E1000NICDevice& Instance();
   static void InterruptHandler();
 
-  virtual void Initialize();
-  virtual void NotifyEvent();
-  virtual upan::string GetMacAddress() {
+  void Initialize() override;
+  void NotifyEvent() override;
+  void SendPacket(const uint8_t* data, uint32_t len) override;
+
+  const uint8_t* GetMacAddress() const override {
+    return regEEPROM->getMacAddress();
+  }
+  upan::string GetMacAddressStr() const override {
     return regEEPROM->getMacAddressStr();
   };
 
@@ -47,7 +53,7 @@ private:
   class RegEEPROM {
   public:
     RegEEPROM(const uint32_t memIOBase);
-    const upan::vector<uint8_t>& getMacAddress() const {
+    const uint8_t* getMacAddress() const {
       return _macAddress;
     }
     const upan::string& getMacAddressStr() const {
@@ -59,7 +65,7 @@ private:
   private:
       const uint32_t REG_EEPROM = 0x14;
       volatile uint32_t* const _eeprom;
-      upan::vector<uint8_t> _macAddress;
+      uint8_t _macAddress[NetworkPacket::MAC_ADDR_LEN];
       upan::string _macAddressStr;
   };
 
@@ -163,7 +169,8 @@ private:
   class RegTXDescriptor {
   public:
     RegTXDescriptor(const uint32_t memIOBase);
-    
+    void SendPacket(const uint8_t* data, const uint32_t len);
+
   private:
     const static uint32_t REG_TDBAL = 0x3800; // TX Descriptor Base Address Low
     const static uint32_t REG_TDBAH = 0x3804; // TX Descriptor Base Address High
@@ -172,6 +179,10 @@ private:
     const static uint32_t REG_TDT = 0x3818; // TX Descriptor Tail
     const static uint32_t REG_TCTL = 0x0400; // Transmit Control Register
     const static uint32_t REG_TIPG = 0x0410; // Transmit Inter Packet Gap
+
+    const static uint32_t CMD_EOP = (1 << 0); // End of Packet
+    const static uint32_t CMD_IFCS = (1 << 1); // Insert FCS
+    const static uint32_t CMD_RS = (1 << 3); // Report Status
 
     volatile uint32_t* const _alow;
     volatile uint32_t* const _ahigh;
@@ -182,7 +193,8 @@ private:
     volatile uint32_t* const _tipg;
 
     const uint32_t NUM_OF_DESC = 16;
-    const TXDescriptor* _txDescriptors;
+    TXDescriptor* _txDescriptors;
+    uint32_t _index;
   };
 
   private:

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/Upanix.iml" filepath="$PROJECT_DIR$/.idea/Upanix.iml" />
+      <module fileurl="file:$PROJECT_DIR$/../../../../../../../wsl$/Ubuntu/home/prajwala/workspace/mosland/upanix/.idea/upanix.iml" filepath="wsl$/Ubuntu/../../wsl$/Ubuntu/home/prajwala/workspace/mosland/upanix/.idea/upanix.iml" />
+    </modules>
+  </component>
+</project>

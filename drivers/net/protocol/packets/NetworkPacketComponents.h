@@ -18,36 +18,37 @@
 #pragma once
   
 #include <stdlib.h>
-#include <EthernetPacket.h>
 
-class ARPPacket {
-  public:
-  struct _ThisPacket {
-    uint16_t _hType;
-    uint16_t _pType;
-    uint8_t _hLen;
-    uint8_t _pLen;
-    uint16_t _opCode;
-  } PACKED;
+namespace NetworkPacket {
+  constexpr uint32_t MAC_ADDR_LEN = 6;
+  constexpr uint32_t IPV4_ADDR_LEN = 4;
 
-  struct _ThisIPV4PacketData {
-      uint8_t _senderHardwareAddress[6];
-      uint8_t _senderProtocolAddress[4];
-      uint8_t _targetHardwareAddress[6];
-      uint8_t _targetProtocolAddress[4];
-  } PACKED;
+  namespace ARP {
+    struct Header {
+      uint16_t _hType;
+      uint16_t _pType;
+      uint8_t _hLen;
+      uint8_t _pLen;
+      uint16_t _opCode;
+    } PACKED;
 
-  private:
-  const EthernetPacket& _ethernetPacket;
-  _ThisPacket& _thisPacket;
-  _ThisIPV4PacketData* _thisIPV4PacketData;
-
-  public:
-  ARPPacket(const EthernetPacket& ethernetPacket);
-
-  EtherType Type() const {
-      return static_cast<EtherType>(_thisPacket._pType);
+    struct IPV4 {
+      uint8_t _senderHardwareAddress[MAC_ADDR_LEN];
+      uint8_t _senderProtocolAddress[IPV4_ADDR_LEN];
+      uint8_t _targetHardwareAddress[MAC_ADDR_LEN];
+      uint8_t _targetProtocolAddress[IPV4_ADDR_LEN];
+    } PACKED;
   }
 
-  void Print() const;
+  namespace Ethernet {
+    struct Header {
+      uint8_t _destinationMAC[MAC_ADDR_LEN];
+      uint8_t _sourceMAC[MAC_ADDR_LEN];
+      uint16_t _type;
+    } PACKED;
+  }
+
+  constexpr uint32_t SIZE_OF_ARP_HEADER = sizeof(ARP::Header);
+  constexpr uint32_t SIZE_OF_ARP_IPV4 = sizeof(ARP::IPV4);
+  constexpr uint32_t SIZE_OF_ETHERNET_HEADER = sizeof(Ethernet::Header);
 };

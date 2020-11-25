@@ -66,7 +66,9 @@ void E1000NICDevice::InterruptHandler()
   asm("IRET");
 }
 
-E1000NICDevice::E1000NICDevice(const PCIEntry& pciEntry) : NetworkDevice(pciEntry), _irq(nullptr) {
+E1000NICDevice::E1000NICDevice(const PCIEntry& pciEntry) : NetworkDevice(pciEntry),
+  _irq(nullptr),
+  _ethernetHandler(*this) {
 }
 
 E1000NICDevice::~E1000NICDevice() {
@@ -154,6 +156,11 @@ void E1000NICDevice::NotifyEvent() {
   IrqManager::Instance().SendEOI(*_irq);
 }
 
+void E1000NICDevice::SendPacket(const uint8_t* data, uint32_t len) {
+  regTx->SendPacket(data, len);
+  printf("\n Packet sent with len: %d", len);
+}
+
 void E1000NICDevice::ProcessRxQueue() {
   while(true) {
     const auto& packet = regRx->GetNextPacket();
@@ -173,15 +180,16 @@ constexpr volatile uint32_t* REG(const uint32_t base, const uint32_t offset) {
 }
 
 E1000NICDevice::RegEEPROM::RegEEPROM(const uint32_t memIOBase) : _eeprom(REG(memIOBase, REG_EEPROM)) {
+  int k = 0;
   for(int i = 0; i < 3; ++i) {
     uint16_t word = readEEPROM(i);
-    _macAddress.push_back(word & 0xFF);
-    _macAddress.push_back(word >> 8);
-}
+    _macAddress[k++] = word & 0xFF;
+    _macAddress[k++] = word >> 8;
+  }
+
   char c[5];
-  const int len = _macAddress.size();
-  for(int i = 0; i < len; ++i) {
-    sprintf(c, "%02x%s", _macAddress[i], i < len - 1 ? ":" : "");
+  for(uint32_t i = 0; i < NetworkPacket::MAC_ADDR_LEN; ++i) {
+    sprintf(c, "%02x%s", _macAddress[i], i < NetworkPacket::MAC_ADDR_LEN - 1 ? ":" : "");
     _macAddressStr += c;
   }
 }
@@ -272,7 +280,8 @@ E1000NICDevice::RegRXDescriptor::RegRXDescriptor(const uint32_t memIOBase) :
   _len(REG(memIOBase, REG_RDLEN)),
   _head(REG(memIOBase, REG_RDH)),
   _tail(REG(memIOBase, REG_RDT)),
-  _rxctrl(REG(memIOBase, REG_RCTL)) {
+  _rxctrl(REG(memIOBase, REG_RCTL)),
+  _index(0) {
   _rxDescriptors = new ((void*)DMM_AllocateForKernel(sizeof(RXDescriptor) * NUM_OF_DESC, 16))RXDescriptor[NUM_OF_DESC];
   *_alow = KERNEL_REAL_ADDRESS(_rxDescriptors);
   *_ahigh = 0;
@@ -285,7 +294,6 @@ E1000NICDevice::RegRXDescriptor::RegRXDescriptor(const uint32_t memIOBase) :
   *_rxctrl = 0x602801E;
   // Receiver Enable, Store Bad Packets, Broadcast Accept Mode, Strip Ethernet CRC from incoming packet
   //*_rxctrl = 0x04008006;
-  _index = 0;
 }
 
 upan::option<RawNetPacket> E1000NICDevice::RegRXDescriptor::GetNextPacket() {
@@ -326,7 +334,8 @@ E1000NICDevice::RegTXDescriptor::RegTXDescriptor(const uint32_t memIOBase) :
   _head(REG(memIOBase, REG_TDH)),
   _tail(REG(memIOBase, REG_TDT)),
   _txctrl(REG(memIOBase, REG_TCTL)),
-  _tipg(REG(memIOBase, REG_TIPG)) {
+  _tipg(REG(memIOBase, REG_TIPG)),
+  _index(0) {
   _txDescriptors = new ((void*)DMM_AllocateForKernel(sizeof(TXDescriptor) * NUM_OF_DESC, 16))TXDescriptor[NUM_OF_DESC];
   *_alow = KERNEL_REAL_ADDRESS(_txDescriptors);
   *_ahigh = 0;
@@ -340,4 +349,18 @@ E1000NICDevice::RegTXDescriptor::RegTXDescriptor(const uint32_t memIOBase) :
 
   // IPGT 10, IPGR1 8, IPGR2 6
   *_tipg = 0x0060200A;
+}
+
+void E1000NICDevice::RegTXDescriptor::SendPacket(const uint8_t* data, uint32_t len) {
+  _txDescriptors[_index].addr = (uint64_t)data;
+  _txDescriptors[_index].length = len;
+  _txDescriptors[_index].cmd = CMD_EOP | CMD_IFCS | CMD_RS;
+  _txDescriptors[_index].status = 0;
+
+  *_tail = _index;
+  const uint32_t cur = _index;
+  _index = (_index + 1) % NUM_OF_DESC;
+
+  //TODO: need to do this asynchronously
+  while(!(_txDescriptors[cur].status & 0xFF));
 }

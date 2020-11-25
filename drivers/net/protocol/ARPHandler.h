@@ -18,7 +18,14 @@
 #pragma once
 #include <EtherPacketHandler.h>
 
+class EthernetHandler;
+
 class ARPHandler : public EtherPacketHandler {
-  public:
-  void Process(const EthernetPacket& packet);
+public:
+  explicit ARPHandler(EthernetHandler& ethernetHandler);
+  void Process(const EthernetRecvPacket& packet) override;
+  void SendRequestForMAC(const uint8_t* targetIPAddr);
+
+private:
+  EthernetHandler& _ethernetHandler;
 };
