@@ -22,18 +22,16 @@
 #include <IPV4RecvPacket.h>
 #include <IPType.h>
 
-class EthernetHandler;
+class IPV4Handler;
 
-class IPV4Handler : public PacketHandler<EthernetRecvPacket> {
+class UDP4Handler : public PacketHandler<IPV4RecvPacket> {
 public:
-  explicit IPV4Handler(EthernetHandler& ethernetHandler);
-  void Process(const EthernetRecvPacket& packet) override;
+  explicit UDP4Handler(IPV4Handler& ipv4Handler);
+  void Process(const IPV4RecvPacket& packet) override;
 
-  static constexpr EtherType HandlerType() {
-    return EtherType::IPV4;
+  static constexpr IPType HandlerType() {
+    return IPType::UDP;
   }
 private:
-  typedef upan::map<IPType, PacketHandler<IPV4RecvPacket>*> IPPacketHandlerMap;
-  IPPacketHandlerMap _ipPacketHandlers;
-  EthernetHandler& _ethernetHandler;
+  IPV4Handler& _ipv4Handler;
 };

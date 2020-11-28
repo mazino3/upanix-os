@@ -18,7 +18,9 @@
 #pragma once
 #include <map.h>
 #include <EtherType.h>
-#include <drivers/net/protocol/packets/NetworkPacketComponents.h>
+#include <NetworkPacketComponents.h>
+#include <PacketHandler.h>
+#include <EthernetRecvPacket.h>
 #include <option.h>
 
 class RawNetPacket;
@@ -45,7 +47,7 @@ public:
   void SendPacket(ARPSendPacket& arpPacket, EtherType pType, const uint8_t* destMac);
 
   private:
-    typedef upan::map<EtherType, EtherPacketHandler*> EtherPacketHandlerMap;
+    typedef upan::map<EtherType, PacketHandler<EthernetRecvPacket>*> EtherPacketHandlerMap;
     EtherPacketHandlerMap _etherPacketHandlers;
     NetworkDevice& _networkDevice;
 

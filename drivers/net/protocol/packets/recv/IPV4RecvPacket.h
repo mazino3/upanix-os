@@ -19,15 +19,19 @@
 
 #include <NetworkPacketComponents.h>
 #include <EthernetRecvPacket.h>
-
+#include <IPType.h>
 
 class IPV4RecvPacket {
-private:
-  const EthernetRecvPacket& _ethernetPacket;
-  NetworkPacket::IPV4::Header& _ipv4Header;
-
 public:
   explicit IPV4RecvPacket(const EthernetRecvPacket& ethernetPacket);
 
+  IPType Type() const {
+    return static_cast<IPType>(_ipv4Header._protocol);
+  }
+
   void Print() const;
+
+private:
+  const EthernetRecvPacket& _ethernetPacket;
+  NetworkPacket::IPV4::Header& _ipv4Header;
 };

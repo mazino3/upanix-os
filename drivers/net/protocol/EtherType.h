@@ -16,6 +16,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
 #pragma once
+
 typedef enum {
   IPV4 = 0x0800,
   ARP = 0x0806,

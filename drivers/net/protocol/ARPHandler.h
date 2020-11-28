@@ -16,13 +16,14 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
 #pragma once
-#include <EtherPacketHandler.h>
+#include <PacketHandler.h>
+#include <EthernetRecvPacket.h>
 #include <EtherType.h>
 
 class EthernetHandler;
 class IPAddress;
 
-class ARPHandler : public EtherPacketHandler {
+class ARPHandler : public PacketHandler<EthernetRecvPacket> {
 public:
   explicit ARPHandler(EthernetHandler& ethernetHandler);
   void Process(const EthernetRecvPacket& packet) override;

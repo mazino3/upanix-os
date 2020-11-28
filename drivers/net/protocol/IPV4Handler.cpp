@@ -18,14 +18,23 @@
 #include <stdio.h>
 #include <EthernetRecvPacket.h>
 #include <IPV4Handler.h>
+#include <UDP4Handler.h>
 #include <EthernetHandler.h>
 #include <IPV4RecvPacket.h>
 
 IPV4Handler::IPV4Handler(EthernetHandler &ethernetHandler) : _ethernetHandler(ethernetHandler) {
+  _ipPacketHandlers.insert(IPPacketHandlerMap::value_type(IPType::UDP, new UDP4Handler(*this)));
 }
 
 void IPV4Handler::Process(const EthernetRecvPacket& packet) {
   printf("\n Handling IPV4 Packet");
   IPV4RecvPacket ipv4Packet(packet);
   ipv4Packet.Print();
+
+  auto it = _ipPacketHandlers.find(ipv4Packet.Type());
+  if (it == _ipPacketHandlers.end()) {
+    //throw upan::exception(XLOC, "Unhandled IPV4 Packet of Type: %d", ipv4Packet.Type());
+  } else {
+    it->second->Process(ipv4Packet);
+  }
 }
