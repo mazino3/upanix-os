@@ -16,10 +16,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
 #include <BTree.h>
-#include <Display.h>
 #include <stdio.h>
 
-#include <DiskCache.h>
 //class BTree definition
 BTree::BTree(int iMaxElements) :
 	m_iMaxElementsPerNode(MAX_ELEMENTS_PER_NODE), 

@@ -62,6 +62,8 @@ sleep 1
 
 #-netdev user,id=u1 -device e1000,netdev=u1 \
 #-object filter-dump,id=f1,netdev=u1,file=dump.dat \
+#-netdev tap,ifname=tap0,script=no,downscript=no,id=mynet0 \
+#-device e1000,netdev=mynet0,mac=00:00:00:11:11:11 \
 
 qemu-system-x86_64 \
 -serial file:serial_debug.log \
@@ -70,7 +72,7 @@ qemu-system-x86_64 \
 -m 256 \
 -smp 1 \
 -net nic,model=e1000 \
--net tap,ifname=tap0 \
+-net tap,ifname=tap0,script=no,downscript=no \
 -usb \
 -drive if=none,id=usbbootdrive,file=$BOOT_DRIVE \
 -drive if=none,id=usbdrive1,file=$UPANIX_HOME/USBImage/300MUSB.img \

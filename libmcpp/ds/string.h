@@ -165,6 +165,24 @@ private:
   char* _buffer;
   int   _len;
   int   _capacity;
+
+public:
+  static upan::string to_string(uint32_t uiNumber) {
+    char strNumber[128];
+    unsigned i = 0;
+
+    do {
+      strNumber[i++] = (uiNumber % 10) + 0x30;
+      uiNumber /= 10;
+      if(i == 128)
+        return "";
+    }
+    while(uiNumber) ;
+
+    strNumber[i] = '\0';
+    strreverse(strNumber);
+    return strNumber;
+  }
 };
 
 };

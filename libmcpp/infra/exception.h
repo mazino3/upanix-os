@@ -50,10 +50,10 @@ class exception
 #else
 
 #include <cstring.h>
-#include <StringUtil.h>
 #include <ctype.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <string.h>
 
 namespace upan {
 
@@ -108,14 +108,14 @@ class exception
       va_list arg;
       va_start(arg, fmsg);
       _error = upan::error(fmsg, arg);
-      _msg = _fileName + ":" + ToString(_lineNo) + " " + _error.Msg();
+      _msg = _fileName + ":" + string::to_string(_lineNo) + " " + _error.Msg();
       va_end(arg);
     }
 
     exception(const upan::string& fileName, unsigned lineNo, const upan::error& err) :
       _fileName(fileName), _lineNo(lineNo), _error(err)
     {
-      _msg = _fileName + ":" + ToString(_lineNo) + " " + _error.Msg();
+      _msg = _fileName + ":" + string::to_string(_lineNo) + " " + _error.Msg();
     }
 
     const upan::string& File() const { return _fileName; }

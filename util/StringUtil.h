@@ -18,9 +18,10 @@
 #ifndef _STRING_UTIL_H_
 #define _STRING_UTIL_H_
 
-# include <Global.h>
-# include <cstring.h>
-# include <string.h>
+#include <Global.h>
+#include <cstring.h>
+#include <string.h>
+#include <vector.h>
 
 class StringTokenizer
 {
@@ -42,7 +43,7 @@ class StringDefTokenizer : public StringTokenizer
 } ;
 
 void String_Tokenize(const char* src, char chToken, int* iListSize, StringTokenizer& strTkCopy) ;
-upan::string ToString(unsigned uiNumber);
+upan::vector<upan::string> tokenize(const char* src, char chToken);
 int String_Chr(const char* szStr, char ch) ;
 
 #endif

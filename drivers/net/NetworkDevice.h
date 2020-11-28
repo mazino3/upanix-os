@@ -18,13 +18,15 @@
 #pragma once
 
 #include <string.h>
+#include <libmcpp/infra/option.h>
+#include "NetworkUtil.h"
 
 class PCIEntry;
 class SocketBuffer;
+class EthernetHandler;
+class ARPHandler;
 
-//as per ieee 802.11
-class NetworkDevice
-{
+class NetworkDevice {
 public:
   NetworkDevice(const PCIEntry& pciEntry);
   virtual ~NetworkDevice() = 0;
@@ -32,9 +34,9 @@ public:
   virtual void Initialize() = 0;
   virtual void NotifyEvent() = 0;
   virtual void SendPacket(const uint8_t* data, uint32_t len) = 0;
-  virtual const uint8_t* GetMacAddress() const = 0;
-  virtual upan::string GetMacAddressStr() const = 0;
-
+  virtual EthernetHandler& GetEthernetHandler() = 0;
+  virtual upan::option<ARPHandler&> GetARPHandler() = 0;
+  virtual const MACAddress& GetMACAddress() const = 0;
 
   // virtual int Configure() = 0;
   // virtual void Tx(SocketBuffer& socketBuffer) = 0;

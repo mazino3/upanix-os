@@ -19,6 +19,7 @@
 #include <map.h>
 #include <EtherType.h>
 #include <drivers/net/protocol/packets/NetworkPacketComponents.h>
+#include <option.h>
 
 class RawNetPacket;
 class EtherPacketHandler;
@@ -32,6 +33,15 @@ public:
   NetworkDevice& GetNetworkDevice() {
     return _networkDevice;
   }
+  template <typename T>
+  upan::option<T&> GetHandler() {
+    auto i = _etherPacketHandlers.find(T::HandlerType());
+    if (i == _etherPacketHandlers.end()) {
+      return upan::option<T&>::empty();
+    }
+    return upan::option<T&>(dynamic_cast<T&>(*i->second));
+  }
+
   void SendPacket(ARPSendPacket& arpPacket, EtherType pType, const uint8_t* destMac);
 
   private:

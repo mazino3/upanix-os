@@ -20,23 +20,24 @@
 #include <EtherType.h>
 #include <NetworkPacketComponents.h>
 #include <NetworkUtil.h>
+#include <memory/DMM.h>
 
 ARPSendPacket::ARPSendPacket(uint16_t hType, EtherType pType, uint8_t hLen, uint8_t pLen, uint16_t opCode,
                              const uint8_t* sha, const uint8_t* spa, const uint8_t* tha, const uint8_t* tpa)
                              : _len(0), _buf(nullptr) {
-  _len = NetworkPacket::SIZE_OF_ETHERNET_HEADER + NetworkPacket::SIZE_OF_ARP_HEADER + NetworkPacket::SIZE_OF_ARP_IPV4;
-  _buf = new uint8_t[_len];
+  _len = NetworkPacket::Ethernet::HEADER_SIZE + NetworkPacket::ARP::HEADER_SIZE + NetworkPacket::ARP::IPV4_SIZE;
+  _buf = new ((void*)DMM_AllocateForKernel(_len, 16))uint8_t[_len];
 
-  NetworkPacket::ARP::Header* _arpHeader = reinterpret_cast<NetworkPacket::ARP::Header*>(
-      _buf + NetworkPacket::SIZE_OF_ETHERNET_HEADER);
+  auto _arpHeader = reinterpret_cast<NetworkPacket::ARP::Header*>(
+      _buf + NetworkPacket::Ethernet::HEADER_SIZE);
   _arpHeader->_hType = NetworkUtil::SwitchEndian(hType);
   _arpHeader->_pType = NetworkUtil::SwitchEndian((uint16_t)pType);
   _arpHeader->_hLen = hLen;
   _arpHeader->_pLen = pLen;
   _arpHeader->_opCode = NetworkUtil::SwitchEndian(opCode);
 
-  NetworkPacket::ARP::IPV4* _arpIPV4 = reinterpret_cast<NetworkPacket::ARP::IPV4*>(
-      _buf + NetworkPacket::SIZE_OF_ETHERNET_HEADER + NetworkPacket::SIZE_OF_ARP_HEADER);
+  auto _arpIPV4 = reinterpret_cast<NetworkPacket::ARP::IPV4*>(
+      _buf + NetworkPacket::Ethernet::HEADER_SIZE + NetworkPacket::ARP::HEADER_SIZE);
   memcpy(_arpIPV4->_senderHardwareAddress, sha, NetworkPacket::MAC_ADDR_LEN);
   memcpy(_arpIPV4->_senderProtocolAddress, spa, NetworkPacket::IPV4_ADDR_LEN);
   memcpy(_arpIPV4->_targetHardwareAddress, tha, NetworkPacket::MAC_ADDR_LEN);

@@ -239,7 +239,7 @@ int KernelService::Spawn()
 	static int iID = 0 ;
 
   upan::string szName(szKS);
-  szName += ToString(iID);
+  szName += upan::string::to_string(iID);
 	iID++ ;
 
 	int pid ;

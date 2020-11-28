@@ -17,22 +17,17 @@
  */
 #pragma once
 #include <EtherPacketHandler.h>
-#include <EtherType.h>
 
 class EthernetHandler;
-class IPAddress;
 
-class ARPHandler : public EtherPacketHandler {
+class IPV4Handler : public EtherPacketHandler {
 public:
-  explicit ARPHandler(EthernetHandler& ethernetHandler);
+  explicit IPV4Handler(EthernetHandler& ethernetHandler);
   void Process(const EthernetRecvPacket& packet) override;
-  void SendRequestForMAC(const IPAddress& ipAddress);
-  void SendRARP();
 
   static constexpr EtherType HandlerType() {
-    return EtherType::ARP;
+    return EtherType::IPV4;
   }
-
 private:
   EthernetHandler& _ethernetHandler;
 };

@@ -22,7 +22,9 @@
 #include <string.h>
 #include <RawNetPacket.h>
 #include <EthernetHandler.h>
-#include <drivers/net/protocol/packets/NetworkPacketComponents.h>
+#include <NetworkPacketComponents.h>
+#include <NetworkUtil.h>
+#include <ARPHandler.h>
 
 class E1000NICDevice : public NetworkDevice {
 private:
@@ -38,13 +40,15 @@ public:
   void Initialize() override;
   void NotifyEvent() override;
   void SendPacket(const uint8_t* data, uint32_t len) override;
-
-  const uint8_t* GetMacAddress() const override {
-    return regEEPROM->getMacAddress();
+  EthernetHandler& GetEthernetHandler() override {
+    return _ethernetHandler;
   }
-  upan::string GetMacAddressStr() const override {
-    return regEEPROM->getMacAddressStr();
-  };
+  upan::option<ARPHandler&> GetARPHandler() override {
+    return _ethernetHandler.GetHandler<ARPHandler>();
+  }
+  const MACAddress& GetMACAddress() const override {
+    return regEEPROM->getMACAddress();
+  }
 
 private:
 
@@ -53,20 +57,16 @@ private:
   class RegEEPROM {
   public:
     RegEEPROM(const uint32_t memIOBase);
-    const uint8_t* getMacAddress() const {
+    const MACAddress& getMACAddress() const {
       return _macAddress;
-    }
-    const upan::string& getMacAddressStr() const {
-      return _macAddressStr;
     }
     void print() const;
   private:
-      uint16_t readEEPROM(const int wordPos);
+    uint16_t readEEPROM(const int wordPos);
   private:
-      const uint32_t REG_EEPROM = 0x14;
-      volatile uint32_t* const _eeprom;
-      uint8_t _macAddress[NetworkPacket::MAC_ADDR_LEN];
-      upan::string _macAddressStr;
+    const uint32_t REG_EEPROM = 0x14;
+    volatile uint32_t* const _eeprom;
+    MACAddress _macAddress;
   };
 
   class RegIntControl {

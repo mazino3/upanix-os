@@ -16,7 +16,6 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
 # include <StringUtil.h>
-# include <GenericUtil.h>
 
 void String_Tokenize(const char* src, char chToken, int* iListSize, StringTokenizer& tokenizer)
 {
@@ -47,23 +46,26 @@ void String_Tokenize(const char* src, char chToken, int* iListSize, StringTokeni
 	*iListSize = iTokenIndex ;
 }
 
-upan::string ToString(unsigned uiNumber)
-{
-  char strNumber[128];
-	unsigned i = 0;
+upan::vector<upan::string> tokenize(const char* src, char chToken) {
+  int index;
+  int iStartIndex = 0;
+  upan::vector<upan::string> tokens;
 
-	do
-	{
-		strNumber[i++] = (uiNumber % 10) + 0x30;
-		uiNumber /= 10;
-    if(i == 128)
-      return "";
-	}
-	while(uiNumber) ;
+  for(index = 0; src[index] != '\0'; index++) {
+    if(src[index] == chToken) {
+      if((index - iStartIndex) > 0) {
+        upan::string token(src + iStartIndex, (index - iStartIndex));
+        tokens.push_back(token);
+      }
+      iStartIndex = index + 1 ;
+    }
+  }
 
-	strNumber[i] = '\0';
-	strreverse(strNumber);
-  return strNumber;
+  if((index - iStartIndex) > 0) {
+    upan::string token(src + iStartIndex, (index - iStartIndex));
+    tokens.push_back(token);
+  }
+  return tokens;
 }
 
 int String_Chr(const char* szStr, char ch)

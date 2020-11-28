@@ -18,6 +18,7 @@
 #pragma once
   
 #include <stdlib.h>
+#include <string.h>
 
 namespace NetworkPacket {
   constexpr uint32_t MAC_ADDR_LEN = 6;
@@ -38,6 +39,9 @@ namespace NetworkPacket {
       uint8_t _targetHardwareAddress[MAC_ADDR_LEN];
       uint8_t _targetProtocolAddress[IPV4_ADDR_LEN];
     } PACKED;
+
+    constexpr uint32_t HEADER_SIZE = sizeof(Header);
+    constexpr uint32_t IPV4_SIZE = sizeof(IPV4);
   }
 
   namespace Ethernet {
@@ -46,9 +50,48 @@ namespace NetworkPacket {
       uint8_t _sourceMAC[MAC_ADDR_LEN];
       uint16_t _type;
     } PACKED;
+
+    constexpr uint32_t HEADER_SIZE = sizeof(Header);
   }
 
-  constexpr uint32_t SIZE_OF_ARP_HEADER = sizeof(ARP::Header);
-  constexpr uint32_t SIZE_OF_ARP_IPV4 = sizeof(ARP::IPV4);
-  constexpr uint32_t SIZE_OF_ETHERNET_HEADER = sizeof(Ethernet::Header);
+  namespace IPV4 {
+    struct Header {
+      uint32_t _ihl:4; // Internet Header Length
+      uint32_t _version:4;
+      uint8_t _tos; // Type Of Service
+      uint16_t _totalLen;
+      uint16_t _identification;
+      uint32_t _flags:3;
+      uint32_t _fragmentOffset:13;
+      uint8_t _ttl; // Time to live
+      uint8_t _protocol;
+      uint16_t _checksum;
+      uint8_t _srcAddr[4];
+      uint8_t _destAddr[4];
+      uint32_t _options:24;
+      uint32_t _padding:8;
+    } PACKED;
+
+    constexpr uint32_t HEADER_SIZE = sizeof(Header);
+  }
+
+  namespace UDP {
+    struct Header {
+      uint16_t _srcPort;
+      uint16_t _destPort;
+      uint16_t _len;
+      uint16_t _checksum;
+    } PACKED;
+
+    struct IPV4PseudoHeader {
+      uint8_t _srcAddr[8];
+      uint8_t _destAddr[8];
+      uint8_t _zeros;
+      uint8_t _protocol;
+      uint16_t _udpLen;
+    } PACKED;
+
+    constexpr uint32_t HEADER_SIZE = sizeof(Header);
+    constexpr uint32_t IPV4_PSEUDO_HEADER_SIZE = sizeof(IPV4PseudoHeader);
+  }
 };

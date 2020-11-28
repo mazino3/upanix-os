@@ -70,6 +70,46 @@ class option
 };
 
 template <typename T>
-upan::option<T> toOption(const T& value) { return upan::option<T>(value); }
+class option<T&>
+{
+protected:
+  bool _isEmpty;
+  T* _value;
+  option() : _isEmpty(true), _value(nullptr) {}
+
+public:
+  explicit option(T& value) : _isEmpty(false), _value(&value) {}
+
+  static option<T&> empty() {
+    return option<T&>();
+  }
+  bool isEmpty() const { return _isEmpty; }
+
+  T& value() const {
+    if(_isEmpty)
+      throw exception(XLOC, "Option is empty");
+    return *_value;
+  }
+
+  T& valueOrThrow(const upan::string& fileName, unsigned lineNo, const upan::string& error) const {
+    if(_isEmpty)
+      throw exception(fileName, lineNo, error);
+    return *_value;
+  }
+
+  T& valueOrElse(const T& defaultValue) const {
+    if(_isEmpty)
+      return defaultValue;
+    return *_value;
+  }
+
+  template <typename LAMBDA>
+  bool ifPresent(const LAMBDA& lambdaf) {
+    if(isEmpty())
+      return false;
+    lambdaf(*_value);
+    return true;
+  }
+};
 
 }

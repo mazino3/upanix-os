@@ -55,6 +55,7 @@
 #include <Apic.h>
 #include <typeinfo.h>
 #include <NetworkManager.h>
+#include <ARPHandler.h>
 
 /**** Command Fucntion Declarations  *****/
 static void ConsoleCommands_ChangeDrive() ;
@@ -107,6 +108,7 @@ static void ConsoleCommands_ProbeEHCIUSB() ;
 static void ConsoleCommands_ProbeXHCIUSB() ;
 static void ConsoleCommands_ProbeNetwork() ;
 static void ConsoleCommands_ListNetworkDevices() ;
+static void ConsoleCommands_ARPing() ;
 static void ConsoleCommands_SetXHCIEventMode();
 static void ConsoleCommands_ShowRawDiskList() ;
 static void ConsoleCommands_InitFloppyController() ;
@@ -176,6 +178,7 @@ static const ConsoleCommand ConsoleCommands_CommandList[] = {
   { "xhciemode", &ConsoleCommands_SetXHCIEventMode },
   { "netprobe", &ConsoleCommands_ProbeNetwork },
   { "lsnet", &ConsoleCommands_ListNetworkDevices },
+  { "arping", &ConsoleCommands_ARPing },
 	{ "showdisk",	&ConsoleCommands_ShowRawDiskList },
 	{ "initfdc",	&ConsoleCommands_InitFloppyController },
 	{ "initata",	&ConsoleCommands_InitATAController },
@@ -777,7 +780,32 @@ void ConsoleCommands_ProbeNetwork()
 
 void ConsoleCommands_ListNetworkDevices() {
   for(const auto d : NetworkManager::Instance().Devices()) {
-    printf("\n%s", d->GetMacAddressStr().c_str());
+    printf("\n%s", d->GetMACAddress().str().c_str());
+  }
+}
+
+void ConsoleCommands_ARPing() {
+  auto d = NetworkManager::Instance().GetDefaultDevice();
+  if (d.isEmpty()) {
+    printf("\nno network device exists");
+    return;
+  }
+  if(CommandLineParser::Instance().GetNoOfParameters() < 1) {
+    printf("missing parameter");
+    return;
+  }
+  auto& device = d.value();
+  const upan::string param(CommandLineParser::Instance().GetParameterAt(0));
+
+  if (param == "rarp") {
+    device.GetARPHandler().ifPresent([&](ARPHandler& arpHandler) {
+      arpHandler.SendRARP();
+    });
+  } else {
+    const IPAddress targetIPAddr(param);
+    device.GetARPHandler().ifPresent([&](ARPHandler& arpHandler) {
+      arpHandler.SendRequestForMAC(targetIPAddr);
+    });
   }
 }
 

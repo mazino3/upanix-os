@@ -39,6 +39,7 @@ public:
 
   void Initialize();
   upan::list<NetworkDevice*>& Devices() { return _devices; }
+  upan::option<NetworkDevice&> GetDefaultDevice();
 
 private:
   void Probe(const PCIEntry& pciEntry);

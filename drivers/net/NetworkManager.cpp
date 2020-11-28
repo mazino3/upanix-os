@@ -38,6 +38,13 @@ void NetworkManager::Initialize()
   }
 }
 
+upan::option<NetworkDevice&> NetworkManager::GetDefaultDevice() {
+  if (_devices.empty()) {
+    return upan::option<NetworkDevice&>::empty();
+  }
+  return upan::option<NetworkDevice&>(*_devices.front());
+}
+
 void NetworkManager::Probe(const PCIEntry& pciEntry)
 {
   try

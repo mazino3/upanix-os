@@ -180,22 +180,17 @@ constexpr volatile uint32_t* REG(const uint32_t base, const uint32_t offset) {
 }
 
 E1000NICDevice::RegEEPROM::RegEEPROM(const uint32_t memIOBase) : _eeprom(REG(memIOBase, REG_EEPROM)) {
-  int k = 0;
+  upan::vector<uint8_t> macAddr;
   for(int i = 0; i < 3; ++i) {
     uint16_t word = readEEPROM(i);
-    _macAddress[k++] = word & 0xFF;
-    _macAddress[k++] = word >> 8;
+    macAddr.push_back(word & 0xFF);
+    macAddr.push_back(word >> 8);
   }
-
-  char c[5];
-  for(uint32_t i = 0; i < NetworkPacket::MAC_ADDR_LEN; ++i) {
-    sprintf(c, "%02x%s", _macAddress[i], i < NetworkPacket::MAC_ADDR_LEN - 1 ? ":" : "");
-    _macAddressStr += c;
-  }
+  _macAddress = MACAddress(macAddr);
 }
 
 void E1000NICDevice::RegEEPROM::print() const {
-  printf("\n MAC ADDRESS: %s", _macAddressStr.c_str());
+  printf("\n MAC ADDRESS: %s", _macAddress.str().c_str());
 }
 
 uint16_t E1000NICDevice::RegEEPROM::readEEPROM(const int wordPos) {
@@ -311,7 +306,7 @@ upan::option<RawNetPacket> E1000NICDevice::RegRXDescriptor::GetNextPacket() {
   }
 
   if (hasData) {
-    return upan::option<RawNetPacket>(RawNetPacket(desc.addr, desc.length));
+    return upan::option<RawNetPacket>(RawNetPacket(KERNEL_VIRTUAL_ADDRESS(desc.addr), desc.length));
   } else {
     return upan::option<RawNetPacket>::empty();
   }
@@ -352,14 +347,14 @@ E1000NICDevice::RegTXDescriptor::RegTXDescriptor(const uint32_t memIOBase) :
 }
 
 void E1000NICDevice::RegTXDescriptor::SendPacket(const uint8_t* data, uint32_t len) {
-  _txDescriptors[_index].addr = (uint64_t)data;
+  _txDescriptors[_index].addr = KERNEL_REAL_ADDRESS(data);
   _txDescriptors[_index].length = len;
   _txDescriptors[_index].cmd = CMD_EOP | CMD_IFCS | CMD_RS;
   _txDescriptors[_index].status = 0;
 
-  *_tail = _index;
   const uint32_t cur = _index;
   _index = (_index + 1) % NUM_OF_DESC;
+  *_tail = _index;
 
   //TODO: need to do this asynchronously
   while(!(_txDescriptors[cur].status & 0xFF));

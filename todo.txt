@@ -1,3 +1,6 @@
+25 Nov 2020
+- Refactor String_Tokenize 
+
 Date 26 Aug 2016
 - Allocate all pages used by XHCI Controller within process-space-for-os limit
 - Then Support XHCI Mass storage USB device

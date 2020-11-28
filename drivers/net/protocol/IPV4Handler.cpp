@@ -15,24 +15,17 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
-#pragma once
-#include <EtherPacketHandler.h>
-#include <EtherType.h>
+#include <stdio.h>
+#include <EthernetRecvPacket.h>
+#include <IPV4Handler.h>
+#include <EthernetHandler.h>
+#include <IPV4RecvPacket.h>
 
-class EthernetHandler;
-class IPAddress;
+IPV4Handler::IPV4Handler(EthernetHandler &ethernetHandler) : _ethernetHandler(ethernetHandler) {
+}
 
-class ARPHandler : public EtherPacketHandler {
-public:
-  explicit ARPHandler(EthernetHandler& ethernetHandler);
-  void Process(const EthernetRecvPacket& packet) override;
-  void SendRequestForMAC(const IPAddress& ipAddress);
-  void SendRARP();
-
-  static constexpr EtherType HandlerType() {
-    return EtherType::ARP;
-  }
-
-private:
-  EthernetHandler& _ethernetHandler;
-};
+void IPV4Handler::Process(const EthernetRecvPacket& packet) {
+  printf("\n Handling IPV4 Packet");
+  IPV4RecvPacket ipv4Packet(packet);
+  ipv4Packet.Print();
+}
