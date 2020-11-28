@@ -15,11 +15,16 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
-#pragma once
+#include <stdio.h>
+#include <UDP4Handler.h>
+#include <IPV4Handler.h>
+#include <IPV4RecvPacket.h>
 
-class EthernetRecvPacket;
+UDP4Handler::UDP4Handler(IPV4Handler &ipv4Handler) : _ipv4Handler(ipv4Handler) {
+}
 
-class EtherPacketHandler {
-  public:
-  virtual void Process(const EthernetRecvPacket& packet) = 0;
-};
+void UDP4Handler::Process(const IPV4RecvPacket& packet) {
+  printf("\n Handling UDP Packet");
+//  IPV4RecvPacket ipv4Packet(packet);
+//  ipv4Packet.Print();
+}
