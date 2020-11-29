@@ -30,6 +30,8 @@ public:
   static uint8_t SwitchEndian(const uint8_t val);
   static uint16_t SwitchEndian(const uint16_t val);
   static uint32_t SwitchEndian(const uint32_t val);
+  static uint16_t CalculateChecksum(const uint16_t* buf, uint32_t lengthInBytes, uint32_t initSum);
+  static uint32_t AddForChecksum(const uint16_t* buf, uint32_t lengthInBytes, uint32_t initSum);
 };
 
 class MACAddress {

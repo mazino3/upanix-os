@@ -68,11 +68,15 @@ namespace NetworkPacket {
       uint16_t _checksum;
       uint8_t _srcAddr[4];
       uint8_t _destAddr[4];
+    } PACKED;
+
+    struct HeaderOptions {
       uint32_t _options:24;
       uint32_t _padding:8;
     } PACKED;
 
     constexpr uint32_t HEADER_SIZE = sizeof(Header);
+    constexpr uint32_t HEADER_OPT_SIZE = sizeof(HeaderOptions);
   }
 
   namespace UDP {
@@ -84,8 +88,8 @@ namespace NetworkPacket {
     } PACKED;
 
     struct IPV4PseudoHeader {
-      uint8_t _srcAddr[8];
-      uint8_t _destAddr[8];
+      uint8_t _srcAddr[4];
+      uint8_t _destAddr[4];
       uint8_t _zeros;
       uint8_t _protocol;
       uint16_t _udpLen;
@@ -94,4 +98,23 @@ namespace NetworkPacket {
     constexpr uint32_t HEADER_SIZE = sizeof(Header);
     constexpr uint32_t IPV4_PSEUDO_HEADER_SIZE = sizeof(IPV4PseudoHeader);
   }
-};
+
+  namespace DHCP {
+    struct Header {
+      uint8_t _op;
+      uint8_t _hType;
+      uint8_t _hLen;
+      uint8_t _hops;
+      uint32_t _xid;
+      uint16_t _secs; // seconds elapsed since client started the protocol
+      uint16_t _flags;
+      uint32_t _ciAddr; // Client IP Address
+      uint32_t _yiAddr; // Your (Client) IP Address
+      uint32_t _siAddr; // Server IP Address;
+      uint32_t _giAddr; // Relay agent (Gateway) IP Address
+      uint8_t _chAddr[16]; // Client Hardware Address;
+      uint8_t _sName[64]; // Optional server host name (null terminated string)
+      uint8_t _file[128]; // boot file name (null terminated string)
+    } PACKED;
+  }
+}

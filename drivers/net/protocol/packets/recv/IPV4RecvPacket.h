@@ -31,6 +31,17 @@ public:
 
   void Print() const;
 
+  uint8_t* PacketData() const {
+    return _ethernetPacket.PacketData() + (sizeof(uint32_t) * _ipv4Header._ihl);
+  }
+
+  const NetworkPacket::IPV4::Header& header() const {
+    return _ipv4Header;
+  }
+
+private:
+  void VerifyChecksum();
+
 private:
   const EthernetRecvPacket& _ethernetPacket;
   NetworkPacket::IPV4::Header& _ipv4Header;

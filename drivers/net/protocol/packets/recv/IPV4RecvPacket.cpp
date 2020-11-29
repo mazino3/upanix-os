@@ -21,11 +21,23 @@
 #include <NetworkUtil.h>
 
 IPV4RecvPacket::IPV4RecvPacket(const EthernetRecvPacket& ethernetPacket) :
-    _ethernetPacket(ethernetPacket),
-    _ipv4Header(reinterpret_cast<NetworkPacket::IPV4::Header&>(*ethernetPacket.PacketData())) {
+  _ethernetPacket(ethernetPacket),
+  _ipv4Header(reinterpret_cast<NetworkPacket::IPV4::Header&>(*ethernetPacket.PacketData())) {
+  VerifyChecksum();
   _ipv4Header._totalLen = NetworkUtil::SwitchEndian(_ipv4Header._totalLen);
   _ipv4Header._identification = NetworkUtil::SwitchEndian(_ipv4Header._identification);
+  _ipv4Header._checksum = NetworkUtil::SwitchEndian(_ipv4Header._checksum);
   //_ipv4Header._fragmentOffset = NetworkUtil::SwitchEndian(_ipv4Header._fragmentOffset);
+}
+
+void IPV4RecvPacket::VerifyChecksum() {
+  const uint32_t calculatedChecksum = NetworkUtil::CalculateChecksum((uint16_t *)(_ethernetPacket.PacketData()),
+                                                                     _ipv4Header._ihl * sizeof(uint32_t), 0);
+  if (calculatedChecksum ^ (uint16_t)0xFFFF) {
+    Print();
+    throw upan::exception(XLOC, "Invalid Checksum for IP Packet ID: %d (calc. checksum: 0x%x)",
+                          NetworkUtil::SwitchEndian(_ipv4Header._identification), calculatedChecksum);
+  }
 }
 
 void IPV4RecvPacket::Print() const {

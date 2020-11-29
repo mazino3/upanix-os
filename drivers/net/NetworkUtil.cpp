@@ -31,6 +31,26 @@ uint32_t NetworkUtil::SwitchEndian(const uint32_t val) {
     return ((val >> 24) & 0xFF) | ((val >> 8) & 0xFF00) | ((val << 8) & 0xFF0000) | ((val << 24) & 0xFF000000);
 }
 
+uint16_t NetworkUtil::CalculateChecksum(const uint16_t* buf, uint32_t lengthInBytes, uint32_t initSum) {
+  uint32_t sum = AddForChecksum(buf, lengthInBytes, initSum);
+  while((sum >> 16)) {
+    sum = (sum & 0xFFFF) + (sum >> 16);
+  }
+  return sum & 0xFFFF;
+}
+
+uint32_t NetworkUtil::AddForChecksum(const uint16_t* buf, uint32_t lengthInBytes, uint32_t initSum) {
+  const uint32_t lengthInWords = lengthInBytes / 2;
+  uint32_t sum = initSum;
+  for(uint32_t i = 0; i < lengthInWords; ++i) {
+    sum += buf[i];
+  }
+  if (lengthInBytes % 2) {
+    sum += ((uint8_t*)buf)[lengthInBytes - 1];
+  }
+  return sum;
+}
+
 MACAddress::MACAddress(const upan::string &macAddr) : _macAddrStr(macAddr) {
   upan::vector<upan::string> tokens = tokenize(macAddr.c_str(), ':');
   if (tokens.size() != NetworkPacket::MAC_ADDR_LEN) {
