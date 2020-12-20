@@ -18,29 +18,21 @@
 #pragma once
 
 #include <NetworkPacketComponents.h>
-#include <IPV4RecvPacket.h>
-#include <IPType.h>
+#include <EtherType.h>
 
-class IPV4RecvPacket;
+class DHCPSendPacket {
+private:
+  uint32_t _len;
+  uint8_t* _buf;
 
-class UDP4RecvPacket {
 public:
-  explicit UDP4RecvPacket(const IPV4RecvPacket& ipv4RecvPacket);
+  DHCPSendPacket(uint8_t op, uint8_t hType, uint8_t hLen, uint8_t hops,
+                 uint32_t xid, uint16_t secs, uint16_t flags,
+                 uint8_t* ciAddr, uint8_t* yiAddr, uint8_t* siAddr, uint8_t* giAddr,
+                 uint8_t* chAddr, uint8_t* sName, uint8_t* file);
 
-  void Print() const;
+  ~DHCPSendPacket();
 
-  const NetworkPacket::UDP::Header& Header() const {
-    return _udpHeader;
-  }
-
-  uint8_t* PacketData() const {
-    return _ipv4RecvPacket.PacketData() + NetworkPacket::UDP::HEADER_SIZE;
-  }
-
-private:
-  void VerifyChecksum();
-
-private:
-  const IPV4RecvPacket& _ipv4RecvPacket;
-  NetworkPacket::UDP::Header& _udpHeader;
+  uint8_t* buf() { return _buf; }
+  uint32_t len() { return _len; }
 };

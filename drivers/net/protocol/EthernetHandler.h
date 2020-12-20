@@ -28,13 +28,11 @@ class EtherPacketHandler;
 class NetworkDevice;
 class ARPSendPacket;
 
-class EthernetHandler {
+class EthernetHandler : public PacketHandler<RawNetPacket> {
 public:
   EthernetHandler(NetworkDevice& networkDevice);
   void Process(const RawNetPacket& packet);
-  NetworkDevice& GetNetworkDevice() {
-    return _networkDevice;
-  }
+
   template <typename T>
   upan::option<T&> GetHandler() {
     auto i = _etherPacketHandlers.find(T::HandlerType());
@@ -44,12 +42,11 @@ public:
     return upan::option<T&>(dynamic_cast<T&>(*i->second));
   }
 
-  void SendPacket(ARPSendPacket& arpPacket, EtherType pType, const uint8_t* destMac);
+  void SendPacket(uint8_t* buf, uint32_t len, EtherType pType, const uint8_t* destMac);
 
   private:
     typedef upan::map<EtherType, PacketHandler<EthernetRecvPacket>*> EtherPacketHandlerMap;
     EtherPacketHandlerMap _etherPacketHandlers;
-    NetworkDevice& _networkDevice;
 
     const static uint32_t MIN_ETHERNET_PACKET_LEN = NetworkPacket::MAC_ADDR_LEN /*dmac*/ + NetworkPacket::MAC_ADDR_LEN /*smac*/ + 2 /*eType*/ + 1 /*payload*/;
 };

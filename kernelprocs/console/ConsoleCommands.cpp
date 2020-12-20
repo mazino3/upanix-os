@@ -109,6 +109,7 @@ static void ConsoleCommands_ProbeXHCIUSB() ;
 static void ConsoleCommands_ProbeNetwork() ;
 static void ConsoleCommands_ListNetworkDevices() ;
 static void ConsoleCommands_ARPing() ;
+static void ConsoleCommands_ObtainIPAddress() ;
 static void ConsoleCommands_SetXHCIEventMode();
 static void ConsoleCommands_ShowRawDiskList() ;
 static void ConsoleCommands_InitFloppyController() ;
@@ -179,6 +180,7 @@ static const ConsoleCommand ConsoleCommands_CommandList[] = {
   { "netprobe", &ConsoleCommands_ProbeNetwork },
   { "lsnet", &ConsoleCommands_ListNetworkDevices },
   { "arping", &ConsoleCommands_ARPing },
+  { "dhcpinit", &ConsoleCommands_ObtainIPAddress },
 	{ "showdisk",	&ConsoleCommands_ShowRawDiskList },
 	{ "initfdc",	&ConsoleCommands_InitFloppyController },
 	{ "initata",	&ConsoleCommands_InitATAController },
@@ -807,6 +809,16 @@ void ConsoleCommands_ARPing() {
       arpHandler.SendRequestForMAC(targetIPAddr);
     });
   }
+}
+
+void ConsoleCommands_ObtainIPAddress() {
+  auto d = NetworkManager::Instance().GetDefaultDevice();
+  if (d.isEmpty()) {
+    printf("\nno network device exists");
+    return;
+  }
+  auto& device = d.value();
+  device.GetDHCPHandler().ifPresent([&](DHCPHandler& handler) { handler.ObtainIPAddress(); });
 }
 
 void ConsoleCommands_SetXHCIEventMode()

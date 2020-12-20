@@ -19,6 +19,7 @@
 
 #include <string.h>
 #include <exception.h>
+#include <drivers/net/protocol/NetworkProtocolType.h>
 
 namespace upan {
 
@@ -43,6 +44,14 @@ class option
       if(_isEmpty)
         throw exception(XLOC, "Option is empty");
       return _value;
+    }
+
+    template <typename R, typename LAMBDA>
+    upan::option<R> map(const LAMBDA& mapLambda) {
+      if (_isEmpty) {
+        return upan::option<R>::empty();
+      }
+      return mapLambda(_value);
     }
 
     const T& valueOrThrow(const upan::string& fileName, unsigned lineNo, const upan::string& error) const
@@ -89,6 +98,14 @@ public:
     if(_isEmpty)
       throw exception(XLOC, "Option is empty");
     return *_value;
+  }
+
+  template <typename R, typename LAMBDA>
+  upan::option<R&> map(const LAMBDA& mapLambda) {
+    if (_isEmpty) {
+      return upan::option<R&>::empty();
+    }
+    return mapLambda(*_value);
   }
 
   T& valueOrThrow(const upan::string& fileName, unsigned lineNo, const upan::string& error) const {

@@ -17,8 +17,16 @@
  */
 #pragma once
 
+class NetworkDevice;
+
 template <typename T>
 class PacketHandler {
 public:
+  PacketHandler(NetworkDevice& networkDevice) : _networkDevice(networkDevice) {}
   virtual void Process(const T& packet) = 0;
+  NetworkDevice& GetNetworkDevice() {
+    return _networkDevice;
+  }
+private:
+  NetworkDevice& _networkDevice;
 };

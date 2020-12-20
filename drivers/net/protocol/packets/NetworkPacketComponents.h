@@ -108,13 +108,15 @@ namespace NetworkPacket {
       uint32_t _xid;
       uint16_t _secs; // seconds elapsed since client started the protocol
       uint16_t _flags;
-      uint32_t _ciAddr; // Client IP Address
-      uint32_t _yiAddr; // Your (Client) IP Address
-      uint32_t _siAddr; // Server IP Address;
-      uint32_t _giAddr; // Relay agent (Gateway) IP Address
+      uint8_t _ciAddr[4]; // Client IP Address
+      uint8_t _yiAddr[4]; // Your (Client) IP Address
+      uint8_t _siAddr[4]; // Server IP Address;
+      uint8_t _giAddr[4]; // Relay agent (Gateway) IP Address
       uint8_t _chAddr[16]; // Client Hardware Address;
       uint8_t _sName[64]; // Optional server host name (null terminated string)
       uint8_t _file[128]; // boot file name (null terminated string)
     } PACKED;
+
+    constexpr uint32_t HEADER_SIZE = sizeof(Header);
   }
 }

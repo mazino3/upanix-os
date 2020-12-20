@@ -27,7 +27,7 @@
 #include <NetworkDevice.h>
 #include <NetworkUtil.h>
 
-EthernetHandler::EthernetHandler(NetworkDevice& networkDevice) : _networkDevice(networkDevice) {
+EthernetHandler::EthernetHandler(NetworkDevice& networkDevice) : PacketHandler<RawNetPacket>(networkDevice) {
   _etherPacketHandlers.insert(EtherPacketHandlerMap::value_type(ARPHandler::HandlerType(), new ARPHandler(*this)));
   _etherPacketHandlers.insert(EtherPacketHandlerMap::value_type(IPV4Handler::HandlerType(), new IPV4Handler(*this)));
 }
@@ -46,10 +46,10 @@ void EthernetHandler::Process(const RawNetPacket& packet) {
   }
 }
 
-void EthernetHandler::SendPacket(ARPSendPacket& arpPacket, EtherType pType, const uint8_t* destMac) {
-  auto header = reinterpret_cast<NetworkPacket::Ethernet::Header*>(arpPacket.buf());
+void EthernetHandler::SendPacket(uint8_t* buf, uint32_t len, EtherType pType, const uint8_t* destMac) {
+  auto header = reinterpret_cast<NetworkPacket::Ethernet::Header*>(buf);
   memcpy(header->_destinationMAC, destMac, NetworkPacket::MAC_ADDR_LEN);
-  memcpy(header->_sourceMAC, _networkDevice.GetMACAddress().get(), NetworkPacket::MAC_ADDR_LEN);
+  memcpy(header->_sourceMAC, GetNetworkDevice().GetMACAddress().get(), NetworkPacket::MAC_ADDR_LEN);
   header->_type = NetworkUtil::SwitchEndian((uint16_t)pType);
-  _networkDevice.SendPacket(arpPacket.buf(), arpPacket.len());
+  GetNetworkDevice().SendPacket(buf, len);
 }

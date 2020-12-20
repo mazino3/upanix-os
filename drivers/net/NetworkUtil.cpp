@@ -65,12 +65,11 @@ MACAddress::MACAddress(const upan::vector<uint8_t>& macAddr) {
   if (macAddr.size() != NetworkPacket::MAC_ADDR_LEN) {
     throw upan::exception(XLOC, "Invalid MAC Address Len: %d", macAddr.size());
   }
-  char c[5];
-  for(uint32_t i = 0; i < NetworkPacket::MAC_ADDR_LEN; ++i) {
-    sprintf(c, "%02x%s", macAddr[i], i < NetworkPacket::MAC_ADDR_LEN - 1 ? ":" : "");
-    _macAddrStr += c;
-    _macAddr[i] = macAddr[i];
-  }
+  convert(macAddr);
+}
+
+MACAddress::MACAddress(const uint8_t* macAddr) {
+  convert(macAddr);
 }
 
 MACAddress::MACAddress(const MACAddress& r) {
@@ -106,12 +105,11 @@ IPAddress::IPAddress(const upan::vector<uint8_t>& ipAddr) {
   if (ipAddr.size() != NetworkPacket::IPV4_ADDR_LEN) {
     throw upan::exception(XLOC, "Invalid IP Address Len: %d", ipAddr.size());
   }
-  char c[5];
-  for(uint32_t i = 0; i < NetworkPacket::IPV4_ADDR_LEN; ++i) {
-    sprintf(c, "%02x%s", ipAddr[i], i < NetworkPacket::IPV4_ADDR_LEN - 1 ? "." : "");
-    _ipAddrStr += c;
-    _ipAddr[i] = ipAddr[i];
-  }
+  convert(ipAddr);
+}
+
+IPAddress::IPAddress(const uint8_t* ipAddr) {
+  convert(ipAddr);
 }
 
 IPAddress::IPAddress(const IPAddress& r) {

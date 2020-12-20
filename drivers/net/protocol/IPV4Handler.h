@@ -21,6 +21,8 @@
 #include <PacketHandler.h>
 #include <IPV4RecvPacket.h>
 #include <IPType.h>
+#include <NetworkProtocolType.h>
+#include <option.h>
 
 class EthernetHandler;
 
@@ -29,9 +31,19 @@ public:
   explicit IPV4Handler(EthernetHandler& ethernetHandler);
   void Process(const EthernetRecvPacket& packet) override;
 
+  template <typename T>
+  upan::option<T&> GetHandler() {
+    auto i = _ipPacketHandlers.find(T::HandlerType());
+    if (i == _ipPacketHandlers.end()) {
+      return upan::option<T&>::empty();
+    }
+    return upan::option<T&>(dynamic_cast<T&>(*i->second));
+  }
+
   static constexpr EtherType HandlerType() {
     return EtherType::IPV4;
   }
+
 private:
   typedef upan::map<IPType, PacketHandler<IPV4RecvPacket>*> IPPacketHandlerMap;
   IPPacketHandlerMap _ipPacketHandlers;

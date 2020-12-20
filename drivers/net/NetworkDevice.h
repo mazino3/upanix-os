@@ -19,12 +19,16 @@
 
 #include <string.h>
 #include <libmcpp/infra/option.h>
+#include <DHCPHandler.h>
 #include "NetworkUtil.h"
 
 class PCIEntry;
 class SocketBuffer;
 class EthernetHandler;
 class ARPHandler;
+class IPV4Handler;
+class UDP4Handler;
+class DHCPHandler;
 
 class NetworkDevice {
 public:
@@ -36,6 +40,9 @@ public:
   virtual void SendPacket(const uint8_t* data, uint32_t len) = 0;
   virtual EthernetHandler& GetEthernetHandler() = 0;
   virtual upan::option<ARPHandler&> GetARPHandler() = 0;
+  virtual upan::option<IPV4Handler&> GetIPV4Handler() = 0;
+  virtual upan::option<UDP4Handler&> GetUDP4Handler() = 0;
+  virtual upan::option<DHCPHandler&> GetDHCPHandler() = 0;
   virtual const MACAddress& GetMACAddress() const = 0;
 
   // virtual int Configure() = 0;

@@ -15,42 +15,32 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
-#pragma once
-
-#include <map.h>
-#include <PacketHandler.h>
-#include <IPV4RecvPacket.h>
-#include <IPType.h>
+#include <stdio.h>
+#include <DHCPHandler.h>
+#include <UDP4Handler.h>
 #include <UDP4RecvPacket.h>
-#include <NetworkProtocolType.h>
-#include <option.h>
+#include <DHCPRecvPacket.h>
+#include <DHCPSendPacket.h>
+#include <NetworkDevice.h>
 
-class IPV4Handler;
+DHCPHandler::DHCPHandler(UDP4Handler &udpHandler)
+  : PacketHandler<UDP4RecvPacket>(udpHandler.GetNetworkDevice()), _udpHandler(udpHandler) {
+}
 
-class UDP4Handler : public PacketHandler<IPV4RecvPacket> {
-public:
-  explicit UDP4Handler(IPV4Handler& ipv4Handler);
-  void Process(const IPV4RecvPacket& packet) override;
+void DHCPHandler::Process(const UDP4RecvPacket& packet) {
+  printf("\n Handling DHCP Packet");
+  DHCPRecvPacket dhcpPacket(packet);
+  dhcpPacket.Print();
+}
 
-  template <typename T>
-  upan::option<T&> GetHandler() {
-    auto i = _udpPacketHandlers.find(T::HandlerType());
-    if (i == _udpPacketHandlers.end()) {
-      return upan::option<T&>::empty();
-    }
-    return upan::option<T&>(dynamic_cast<T&>(*i->second));
-  }
+void DHCPHandler::ObtainIPAddress() {
+  uint8_t clientHardwareAddress[16];
+  memset(clientHardwareAddress, 0, 16);
+  memcpy(clientHardwareAddress, GetNetworkDevice().GetMACAddress().get(), NetworkPacket::MAC_ADDR_LEN);
 
-  void SendPacket(uint8_t* buf, uint32_t len, uint16_t srcPort, uint16_t destPort);
-
-  static constexpr IPType HandlerType() {
-    return IPType::UDP;
-  }
-
-private:
-  NetProtocolType Type(const UDP4RecvPacket&) const;
-
-  typedef upan::map<NetProtocolType, PacketHandler<UDP4RecvPacket>*> UDPPacketHandlerMap;
-  UDPPacketHandlerMap _udpPacketHandlers;
-  IPV4Handler& _ipv4Handler;
-};
+  DHCPSendPacket dhcpSendPacket(1, 1, NetworkPacket::MAC_ADDR_LEN, 0,
+                                0x3903F326, 0, 0,
+                                nullptr, nullptr, nullptr, nullptr,
+                                clientHardwareAddress, nullptr, nullptr);
+  _udpHandler.SendPacket(dhcpSendPacket.buf(), dhcpSendPacket.len(), 68, 67);
+}

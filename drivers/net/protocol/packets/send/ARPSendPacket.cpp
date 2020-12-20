@@ -28,13 +28,13 @@ ARPSendPacket::ARPSendPacket(uint16_t hType, EtherType pType, uint8_t hLen, uint
   _len = NetworkPacket::Ethernet::HEADER_SIZE + NetworkPacket::ARP::HEADER_SIZE + NetworkPacket::ARP::IPV4_SIZE;
   _buf = new ((void*)DMM_AllocateForKernel(_len, 16))uint8_t[_len];
 
-  auto _arpHeader = reinterpret_cast<NetworkPacket::ARP::Header*>(
+  auto arpHeader = reinterpret_cast<NetworkPacket::ARP::Header*>(
       _buf + NetworkPacket::Ethernet::HEADER_SIZE);
-  _arpHeader->_hType = NetworkUtil::SwitchEndian(hType);
-  _arpHeader->_pType = NetworkUtil::SwitchEndian((uint16_t)pType);
-  _arpHeader->_hLen = hLen;
-  _arpHeader->_pLen = pLen;
-  _arpHeader->_opCode = NetworkUtil::SwitchEndian(opCode);
+  arpHeader->_hType = NetworkUtil::SwitchEndian(hType);
+  arpHeader->_pType = NetworkUtil::SwitchEndian((uint16_t)pType);
+  arpHeader->_hLen = hLen;
+  arpHeader->_pLen = pLen;
+  arpHeader->_opCode = NetworkUtil::SwitchEndian(opCode);
 
   auto _arpIPV4 = reinterpret_cast<NetworkPacket::ARP::IPV4*>(
       _buf + NetworkPacket::Ethernet::HEADER_SIZE + NetworkPacket::ARP::HEADER_SIZE);

@@ -22,7 +22,8 @@
 #include <EthernetHandler.h>
 #include <IPV4RecvPacket.h>
 
-IPV4Handler::IPV4Handler(EthernetHandler &ethernetHandler) : _ethernetHandler(ethernetHandler) {
+IPV4Handler::IPV4Handler(EthernetHandler &ethernetHandler)
+  : PacketHandler<EthernetRecvPacket>(ethernetHandler.GetNetworkDevice()), _ethernetHandler(ethernetHandler) {
   _ipPacketHandlers.insert(IPPacketHandlerMap::value_type(IPType::UDP, new UDP4Handler(*this)));
 }
 
@@ -32,9 +33,9 @@ void IPV4Handler::Process(const EthernetRecvPacket& packet) {
   ipv4Packet.Print();
 
   auto it = _ipPacketHandlers.find(ipv4Packet.Type());
-  if (it == _ipPacketHandlers.end()) {
-    //throw upan::exception(XLOC, "Unhandled IPV4 Packet of Type: %d", ipv4Packet.Type());
-  } else {
+  if (it != _ipPacketHandlers.end()) {
     it->second->Process(ipv4Packet);
+  } else {
+    //throw upan::exception(XLOC, "Unhandled IPV4 Packet of Type: %d", ipv4Packet.Type());
   }
 }

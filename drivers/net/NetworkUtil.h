@@ -39,6 +39,7 @@ public:
   MACAddress() {}
   MACAddress(const upan::string& macAddr);
   MACAddress(const upan::vector<uint8_t>& macAddr);
+  MACAddress(const uint8_t* macAddr);
   MACAddress(const MACAddress&);
   MACAddress& operator=(const MACAddress&);
 
@@ -52,6 +53,15 @@ public:
     return _macAddr;
   }
 private:
+  template <typename MACAddr>
+  void convert(const MACAddr& macAddr) {
+    char c[5];
+    for(uint32_t i = 0; i < NetworkPacket::MAC_ADDR_LEN; ++i) {
+      sprintf(c, "%02x%s", macAddr[i], i < NetworkPacket::MAC_ADDR_LEN - 1 ? ":" : "");
+      _macAddrStr += c;
+      _macAddr[i] = macAddr[i];
+    }
+  }
   void copy(const MACAddress&);
 
   upan::string _macAddrStr;
@@ -62,6 +72,7 @@ class IPAddress {
 public:
   IPAddress(const upan::string& ipAddr);
   IPAddress(const upan::vector<uint8_t>& ipAddr);
+  IPAddress(const uint8_t* ipAddr);
   IPAddress(const IPAddress&);
   IPAddress& operator=(const IPAddress&);
 
@@ -75,6 +86,16 @@ public:
     return _ipAddr;
   }
 private:
+  template <typename IPAddr>
+  void convert(const IPAddr& ipAddr) {
+    char c[5];
+    for(uint32_t i = 0; i < NetworkPacket::IPV4_ADDR_LEN; ++i) {
+      sprintf(c, "%02x%s", ipAddr[i], i < NetworkPacket::IPV4_ADDR_LEN - 1 ? "." : "");
+      _ipAddrStr += c;
+      _ipAddr[i] = ipAddr[i];
+    }
+  }
+
   void copy(const IPAddress&);
 
   upan::string _ipAddrStr;
