@@ -17,7 +17,7 @@
  */
 #pragma once
 
-#include <NetworkPacketComponents.h>
-
-class EthernetSendPacket {
-};
+typedef enum {
+  Unknown,
+  DHCP,
+} NetProtocolType;
