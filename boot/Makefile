@@ -13,7 +13,7 @@
 #																			 
 #	 You should have received a copy of the GNU General Public License
 #	 along with this program.  If not, see <http://www.gnu.org/licenses/
-ASM = nasm
+ASM = ${HOME}/opt/cross/bin/nasm
 
 BIN = ${UPANIX_HOME}/bin
 BOOT_SRC = Boot.asm
