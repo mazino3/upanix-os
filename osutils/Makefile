@@ -13,8 +13,8 @@
 #																			 
 #	 You should have received a copy of the GNU General Public License
 #	 along with this program.  If not, see <http://www.gnu.org/licenses/
-CC = i686-elf-gcc
-ASM = nasm
+CC = ${HOME}/opt/cross/bin/i686-elf-gcc
+ASM = ${HOME}/opt/cross/bin/nasm
 
 DLL_SRC = dll.asm 
 DLL_OUTPUT = .dll

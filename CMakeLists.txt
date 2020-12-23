@@ -34,7 +34,7 @@ endif()
 
 set(CMAKE_CXX_FLAGS " -O0 -Wall -ffreestanding -nodefaultlibs -nostdlib -nostartfiles -nostdinc -std=c++11 -nostdinc++ -fno-threadsafe-statics -fpermissive ${EXCEPTION_SUP}")
 set(CMAKE_C_FLAGS " -std=c11 -O0 -Wall -ffreestanding -nodefaultlibs -nostdlib -nostartfiles -nostdinc")
-set(CMAKE_EXE_LINKER_FLAGS " -Tkernel.ld -O0 -nostdlib")
+set(CMAKE_EXE_LINKER_FLAGS " -T${PROJECT_SOURCE_DIR}/kernel.ld -O0 -nostdlib")
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
@@ -108,12 +108,12 @@ string(REPLACE "\n" "" CRTBEGIN_OBJ ${CRTBEGIN_OBJ})
 execute_process(COMMAND bash -c "${CMAKE_CXX_COMPILER} -print-file-name=crtend.o" OUTPUT_VARIABLE CRTEND_OBJ)
 string(REPLACE "\n" "" CRTEND_OBJ ${CRTEND_OBJ})
 
-set(CRTINIT_OBJ "./osutils/crti.o ${CRTBEGIN_OBJ}")
-set(CRTFINI_OBJ "${CRTEND_OBJ} ./osutils/crtn.o")
+set(CRTINIT_OBJ "${PROJECT_SOURCE_DIR}/osutils/crti.o ${CRTBEGIN_OBJ}")
+set(CRTFINI_OBJ "${CRTEND_OBJ} ${PROJECT_SOURCE_DIR}/osutils/crtn.o")
 
-set(OTHER_OBJS memory/Mem.o)
+set(OTHER_OBJS ${PROJECT_SOURCE_DIR}/memory/Mem.o)
 
-set(CMAKE_CXX_LINK_EXECUTABLE "<CMAKE_CXX_COMPILER> ${CMAKE_CXX_FLAGS} ${CMAKE_EXE_LINKER_FLAGS} boot/fpu_init.obj boot/UpanixStart_Main.grub ${CRTINIT_OBJ} <OBJECTS> -o <TARGET> <LINK_LIBRARIES> ${CRTFINI_OBJ}")
+set(CMAKE_CXX_LINK_EXECUTABLE "<CMAKE_CXX_COMPILER> ${CMAKE_CXX_FLAGS} ${CMAKE_EXE_LINKER_FLAGS} ${PROJECT_SOURCE_DIR}/boot/fpu_init.obj ${PROJECT_SOURCE_DIR}/boot/UpanixStart_Main.grub ${CRTINIT_OBJ} <OBJECTS> -o <TARGET> <LINK_LIBRARIES> ${CRTFINI_OBJ}")
 #set(CMAKE_CXX_LINK_EXECUTABLE "<CMAKE_CXX_COMPILER> ${CMAKE_EXE_LINKER_FLAGS} boot/fpu_init.obj boot/UpanixStart_Main.grub ${CRTINIT_OBJ} <OBJECTS> -o <TARGET> <LINK_LIBRARIES> ${CRTFINI_OBJ}")
 
 #LIBC
