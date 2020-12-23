@@ -59,6 +59,8 @@
 #include <printf.h>
 #include <kb.h>
 #include <cdisplay.h>
+#include <cdisplay.h>
+#include <Display.h>
 
 #ifdef __UCLIBC_HAS_WCHAR__
 #include <bits/uClibc_uwchar.h>
@@ -2273,8 +2275,8 @@ void read_input_till_char(cecho_func* cechoFunc, char* in_buf, const int max_rea
 				{
 					if(echo)
 					{
-						SysDisplay_MoveCursor(-1) ;
-						SysDisplay_ClearLine(Display::START_CURSOR_POS) ;
+						movcursor(-1) ;
+						clrline(Display::START_CURSOR_POS) ;
 					}
 					cur_read_pos-- ;
 				}

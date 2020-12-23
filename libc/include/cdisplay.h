@@ -15,11 +15,8 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
-#ifndef _LIBC_DISPLAY_H_
-#define _LIBC_DISPLAY_H_
-
+#pragma once
 #include <ctype.h>
-#include <Display.h>
 
 extern void	SysDisplay_MoveCursor(int n) ;
 extern void	SysDisplay_ClearLine(int pos) ;
@@ -32,4 +29,3 @@ extern int	SysDisplay_GetCursor() ;
 #define set_cursor_val(pos)	SysDisplay_SetCursor(pos, false)
 #define get_cursor()		SysDisplay_GetCursor()
 
-#endif
