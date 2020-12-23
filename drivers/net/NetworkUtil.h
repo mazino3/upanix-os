@@ -90,7 +90,7 @@ private:
   void convert(const IPAddr& ipAddr) {
     char c[5];
     for(uint32_t i = 0; i < NetworkPacket::IPV4_ADDR_LEN; ++i) {
-      sprintf(c, "%02x%s", ipAddr[i], i < NetworkPacket::IPV4_ADDR_LEN - 1 ? "." : "");
+      sprintf(c, "%u%s", ipAddr[i], i < NetworkPacket::IPV4_ADDR_LEN - 1 ? "." : "");
       _ipAddrStr += c;
       _ipAddr[i] = ipAddr[i];
     }
