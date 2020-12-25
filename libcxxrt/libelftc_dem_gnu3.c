@@ -31,7 +31,7 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <cstring.h>
+#include <string.h>
 #include <malloc.h>
 
 /**

@@ -17,7 +17,7 @@
  */
 #pragma once
 
-#include <string.h>
+#include <ustring.h>
 #include <exception.h>
 #include <drivers/net/protocol/NetworkProtocolType.h>
 

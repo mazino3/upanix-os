@@ -22,7 +22,7 @@
 #include <USBConstants.h>
 #include <USBStructures.h>
 #include <exception.h>
-#include <string.h>
+#include <ustring.h>
 
 class USBInterruptDataHandler;
 

@@ -35,7 +35,7 @@
 #include <ElfSymbolTable.h>
 #include <ElfDynamicSection.h>
 #include <stdio.h>
-#include <string.h>
+#include <ustring.h>
 #include <exception.h>
 #include <uniq_ptr.h>
 #include <try.h>

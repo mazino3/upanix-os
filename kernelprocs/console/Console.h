@@ -19,7 +19,7 @@
 #define _UPANIX_SHELL_H_
 
 # include <Global.h>
-# include <string.h>
+# include <ustring.h>
 
 void Console_StartUpanixConsole();
 

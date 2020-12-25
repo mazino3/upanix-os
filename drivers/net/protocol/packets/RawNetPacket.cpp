@@ -17,7 +17,7 @@
  */
 
 #include <stdlib.h>
-#include <cstring.h>
+#include <string.h>
 #include <DMM.h>
 #include <RawNetPacket.h>
 

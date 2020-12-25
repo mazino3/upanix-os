@@ -19,7 +19,7 @@
 #define _SCSIHANDLER_H_
 
 #include <Global.h>
-#include <string.h>
+#include <ustring.h>
 
 #define SCSIHandler_SUCCESS 0
 #define SCSIHandler_FAILURE 1

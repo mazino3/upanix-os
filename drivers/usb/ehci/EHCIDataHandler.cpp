@@ -17,7 +17,7 @@
  */
 #include <DMM.h>
 #include <stdio.h>
-#include <cstring.h>
+#include <string.h>
 #include <EHCIStructures.h>
 
 void EHCIDataHandler_CleanAysncQueueHead(EHCIQueueHead*  pQH)

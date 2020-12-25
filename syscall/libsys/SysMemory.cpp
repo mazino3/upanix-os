@@ -1,5 +1,5 @@
 /*
- *	Upanix - An x86 based Operating System
+ *  Mother Operating System - An x86 based Operating System
  *  Copyright (C) 2011 'Prajwala Prabhakar' 'srinivasa_prajwal@yahoo.co.in'
  *                                                                          
  *  This program is free software: you can redistribute it and/or modify
@@ -15,25 +15,24 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
-# include <dtime.h>
+# include <SysCall.h>
 
-time_t time(time_t * t)
+int SysMemory_Alloc(void** addr, unsigned uiSizeInBytes)
 {
-	time_t result;
-	struct timeval tv;
+  unsigned ret = DMM_AllocateForKernel(uiSizeInBytes);
+  if (ret == NULL || ret < 0)
+    return -1;
+  *addr = ret;
+  return 0;
+}
 
-	if (gettimeofday(&tv) ) //, (struct timezone *) NULL)) 
-	{
-		result = (time_t) - 1;
-	}
-   	else
-   	{
-		result = (time_t) tv.tSec;
-	}
+int SysMemory_Free(void* uiAddress)
+{
+  DMM_DeAllocateForKernel(uiAddress);
+  return 0;
+}
 
-	if (t != NULL) 
-	{
-		*t = result;
-	}
-	return result;
+int SysMemory_GetAllocSize(void* uiAddress, int* size)
+{
+  return DMM_GetAllocSizeForKernel(uiAddress, size);
 }

@@ -22,7 +22,7 @@
 #include <USBConstants.h>
 #include <SCSIHandler.h>
 #include <exception.h>
-#include <string.h>
+#include <ustring.h>
 
 class USBMassBulkStorageDisk;
 

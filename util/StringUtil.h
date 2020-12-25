@@ -19,8 +19,8 @@
 #define _STRING_UTIL_H_
 
 #include <Global.h>
-#include <cstring.h>
 #include <string.h>
+#include <ustring.h>
 #include <vector.h>
 
 class StringTokenizer

@@ -1,4 +1,4 @@
-#include <string.h>
+#include <ustring.h>
 #include <TaskStructures.h>
 #include <ProcessConstants.h>
 

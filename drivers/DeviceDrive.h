@@ -22,7 +22,7 @@
 #include <FileSystem.h>
 #include <Atomic.h>
 #include <DiskCache.h>
-#include <string.h>
+#include <ustring.h>
 #include <drive.h>
 #include <result.h>
 
@@ -37,42 +37,6 @@
 #define	DeviceDrive_ERR_DUPLICATE				8
 #define	DeviceDrive_ERR_NOTFOUND				9
 #define DeviceDrive_FAILURE						10
-
-typedef enum
-{
-	FS_UNKNOWN = 0x0,
-	UPANFS = 0x83
-} FS_TYPE;
-
-typedef enum
-{
-	DEV_FLOPPY = 0x0,
-	DEV_CD,
-	DEV_ATA_IDE = 0x80,
-	DEV_ATAPI,
-	DEV_SCSI_USB_DISK = 0x90
-} DEVICE_TYPE;
-
-typedef enum
-{
-	FROM_FILE = -3,
-	ROOT_DRIVE = -2,
-	CURRENT_DRIVE = -1,
-	FD_DRIVE0 = 0,
-	FD_DRIVE1,
-	FD_DRIVE2,
-	FD_DRIVE3,
-	CD_DRIVE0,
-	CD_DRIVE1,
-	HDD_DRIVE0,
-	HDD_DRIVE1,
-	USD_DRIVE0,
-	USD_DRIVE1,
-	USD_DRIVE2,
-	USD_DRIVE3,
-	USD_DRIVE4,
-	USD_DRIVE5
-} DRIVE_NO;
 
 class RawDiskDrive;
 

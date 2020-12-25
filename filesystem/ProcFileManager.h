@@ -31,20 +31,6 @@
 #define ProcFileManager_ERR_INVALID_STDFD		6
 #define ProcFileManager_FAILURE					7
 
-#ifndef DEF_FILE_MODES
-#define DEF_FILE_MODES
-typedef enum
-{	
-	O_RDONLY = 1,
-	O_WRONLY = 2,
-	O_RDWR = 4,
-	O_APPEND = 8,
-	O_CREAT = 16,
-	O_EXCL = 32,
-	O_TRUNC = 64
-} FileModes ;
-#endif
-
 typedef enum
 {
 

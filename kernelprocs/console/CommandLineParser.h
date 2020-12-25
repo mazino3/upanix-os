@@ -20,7 +20,7 @@
 
 #include <vector.h>
 #include <set.h>
-#include <string.h>
+#include <ustring.h>
 
 #define COMMAND_LINE_SIZE 70
 #define MAX_COMMAND_LINE_ENTRIES 20

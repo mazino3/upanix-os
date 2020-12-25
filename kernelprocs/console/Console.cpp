@@ -29,7 +29,7 @@
 #include <SessionManager.h>
 
 #include <stdio.h>
-#include <cstring.h>
+#include <string.h>
 
 void Console_StartUpanixConsole()
 {

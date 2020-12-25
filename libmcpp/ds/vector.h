@@ -21,7 +21,7 @@
 #ifdef __LOCAL_TEST__
 #include "/usr/include/string.h"
 #else
-#include <cstring.h>
+#include <string.h>
 #include <Alloc.h>
 #endif
 #include <exception.h>

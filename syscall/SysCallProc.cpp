@@ -103,7 +103,6 @@ __volatile__ unsigned uiP9)
 
 		case SYS_CALL_PROCESS_GET_ENV:
 			//P1 - Env Var
-			//P2 - Return val
 			{
 				char* szVar = KERNEL_ADDR(bDoAddrTranslation, char*, uiP1) ;
         const char* szVal = ProcessEnv_Get(szVar) ;

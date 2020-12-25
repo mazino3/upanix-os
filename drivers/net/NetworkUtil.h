@@ -19,7 +19,7 @@
 #pragma once
 
 #include <stdlib.h>
-#include <libmcpp/ds/string.h>
+#include <libmcpp/ds/ustring.h>
 #include <drivers/net/protocol/packets/NetworkPacketComponents.h>
 #include <libmcpp/ds/vector.h>
 

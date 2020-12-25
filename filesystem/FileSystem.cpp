@@ -480,21 +480,21 @@ void FileSystem::SetSectorEntryValue(const unsigned uiSectorID, unsigned uiSecto
 
 void FileSystem::Node::Init(char* szDirName, unsigned short usDirAttribute, int iUserID, unsigned uiParentSecNo, byte bParentSecPos)
 {
-  strcpy((char*)_name, szDirName) ;
+  strcpy((char*)_fsnode._name, szDirName) ;
 
-  _attribute = usDirAttribute ;
+  _fsnode._attribute = usDirAttribute ;
 
-  _createdTime.tSec = SystemUtil_GetTimeOfDay();
-  _accessedTime.tSec = _createdTime.tSec;
-  _modifiedTime.tSec = _createdTime.tSec;
+  _fsnode._createdTime.tSec = SystemUtil_GetTimeOfDay();
+  _fsnode._accessedTime.tSec = _fsnode._createdTime.tSec;
+  _fsnode._modifiedTime.tSec = _fsnode._createdTime.tSec;
 
-  _startSectorID = EOC ;
-  _size = 0 ;
+  _fsnode._startSectorID = EOC ;
+  _fsnode._size = 0 ;
 
-  _parentSectorID = uiParentSecNo ;
-  _parentSectorPos = bParentSecPos ;
+  _fsnode._parentSectorID = uiParentSecNo ;
+  _fsnode._parentSectorPos = bParentSecPos ;
 
-  _userID = iUserID ;
+  _fsnode._userID = iUserID ;
 }
 
 void FileSystem::Node::InitAsRoot(uint32_t parentSectorId)
@@ -541,5 +541,5 @@ upan::string FileSystem::Node::FullPath(DiskDrive& diskDrive)
     pParseDirEntry = &((const FileSystem::Node*)bSectorBuffer)[bParSectorPos] ;
   }
 
-  throw upan::exception(XLOC, "failed to find full path for directory/file %s", _name);
+  throw upan::exception(XLOC, "failed to find full path for directory/file %s", _fsnode._name);
 }

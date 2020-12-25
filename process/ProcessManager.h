@@ -26,6 +26,7 @@
 #include <Atomic.h>
 #include <Process.h>
 #include <list.h>
+#include <mosstd.h>
 
 #define ProcessManager_SUCCESS						0
 #define ProcessManager_ERR_MAX_PROCESS_EXCEEDED		1
@@ -58,16 +59,6 @@
 	__asm__ __volatile__("ret") ;
 
 extern unsigned ProcessManager_uiKernelAUTAddress ;
-
-typedef struct
-{
-	int pid ;
-	char* pname ;
-	PROCESS_STATUS status ;
-	int iParentProcessID ;
-	int iProcessGroupID ;
-	int iUserID ;
-} PS ;
 
 void ProcessManager_ProcessInit() ;
 void ProcessManager_ProcessUnInit() ;

@@ -49,11 +49,11 @@ class exception
 
 #else
 
-#include <cstring.h>
+#include <ustring.h>
 #include <ctype.h>
 #include <stdarg.h>
 #include <stdio.h>
-#include <string.h>
+#include <ustring.h>
 
 namespace upan {
 

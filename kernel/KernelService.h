@@ -20,7 +20,7 @@
 
 #include <Global.h>
 #include <Atomic.h>
-#include <cstring.h>
+#include <string.h>
 #include <StringUtil.h>
 #include <ProcessManager.h>
 #include <list.h>

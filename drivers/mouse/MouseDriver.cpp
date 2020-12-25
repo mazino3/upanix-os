@@ -23,6 +23,7 @@
 #include <ProcessManager.h>
 #include <MouseDriver.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 MouseDriver::MouseDriver()
 {

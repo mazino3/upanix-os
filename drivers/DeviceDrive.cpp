@@ -33,6 +33,7 @@
 # include <KernelUtil.h>
 # include <FileSystem.h>
 # include <try.h>
+# include <drive.h>
 
 static unsigned uiTotalFloppyDiskReads = 0;
 static unsigned uiTotalATADiskReads = 0;

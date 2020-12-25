@@ -98,7 +98,7 @@ extern int errno;
 #endif
 
 /* If these system headers do not exist, fixincludes must create them.  */
-#include <cstring.h>
+#include <string.h>
 #include <stdlib.h>
 //#include <unistd.h>
 

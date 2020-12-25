@@ -18,7 +18,7 @@
 #pragma once
   
 #include <stdlib.h>
-#include <string.h>
+#include <ustring.h>
 
 namespace NetworkPacket {
   constexpr uint32_t MAC_ADDR_LEN = 6;

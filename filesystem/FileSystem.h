@@ -21,6 +21,7 @@
 #include <Global.h>
 #include <queue.h>
 #include <vector.h>
+#include <fs.h>
 
 #define MEDIA_REMOVABLE	0xF0
 #define MEDIA_FIXED		0xF8
@@ -102,48 +103,38 @@ public:
       void InitAsRoot(uint32_t parentSectorId);
       upan::string FullPath(DiskDrive& diskDrive);
 
-      bool IsDirectory() const { return (_attribute & ATTR_TYPE_DIRECTORY) == ATTR_TYPE_DIRECTORY; }
-      bool IsFile() const { return (_attribute & ATTR_TYPE_FILE) == ATTR_TYPE_FILE; }
+      bool IsDirectory() const { return (_fsnode._attribute & ATTR_TYPE_DIRECTORY) == ATTR_TYPE_DIRECTORY; }
+      bool IsFile() const { return (_fsnode._attribute & ATTR_TYPE_FILE) == ATTR_TYPE_FILE; }
 
-      const char* Name() const { return (const char*)_name; }
-      const struct timeval& CreatedTime() const { return _createdTime; }
+      const char* Name() const { return (const char*)_fsnode._name; }
+      const struct timeval& CreatedTime() const { return _fsnode._createdTime; }
 
-      const struct timeval& AccessedTime() const { return _accessedTime; }
-      void AccessedTime(const uint32_t tSec) { _accessedTime.tSec = tSec; }
+      const struct timeval& AccessedTime() const { return _fsnode._accessedTime; }
+      void AccessedTime(const uint32_t tSec) { _fsnode._accessedTime.tSec = tSec; }
 
-      const struct timeval& ModifiedTime() const { return _modifiedTime; }
-      void ModifiedTime(const uint32_t tSec) { _modifiedTime.tSec = tSec; }
+      const struct timeval& ModifiedTime() const { return _fsnode._modifiedTime; }
+      void ModifiedTime(const uint32_t tSec) { _fsnode._modifiedTime.tSec = tSec; }
 
-      uint16_t ParentSectorPos() const { return _parentSectorPos; }
+      uint16_t ParentSectorPos() const { return _fsnode._parentSectorPos; }
 
-      uint16_t Attribute() const { return _attribute; }
-      bool IsDeleted() const { return (_attribute & ATTR_DELETED_DIR) != 0; }
-      void MarkAsDeleted() { _attribute |= ATTR_DELETED_DIR ; }
+      uint16_t Attribute() const { return _fsnode._attribute; }
+      bool IsDeleted() const { return (_fsnode._attribute & ATTR_DELETED_DIR) != 0; }
+      void MarkAsDeleted() { _fsnode._attribute |= ATTR_DELETED_DIR ; }
 
-      uint32_t Size() const { return _size; }
-      void Size(uint32_t s) { _size = s; }
-      void AddNode() { ++_size; }
-      void RemoveNode() { --_size; }
+      uint32_t Size() const { return _fsnode._size; }
+      void Size(uint32_t s) { _fsnode._size = s; }
+      void AddNode() { ++_fsnode._size; }
+      void RemoveNode() { --_fsnode._size; }
 
-      uint32_t StartSectorID() const { return _startSectorID; }
-      void StartSectorID(const uint32_t sectorId) { _startSectorID = sectorId; }
+      uint32_t StartSectorID() const { return _fsnode._startSectorID; }
+      void StartSectorID(const uint32_t sectorId) { _fsnode._startSectorID = sectorId; }
 
-      uint32_t ParentSectorID() const { return _parentSectorID; }
-      int UserID() const { return _userID; }
+      uint32_t ParentSectorID() const { return _fsnode._parentSectorID; }
+      int UserID() const { return _fsnode._userID; }
 
     private:
-      byte            _name[33] ;
-      struct timeval  _createdTime ;
-      struct timeval  _accessedTime ;
-      struct timeval  _modifiedTime ;
-      byte            _parentSectorPos ;
-      unsigned short  _attribute ;
-      unsigned        _size ;
-      unsigned        _startSectorID ;
-      unsigned        _parentSectorID ;
-      int             _userID ;
+      FS_Node _fsnode;
     } PACKED;
-
 
     typedef struct
     {

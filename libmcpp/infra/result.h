@@ -18,7 +18,7 @@
 #ifndef _M_RESULT_H_
 #define _M_RESULT_H_
 
-#include <string.h>
+#include <ustring.h>
 #include <exception.h>
 
 namespace upan {

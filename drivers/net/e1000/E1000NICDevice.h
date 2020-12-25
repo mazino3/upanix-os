@@ -19,7 +19,7 @@
 
 #include <vector.h>
 #include <option.h>
-#include <string.h>
+#include <ustring.h>
 #include <RawNetPacket.h>
 #include <EthernetHandler.h>
 #include <NetworkPacketComponents.h>

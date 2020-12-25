@@ -19,7 +19,7 @@
 #define _PORTCOM_H_
 
 #include <Global.h>
-#include <string.h>
+#include <ustring.h>
 
 void PortCom_SendByte(const unsigned short portAddress, const byte data) ;
 byte PortCom_ReceiveByte(const unsigned short portAddress) ;

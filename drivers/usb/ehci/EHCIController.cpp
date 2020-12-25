@@ -23,7 +23,7 @@
 #include <MemUtil.h>
 #include <PortCom.h>
 #include <stdio.h>
-#include <cstring.h>
+#include <string.h>
 #include <StringUtil.h>
 #include <KeyboardHandler.h>
 #include <ProcessManager.h>

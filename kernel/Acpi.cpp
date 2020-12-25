@@ -18,7 +18,7 @@
 
 #include <Acpi.h>
 #include <MultiBoot.h>
-#include <string.h>
+#include <ustring.h>
 #include <MemManager.h>
 
 #define MADT_LOCAL_APIC                     0

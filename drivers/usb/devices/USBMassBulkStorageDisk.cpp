@@ -20,7 +20,7 @@
 #include <DMM.h>
 #include <stdio.h>
 #include <PortCom.h>
-#include <string.h>
+#include <ustring.h>
 #include <uniq_ptr.h>
 #include <PartitionManager.h>
 #include <FileSystem.h>

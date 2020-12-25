@@ -4,22 +4,10 @@
 #include <Atomic.h>
 #include <TaskStructures.h>
 #include <FileOperations.h>
+#include <mosstd.h>
 
 class ProcessGroup;
 class IRQ;
-
-typedef enum
-{
-  NEW,
-  RUN,
-  WAIT_SLEEP,
-  WAIT_INT,
-  WAIT_CHILD,
-  WAIT_RESOURCE,
-  WAIT_KERNEL_SERVICE,
-  WAIT_EVENT,
-  TERMINATED,
-} PROCESS_STATUS ;
 
 class ProcessStateInfo
 {

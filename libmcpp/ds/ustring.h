@@ -22,7 +22,7 @@
 #include "/usr/include/string.h"
 #else
 #include <Global.h>
-#include <cstring.h>
+#include <string.h>
 #endif
 
 #include <stdio.h>

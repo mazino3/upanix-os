@@ -25,6 +25,7 @@
 # include <MultiBoot.h>
 # include <MountManager.h>
 # include <try.h>
+# include <drive.h>
 
 static char MountManager_szRootDriveName[33] = "" ;
 static int MountManager_iRootDriveID = CURRENT_DRIVE ;

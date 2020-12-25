@@ -19,7 +19,7 @@
 #define _USER_MANAGER_H_
 
 #include <Global.h>
-#include <string.h>
+#include <ustring.h>
 #include <map.h>
 
 #define MAX_USER_LENGTH				32

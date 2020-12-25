@@ -18,7 +18,7 @@
 #ifndef _UPAN_UNIQ_PTR_H_
 #define _UPAN_UNIQ_PTR_H_
 
-#include <cstring.h>
+#include <string.h>
 #include <StringUtil.h>
 #include <ctype.h>
 #include <stdarg.h>

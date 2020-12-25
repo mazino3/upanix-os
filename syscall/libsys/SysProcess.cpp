@@ -17,11 +17,11 @@
  */
 # include <SysCall.h>
 # include <malloc.h>
-# include <cstring.h>
+# include <string.h>
 # include <stdlib.h>
 # include <stdio.h>
 
-int SysProcess_Exec(const char* szFileName, ...)
+int exec(const char* szFileName, ...)
 {
 	__volatile__ int iProcessID ;
 	__volatile__ int argc ;
@@ -52,7 +52,7 @@ int SysProcess_Exec(const char* szFileName, ...)
 	return iProcessID ;
 }
 
-int SysProcess_ExecArgV(const char* szFileName, int iNoOfArgs, char** szArgList)
+int SysProcess_Exec(const char* szFileName, int iNoOfArgs, char *const szArgList[])
 {
 	__volatile__ int iProcessID ;
 	SysCallProc_Handle(&iProcessID, SYS_CALL_PROCESS_EXEC, false, (unsigned)szFileName, (unsigned)iNoOfArgs, (unsigned)szArgList, 4, 5, 6, 7, 8, 9);
@@ -84,14 +84,14 @@ int SysProcess_GetPID()
 	return iProcessID ;
 }
 
-extern "C" char* SysProcess_GetEnv(const char* szVar)
+const char* SysProcess_GetEnv(const char* szVar)
 {
 	__volatile__ int iRetStatus ;
 	SysCallProc_Handle(&iRetStatus, SYS_CALL_PROCESS_GET_ENV, false, (unsigned)szVar, 2, 3, 4, 5, 6, 7, 8, 9);
-	return (char*)iRetStatus ;
+	return (const char*)iRetStatus ;
 }
 
-extern "C" int SysProcess_SetEnv(const char* szVar, const char* szVal)
+int SysProcess_SetEnv(const char* szVar, const char* szVal)
 {
 	__volatile__ int iRetStatus ;
 	SysCallProc_Handle(&iRetStatus, SYS_CALL_PROCESS_SET_ENV, false, (unsigned)szVar, (unsigned)szVal, 3, 4, 5, 6, 7, 8, 9);

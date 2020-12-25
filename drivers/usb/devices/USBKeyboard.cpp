@@ -17,7 +17,7 @@
  */
 #include <USBKeyboard.h>
 #include <stdio.h>
-#include <string.h>
+#include <ustring.h>
 #include <USBController.h>
 #include <USBDevice.h>
 #include <KeyboardHandler.h>

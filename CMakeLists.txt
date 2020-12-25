@@ -20,6 +20,9 @@ set(TARGET_BIN "upanix.elf")
 
 set(CROSS_TOOL_PATH $ENV{HOME}/opt/cross)
 
+set(UPANLIB_SOURCE_DIR ${PROJECT_SOURCE_DIR}/../upanlibs)
+set(UPANLIB_OUT_DIR ${UPANLIB_SOURCE_DIR}/out)
+
 set(CMAKE_CXX_COMPILER ${CROSS_TOOL_PATH}/bin/i686-elf-g++)
 set(CMAKE_C_COMPILER ${CROSS_TOOL_PATH}/bin/i686-elf-gcc)
 set(CMAKE_LINKER ${CROSS_TOOL_PATH}/i686-elf/bin/ld)
@@ -84,10 +87,10 @@ include_directories(${PROJECT_SOURCE_DIR}/resource)
 
 include_directories(${PROJECT_SOURCE_DIR}/testsuite)
 
-include_directories(${PROJECT_SOURCE_DIR}/libc/include)
-include_directories(${PROJECT_SOURCE_DIR}/libc/stdio)
-include_directories(${PROJECT_SOURCE_DIR}/libc/sysdeps/mos/common/)
-include_directories(${PROJECT_SOURCE_DIR}/libc/sysdeps/mos/common/bits)
+include_directories(${UPANLIB_SOURCE_DIR}/libc/include)
+include_directories(${UPANLIB_SOURCE_DIR}/libc/stdio)
+include_directories(${UPANLIB_SOURCE_DIR}/libc/sysdeps/mos/common/)
+include_directories(${UPANLIB_SOURCE_DIR}/libc/sysdeps/mos/common/bits)
 
 include_directories(${PROJECT_SOURCE_DIR}/libmcpp/infra)
 include_directories(${PROJECT_SOURCE_DIR}/libmcpp/ds)
@@ -114,12 +117,6 @@ set(CRTFINI_OBJ "${CRTEND_OBJ} ${PROJECT_SOURCE_DIR}/osutils/crtn.o")
 set(OTHER_OBJS ${PROJECT_SOURCE_DIR}/memory/Mem.o)
 
 set(CMAKE_CXX_LINK_EXECUTABLE "<CMAKE_CXX_COMPILER> ${CMAKE_CXX_FLAGS} ${CMAKE_EXE_LINKER_FLAGS} ${PROJECT_SOURCE_DIR}/boot/fpu_init.obj ${PROJECT_SOURCE_DIR}/boot/UpanixStart_Main.grub ${CRTINIT_OBJ} <OBJECTS> -o <TARGET> <LINK_LIBRARIES> ${CRTFINI_OBJ}")
-#set(CMAKE_CXX_LINK_EXECUTABLE "<CMAKE_CXX_COMPILER> ${CMAKE_EXE_LINKER_FLAGS} boot/fpu_init.obj boot/UpanixStart_Main.grub ${CRTINIT_OBJ} <OBJECTS> -o <TARGET> <LINK_LIBRARIES> ${CRTFINI_OBJ}")
-
-#LIBC
-execute_process(COMMAND bash -c "cd ${PROJECT_SOURCE_DIR}; find ./libc -name '*.cpp' | grep -v CMakeFile" OUTPUT_VARIABLE LIBC_SRC)
-string(REPLACE "\n" ";" LIBC_SRC ${LIBC_SRC})
-add_library(c STATIC "${LIBC_SRC}")
 
 #LIBGCCEH
 execute_process(COMMAND bash -c "cd ${PROJECT_SOURCE_DIR}; find ./libgcceh -name '*.c' | grep -v CMakeFile" OUTPUT_VARIABLE GCCEH_SRC)
@@ -142,7 +139,7 @@ add_library(mcpp STATIC "${MCPP_SRC}")
 #UPANIX
 add_executable(${TARGET_BIN} ${OTHER_OBJS} ${UPANIX_SRCS})
 
-add_dependencies(${TARGET_BIN} c)
+#add_dependencies(${TARGET_BIN} c)
 add_dependencies(${TARGET_BIN} gcceh)
 add_dependencies(${TARGET_BIN} cxxrt)
 add_dependencies(${TARGET_BIN} mcpp)
@@ -152,7 +149,7 @@ add_dependencies(${TARGET_BIN} mem)
 
 target_link_libraries(${TARGET_BIN} cxxrt)
 target_link_libraries(${TARGET_BIN} mcpp)
-target_link_libraries(${TARGET_BIN} c)
+target_link_libraries(${TARGET_BIN} ${UPANLIB_OUT_DIR}/libc.a)
 target_link_libraries(${TARGET_BIN} gcceh)
 
 set_source_files_properties(${OTHER_OBJS} PROPERTIES EXTERNAL_OBJECT true GENERATED true)
