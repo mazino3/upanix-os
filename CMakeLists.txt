@@ -93,6 +93,7 @@ include_directories(${UPANLIB_SOURCE_DIR}/libc/sysdeps/mos/common/)
 include_directories(${UPANLIB_SOURCE_DIR}/libc/sysdeps/mos/common/bits)
 
 include_directories(${UPANLIB_SOURCE_DIR}/libustdcpp/infra)
+include_directories(${UPANLIB_SOURCE_DIR}/libustdcpp/algo)
 include_directories(${UPANLIB_SOURCE_DIR}/libustdcpp/ds)
 include_directories(${UPANLIB_SOURCE_DIR}/libustdcpp/mem)
 include_directories(${PROJECT_SOURCE_DIR}/libmcpp/cal)

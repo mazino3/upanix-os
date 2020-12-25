@@ -43,7 +43,6 @@ class StringDefTokenizer : public StringTokenizer
 } ;
 
 void String_Tokenize(const char* src, char chToken, int* iListSize, StringTokenizer& strTkCopy) ;
-upan::vector<upan::string> tokenize(const char* src, char chToken);
 int String_Chr(const char* szStr, char ch) ;
 
 #endif

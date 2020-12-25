@@ -17,7 +17,7 @@
  */
 
 #include <NetworkUtil.h>
-#include <StringUtil.h>
+#include <stringalgo.h>
 
 uint8_t NetworkUtil::SwitchEndian(const uint8_t val) {
   return (val >> 4) | (val << 4);
@@ -52,7 +52,7 @@ uint32_t NetworkUtil::AddForChecksum(const uint16_t* buf, uint32_t lengthInBytes
 }
 
 MACAddress::MACAddress(const upan::string &macAddr) : _macAddrStr(macAddr) {
-  upan::vector<upan::string> tokens = tokenize(macAddr.c_str(), ':');
+  upan::vector<upan::string> tokens = upan::tokenize(macAddr.c_str(), ':');
   if (tokens.size() != NetworkPacket::MAC_ADDR_LEN) {
     throw upan::exception(XLOC, "Invalid MAC Address: %s", macAddr.c_str());
   }
@@ -92,7 +92,7 @@ void MACAddress::copy(const MACAddress& r) {
 }
 
 IPAddress::IPAddress(const upan::string &ipAddr) : _ipAddrStr(ipAddr) {
-  upan::vector<upan::string> tokens = tokenize(ipAddr.c_str(), '.');
+  upan::vector<upan::string> tokens = upan::tokenize(ipAddr.c_str(), '.');
   if (tokens.size() != NetworkPacket::IPV4_ADDR_LEN) {
     throw upan::exception(XLOC, "Invalid IP Address: %s", ipAddr.c_str());
   }

@@ -47,9 +47,8 @@ const upan::string Expand(const upan::string& param)
     return param;
 }
 
-void CommandLineParser_Copy(int index, const char* src, int len)
+void CommandLineParser_Copy(int index, const char* src, int len, void* np)
 {
-
   upan::string token(src, len);
   if (index == 0)
     CommandLineParser::Instance()._command = token;
@@ -74,7 +73,7 @@ void CommandLineParser::Parse(const char* szCommandLine)
       &CommandLineParser_TokenCompare,
       &CommandLineParser_GroupToken,
       &CommandLineParser_Copy,
-      &d) ;
+      &d, NULL) ;
 }
 
 const char* CommandLineParser::GetCommand() const

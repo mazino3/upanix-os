@@ -46,28 +46,6 @@ void String_Tokenize(const char* src, char chToken, int* iListSize, StringTokeni
 	*iListSize = iTokenIndex ;
 }
 
-upan::vector<upan::string> tokenize(const char* src, char chToken) {
-  int index;
-  int iStartIndex = 0;
-  upan::vector<upan::string> tokens;
-
-  for(index = 0; src[index] != '\0'; index++) {
-    if(src[index] == chToken) {
-      if((index - iStartIndex) > 0) {
-        upan::string token(src + iStartIndex, (index - iStartIndex));
-        tokens.push_back(token);
-      }
-      iStartIndex = index + 1 ;
-    }
-  }
-
-  if((index - iStartIndex) > 0) {
-    upan::string token(src + iStartIndex, (index - iStartIndex));
-    tokens.push_back(token);
-  }
-  return tokens;
-}
-
 int String_Chr(const char* szStr, char ch)
 {
 	int len = strlen(szStr) ;
