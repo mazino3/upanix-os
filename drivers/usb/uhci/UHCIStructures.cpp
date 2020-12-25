@@ -19,7 +19,7 @@
 #include <DMM.h>
 #include <UHCIStructures.h>
 #include <UHCIManager.h>
-#include <Alloc.h>
+#include <newalloc.h>
 
 UHCITransferDesc* UHCITransferDesc::Create()
 {

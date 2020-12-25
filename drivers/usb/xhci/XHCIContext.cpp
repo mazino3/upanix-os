@@ -17,7 +17,7 @@
  */
 
 #include <MemManager.h>
-#include <Alloc.h>
+#include <newalloc.h>
 #include <XHCIContext.h>
 #include <XHCIStructures.h>
 #include <TRB.h>

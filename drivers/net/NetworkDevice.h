@@ -18,7 +18,7 @@
 #pragma once
 
 #include <ustring.h>
-#include <libmcpp/infra/option.h>
+#include <option.h>
 #include <DHCPHandler.h>
 #include "NetworkUtil.h"
 

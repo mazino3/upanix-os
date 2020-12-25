@@ -19,9 +19,9 @@
 #pragma once
 
 #include <stdlib.h>
-#include <libmcpp/ds/ustring.h>
+#include <ustring.h>
 #include <drivers/net/protocol/packets/NetworkPacketComponents.h>
-#include <libmcpp/ds/vector.h>
+#include <vector.h>
 
 #define LITTLE_ENDIAN 1
 

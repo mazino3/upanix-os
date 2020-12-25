@@ -25,7 +25,7 @@
 #include <KBInputHandler.h>
 #include <KernelUtil.h>
 #include <MemManager.h>
-#include <Alloc.h>
+#include <newalloc.h>
 #include <Bit.h>
 
 static const byte Keyboard_USB_GENERIC_KEY_MAP[] =

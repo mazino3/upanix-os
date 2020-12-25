@@ -17,7 +17,7 @@
  */
 
 #include <TRB.h>
-#include <Alloc.h>
+#include <newalloc.h>
 #include <DMM.h>
 #include <Atomic.h>
 
