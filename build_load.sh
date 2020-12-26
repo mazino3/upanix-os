@@ -69,9 +69,24 @@ else
   MOUNTP="${BOOT_USB_DEVICE_NAME}1"
 fi
 
-echo $SUDO_PW | sudo -S kpartx -d "$DEV"
-MOUNTP=`echo $SUDO_PW | sudo -S kpartx -av "$DEV" | head -1 | cut -d" " -f3`
-echo "MOUNT DEVICE: $MOUNTP"
+# Manually remove loop device
+# sudo dmsetup remove /dev/mapper/loop0p1 /dev/mapper/loop1p1
+# sudo losetup --detach /dev/loop0
+LOOP_DEVICE=`losetup | grep 300MUSB.img | cut -d" " -f1`
+if [ "$LOOP_DEVICE" != "" ]
+then
+  LOOP_DEVICE=`basename $LOOP_DEVICE`
+  MOUNTP=${LOOP_DEVICE}p1
+  echo "Reuse existing device mount: $MOUNTP"
+fi
+
+if [ "$LOOP_DEVICE" = "" ]
+then
+  echo $SUDO_PW | sudo -S kpartx -d "$DEV"
+  MOUNTP=`echo $SUDO_PW | sudo -S kpartx -av "$DEV" | head -1 | cut -d" " -f3`
+  echo "Create new device mount: $MOUNTP"
+fi
+
 echo "BIN FILE: `ls -l bin/upanix.elf`"
 
 sleep 2
