@@ -616,14 +616,16 @@ void ConsoleCommands_LoadExe()
 {
 	byte bStatus ;
 	int iChildProcessID ;
-	char a1[14], a2[40] ;
+	char a1[14], a2[40], a3[40] ;
 	strcpy(a1, "100") ;
 	strcpy(a2, "200") ;
-	char* argv[2] ;
+  strcpy(a3, "300") ;
+	char* argv[3] ;
 	argv[0] = (char*)&a1 ;
 	argv[1] = (char*)&a2 ;
+  argv[2] = (char*)&a3 ;
 
-  if((bStatus = ProcessManager::Instance().Create(CommandLineParser::Instance().GetParameterAt(0), ProcessManager::GetCurrentProcessID(), true, &iChildProcessID, DERIVE_FROM_PARENT, 2, argv)) != ProcessManager_SUCCESS)
+  if((bStatus = ProcessManager::Instance().Create(CommandLineParser::Instance().GetParameterAt(0), ProcessManager::GetCurrentProcessID(), true, &iChildProcessID, DERIVE_FROM_PARENT, 3, argv)) != ProcessManager_SUCCESS)
 	{
 		KC::MDisplay().Address("\n Load User Process Failed: ", bStatus) ;
 		KC::MDisplay().Character('\n', Display::WHITE_ON_BLACK()) ;
