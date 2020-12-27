@@ -71,17 +71,8 @@ KernelService::PageFault::PageFault(unsigned uiFaultyAddress) : m_uiFaultyAddres
 {
 }
 
-void KernelService::PageFault::Execute()
-{
-	if(MemManager::Instance().AllocatePage(GetRequestProcessID(), m_uiFaultyAddress) == Failure)
-	{
-		//TODO:
-		ProcessManager::Instance().Kill(ProcessManager::GetCurrentProcessID()) ;
-		m_bStatus = false ;
-		return ;
-	}
-
-	m_bStatus = true ;
+void KernelService::PageFault::Execute() {
+  m_bStatus = MemManager::Instance().AllocatePage(GetRequestProcessID(), m_uiFaultyAddress) == Success;
 }
 
 KernelService::ProcessExec::ProcessExec(int iNoOfArgs, const char* szFile, const char** szArgs)
