@@ -51,10 +51,12 @@ public:
 
   FILE_USER_TYPE FileUserType(const FileSystem::Node&) const;
   bool HasFilePermission(const FileSystem::Node&, byte mode) const;
+//  bool isChildThread() {
+//    return _processID != _mainThreadID;
+//  }
 
 private:
-  void PushProgramInitStackData(unsigned uiPDEAddr, unsigned* uiProcessEntryStackSize, unsigned uiProgramStartAddress,
-                                unsigned uiInitRelocAddress, unsigned uiTermRelocAddress, int iNumberOfParameters, char** szArgumentList);
+  void PushProgramInitStackData(unsigned uiPDEAddr, unsigned& uiProcessEntryStackSize, int iNumberOfParameters, char** szArgumentList);
   void CopyElfImage(unsigned uiPDEAddr, byte* bProcessImage, unsigned uiMemImageSize);
 
   uint32_t AllocateAddressSpace();
@@ -76,6 +78,8 @@ private:
   int iNextProcessID ;
   int iPrevProcessID ;
 
+//  int _processID;
+//  int _mainThreadID;
   unsigned _noOfPagesForPTE ;
   unsigned _noOfPagesForProcess ;
 

@@ -457,15 +457,19 @@ ReturnCode MemManager::AllocatePage(int iProcessID, unsigned uiFaultyAddress)
 		//2 GB = 0x80000000
 		
 		/* Not accessing Heap and Not the startUp Address access (20MB) in proc_init */
-		if((uiFaultyAddress < PROCESS_HEAP_START_ADDRESS && uiFaultyAddress != PROCESS_INIT_DOCK_ADDRESS) || 
-				(uiFaultyAddress >= PROCESS_HEAP_START_ADDRESS && !ProcessManager::Instance().IsDMMOn(iProcessID)))
-		{
-			KC::MDisplay().Number("\n SYS CALL ID = ", SYS_CALL_ID) ;
-			KC::MDisplay().Address("\n Segmentation Fault @ Address: ", uiFaultyAddress) ;
-			KC::MDisplay().Number("\n PID = ", iProcessID) ;
-			KC::MDisplay().Number("\n DMM Flag = ", ProcessManager::Instance().IsDMMOn(iProcessID));
-			return Failure;
-		}
+		const uint32_t pdeIndex = ((uiFaultyAddress >> 22) & 0x3FF);
+		if (pdeIndex != PROCESS_STACK_PDE_ID || ProcessManager::Instance().IsDMMOn(iProcessID)) {
+      if ((uiFaultyAddress < PROCESS_HEAP_START_ADDRESS)
+          || (uiFaultyAddress >= PROCESS_HEAP_START_ADDRESS && !ProcessManager::Instance().IsDMMOn(iProcessID))
+          //This space is for process Stack - page fault here should be only while expanding stack and not for Heap
+          || (pdeIndex == PROCESS_STACK_PDE_ID && ProcessManager::Instance().IsDMMOn(iProcessID))) {
+        printf("\n Segmentation Fault @ Address: 0x%x", uiFaultyAddress);
+        printf("\n Sys Call Id: %d", SYS_CALL_ID);
+        printf("\n PID: %d, DMM Flag: %d, PDE Index: %d", iProcessID, ProcessManager::Instance().IsDMMOn(iProcessID),
+               pdeIndex);
+        return Failure;
+      }
+    }
 
 		uiPDEAddress = ProcessManager::Instance().GetAddressSpace(iProcessID).taskState.CR3_PDBR ;
 
@@ -577,9 +581,8 @@ void MemManager::DisplayNoOfFreePages()
 			}
 		}
 	}
-	
-	KC::MDisplay().Number("\n Free Page Count = ", uiFreePageCount) ;
-	KC::MDisplay().Message("\n", Display::WHITE_ON_BLACK());
+
+	printf("\n Free Page Count = %d", uiFreePageCount);
 }
 
 unsigned MemManager::GetFlatAddress(unsigned uiVirtualAddress)

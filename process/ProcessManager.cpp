@@ -249,7 +249,7 @@ void ProcessManager::Destroy(int iDeleteProcessID)
 
 	//MemManager::Instance().DisplayNoOfFreePages();
 	//MemManager::Instance().DisplayNoOfAllocPages(0,0);
-	
+
 	// Deallocate Resources
 	DeAllocateResources(iDeleteProcessID) ;
 
@@ -357,6 +357,7 @@ void ProcessManager::DoContextSwitch(int iProcessID)
         return;
       pPAS->status = RUN;
     }
+    break;
 	
 	case WAIT_CHILD:
 		{
@@ -430,7 +431,7 @@ void ProcessManager::DoContextSwitch(int iProcessID)
 	PIT_SetContextSwitch(false) ;
 
 	KERNEL_MODE = false ;
-	/* Switch Insturction */
+	/* Switch Instruction */
 	__asm__ __volatile__("lcall $0x28, $0x00") ;
 	KERNEL_MODE = true ;
 
@@ -631,6 +632,8 @@ byte ProcessManager::CreateKernelImage(const unsigned uiTaskAddress, int iParent
 
     newPAS._processGroup->AddProcess();
 
+//    newPAS._processID = iNewProcessID;
+//    newPAS._mainThreadID = iNewProcessID;
     *iProcessID = iNewProcessID ;
 
     if(bIsFGProcess)
@@ -694,9 +697,12 @@ byte ProcessManager::Create(const char* szProcessName, int iParentProcessID, byt
     RETURN_X_IF_NOT(ProcFileManager_Initialize(uiPDEAddress, iParentProcessID), ProcessEnv_SUCCESS, ProcessManager_FAILURE) ;
 
     newPAS.bIsKernelProcess = false ;
+//    newPAS._processID = iNewProcessID;
+//    newPAS._mainThreadID = iNewProcessID;
     newPAS.uiNoOfPagesForDLLPTE = 0 ;
     newPAS.processLDT.Build();
-    newPAS.taskState.Build(newPAS._processBase + newPAS._noOfPagesForProcess * PAGE_SIZE, uiPDEAddress, uiEntryAdddress, uiProcessEntryStackSize);
+    const uint32_t stackTopAddress = PROCESS_STACK_TOP_ADDRESS - PROCESS_BASE;
+    newPAS.taskState.Build(stackTopAddress, uiPDEAddress, uiEntryAdddress, uiProcessEntryStackSize);
 
     newPAS.iUserID = iUserID == DERIVE_FROM_PARENT ? GetCurrentPAS().iUserID : iUserID;
 
@@ -734,6 +740,57 @@ byte ProcessManager::Create(const char* szProcessName, int iParentProcessID, byt
   }
   catch(const upan::exception& e)
   {
+    e.Print();
+    return ProcessManager_FAILURE;
+  }
+}
+
+//TODO:
+//1: Lock Env Page access
+//2: Lock FileDescriptor Table access
+//3: Lock process heap access
+byte ProcessManager::CreateThreadTask(int parentID, unsigned threadEntryAddress, int iNumberOfParameters, char** szArgumentList, int& threadID) {
+  try {
+//    threadID = FindFreePAS();
+//    Process& threadPAS = GetAddressSpace(threadID);
+//    memset(&threadPAS, 0, sizeof(Process));
+//
+//    Process& parentPAS = GetAddressSpace(parentID)
+//    unsigned uiProcessEntryStackSize;
+//    unsigned uiPDEAddress =
+//
+//    newPAS.load(szProcessName, &uiPDEAddress, &uiEntryAdddress, &uiProcessEntryStackSize, iNumberOfParameters, szArgumentList);
+//
+//    newPAS.processPWD = parentPAS.processPWD;
+//
+//    threadPAS.bIsKernelProcess = false ;
+//    threadPAS.uiNoOfPagesForDLLPTE = parentPAS.uiNoOfPagesForDLLPTE;
+//    threadPAS.processLDT.Build();
+//    threadPAS.taskState.Build(newPAS._processBase + newPAS._noOfPagesForProcess * PAGE_SIZE, uiPDEAddress, uiEntryAdddress, uiProcessEntryStackSize);
+//
+//    threadPAS.iUserID = parentPAS.iUserID;
+//
+//    threadPAS.iParentProcessID = parentPAS.iParentProcessID;
+//    threadPAS._processID = threadID;
+//    threadPAS._mainThreadID = parentPAS._mainThreadID;
+//    newPAS.iDriveID = parentPAS.iDriveID;
+//    newPAS._processGroup = parentPAS._processGroup;
+//    newPAS._processGroup->AddProcess();
+//
+//    newPAS.pname = (char*)DMM_AllocateForKernel(strlen(szProcessName) + 1 + 12);
+//    strcpy(newPAS.pname, szProcessName);
+//    strcat(newPAS.pname, "_T");
+//    strcat(newPAS.pname, upan::string::to_string(threadID).c_str());
+//
+//    // Init Process State Info
+//    newPAS.pProcessStateInfo = new ProcessStateInfo();
+//    newPAS.status = RUN ;
+//
+//    AddToSchedulerList(threadID) ;
+//
+//    //MemManager::Instance().DisplayNoOfFreePages() ;
+    return ProcessManager_SUCCESS ;
+  } catch(const upan::exception& e) {
     e.Print();
     return ProcessManager_FAILURE;
   }
@@ -847,6 +904,7 @@ void ProcessManager::Kill(int iProcessID)
 {
   Process* pPAS = &GetAddressSpace(iProcessID) ;
 	Atomic::Swap((__volatile__ uint32_t&)(pPAS->status), static_cast<int>(TERMINATED)) ;
+  ProcessManager_Yield();
 }
 
 void ProcessManager::WakeUpFromKSWait(int iProcessID)
@@ -921,31 +979,15 @@ void ProcessManager::DeleteFromProcessList(int iProcessID)
   _processList.erase(iProcessID);
 }
 
-void ProcessManager::DeAllocateProcessInitDockMem(Process& pas)
-{
-	unsigned uiPDEAddress = pas.taskState.CR3_PDBR ;
-	unsigned uiPDEIndex = ((PROCESS_INIT_DOCK_ADDRESS >> 22) & 0x3FF) ;
-	unsigned uiPTEIndex = ((PROCESS_INIT_DOCK_ADDRESS >> 12) & 0x3FF) ;
-
-	// I am assuming that this PTE and page are allocated solely for ProcInit docking
-	// Meaning, we are not expecting any page faults to happen in this region of Process Strict Base of 16 MB
-	// and actual process start address - which again is expected to fall beyond 20 MB page
-	// In a way this is also controlled in MemManager::Instance().AllocatePage() by monitoring faulty address !
-	
-	unsigned uiPTEAddress = ((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPDEIndex] & 0xFFFFF000 ;
-	
-	unsigned uiPageNumber = (((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPTEIndex] & 0xFFFFF000) / PAGE_SIZE ;
-	
-	MemManager::Instance().DeAllocatePhysicalPage(uiPageNumber) ;
-	MemManager::Instance().DeAllocatePhysicalPage(uiPTEAddress/PAGE_SIZE) ;
-}
-
 void ProcessManager::DeAllocateResources(int iProcessID)
 {
   Process& pas = GetAddressSpace(iProcessID) ;
 
-	if(pas.bIsKernelProcess == false)
-	{
+	if(pas.bIsKernelProcess) {
+    ProcessAllocator_DeAllocateAddressSpaceForKernel(&pas);
+//	} else if (pas.isChildThread()){
+//    // Deallocate Stack
+	} else {
 		DLLLoader_DeAllocateProcessDLLPTEPages(&pas) ;
 		DynamicLinkLoader_UnInitialize(&pas) ;
 
@@ -954,13 +996,7 @@ void ProcessManager::DeAllocateResources(int iProcessID)
 		ProcessEnv_UnInitialize(pas) ;
 		ProcFileManager_UnInitialize(&pas);
 
-		DeAllocateProcessInitDockMem(pas) ;
-
     pas.DeAllocateAddressSpace();
-	}
-	else
-	{
-		ProcessAllocator_DeAllocateAddressSpaceForKernel(&pas) ;
 	}
 }
 

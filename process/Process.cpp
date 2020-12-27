@@ -11,8 +11,8 @@
 #include <UserManager.h>
 #include <ProcFileManager.h>
 
-#define INIT_NAME "_stdio_init-NOTINUSE"
-#define TERM_NAME "_stdio_term-NOTINUSE"
+//#define INIT_NAME "_stdio_init-NOTINUSE"
+//#define TERM_NAME "_stdio_term-NOTINUSE"
 
 void Process::Load(const char* szProcessName, unsigned *uiPDEAddress,
                    unsigned* uiEntryAdddress, unsigned* uiProcessEntryStackSize, int iNumberOfParameters, char** szArgumentList)
@@ -28,16 +28,14 @@ void Process::Load(const char* szProcessName, unsigned *uiPDEAddress,
   if((uiMinMemAddr % PAGE_SIZE) != 0)
     throw upan::exception(XLOC, "process min load address %x is not page aligned", uiMinMemAddr);
 
-  unsigned uiStartUpSectionSize ;
   unsigned uiDLLSectionSize ;
 
-  upan::uniq_ptr<byte[]> bStartUpSectionImage(ProcessLoader::Instance().LoadStartUpInitSection(uiStartUpSectionSize));
   upan::uniq_ptr<byte[]> bDLLSectionImage(ProcessLoader::Instance().LoadDLLInitSection(uiDLLSectionSize));
 
   unsigned uiProcessImageSize = ProcessLoader_GetCeilAlignedAddress(uiMaxMemAddr - uiMinMemAddr, 4) ;
-  unsigned uiMemImageSize = uiProcessImageSize + uiStartUpSectionSize	+ uiDLLSectionSize ;
+  unsigned uiMemImageSize = uiProcessImageSize + uiDLLSectionSize ;
 
-  _noOfPagesForProcess = MemManager::Instance().GetProcessSizeInPages(uiMemImageSize) + PROCESS_STACK_PAGES + PROCESS_CG_STACK_PAGES ;
+  _noOfPagesForProcess = MemManager::Instance().GetProcessSizeInPages(uiMemImageSize);
 
   if(_noOfPagesForProcess > MAX_PAGES_PER_PROCESS)
     throw upan::exception(XLOC, "process requires %u pages that's larger than supported %u", _noOfPagesForProcess, MAX_PAGES_PER_PROCESS);
@@ -59,13 +57,12 @@ void Process::Load(const char* szProcessName, unsigned *uiPDEAddress,
     throw upan::exception(XLOC, err);
   });
 
-  memcpy((void*)(bProcessImage.get() + uiProcessImageSize), (void*)bStartUpSectionImage.get(), uiStartUpSectionSize) ;
-  memcpy((void*)(bProcessImage.get() + uiProcessImageSize + uiStartUpSectionSize), (void*)bDLLSectionImage.get(), uiDLLSectionSize) ;
+  memcpy((void*)(bProcessImage.get() + uiProcessImageSize), (void*)bDLLSectionImage.get(), uiDLLSectionSize) ;
 
   // Setting the Dynamic Link Loader Address in GOT
   mELFParser.GetGOTAddress(bProcessImage.get(), uiMinMemAddr).onGood([&](uint32_t* uiGOT) {
-    uiGOT[1] = -1 ;
-    uiGOT[2] = uiMinMemAddr + uiProcessImageSize + uiStartUpSectionSize ;
+    uiGOT[1] = -1;
+    uiGOT[2] = uiMinMemAddr + uiProcessImageSize;
   });
 
   // Initialize BSS segment to 0
@@ -84,99 +81,86 @@ void Process::Load(const char* szProcessName, unsigned *uiPDEAddress,
   CopyElfImage(*uiPDEAddress, bProcessImage.get(), uiMemImageSize);
 
   /* Find init and term stdio functions in libc if any */
-  unsigned uiInitRelocAddress = NULL ;
-  unsigned uiTermRelocAddress = NULL ;
-  mELFParser.GetSectionHeaderByTypeAndName(ELFSectionHeader::SHT_REL, REL_PLT_SUB_NAME).onGood([&] (ELF32SectionHeader* pRelocationSectionHeader)
-  {
-    mELFParser.GetSectionHeaderByIndex(pRelocationSectionHeader->sh_link).onGood([&] (ELF32SectionHeader* pDynamicSymSectiomHeader)
-    {
-      mELFParser.GetSectionHeaderByIndex(pDynamicSymSectiomHeader->sh_link).onGood([&] (ELF32SectionHeader* pDynamicSymStringSectionHeader)
-      {
-        ELFRelocSection::ELF32_Rel* pELFDynRelTable =
-          (ELFRelocSection::ELF32_Rel*)((unsigned)bProcessImage.get() + pRelocationSectionHeader->sh_addr - uiMinMemAddr) ;
-
-        unsigned uiNoOfDynRelEntries = pRelocationSectionHeader->sh_size / pRelocationSectionHeader->sh_entsize ;
-
-        ELFSymbolTable::ELF32SymbolEntry* pELFDynSymTable =
-          (ELFSymbolTable::ELF32SymbolEntry*)((unsigned)bProcessImage.get() + pDynamicSymSectiomHeader->sh_addr - uiMinMemAddr) ;
-
-        const char* pDynStrTable = (const char*)((unsigned)bProcessImage.get() + pDynamicSymStringSectionHeader->sh_addr - uiMinMemAddr) ;
-
-        for(unsigned i = 0; i < uiNoOfDynRelEntries && (uiInitRelocAddress == NULL || uiTermRelocAddress == NULL); i++)
-        {
-          if(ELF32_R_TYPE(pELFDynRelTable[i].r_info) == ELFRelocSection::R_386_JMP_SLOT)
-          {
-            int iSymIndex = ELF32_R_SYM(pELFDynRelTable[i].r_info);
-            int iStrIndex = pELFDynSymTable[ iSymIndex ].st_name ;
-            char* szSymName = (char*)&pDynStrTable[ iStrIndex ] ;
-
-            if(strcmp(szSymName, INIT_NAME) == 0)
-              uiInitRelocAddress = pELFDynRelTable[i].r_offset ;
-            else if(strcmp(szSymName, TERM_NAME) == 0)
-              uiTermRelocAddress = pELFDynRelTable[i].r_offset ;
-          }
-        }
-      });
-    });
-  });
+  /*** This code is not required anymore because init and term is now handled in crt0.s - which calls init_standard_library and exit functions */
+//  unsigned uiInitRelocAddress = NULL ;
+//  unsigned uiTermRelocAddress = NULL ;
+//  mELFParser.GetSectionHeaderByTypeAndName(ELFSectionHeader::SHT_REL, REL_PLT_SUB_NAME).onGood([&] (ELF32SectionHeader* pRelocationSectionHeader)
+//  {
+//    mELFParser.GetSectionHeaderByIndex(pRelocationSectionHeader->sh_link).onGood([&] (ELF32SectionHeader* pDynamicSymSectiomHeader)
+//    {
+//      mELFParser.GetSectionHeaderByIndex(pDynamicSymSectiomHeader->sh_link).onGood([&] (ELF32SectionHeader* pDynamicSymStringSectionHeader)
+//      {
+//        ELFRelocSection::ELF32_Rel* pELFDynRelTable =
+//          (ELFRelocSection::ELF32_Rel*)((unsigned)bProcessImage.get() + pRelocationSectionHeader->sh_addr - uiMinMemAddr) ;
+//
+//        unsigned uiNoOfDynRelEntries = pRelocationSectionHeader->sh_size / pRelocationSectionHeader->sh_entsize ;
+//
+//        ELFSymbolTable::ELF32SymbolEntry* pELFDynSymTable =
+//          (ELFSymbolTable::ELF32SymbolEntry*)((unsigned)bProcessImage.get() + pDynamicSymSectiomHeader->sh_addr - uiMinMemAddr) ;
+//
+//        const char* pDynStrTable = (const char*)((unsigned)bProcessImage.get() + pDynamicSymStringSectionHeader->sh_addr - uiMinMemAddr) ;
+//
+//        for(unsigned i = 0; i < uiNoOfDynRelEntries && (uiInitRelocAddress == NULL || uiTermRelocAddress == NULL); i++)
+//        {
+//          if(ELF32_R_TYPE(pELFDynRelTable[i].r_info) == ELFRelocSection::R_386_JMP_SLOT)
+//          {
+//            int iSymIndex = ELF32_R_SYM(pELFDynRelTable[i].r_info);
+//            int iStrIndex = pELFDynSymTable[ iSymIndex ].st_name ;
+//            char* szSymName = (char*)&pDynStrTable[ iStrIndex ] ;
+//
+//            if(strcmp(szSymName, INIT_NAME) == 0)
+//              uiInitRelocAddress = pELFDynRelTable[i].r_offset ;
+//            else if(strcmp(szSymName, TERM_NAME) == 0)
+//              uiTermRelocAddress = pELFDynRelTable[i].r_offset ;
+//          }
+//        }
+//      });
+//    });
+//  });
 
   /* End of Find init and term stdio functions in libc if any */
 
-  PushProgramInitStackData(*uiPDEAddress, uiProcessEntryStackSize, mELFParser.GetProgramStartAddress(), uiInitRelocAddress, uiTermRelocAddress, iNumberOfParameters, szArgumentList) ;
+  PushProgramInitStackData(*uiPDEAddress, *uiProcessEntryStackSize, iNumberOfParameters, szArgumentList) ;
 
-  *uiEntryAdddress = uiMinMemAddr + uiProcessImageSize ;
+  *uiEntryAdddress = mELFParser.GetProgramStartAddress();// uiMinMemAddr + uiProcessImageSize ;
 }
 
-void Process::PushProgramInitStackData(unsigned uiPDEAddr, unsigned* uiProcessEntryStackSize, unsigned uiProgramStartAddress,
-                                       unsigned uiInitRelocAddress, unsigned uiTermRelocAddress, int iNumberOfParameters, char** szArgumentList)
-{
-  unsigned uiPDEAddress = uiPDEAddr ;
-  unsigned uiPDEIndex, uiPTEIndex, uiPTEAddress, uiPageAddress ;
-  unsigned uiProcessPDEBase = _processBase / PAGE_SIZE / PAGE_TABLE_ENTRIES ;
-  unsigned uiProcessPageBase = ( _processBase / PAGE_SIZE ) % PAGE_TABLE_ENTRIES ;
+void Process::PushProgramInitStackData(unsigned uiPDEAddress, unsigned& uiProcessEntryStackSize, int iNumberOfParameters, char** szArgumentList) {
+  const uint32_t uiPDEIndex = PROCESS_STACK_PDE_ID;
+  const uint32_t uiPTEIndex = PAGE_TABLE_ENTRIES - PROCESS_CG_STACK_PAGES - NO_OF_PAGES_FOR_STARTUP_ARGS;
 
-  unsigned uiLastProcessStackPage = _noOfPagesForProcess - PROCESS_CG_STACK_PAGES - 1 ;
+  const uint32_t uiPTEAddress = (((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPDEIndex]) & 0xFFFFF000 ;
+  uint32_t uiPageAddress = (((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPTEIndex]) & 0xFFFFF000 ;
 
-  uiPDEIndex = (uiProcessPageBase + uiLastProcessStackPage) / PAGE_TABLE_ENTRIES + uiProcessPDEBase + PROCESS_SPACE_FOR_OS ;
-  uiPTEIndex = (uiProcessPageBase + uiLastProcessStackPage) % PAGE_TABLE_ENTRIES ;
+  const unsigned argc = 4;
+  const unsigned argv = 4; // address of argv first dimension
+  const unsigned uiArgumentAddressListSize = iNumberOfParameters * 4; // address of char* entry (second dimension) of argv array
 
-  uiPTEAddress = (((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPDEIndex]) & 0xFFFFF000 ;
-  uiPageAddress = (((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPTEIndex]) & 0xFFFFF000 ;
+  unsigned uiStackTopAddress = PROCESS_STACK_TOP_ADDRESS - PROCESS_CG_STACK_PAGES * PAGE_SIZE - PROCESS_BASE;
 
-  const unsigned uiEntryAdddressSize = 4 ;
-  const unsigned uiInitRelocAddressSize = 4 ;
-  const unsigned uiTermRelocAddressSize = 4 ;
-  const unsigned argc = 4 ;
-  const unsigned argv = 4 ;
-  const unsigned uiArgumentAddressListSize = iNumberOfParameters * 4 ;
-
-  unsigned uiStackTopAddress = _processBase + (_noOfPagesForProcess - PROCESS_CG_STACK_PAGES) * PAGE_SIZE ;
-
-  unsigned uiArgumentListSize = 0 ;
+  unsigned uiArgumentDataSize = 0;
 
   for(int i = 0; i < iNumberOfParameters; i++)
-    uiArgumentListSize += (strlen(szArgumentList[i]) + 1) ;
+    uiArgumentDataSize += (strlen(szArgumentList[i]) + 1) ;
 
-  *uiProcessEntryStackSize = uiTermRelocAddressSize + uiInitRelocAddressSize + uiEntryAdddressSize + argc + argv + uiArgumentAddressListSize + uiArgumentListSize ;
+  uiProcessEntryStackSize = argc + argv + uiArgumentAddressListSize + uiArgumentDataSize;
 
-  uiPageAddress = uiPageAddress + PAGE_SIZE - GLOBAL_DATA_SEGMENT_BASE - *uiProcessEntryStackSize ;
+  if (uiProcessEntryStackSize > (NO_OF_PAGES_FOR_STARTUP_ARGS * PAGE_SIZE)) {
+    throw upan::exception(XLOC, "Startup arguments size is larger than %d pages", NO_OF_PAGES_FOR_STARTUP_ARGS);
+  }
+
+  uiPageAddress = uiPageAddress + PAGE_SIZE - GLOBAL_DATA_SEGMENT_BASE - uiProcessEntryStackSize ;
 
   int iStackIndex = 0 ;
-  ((unsigned*)(uiPageAddress))[iStackIndex++] = uiProgramStartAddress;
-  ((unsigned*)(uiPageAddress))[iStackIndex++] = uiInitRelocAddress;
-  ((unsigned*)(uiPageAddress))[iStackIndex++] = uiTermRelocAddress;
-  ((unsigned*)(uiPageAddress))[iStackIndex++] = iNumberOfParameters;
+  ((unsigned*)(uiPageAddress))[iStackIndex++] = iNumberOfParameters; // argc
   int argLength = (iStackIndex + 1) * 4;
-  ((unsigned*)(uiPageAddress))[iStackIndex++] = uiStackTopAddress - *uiProcessEntryStackSize + argLength;
+  ((unsigned*)(uiPageAddress))[iStackIndex++] = uiStackTopAddress - uiProcessEntryStackSize + argLength; // argv
 
-  uiArgumentListSize = 0 ;
-  for(int i = 0; i < iNumberOfParameters; i++)
-  {
-    ((unsigned*)(uiPageAddress))[iStackIndex + i] = ((unsigned*)(uiPageAddress))[iStackIndex - 1] + uiArgumentAddressListSize + uiArgumentListSize ;
-
-    strcpy((char*)&((unsigned*)(uiPageAddress))[iStackIndex + iNumberOfParameters] + uiArgumentListSize,	szArgumentList[i]) ;
-
-    uiArgumentListSize += (strlen(szArgumentList[i]) + 1) ;
+  uiArgumentDataSize = 0 ;// argv[0] through argv[argc - 1]
+  for(int i = 0; i < iNumberOfParameters; i++) {
+    ((unsigned*)(uiPageAddress))[iStackIndex + i] = ((unsigned*)(uiPageAddress))[iStackIndex - 1] + uiArgumentAddressListSize + uiArgumentDataSize ;
+    strcpy((char*)&((unsigned*)(uiPageAddress))[iStackIndex + iNumberOfParameters] + uiArgumentDataSize,	szArgumentList[i]) ;
+    uiArgumentDataSize += (strlen(szArgumentList[i]) + 1) ;
   }
 }
 
@@ -253,15 +237,21 @@ void Process::AllocatePTE(const unsigned uiPDEAddress)
     for(int j = 0; j < PAGE_TABLE_ENTRIES; j++)
       ((unsigned*)((uiFreePageNo * PAGE_SIZE) - GLOBAL_DATA_SEGMENT_BASE))[j] = 0x2 ;
 
-    if(i < PROCESS_SPACE_FOR_OS)
+    if(i < PROCESS_SPACE_FOR_OS) {
       // Full Permission is given at the PDE level and access control is enforced at PTE level i.e, individual page level
-      ((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[i] = ((uiFreePageNo * PAGE_SIZE) & 0xFFFFF000) | 0x7 ;
+      ((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[i] = ((uiFreePageNo * PAGE_SIZE) & 0xFFFFF000) | 0x7;
+    }
     else
     {
       uiPDEIndex = i + uiProcessPDEBase ;
       ((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPDEIndex] = ((uiFreePageNo * PAGE_SIZE) & 0xFFFFF000) | 0x7 ;
     }
   }
+
+  auto stackPTE = MemManager::Instance().AllocatePhysicalPage();
+  for(int j = 0; j < PAGE_TABLE_ENTRIES; j++)
+    ((unsigned*)((stackPTE * PAGE_SIZE) - GLOBAL_DATA_SEGMENT_BASE))[j] = 0x2 ;
+  ((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[PROCESS_STACK_PDE_ID] = ((stackPTE * PAGE_SIZE) & 0xFFFFF000) | 0x7 ;
 
   _startPDEForDLL = ++uiPDEIndex ;
 }
@@ -291,11 +281,19 @@ void Process::InitializeProcessSpaceForProcess(const unsigned uiPDEAddress)
 
     auto uiPDEIndex = (uiProcessPageBase + i) / PAGE_TABLE_ENTRIES + uiProcessPDEBase + PROCESS_SPACE_FOR_OS ;
     auto uiPTEIndex = (uiProcessPageBase + i) % PAGE_TABLE_ENTRIES ;
-//Kernel Heap PTE and PROCESS_SPACE_FOR_OS need not be part of uiPTEIndex calculation as they shall be aligned at PAGE BOUNDARY
+    //Kernel Heap PTE and PROCESS_SPACE_FOR_OS need not be part of uiPTEIndex calculation as they shall be aligned at PAGE BOUNDARY
 
     auto uiPTEAddress = (((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPDEIndex]) & 0xFFFFF000 ;
-    const uint32_t ptePageType = i >= _noOfPagesForProcess - PROCESS_CG_STACK_PAGES ? 0x3 : 0x7;
-    ((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPTEIndex] = ((uiFreePageNo * PAGE_SIZE) & 0xFFFFF000) | ptePageType;
+    ((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPTEIndex] = ((uiFreePageNo * PAGE_SIZE) & 0xFFFFF000) | 0x7;
+  }
+
+  //pre-allocate process stack - user (NO_OF_PAGES_FOR_STARTUP_ARGS) + call-gate
+  //further expansion of user stack beyond NO_OF_PAGES_FOR_STARTUP_ARGS will happen as part of regular page fault handling flow
+  auto uiPTEAddress = (((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[PROCESS_STACK_PDE_ID]) & 0xFFFFF000 ;
+  for(int i = 0; i < PROCESS_CG_STACK_PAGES + NO_OF_PAGES_FOR_STARTUP_ARGS; ++i) {
+    const uint32_t uiFreePageNo = MemManager::Instance().AllocatePhysicalPage();
+    const uint32_t ptePageType = i > PROCESS_CG_STACK_PAGES - 1 ? 0x7 : 0x3;
+    ((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[PAGE_TABLE_ENTRIES - 1 - i] = ((uiFreePageNo * PAGE_SIZE) & 0xFFFFF000) | ptePageType;
   }
 }
 
@@ -308,26 +306,37 @@ void Process::DeAllocateProcessSpace()
   {
     auto uiPDEIndex = (uiProcessPageBase + i) / PAGE_TABLE_ENTRIES + uiProcessPDEBase + PROCESS_SPACE_FOR_OS ;
     auto uiPTEIndex = (uiProcessPageBase + i) % PAGE_TABLE_ENTRIES ;
-//Kernel Heap PTE and PROCESS_SPACE_FOR_OS need not be part of uiPTEIndex calculation as they shall
-//be aligned at PAGE BOUNDARY
+    //Kernel Heap PTE and PROCESS_SPACE_FOR_OS need not be part of uiPTEIndex calculation as they shall be aligned at PAGE BOUNDARY
 
     auto uiPTEAddress = (((unsigned*)(taskState.CR3_PDBR - GLOBAL_DATA_SEGMENT_BASE))[uiPDEIndex]) & 0xFFFFF000 ;
 
     MemManager::Instance().DeAllocatePhysicalPage(
           (((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPTEIndex] & 0xFFFFF000) / PAGE_SIZE) ;
   }
+
+  //Deallocate process stack
+  const unsigned stackPTEAddress = ((unsigned*)(taskState.CR3_PDBR - GLOBAL_DATA_SEGMENT_BASE))[PROCESS_STACK_PDE_ID] & 0xFFFFF000 ;
+  for(int i = 0; i < PAGE_TABLE_ENTRIES; ++i) {
+    const unsigned pageEntry = (((unsigned*)(stackPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[i]);
+    const bool isPresent = pageEntry & 0x1;
+    const unsigned pageAddress = pageEntry & 0xFFFFF000;
+    if (isPresent && pageAddress) {
+      MemManager::Instance().DeAllocatePhysicalPage(pageAddress / PAGE_SIZE);
+    }
+  }
 }
 
-void Process::DeAllocatePTE()
-{
-  unsigned uiProcessPDEBase = _processBase / PAGE_SIZE / PAGE_TABLE_ENTRIES ;
+void Process::DeAllocatePTE() {
+  const unsigned uiProcessPDEBase = _processBase / PAGE_SIZE / PAGE_TABLE_ENTRIES ;
 
-  for(uint32_t i = 0; i < _noOfPagesForPTE; i++)
-  {
+  for(uint32_t i = 0; i < _noOfPagesForPTE; i++) {
     const uint32_t pdeIndex = (i < PROCESS_SPACE_FOR_OS) ? i : i + uiProcessPDEBase;
-    const uint32_t uiPTEAddress = ((unsigned*)(taskState.CR3_PDBR - GLOBAL_DATA_SEGMENT_BASE))[pdeIndex] & 0xFFFFF000 ;
+    const uint32_t uiPTEAddress = ((unsigned*)(taskState.CR3_PDBR - GLOBAL_DATA_SEGMENT_BASE))[pdeIndex] & 0xFFFFF000;
     MemManager::Instance().DeAllocatePhysicalPage(uiPTEAddress / PAGE_SIZE) ;
   }
+
+  unsigned stackPTEAddress = ((unsigned*)(taskState.CR3_PDBR - GLOBAL_DATA_SEGMENT_BASE))[PROCESS_STACK_PDE_ID] & 0xFFFFF000;
+  MemManager::Instance().DeAllocatePhysicalPage(stackPTEAddress / PAGE_SIZE);
 }
 
 uint32_t Process::GetDLLPageAddressForKernel()

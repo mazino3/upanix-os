@@ -13,6 +13,8 @@
 ;	                                                                        
 ;	You should have received a copy of the GNU General Public License
 ;	along with this program.  If not, see <http://www.gnu.org/licenses/
+
+; NOT USED ANYMORE - crt0.s, crti.s and crtn.s for apps replaces procinit
 [BITS 32]
 
 ENTRY EQU 0x400000 ; 4 MB + PROCESS BASE = 16 MB ==> 20MB 

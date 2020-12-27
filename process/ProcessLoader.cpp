@@ -40,10 +40,7 @@
 #include <uniq_ptr.h>
 #include <try.h>
 
-ProcessLoader::ProcessLoader() :
-  PROCESS_DLL_FILE(upan::string(OSIN_PATH) + __PROCESS_DLL_FILE),
-  PROCESS_START_UP_FILE(upan::string(OSIN_PATH) + __PROCESS_START_UP_FILE)
-{
+ProcessLoader::ProcessLoader() : PROCESS_DLL_FILE(upan::string(OSIN_PATH) + __PROCESS_DLL_FILE) {
 }
 
 byte* ProcessLoader::LoadInitSection(unsigned& uiSectionSize, const upan::string& szSectionName)
@@ -72,11 +69,6 @@ byte* ProcessLoader::LoadInitSection(unsigned& uiSectionSize, const upan::string
 byte* ProcessLoader::LoadDLLInitSection(unsigned& uiSectionSize)
 {
   return LoadInitSection(uiSectionSize, PROCESS_DLL_FILE);
-}
-
-byte* ProcessLoader::LoadStartUpInitSection(unsigned& uiSectionSize)
-{
-  return LoadInitSection(uiSectionSize, PROCESS_START_UP_FILE);
 }
 
 using namespace ELFSectionHeader ;

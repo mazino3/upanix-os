@@ -96,6 +96,7 @@ class ProcessManager
     bool IsChildAlive(int iChildProcessID);
     byte CreateKernelImage(const unsigned uiTaskAddress, int iParentProcessID, byte bIsFGProcess, unsigned uiParam1, unsigned uiParam2, int* iProcessID, const char* szKernelProcName);
     byte Create(const char* szProcessName, int iParentProcessID, byte bIsFGProcess, int* iProcessID, int iUserID, int iNumberOfParameters, char** szArgumentList);
+    byte CreateThreadTask(int parentID, unsigned threadEntryAddress, int iNumberOfParameters, char** szArgumentList, int& threadID);
     void SetDMMFlag(int iProcessID, bool flag);
     bool IsDMMOn(int iProcessID);
     void WaitOnChild(int iChildProcessID);
@@ -116,7 +117,6 @@ class ProcessManager
     PS* GetProcListASync();
     void Load(int iProcessID);
     void Store(int iProcessID);
-    void DeAllocateProcessInitDockMem(Process& pas);
     void DeAllocateResources(int iProcessID);
     void Release(int iProcessID);
     bool DoPollWait();

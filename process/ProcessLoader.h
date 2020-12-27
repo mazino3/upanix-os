@@ -23,7 +23,6 @@
 #include <DLLLoader.h>
 #include <BufferedReader.h>
 
-#define __PROCESS_START_UP_FILE	".procinit"
 #define __PROCESS_DLL_FILE		".dll"
 
 unsigned ProcessLoader_GetCeilAlignedAddress(unsigned uiAddress, unsigned uiAlign) ;
@@ -40,12 +39,10 @@ class ProcessLoader
       return instance;
     }
     byte* LoadDLLInitSection(unsigned& uiSectionSize);
-    byte* LoadStartUpInitSection(unsigned& uiSectionSize);
   private:
     byte* LoadInitSection(unsigned& uiSectionSize, const upan::string& szSectionName);
 
     const upan::string PROCESS_DLL_FILE;
-    const upan::string PROCESS_START_UP_FILE;
 };
 
 #endif
