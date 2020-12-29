@@ -46,7 +46,8 @@ void UDP4RecvPacket::VerifyChecksum() {
                                                                            (uint16_t *) &pseudoHeader,
                                                                            NetworkPacket::UDP::IPV4_PSEUDO_HEADER_SIZE, 0));
 
-    if (calculatedChecksum ^ (uint16_t)0xFFFF) {
+    const uint16_t r = calculatedChecksum ^ (uint16_t)0xFFFF;
+    if (r) {
       Print();
       throw upan::exception(XLOC, "Invalid Checksum for UDP Packet, IP Packet ID: %d (calc. checksum: 0x%x)",
                             _ipv4RecvPacket.header()._identification, calculatedChecksum);

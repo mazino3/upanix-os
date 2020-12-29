@@ -478,7 +478,7 @@ void FileSystem::SetSectorEntryValue(const unsigned uiSectorID, unsigned uiSecto
   pSectorBlockEntry->Write(uiSectorID, uiSectorEntryValue);
 }
 
-void FileSystem::Node::Init(char* szDirName, unsigned short usDirAttribute, int iUserID, unsigned uiParentSecNo, byte bParentSecPos)
+void FileSystem::Node::Init(const char* szDirName, unsigned short usDirAttribute, int iUserID, unsigned uiParentSecNo, byte bParentSecPos)
 {
   strcpy((char*)_fsnode._name, szDirName) ;
 

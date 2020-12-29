@@ -47,7 +47,7 @@ typedef struct
 	PCIEntry pciEntry ;
 } IntelIDEInfo ;
 
-byte ATAIntel_PortConfigure(ATAPort* pPort) ;
+void ATAIntel_PortConfigure(ATAPort* pPort) ;
 void ATAIntel_InitController(const PCIEntry* pPCIEntry, ATAController* pController) ;
 
 #endif

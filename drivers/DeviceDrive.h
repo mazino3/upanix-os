@@ -88,9 +88,6 @@ class DiskDrive
     void StopReleaseCacheTask(bool value) { _bStopReleaseCacheTask = value; }
     void FSType(FS_TYPE t) { _fsType = t; }
 
-    // FileSystem Mount Info
-    FileSystem	_fileSystem ;
-
     static const int MAX_SECTORS_IN_TABLE_CACHE = 2048;
 
   private:
@@ -121,6 +118,9 @@ class DiskDrive
 		bool          _bStopReleaseCacheTask;
 
     friend class DiskDriveManager;
+public:
+  // FileSystem Mount Info
+  FileSystem	_fileSystem ;
 };
 
 typedef enum

@@ -82,8 +82,7 @@ void ProcessEnv_UnInitialize(Process& pas)
 
 char* ProcessEnv_Get(const char* szEnvVar)
 {
-	int i ;
-	for(i = 0; i < NO_OF_ENVS; i++)
+	for(uint32_t i = 0; i < NO_OF_ENVS; i++)
 	{
 		if(strcmp(PROCESS_ENV_LIST[i].Var, szEnvVar) == 0)
 		{
@@ -96,8 +95,7 @@ char* ProcessEnv_Get(const char* szEnvVar)
 
 byte ProcessEnv_Set(const char* szEnvVar, const char* szEnvValue)
 {
-	int i ;
-	for(i = 0; i < NO_OF_ENVS; i++)
+	for(uint32_t i = 0; i < NO_OF_ENVS; i++)
 	{
 		if(strcmp(PROCESS_ENV_LIST[i].Var, szEnvVar) == 0)
 		{
@@ -106,7 +104,7 @@ byte ProcessEnv_Set(const char* szEnvVar, const char* szEnvValue)
 		}
 	}
 
-	for(i = 0; i < NO_OF_ENVS; i++)
+	for(uint32_t i = 0; i < NO_OF_ENVS; i++)
 	{
 		if(PROCESS_ENV_LIST[i].Val[0] == '\0')
 		{

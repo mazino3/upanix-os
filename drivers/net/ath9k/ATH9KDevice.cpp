@@ -318,7 +318,7 @@ int ATH9KDevice::Configure()
 //void ath9k_tx(struct ieee80211_hw *hw, struct ieee80211_tx_control *control, struct sk_buff *skb)
 void ATH9KDevice::Tx(SocketBuffer& socketBuffer)
 {
-  IEEE80211Header* header = socketBuffer.Header();
+  //IEEE80211Header* header = socketBuffer.Header();
 //	struct ath_softc *sc = hw->priv;
 //	struct ath_common *common = ath9k_hw_common(sc->sc_ah);
 //	struct ath_tx_control txctl;

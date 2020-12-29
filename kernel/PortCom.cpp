@@ -78,6 +78,6 @@ void COM::Write(byte data)
 
 void COM::Write(const upan::string& msg)
 {
-  for(unsigned i = 0; i < msg.length(); ++i)
+  for(int i = 0; i < msg.length(); ++i)
     Write(msg[i]);
 }

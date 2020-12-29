@@ -24,7 +24,7 @@ MultiBoot::MultiBoot() : _realRamSize(0), _ramSize(0)
 	_pInfo = (multiboot_info_t*)(&MULTIBOOT_INFO_ADDR) ;
   if((_pInfo->flags) & (1 << 6))
   {
-    unsigned LITTLE_LESS_THAN_4GB = 4 * 1024 * 1024 * 1023;
+    unsigned LITTLE_LESS_THAN_4GB = 4u * 1024 * 1024 * 1023;
     memory_map_t* mmap = (memory_map_t*)(_pInfo->mmap_addr);
     while((unsigned)mmap < _pInfo->mmap_addr + _pInfo->mmap_length)
     {

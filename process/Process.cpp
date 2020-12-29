@@ -202,7 +202,7 @@ void Process::CopyElfImage(unsigned uiPDEAddr, byte* bProcessImage, unsigned uiM
     uiPTEAddress = (((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPDEIndex]) & 0xFFFFF000 ;
     uiPageAddress = (((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPTEIndex]) & 0xFFFFF000 ;
 
-    memcpy(uiPageAddress - GLOBAL_DATA_SEGMENT_BASE, (unsigned)bProcessImage + uiOffset, upan::min(uiCopySize, (uint32_t)PAGE_SIZE));
+    memcpy((void*)(uiPageAddress - GLOBAL_DATA_SEGMENT_BASE), (void*)((unsigned)bProcessImage + uiOffset), upan::min(uiCopySize, (uint32_t)PAGE_SIZE));
     if(uiCopySize <= PAGE_SIZE)
       break;
 
@@ -244,7 +244,7 @@ void Process::AllocatePTE(const unsigned uiPDEAddress)
   {
     auto uiFreePageNo = MemManager::Instance().AllocatePhysicalPage();
 
-    for(int j = 0; j < PAGE_TABLE_ENTRIES; j++)
+    for(uint32_t j = 0; j < PAGE_TABLE_ENTRIES; j++)
       ((unsigned*)((uiFreePageNo * PAGE_SIZE) - GLOBAL_DATA_SEGMENT_BASE))[j] = 0x2 ;
 
     if(i < PROCESS_SPACE_FOR_OS) {
@@ -259,7 +259,7 @@ void Process::AllocatePTE(const unsigned uiPDEAddress)
   }
 
   auto stackPTE = MemManager::Instance().AllocatePhysicalPage();
-  for(int j = 0; j < PAGE_TABLE_ENTRIES; j++)
+  for(uint32_t j = 0; j < PAGE_TABLE_ENTRIES; j++)
     ((unsigned*)((stackPTE * PAGE_SIZE) - GLOBAL_DATA_SEGMENT_BASE))[j] = 0x2 ;
   ((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[PROCESS_STACK_PDE_ID] = ((stackPTE * PAGE_SIZE) & 0xFFFFF000) | 0x7 ;
 
@@ -268,11 +268,11 @@ void Process::AllocatePTE(const unsigned uiPDEAddress)
 
 void Process::InitializeProcessSpaceForOS(const unsigned uiPDEAddress)
 {
-  for(int i = 0; i < PROCESS_SPACE_FOR_OS; ++i)
+  for(uint32_t i = 0; i < PROCESS_SPACE_FOR_OS; ++i)
   {
     unsigned kernelPTEAddress = (((unsigned*)(MEM_PDBR - GLOBAL_DATA_SEGMENT_BASE))[i]) & 0xFFFFF000;
     unsigned uiPTEAddress = (((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[i]) & 0xFFFFF000 ;
-    for(int j = 0; j < PAGE_TABLE_ENTRIES; ++j)
+    for(uint32_t  j = 0; j < PAGE_TABLE_ENTRIES; ++j)
     {
       unsigned kernelPageMapValue = ((unsigned*)(kernelPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[j];
       ((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[j] = (kernelPageMapValue & 0xFFFFF000) | 0x5;
@@ -326,7 +326,7 @@ void Process::DeAllocateProcessSpace()
 
   //Deallocate process stack
   const unsigned stackPTEAddress = ((unsigned*)(taskState.CR3_PDBR - GLOBAL_DATA_SEGMENT_BASE))[PROCESS_STACK_PDE_ID] & 0xFFFFF000 ;
-  for(int i = 0; i < PAGE_TABLE_ENTRIES; ++i) {
+  for(uint32_t i = 0; i < PAGE_TABLE_ENTRIES; ++i) {
     const unsigned pageEntry = (((unsigned*)(stackPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[i]);
     const bool isPresent = pageEntry & 0x1;
     const unsigned pageAddress = pageEntry & 0xFFFFF000;

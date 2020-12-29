@@ -95,7 +95,7 @@ public:
     class Node
     {
     public:
-      void Init(char* szDirName, unsigned short usDirAttribute, int iUserID, unsigned uiParentSecNo, byte bParentSecPos);
+      void Init(const char* szDirName, unsigned short usDirAttribute, int iUserID, unsigned uiParentSecNo, byte bParentSecPos);
       void InitAsRoot(uint32_t parentSectorId);
       upan::string FullPath(DiskDrive& diskDrive);
 

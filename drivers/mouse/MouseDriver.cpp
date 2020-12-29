@@ -182,7 +182,7 @@ void MouseDriver::Process(unsigned data)
 	byte b1 ;
 	char xMov, yMov ;
 	byte* pData = (byte*)(&data) ;
-	char iYsign, iXsign ;
+	__attribute__ ((unused)) char iYsign, iXsign ;
 	int iCurPos, iX, iY, iNewCurPos ;
 
 	b1 = pData[ 0 ] ;

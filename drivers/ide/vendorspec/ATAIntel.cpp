@@ -112,7 +112,7 @@ static void ATAIntel_PortConfigurePIO(ATAPort *pPort)
 }
 /**********************************************************************************************************/
 
-byte ATAIntel_PortConfigure(ATAPort* pPort)
+void ATAIntel_PortConfigure(ATAPort* pPort)
 {
 	IntelIDEInfo* pIntelIDEInfo = (IntelIDEInfo*)pPort->pVendorSpecInfo ;
 	PCIEntry* pPCIEntry = &pIntelIDEInfo->pciEntry ;
@@ -166,7 +166,8 @@ byte ATAIntel_PortConfigure(ATAPort* pPort)
 				break ;
 
 		default:
-			return ATAIntel_FAILURE ;
+		  printf("\n ATAIntel configuration failed");
+			return;
 	}
 
 	if(uiCurrentSpeed >= ATA_SPEED_UDMA_0)
@@ -211,7 +212,6 @@ byte ATAIntel_PortConfigure(ATAPort* pPort)
 	}
 
 	ATAIntel_PortConfigurePIO(pPort) ;
-	return ATAIntel_SUCCESS ;
 }
 
 void ATAIntel_InitController(const PCIEntry* pPCIEntry, ATAController* pController)

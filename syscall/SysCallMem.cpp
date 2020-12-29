@@ -46,7 +46,7 @@ __volatile__ unsigned uiP9)
 				void** addr = KERNEL_ADDR(bDoAddrTranslation, void**, uiP1) ;
 				// ProcessManager_DisableTaskSwitch() ;
 
-				*addr = DMM_Allocate(&ProcessManager::Instance().GetCurrentPAS(), uiP2) ;
+				*addr = (void*)DMM_Allocate(&ProcessManager::Instance().GetCurrentPAS(), uiP2) ;
 
 				// ProcessManager_EnableTaskSwitch() ;
 			}

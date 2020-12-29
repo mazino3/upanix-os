@@ -22,17 +22,17 @@ int SysMemory_Alloc(void** addr, unsigned uiSizeInBytes)
   unsigned ret = DMM_AllocateForKernel(uiSizeInBytes);
   if (ret == NULL || ret < 0)
     return -1;
-  *addr = ret;
+  *addr = (void*)ret;
   return 0;
 }
 
 int SysMemory_Free(void* uiAddress)
 {
-  DMM_DeAllocateForKernel(uiAddress);
+  DMM_DeAllocateForKernel((unsigned)uiAddress);
   return 0;
 }
 
 int SysMemory_GetAllocSize(void* uiAddress, int* size)
 {
-  return DMM_GetAllocSizeForKernel(uiAddress, size);
+  return DMM_GetAllocSizeForKernel((unsigned)uiAddress, size);
 }

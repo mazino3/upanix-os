@@ -136,8 +136,8 @@ XHCIController::XHCIController(PCIEntry* pPCIEntry)
   if(maxScratchpadBuffers > 0)
   {
     printf("\n Allocating %u scratchpad buffer entries", maxScratchpadBuffers);
-    uint64_t* scratchpadBufferArray = DMM_AllocateForKernel(sizeof(uint64_t) * maxScratchpadBuffers, 64);
-    for(int i = 0; i < maxScratchpadBuffers; ++i)
+    uint64_t* scratchpadBufferArray = (uint64_t*)DMM_AllocateForKernel(sizeof(uint64_t) * maxScratchpadBuffers, 64);
+    for(uint32_t i = 0; i < maxScratchpadBuffers; ++i)
       scratchpadBufferArray[i] = MemManager::Instance().AllocatePageForKernel() * PAGE_SIZE;
     _deviceContextAddrArray[0] = (uint64_t)KERNEL_REAL_ADDRESS(scratchpadBufferArray);
   }

@@ -60,7 +60,7 @@ byte* ProcessLoader::LoadInitSection(unsigned& uiSectionSize, const upan::string
   if(FileOperations_Close(fd) != FileOperations_SUCCESS)
     throw upan::exception(XLOC, "error closing file: %s", szSectionName.c_str());
 
-  if(n != uiSectionSize)
+  if((uint32_t)n != uiSectionSize)
     throw upan::exception(XLOC, "could read only %u of %u bytes of %s section", n, uiSectionSize, szSectionName.c_str());
 
   return bSectionImage.release();

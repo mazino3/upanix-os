@@ -67,7 +67,7 @@ bool GraphicsVideo::TimerTrigger()
   if(_needRefresh)
   {
     ProcessSwitchLock p;
-    memcpy(_mappedLFBAddress, _zBuffer, _lfbSize);
+    memcpy((void*)_mappedLFBAddress, (void*)_zBuffer, _lfbSize);
     Atomic::Swap(_needRefresh, 0);
   }
   return true;
@@ -142,7 +142,7 @@ void GraphicsVideo::ScrollDown()
   //1 line = 16 rows as we are scaling y axis by 16
   static const unsigned oneLine = _width * 16;
 
-  memcpy(_zBuffer, _zBuffer + oneLine * _bytesPerPixel, (maxSize - oneLine) * _bytesPerPixel);
+  memcpy((void*)_zBuffer, (void*)(_zBuffer + oneLine * _bytesPerPixel), (maxSize - oneLine) * _bytesPerPixel);
   unsigned i = maxSize - oneLine;
   unsigned* lfb = (unsigned*)(_zBuffer);
   for(; i < maxSize; ++i)
