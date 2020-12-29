@@ -15,18 +15,19 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
-#ifndef _PROCESS_MANAGER_H_
-#define _PROCESS_MANAGER_H_
+#pragma once
 
 #include <Global.h>
+#include <mosstd.h>
+#include <list.h>
+#include <map.h>
 #include <MemConstants.h>
 #include <FileSystem.h>
 #include <ElfSectionHeader.h>
 #include <PIC.h>
 #include <Atomic.h>
 #include <Process.h>
-#include <list.h>
-#include <mosstd.h>
+#include <option.h>
 
 #define ProcessManager_SUCCESS						0
 #define ProcessManager_ERR_MAX_PROCESS_EXCEEDED		1
@@ -74,17 +75,16 @@ class ProcessManager
       static ProcessManager instance;
       return instance;
     }
-    Process& GetAddressSpace(int pid);
+
+    upan::option<Process&> GetAddressSpace(int pid);
+    Process& GetCurrentPAS();
+
     PS* GetProcList(unsigned& uiListSize);
     void FreeProcListMem(PS* pProcList, unsigned uiListSize);
-    Process& GetCurrentPAS() { return _processAddressSpace[_iCurrentProcessID]; }
-    int FindFreePAS();
+    Process* GetNewPAS();
     void StartScheduler();
-    void DeleteFromSchedulerList(int iDeleteProcessID);
-    void AddToSchedulerList(int iNewProcessID);
-    void InsertIntoProcessList(int iProcessID);
-    void DeleteFromProcessList(int iProcessID);
-    bool WakeupProcessOnInterrupt(__volatile__ int iProcessID);
+    void AddToSchedulerList(Process& process);
+    bool WakeupProcessOnInterrupt(Process& process);
     bool IsResourceBusy(__volatile__ RESOURCE_KEYS uiType);
     void SetResourceBusy(RESOURCE_KEYS uiType, bool bVal);
     void Sleep(unsigned uiSleepTime);
@@ -108,33 +108,34 @@ class ProcessManager
     void WaitForEvent();
     void EventCompleted(int pid);
 
-    static int GetCurrentProcessID() { return _iCurrentProcessID; }
+    static int GetCurrentProcessID() {
+      return _currentProcessID;
+    }
     static void EnableTaskSwitch() ;
     static void DisableTaskSwitch() ;
   private:
-    void Destroy(int iDeleteProcessID);
-    void DoContextSwitch(int iProcessID);
-    PS* GetProcListASync();
-    void Load(int iProcessID);
-    void Store(int iProcessID);
-    void DeAllocateResources(int iProcessID);
-    void Release(int iProcessID);
+    void Destroy(Process& process);
+    void DoContextSwitch(Process& process);
+    void Load(Process& process);
+    void Store(Process& process);
+    void DeAllocateResources(Process& process);
+    void Release(Process& process);
     bool DoPollWait();
     void BuildIntTaskState(const unsigned uiTaskAddress, const unsigned uiTSSAddress, const int stack);
     void BuildTaskState(Process* pProcessAddressSpace, unsigned uiPDEAddress, unsigned uiEntryAdddress, unsigned uiProcessEntryStackSize);
-    void BuildKernelTaskState(const unsigned uiTaskAddress, const int iProcessID, const unsigned uiStackTop, unsigned uiParam1, unsigned uiParam2);
+    void BuildKernelTaskState(const unsigned uiTaskAddress, TaskState& taskState, const unsigned uiStackTop, unsigned uiParam1, unsigned uiParam2);
     void BuildIntGate(unsigned short usGateSelector, unsigned uiOffset, unsigned short usSelector, byte bParameterCount);
     bool IsEventCompleted(int pid);
     ProcessStateInfo& GetProcessStateInfo(int pid);
 
-    static int _iCurrentProcessID;
-  
-    upan::list<int> _processList;
     bool _resourceList[MAX_RESOURCE];
 
-    unsigned _uiProcessCount;
     ProcessStateInfo _kernelModeStateInfo;
-    Process* _processAddressSpace;
+    typedef upan::map<int, Process*> ProcessMap;
+    ProcessMap _processMap;
+    ProcessMap::iterator _currentProcessIt;
+    //This is required even before initializing the ProcessManager for fetching
+    static int _currentProcessID;
 };
 
 class ProcessSwitchLock
@@ -150,6 +151,3 @@ class ProcessSwitchLock
       ProcessManager::EnableTaskSwitch();
     }
 };
-
-#endif
-

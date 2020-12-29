@@ -44,6 +44,7 @@ private:
 class Process
 {
 public:
+  Process();
   void Load(const char* szProcessName, unsigned *uiPDEAddress, unsigned* uiEntryAdddress,
             unsigned* uiProcessEntryStackSize, int iNumberOfParameters, char** szArgumentList);
   void DeAllocateAddressSpace();
@@ -51,9 +52,9 @@ public:
 
   FILE_USER_TYPE FileUserType(const FileSystem::Node&) const;
   bool HasFilePermission(const FileSystem::Node&, byte mode) const;
-//  bool isChildThread() {
-//    return _processID != _mainThreadID;
-//  }
+  bool isChildThread() {
+    return _processID != _mainThreadID;
+  }
 
 private:
   void PushProgramInitStackData(unsigned uiPDEAddr, unsigned& uiProcessEntryStackSize, int iNumberOfParameters, char** szArgumentList);
@@ -67,7 +68,10 @@ private:
   void DeAllocateProcessSpace();
   void DeAllocatePTE();
 
-  public:
+private:
+  static int _nextPid;
+
+public:
   TaskState taskState ;
   ProcessLDT processLDT ;
   bool bFree ;
@@ -78,8 +82,8 @@ private:
   int iNextProcessID ;
   int iPrevProcessID ;
 
-//  int _processID;
-//  int _mainThreadID;
+  int _processID;
+  int _mainThreadID;
   unsigned _noOfPagesForPTE ;
   unsigned _noOfPagesForProcess ;
 

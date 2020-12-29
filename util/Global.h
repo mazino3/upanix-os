@@ -31,9 +31,9 @@
 typedef unsigned long long	DDWORD ;
 typedef unsigned			DWORD ;
 
-#define IS_KERNEL() (ProcessManager::GetCurrentProcessID() == NO_PROCESS_ID || KERNEL_MODE == true)
+#define IS_KERNEL() (KERNEL_MODE == true || ProcessManager::GetCurrentProcessID() == NO_PROCESS_ID)
 
-#define IS_KERNEL_PROCESS(pid) (ProcessManager::Instance().GetAddressSpace(pid).bIsKernelProcess || SPECIAL_TASK)
+#define IS_KERNEL_PROCESS(pid) (SPECIAL_TASK || ProcessManager::Instance().IsKernelProcess(pid))
 
 #define IS_FG_PROCESS_GROUP() (ProcessManager::Instance().GetCurrentPAS()._processGroup->IsFGProcessGroup())
 

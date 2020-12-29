@@ -53,10 +53,10 @@ public:
     return _ethernetHandler.GetHandler<IPV4Handler>();
   }
   upan::option<UDP4Handler&> GetUDP4Handler() override {
-    return GetIPV4Handler().map<UDP4Handler>([](IPV4Handler& handler) { return handler.GetHandler<UDP4Handler>(); });
+    return GetIPV4Handler().flatMap<UDP4Handler&>([](IPV4Handler& handler) { return handler.GetHandler<UDP4Handler>(); });
   }
   upan::option<DHCPHandler&> GetDHCPHandler() override {
-    return GetUDP4Handler().map<DHCPHandler&>([](UDP4Handler& handler) { return handler.GetHandler<DHCPHandler>(); });
+    return GetUDP4Handler().flatMap<DHCPHandler&>([](UDP4Handler& handler) { return handler.GetHandler<DHCPHandler>(); });
   }
   const MACAddress& GetMACAddress() const override {
     return regEEPROM->getMACAddress();

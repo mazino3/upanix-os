@@ -575,11 +575,9 @@ byte DiskDriveManager::Change(const upan::string& szDriveName)
 
 	ProcessManager::Instance().GetCurrentPAS().iDriveID = pDiskDrive->Id();
 
-	MemUtil_CopyMemory(MemUtil_GetDS(), 
-  (unsigned)&(pDiskDrive->_fileSystem.FSpwd),
-	MemUtil_GetDS(), 
-	(unsigned)&ProcessManager::Instance().GetCurrentPAS().processPWD, 
-  sizeof(FileSystem::PresentWorkingDirectory)) ;
+	MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&(pDiskDrive->_fileSystem.FSpwd),
+                    MemUtil_GetDS(), (unsigned)&ProcessManager::Instance().GetCurrentPAS().processPWD,
+                    sizeof(FileSystem::PresentWorkingDirectory)) ;
 
   ProcessEnv_Set("PWD", (const char*)pDiskDrive->_fileSystem.FSpwd.DirEntry.Name()) ;
 

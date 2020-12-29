@@ -36,7 +36,7 @@ KernelService::DLLAllocCopy::DLLAllocCopy(int iDLLEntryIndex, unsigned uiAllocPa
 
 void KernelService::DLLAllocCopy::Execute()
 {
-  Process* pPAS = &ProcessManager::Instance().GetAddressSpace( GetRequestProcessID() ) ;
+  Process* pPAS = &ProcessManager::Instance().GetAddressSpace( GetRequestProcessID() ).value() ;
 
   ProcessSharedObjectList* pPSOList = (ProcessSharedObjectList*)pPAS->GetDLLPageAddressForKernel();
 	ProcessSharedObjectList* pPSO = &pPSOList[ m_iProcessDLLEntryIndex ] ;
@@ -104,9 +104,10 @@ void KernelService::ProcessExec::Execute()
 		m_iNewProcId = -1 ;
 
 	int iPID = ProcessManager::Instance().GetCurProcId() ;
-	ProcessManager::Instance().GetAddressSpace( iPID ).iDriveID = iOldDDriveID ;
-	MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&(mOldPWD), MemUtil_GetDS(), (unsigned)&(ProcessManager::Instance().GetAddressSpace( iPID ).processPWD),
-				sizeof(FileSystem::PresentWorkingDirectory));
+	ProcessManager::Instance().GetAddressSpace( iPID ).value().iDriveID = iOldDDriveID ;
+	MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&(mOldPWD), MemUtil_GetDS(),
+                    (unsigned)&(ProcessManager::Instance().GetAddressSpace( iPID ).value().processPWD),
+                    sizeof(FileSystem::PresentWorkingDirectory));
 }
 
 bool KernelService::RequestDLLAlloCopy(int iDLLEntryIndex, unsigned uiAllocPageCnt, unsigned uiNoOfPages)
@@ -214,7 +215,7 @@ void KernelService::Server(KernelService* pService)
 
 		Process* pPAS = &ProcessManager::Instance().GetCurrentPAS();
 		auto ksProcessGroupID = pPAS->_processGroup;
-		pPAS->_processGroup = ProcessManager::Instance().GetAddressSpace( pRequest->GetRequestProcessID() )._processGroup;
+		pPAS->_processGroup = ProcessManager::Instance().GetAddressSpace( pRequest->GetRequestProcessID() ).value()._processGroup;
     pRequest->Execute() ;
 		pPAS->_processGroup = ksProcessGroupID ;
     
@@ -234,7 +235,9 @@ int KernelService::Spawn()
 	iID++ ;
 
 	int pid ;
-	if(ProcessManager::Instance().CreateKernelImage((unsigned)&(KernelService::Server), ProcessManager::GetCurrentProcessID(), false, (unsigned)this, NULL, &pid, szName.c_str()) !=
+	if(ProcessManager::Instance().CreateKernelImage((unsigned)&(KernelService::Server),
+                                                 ProcessManager::GetCurrentProcessID(),
+                                                 false, (unsigned)this, NULL, &pid, szName.c_str()) !=
 			ProcessManager_SUCCESS)
 	{
 		printf("\n Failed to create Kernel Service Process %s", szName.c_str()) ;

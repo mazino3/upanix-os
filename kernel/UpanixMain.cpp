@@ -84,7 +84,8 @@ void UpanixMain_KernelProcess()
 	KC::MKernelService().Spawn() ;
 
 //	ProcessManager::Instance().CreateKernelImage((unsigned)&DummyPrint, ProcessManager::GetCurrentProcessID(), true, NULL, NULL, &pid, "dummy") ;
-	ProcessManager::Instance().CreateKernelImage((unsigned)&Console_StartUpanixConsole, ProcessManager::GetCurrentProcessID(), true, NULL, NULL, &pid, "console") ;
+	ProcessManager::Instance().CreateKernelImage((unsigned)&Console_StartUpanixConsole,
+                                              ProcessManager::GetCurrentProcessID(), true, NULL, NULL, &pid, "console") ;
   GraphicsVideo::Instance()->CreateRefreshTask();
 //	ProcessManager_CreateKernelImage((unsigned)&FloatProcess, ProcessManager::GetCurrentProcessID(), false, NULL, NULL, &pid, "float") ;
 //	ProcessManager_CreateKernelImage((unsigned)&FloatProcess, ProcessManager::GetCurrentProcessID(), false, NULL, NULL, &pid, "float1") ;

@@ -330,9 +330,7 @@ void ConsoleCommands_ChangeDirectory()
 void ConsoleCommands_PresentWorkingDir()
 {
 	char* szPWD ;
-	Directory_PresentWorkingDirectory(
-	&ProcessManager::Instance().GetCurrentPAS(),
-	&szPWD) ;
+	Directory_PresentWorkingDirectory(&ProcessManager::Instance().GetCurrentPAS(), &szPWD) ;
 	KC::MDisplay().Message("\n", ' ') ;
 	KC::MDisplay().Message(szPWD, Display::WHITE_ON_BLACK()) ;
 	DMM_DeAllocateForKernel((unsigned)szPWD) ;
@@ -625,7 +623,9 @@ void ConsoleCommands_LoadExe()
 	argv[1] = (char*)&a2 ;
   argv[2] = (char*)&a3 ;
 
-  if((bStatus = ProcessManager::Instance().Create(CommandLineParser::Instance().GetParameterAt(0), ProcessManager::GetCurrentProcessID(), true, &iChildProcessID, DERIVE_FROM_PARENT, 3, argv)) != ProcessManager_SUCCESS)
+  if((bStatus = ProcessManager::Instance().Create(CommandLineParser::Instance().GetParameterAt(0),
+                                                  ProcessManager::GetCurrentProcessID(), true,
+                                                  &iChildProcessID, DERIVE_FROM_PARENT, 3, argv)) != ProcessManager_SUCCESS)
 	{
 		KC::MDisplay().Address("\n Load User Process Failed: ", bStatus) ;
 		KC::MDisplay().Character('\n', Display::WHITE_ON_BLACK()) ;
@@ -656,7 +656,9 @@ void ConsoleCommands_Clone()
 
 	extern void Console_StartUpanixConsole() ;
 	
-	ProcessManager::Instance().CreateKernelImage((unsigned)&Console_StartUpanixConsole, ProcessManager::GetCurrentProcessID(), true, NULL, NULL, &pid, "console_1") ;
+	ProcessManager::Instance().CreateKernelImage((unsigned)&Console_StartUpanixConsole,
+                                              ProcessManager::GetCurrentProcessID(),
+                                              true, NULL, NULL, &pid, "console_1") ;
 	
 	ProcessManager::Instance().WaitOnChild(pid) ;
 }

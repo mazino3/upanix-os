@@ -54,7 +54,7 @@ byte ProcessEnv_Initialize(__volatile__ unsigned uiPDEAddress, __volatile__ int 
 
 	if(iParentProcessID != NO_PROCESS_ID)
 	{
-		__volatile__ Process& parentProcessAddrSpace = ProcessManager::Instance().GetAddressSpace(iParentProcessID);
+		__volatile__ Process& parentProcessAddrSpace = ProcessManager::Instance().GetAddressSpace(iParentProcessID).value();
 
 		unsigned uiParentPageNo = ProcessEnv_GetProcessEnvPageNumber(parentProcessAddrSpace) ;
 

@@ -444,7 +444,7 @@ ReturnCode MemManager::AllocatePage(int iProcessID, unsigned uiFaultyAddress)
 
 	uiVirtualPageNo = uiFaultyAddress / PAGE_SIZE ;
 
-	if(ProcessManager::Instance().GetAddressSpace(iProcessID).bIsKernelProcess == true)
+	if(ProcessManager::Instance().IsKernelProcess(iProcessID))
 	{
 		printf("\n Page Fault in Kernel! FIX THIS !!!") ;
 		printf("\n Page Fault Address/Page: %x / %u", uiFaultyAddress, uiVirtualPageNo);
@@ -471,7 +471,7 @@ ReturnCode MemManager::AllocatePage(int iProcessID, unsigned uiFaultyAddress)
       }
     }
 
-		uiPDEAddress = ProcessManager::Instance().GetAddressSpace(iProcessID).taskState.CR3_PDBR ;
+		uiPDEAddress = ProcessManager::Instance().GetAddressSpace(iProcessID).value().taskState.CR3_PDBR ;
 
 		uiPTEAddress = (((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[ ((uiFaultyAddress >> 22) & 0x3FF) ]) ;
 

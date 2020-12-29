@@ -14,6 +14,16 @@
 //#define INIT_NAME "_stdio_init-NOTINUSE"
 //#define TERM_NAME "_stdio_term-NOTINUSE"
 
+int Process::_nextPid = 0;
+
+Process::Process() {
+  memset(this, 0, sizeof(Process));
+  _processID = _nextPid++;
+  uiAUTAddress = NULL;
+  uiDMMFlag = false;
+  status = NEW;
+}
+
 void Process::Load(const char* szProcessName, unsigned *uiPDEAddress,
                    unsigned* uiEntryAdddress, unsigned* uiProcessEntryStackSize, int iNumberOfParameters, char** szArgumentList)
 {
