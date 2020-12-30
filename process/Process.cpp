@@ -44,7 +44,6 @@ Process::Process(const upan::string& name, int parentID, bool isFGProcess)
   iParentProcessID = parentID;
   uiAUTAddress = NULL;
   status = NEW;
-  bIsKernelProcess = false;
 
   auto parentProcess = ProcessManager::Instance().GetAddressSpace(parentID);
 
@@ -122,7 +121,6 @@ uint32_t Process::GetDLLPageAddressForKernel()
 
 KernelProcess::KernelProcess(const upan::string& name, uint32_t taskAddress, int parentID, bool isFGProcess, uint32_t param1, uint32_t param2)
   : Process(name, parentID, isFGProcess) {
-  bIsKernelProcess = true;
   _mainThreadID = _processID;
 
   ProcessEnv_InitializeForKernelProcess() ;
@@ -522,7 +520,7 @@ void UserProcess::DeAllocatePTE() {
 
 FILE_USER_TYPE Process::FileUserType(const FileSystem::Node &node) const
 {
-  if(bIsKernelProcess || iUserID == ROOT_USER_ID || node.UserID() == iUserID)
+  if(isKernelProcess() || iUserID == ROOT_USER_ID || node.UserID() == iUserID)
     return USER_OWNER ;
 
   return USER_OTHERS ;
@@ -569,7 +567,7 @@ UserThread::UserThread(int parentID, bool isFGProcess) : Process("", parentID, i
   }
 
   //TODO: enforce by adding a createThread() method in UserProcess
-  if (parentPAS.value().bIsKernelProcess) {
+  if (parentPAS.value().isKernelProcess()) {
     throw upan::exception(XLOC, "Threads can be created only by user processes");
   }
 

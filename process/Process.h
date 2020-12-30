@@ -62,6 +62,8 @@ public:
   Process(const upan::string& name, int parentID, bool isFGProcess);
   virtual ~Process() = 0;
 
+  virtual bool isKernelProcess() const = 0;
+
   void Load();
   void Store();
   void Destroy();
@@ -93,8 +95,6 @@ public:
   unsigned _noOfPagesForPTE ;
   unsigned _noOfPagesForProcess ;
 
-  byte bIsKernelProcess ;
-
   unsigned uiAUTAddress ;
   unsigned _processBase ;
 
@@ -116,8 +116,12 @@ class KernelProcess : public Process {
 public:
   KernelProcess(const upan::string& name, uint32_t taskAddress, int parentID, bool isFGProcess, uint32_t param1, uint32_t param2);
 
+  bool isKernelProcess() const override {
+    return true;
+  }
+
 private:
-  virtual void DeAllocateResources();
+  void DeAllocateResources() override;
   uint32_t AllocateAddressSpace();
 
 private:
@@ -127,6 +131,10 @@ private:
 class UserProcess : public Process {
 public:
   UserProcess(const upan::string &name, int parentID, int userID, bool isFGProcess, int noOfParams, char** args);
+
+  bool isKernelProcess() const override {
+    return false;
+  }
 
 private:
   void Load(int iNumberOfParameters, char** szArgumentList);
@@ -138,7 +146,7 @@ private:
   void InitializeProcessSpaceForOS(const unsigned uiPDEAddress);
   void InitializeProcessSpaceForProcess(const unsigned uiPDEAddress);
 
-  virtual void DeAllocateResources();
+  void DeAllocateResources() override;
   void DeAllocateAddressSpace();
   void DeAllocateProcessSpace();
   void DeAllocatePTE();
@@ -147,6 +155,11 @@ private:
 class UserThread : public Process {
 public:
   UserThread(int parentID, bool isFGProcess);
+
+  bool isKernelProcess() const override {
+    return false;
+  }
+
 private:
-  virtual void DeAllocateResources() {}
+  void DeAllocateResources() override {}
 };

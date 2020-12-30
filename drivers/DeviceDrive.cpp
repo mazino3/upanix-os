@@ -599,7 +599,7 @@ byte DiskDriveManager::GetList(DriveStat** pDriveList, int* iListSize)
 	Process* pAddrSpace = &ProcessManager::Instance().GetCurrentPAS() ;
 	DriveStat* pAddress = NULL ;
 	
-	if(pAddrSpace->bIsKernelProcess == true)
+	if(pAddrSpace->isKernelProcess())
 	{
 		*pDriveList = (DriveStat*)DMM_AllocateForKernel(sizeof(DriveStat) * _driveList.size());
 		pAddress = *pDriveList ;

@@ -460,7 +460,6 @@ bool ProcessManager::CreateThreadTask(int parentID, unsigned threadEntryAddress,
     Process& parentPAS = GetAddressSpace(parentID).value();
     upan::uniq_ptr<Process> threadPAS(new UserThread(parentID, isFGProcess));
 
-    threadPAS->bIsKernelProcess = parentPAS.bIsKernelProcess;
     threadPAS->iUserID = parentPAS.iUserID;
     threadPAS->iDriveID = parentPAS.iDriveID;
     threadPAS->_processGroup = parentPAS._processGroup;
@@ -499,7 +498,7 @@ PS* ProcessManager::GetProcList(unsigned& uiListSize)
   PS* pPS;
   Process& pAddrSpc = GetCurrentPAS() ;
 
-  if(pAddrSpc.bIsKernelProcess == true)
+  if(pAddrSpc.isKernelProcess())
   {
     pPS = pProcList = (PS*)DMM_AllocateForKernel(sizeof(PS) * uiListSize) ;
   }
@@ -521,7 +520,7 @@ PS* ProcessManager::GetProcList(unsigned& uiListSize)
     pPS[i].iUserID = p.iUserID ;
 
     char* pname ;
-    if(pAddrSpc.bIsKernelProcess == true)
+    if(pAddrSpc.isKernelProcess())
     {
       pname = pPS[i].pname = (char*)DMM_AllocateForKernel(p._name.length() + 1) ;
     }
@@ -542,13 +541,13 @@ void ProcessManager::FreeProcListMem(PS* pProcList, unsigned uiListSize)
 
 	for(unsigned i = 0; i < uiListSize; i++)
 	{
-		if(pAddrSpc.bIsKernelProcess == true)
+		if(pAddrSpc.isKernelProcess())
 			DMM_DeAllocateForKernel((unsigned)pProcList[i].pname) ;
 		else
 			DMM_DeAllocate(&pAddrSpc, (unsigned)pProcList[i].pname) ;
 	}
 	
-	if(pAddrSpc.bIsKernelProcess == true)
+	if(pAddrSpc.isKernelProcess())
 		DMM_DeAllocateForKernel((unsigned)pProcList) ;
 	else
 		DMM_DeAllocate(&pAddrSpc, (unsigned)pProcList) ;
@@ -563,7 +562,7 @@ bool ProcessManager::IsDMMOn(int iProcessID) {
 }
 
 bool ProcessManager::IsKernelProcess(int iProcessID) {
-	return GetAddressSpace(iProcessID).value().bIsKernelProcess ;
+	return GetAddressSpace(iProcessID).value().isKernelProcess();
 }
 
 

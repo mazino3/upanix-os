@@ -286,7 +286,7 @@ void Directory_GetDirectoryContent(const char* szFileName, Process* processAddre
 		{
 			*iListSize = 1 ;
 
-      if(processAddressSpace->bIsKernelProcess)
+      if(processAddressSpace->isKernelProcess())
 			{
         *pDirList = (FileSystem::Node*)DMM_AllocateForKernel(sizeof(FileSystem::Node)) ;
 				pAddress = *pDirList ;
@@ -312,7 +312,7 @@ void Directory_GetDirectoryContent(const char* szFileName, Process* processAddre
   uiCurrentSectorID = dirFile->StartSectorID();
   *iListSize = dirFile->Size();
 
-  if(processAddressSpace->bIsKernelProcess)
+  if(processAddressSpace->isKernelProcess())
 	{
     *pDirList = (FileSystem::Node*)DMM_AllocateForKernel(sizeof(FileSystem::Node) * (*iListSize)) ;
 		pAddress = *pDirList ;
@@ -903,7 +903,7 @@ void Directory_PresentWorkingDirectory(Process* processAddressSpace, char** uiRe
 	if(szPWD == NULL)
     throw upan::exception(XLOC, "PWD is not set");
 
-	if(processAddressSpace->bIsKernelProcess == true)
+	if(processAddressSpace->isKernelProcess())
 	{
 		*uiReturnDirPathAddress = (char*)DMM_AllocateForKernel(strlen(szPWD) + 1) ;
 		pAddress = *uiReturnDirPathAddress ;
