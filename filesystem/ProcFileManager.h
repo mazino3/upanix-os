@@ -57,7 +57,7 @@ typedef struct
 	unsigned uiLastReadSectorNumber ;
 } PACKED ProcFileDescriptor ;
 
-byte ProcFileManager_Initialize(__volatile__ unsigned uiPDEAddress, __volatile__ int iParentProcessID) ;
+void ProcFileManager_Initialize(__volatile__ unsigned uiPDEAddress, __volatile__ int iParentProcessID) ;
 void ProcFileManager_InitForKernel() ;
 
 void ProcFileManager_UnInitialize(Process* processAddressSpace) ;

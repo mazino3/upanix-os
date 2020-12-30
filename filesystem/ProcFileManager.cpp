@@ -71,7 +71,7 @@ static unsigned ProcFileManager_GetPage(Process* processAddressSpace)
 	return (((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPTEIndex] & 0xFFFFF000) / PAGE_SIZE ;
 }
 
-byte ProcFileManager_Initialize(__volatile__ unsigned uiPDEAddress, __volatile__ int iParentProcessID)
+void ProcFileManager_Initialize(__volatile__ unsigned uiPDEAddress, __volatile__ int iParentProcessID)
 {
 	unsigned uiFreePageNo = MemManager::Instance().AllocatePhysicalPage();
 
@@ -118,8 +118,6 @@ byte ProcFileManager_Initialize(__volatile__ unsigned uiPDEAddress, __volatile__
 		fdTable[i - PROC_STDIN].szFileName = NULL;
 		fdTable[i - PROC_STDIN].RefCount = 1 ;
 	}
-
-	return ProcFileManager_SUCCESS ;
 }
 
 void ProcFileManager_UnInitialize(Process* processAddressSpace)

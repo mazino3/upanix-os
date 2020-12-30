@@ -1,8 +1,26 @@
+/*
+ *	Upanix - An x86 based Operating System
+ *  Copyright (C) 2011 'Prajwala Prabhakar' 'srinivasa_prajwal@yahoo.co.in'
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/
+ */
 #include <ustring.h>
 #include <TaskStructures.h>
 #include <ProcessConstants.h>
+#include <MemManager.h>
 
-void TaskState::Build(uint32_t stackStartAddress, unsigned uiPDEAddress, unsigned uiEntryAdddress, unsigned uiProcessEntryStackSize)
+void TaskState::BuildForUser(uint32_t stackStartAddress, unsigned uiPDEAddress, unsigned uiEntryAdddress, unsigned uiProcessEntryStackSize)
 {
   int pr = 100 ;
   memset(this, 0, sizeof(TaskState)) ;
@@ -57,6 +75,33 @@ void TaskState::Build(uint32_t stackStartAddress, unsigned uiPDEAddress, unsigne
   IO_MAP_BASE = 103 ; // > TSS Limit => No I/O Permission Bit Map present
 }
 
+void TaskState::BuildForKernel(const unsigned uiTaskAddress, const unsigned uiStackTop, unsigned uiParam1, unsigned uiParam2) {
+  memset(this, 0, sizeof(TaskState));
+
+  EIP = uiTaskAddress ;
+
+  ((unsigned*)(uiStackTop - 8))[0] = uiParam1 ;
+  ((unsigned*)(uiStackTop - 8))[1] = uiParam2 ;
+  ESP = uiStackTop - 12 ;
+
+  ES = 0x8 | 0x4 ;
+
+  CS = 0x10 | 0x4 ;
+
+  DS = 0x18 | 0x4 ;
+  FS = 0x18 | 0x4 ;
+  GS = 0x18 | 0x4 ;
+
+  SS = 0x20 | 0x4 ;
+
+  LDT = 0x50 ;
+
+  CR3_PDBR = MEM_PDBR ;
+  EFLAGS = 0x202 ;
+  DEBUG_T_BIT = 0x00 ;
+  IO_MAP_BASE = 103 ; // > TSS Limit => No I/O Permission Bit Map present
+}
+
 void Descriptor::Build(unsigned uiLimit, unsigned uiBase, byte bType, byte bFlag)
 {
   _usLimit15_0 = (0xFFFF & uiLimit) ;
@@ -67,7 +112,7 @@ void Descriptor::Build(unsigned uiLimit, unsigned uiBase, byte bType, byte bFlag
   _bBase31_24 = (uiBase >> 24) & 0xFF ;
 }
 
-void ProcessLDT::Build()
+void ProcessLDT::BuildForUser()
 {
   unsigned uiSegmentBase = PROCESS_BASE ;
   unsigned uiProcessLimit = 0xFFFFF ;

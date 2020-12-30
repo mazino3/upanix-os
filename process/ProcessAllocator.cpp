@@ -20,46 +20,6 @@
 #include <ProcessAllocator.h>
 #include <DMM.h>
 
-byte
-ProcessAllocator_AllocateAddressSpaceForKernel(Process* processAddressSpace, unsigned* uiStackAddress)
-{
-	unsigned i, uiFreePageNo ;
-	
-	int iStackBlockID = MemManager::Instance().GetFreeKernelProcessStackBlockID() ;
-	
-	if(iStackBlockID < 0)
-		return ProcessAllocator_FAILURE ;
-
-	*uiStackAddress = KERNEL_PROCESS_PDE_ID * PAGE_TABLE_ENTRIES * PAGE_SIZE + iStackBlockID * PROCESS_KERNEL_STACK_PAGES * PAGE_SIZE;
-
-	processAddressSpace->iKernelStackBlockID = iStackBlockID ;
-
-	for(i = 0; i < PROCESS_KERNEL_STACK_PAGES; i++)
-	{
-    uiFreePageNo = MemManager::Instance().AllocatePhysicalPage();
-		MemManager::Instance().GetKernelProcessStackPTEBase()[iStackBlockID * PROCESS_KERNEL_STACK_PAGES + i] = ((uiFreePageNo * PAGE_SIZE) & 0xFFFFF000) | 0x3 ;
-	}
-  Mem_FlushTLB();
-
-	return ProcessAllocator_SUCCESS ;
-}
-
-void
-ProcessAllocator_DeAllocateAddressSpaceForKernel(Process* processAddressSpace)
-{
-	unsigned i ;
-	const int iStackBlockID = processAddressSpace->iKernelStackBlockID ;
-
-	for(i = 0; i < PROCESS_KERNEL_STACK_PAGES; i++)
-	{
-		MemManager::Instance().DeAllocatePhysicalPage(
-		(MemManager::Instance().GetKernelProcessStackPTEBase()[iStackBlockID * PROCESS_KERNEL_STACK_PAGES + i] & 0xFFFFF000) / PAGE_SIZE) ;
-	}
-  Mem_FlushTLB();
-
-	MemManager::Instance().FreeKernelProcessStackBlock(iStackBlockID) ;
-}
-
 byte ProcessAllocator_AllocatePagesForDLL(unsigned uiNoOfPagesForDLL, ProcessSharedObjectList* pProcessSharedObjectList)
 {
 	unsigned uiFreePageNo ;

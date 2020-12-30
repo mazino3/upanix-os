@@ -32,7 +32,7 @@ static unsigned ProcessEnv_GetProcessEnvPageNumber(__volatile__ Process& process
 	return (((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPTEIndex] & 0xFFFFF000) / PAGE_SIZE ;
 }
 
-byte ProcessEnv_Initialize(__volatile__ unsigned uiPDEAddress, __volatile__ int iParentProcessID)
+void ProcessEnv_Initialize(__volatile__ unsigned uiPDEAddress, __volatile__ int iParentProcessID)
 {
 	unsigned uiFreePageNo = MemManager::Instance().AllocatePhysicalPage();
 
@@ -62,8 +62,6 @@ byte ProcessEnv_Initialize(__volatile__ unsigned uiPDEAddress, __volatile__ int 
 
 		MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)pParentEnv, MemUtil_GetDS(), (unsigned)pEnv, PAGE_SIZE) ;
 	}
-
-	return ProcessEnv_SUCCESS ;
 }
 
 void ProcessEnv_InitializeForKernelProcess()
