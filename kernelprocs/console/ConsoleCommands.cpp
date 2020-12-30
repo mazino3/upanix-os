@@ -439,7 +439,8 @@ void ConsoleCommands_DeleteUser()
 void ConsoleCommands_OpenSession()
 {
 	int pid ;
-	ProcessManager::Instance().CreateKernelImage((unsigned)&SessionManager_StartSession, NO_PROCESS_ID, true, NULL, NULL, &pid, "session") ;
+  ProcessManager::Instance().CreateKernelProcess("session", (unsigned) &SessionManager_StartSession, NO_PROCESS_ID,
+                                                 true, NULL, NULL, &pid);
 	ProcessManager::Instance().WaitOnChild(pid) ;
 }
 
@@ -655,10 +656,10 @@ void ConsoleCommands_Clone()
 	int pid ;
 
 	extern void Console_StartUpanixConsole() ;
-	
-	ProcessManager::Instance().CreateKernelImage((unsigned)&Console_StartUpanixConsole,
-                                              ProcessManager::GetCurrentProcessID(),
-                                              true, NULL, NULL, &pid, "console_1") ;
+
+  ProcessManager::Instance().CreateKernelProcess("console_1", (unsigned) &Console_StartUpanixConsole,
+                                                 ProcessManager::GetCurrentProcessID(),
+                                                 true, NULL, NULL, &pid) ;
 	
 	ProcessManager::Instance().WaitOnChild(pid) ;
 }

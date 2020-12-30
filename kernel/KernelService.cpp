@@ -235,9 +235,9 @@ int KernelService::Spawn()
 	iID++ ;
 
 	int pid ;
-	if(ProcessManager::Instance().CreateKernelImage((unsigned)&(KernelService::Server),
-                                                 ProcessManager::GetCurrentProcessID(),
-                                                 false, (unsigned)this, NULL, &pid, szName.c_str()) !=
+	if(ProcessManager::Instance().CreateKernelProcess(szName, (unsigned) &(KernelService::Server),
+                                                    ProcessManager::GetCurrentProcessID(),
+                                                    false, (unsigned) this, NULL, &pid) !=
 			ProcessManager_SUCCESS)
 	{
 		printf("\n Failed to create Kernel Service Process %s", szName.c_str()) ;

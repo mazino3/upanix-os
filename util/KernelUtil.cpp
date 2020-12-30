@@ -59,8 +59,8 @@ void KernelUtil::TightLoopWait(unsigned loop)
 void KernelUtil::ScheduleTimedTask(const char* szName, unsigned uiTimeInMilliSec, TimerTask& task)
 {
 	int pid ;
-  ProcessManager::Instance().CreateKernelImage((unsigned)&SystemTimer, ProcessManager::GetCurrentProcessID(),
-                                               false, uiTimeInMilliSec, (uint32_t)&task, &pid, szName) ;
+  ProcessManager::Instance().CreateKernelProcess(szName, (unsigned) &SystemTimer, ProcessManager::GetCurrentProcessID(),
+                                                 false, uiTimeInMilliSec, (uint32_t) &task, &pid);
 }
 
 void KernelUtil::SystemTimer(unsigned uiTimeInMilliSec, TimerTask* task)

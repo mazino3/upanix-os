@@ -59,10 +59,6 @@
 	__asm__ __volatile__("leave") ; \
 	__asm__ __volatile__("ret") ;
 
-extern unsigned ProcessManager_uiKernelAUTAddress ;
-
-void ProcessManager_ProcessInit() ;
-void ProcessManager_ProcessUnInit() ;
 void ProcessManager_Exit() ;
 
 class ProcessManager
@@ -81,7 +77,6 @@ class ProcessManager
 
     PS* GetProcList(unsigned& uiListSize);
     void FreeProcListMem(PS* pProcList, unsigned uiListSize);
-    Process* GetNewPAS();
     void StartScheduler();
     void AddToSchedulerList(Process& process);
     bool WakeupProcessOnInterrupt(Process& process);
@@ -94,9 +89,9 @@ class ProcessManager
     void Kill(int iProcessID);
     void WakeUpFromKSWait(int iProcessID);
     bool IsChildAlive(int iChildProcessID);
-    byte CreateKernelImage(const unsigned uiTaskAddress, int iParentProcessID, byte bIsFGProcess, unsigned uiParam1, unsigned uiParam2, int* iProcessID, const char* szKernelProcName);
-    byte Create(const char* szProcessName, int iParentProcessID, byte bIsFGProcess, int* iProcessID, int iUserID, int iNumberOfParameters, char** szArgumentList);
-    byte CreateThreadTask(int parentID, unsigned threadEntryAddress, int iNumberOfParameters, char** szArgumentList, int& threadID);
+    byte CreateKernelProcess(const upan::string& name, const unsigned uiTaskAddress, int iParentProcessID, byte bIsFGProcess, unsigned uiParam1, unsigned uiParam2, int* iProcessID);
+    byte Create(const upan::string& name, int iParentProcessID, byte bIsFGProcess, int* iProcessID, int iUserID, int iNumberOfParameters, char** szArgumentList);
+    bool CreateThreadTask(int parentID, unsigned threadEntryAddress, bool isFGProcess, int iNumberOfParameters, char** szArgumentList, int& threadID);
     void SetDMMFlag(int iProcessID, bool flag);
     bool IsDMMOn(int iProcessID);
     void WaitOnChild(int iChildProcessID);
@@ -114,16 +109,10 @@ class ProcessManager
     static void EnableTaskSwitch() ;
     static void DisableTaskSwitch() ;
   private:
-    void Destroy(Process& process);
     void DoContextSwitch(Process& process);
-    void Load(Process& process);
-    void Store(Process& process);
-    void DeAllocateResources(Process& process);
-    void Release(Process& process);
+    void Destroy(Process& pas);
     bool DoPollWait();
     void BuildIntTaskState(const unsigned uiTaskAddress, const unsigned uiTSSAddress, const int stack);
-    void BuildTaskState(Process* pProcessAddressSpace, unsigned uiPDEAddress, unsigned uiEntryAdddress, unsigned uiProcessEntryStackSize);
-    void BuildKernelTaskState(const unsigned uiTaskAddress, TaskState& taskState, const unsigned uiStackTop, unsigned uiParam1, unsigned uiParam2);
     void BuildIntGate(unsigned short usGateSelector, unsigned uiOffset, unsigned short usSelector, byte bParameterCount);
     bool IsEventCompleted(int pid);
     ProcessStateInfo& GetProcessStateInfo(int pid);

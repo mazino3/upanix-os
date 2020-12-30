@@ -129,7 +129,8 @@ void SessionManager_SwitchToSession(int key)
 	if(SessionManager_List[key] == NO_PROCESS_ID)
 	{
 		int pid ;
-		ProcessManager::Instance().CreateKernelImage((unsigned)&SessionManager_StartSession, NO_PROCESS_ID, true, NULL, NULL, &pid, "session") ;
+    ProcessManager::Instance().CreateKernelProcess("session", (unsigned) &SessionManager_StartSession, NO_PROCESS_ID,
+                                                   true, NULL, NULL, &pid) ;
 		SessionManager_List[key] = pid ;
 		return ;
 	}
