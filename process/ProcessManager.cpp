@@ -459,9 +459,11 @@ byte ProcessManager::Create(const upan::string& name, int iParentProcessID, byte
 //1: Lock Env Page access
 //2: Lock FileDescriptor Table access
 //3: Lock process heap access
-bool ProcessManager::CreateThreadTask(int parentID, uint32_t threadEntryAddress, bool isFGProcess, int noOfParams, char** szArgumentList, int& threadID) {
+//4: DLL service
+//5:
+bool ProcessManager::CreateThreadTask(int parentID, uint32_t threadEntryAddress, bool isFGProcess, void* arg, int& threadID) {
   try {
-    upan::uniq_ptr<Process> threadPAS(new UserThread(parentID, threadEntryAddress, isFGProcess, noOfParams, szArgumentList));
+    upan::uniq_ptr<Process> threadPAS(new UserThread(parentID, threadEntryAddress, isFGProcess, arg));
     AddToSchedulerList(*threadPAS.release());
     //MemManager::Instance().DisplayNoOfFreePages() ;
     return true;

@@ -71,6 +71,7 @@ public:
   virtual ~Process() = 0;
 
   virtual bool isKernelProcess() const = 0;
+  virtual void onLoad() = 0;
   virtual uint32_t startPDEForDLL() const {
     throw upan::exception(XLOC, "startPDEForDLL unsupported");
   }
@@ -136,6 +137,8 @@ public:
     return true;
   }
 
+  void onLoad() override {}
+
 private:
   void DeAllocateResources() override;
   uint32_t AllocateAddressSpace();
@@ -152,6 +155,8 @@ public:
     return false;
   }
 
+  void onLoad() override;
+
   uint32_t startPDEForDLL() const override {
     return _startPDEForDLL;
   }
@@ -167,8 +172,7 @@ private:
   void Load(int noOfParams, char** szArgumentList);
   uint32_t AllocateAddressSpace();
   void CopyElfImage(unsigned uiPDEAddr, byte* bProcessImage, unsigned uiMemImageSize);
-  uint32_t PushProgramInitStackData(unsigned uiPDEAddr, int iNumberOfParameters, char** szArgumentList);
-  uint32_t AllocatePDE();
+  uint32_t PushProgramInitStackData(int iNumberOfParameters, char** szArgumentList);
   void AllocatePTE(const unsigned uiPDEAddress);
   void InitializeProcessSpaceForOS(const unsigned uiPDEAddress);
   void InitializeProcessSpaceForProcess(const unsigned uiPDEAddress);
@@ -188,15 +192,18 @@ private:
   uint32_t _noOfPagesForProcess;
   uint32_t _uiNoOfPagesForDLLPTE;
   uint32_t _startPDEForDLL;
+  uint32_t _stackPTEAddress;
 };
 
 class UserThread : public Process {
 public:
-  UserThread(int parentID, uint32_t entryAddress, bool isFGProcess, int noOfParams, char** szArgumentList);
+  UserThread(int parentID, uint32_t entryAddress, bool isFGProcess, void* arg);
 
   bool isKernelProcess() const override {
     return false;
   }
+
+  void onLoad() override;
 
   uint32_t startPDEForDLL() const override {
     return _parent.startPDEForDLL();
@@ -215,8 +222,10 @@ public:
   }
 
 private:
-  void DeAllocateResources() override {}
+  uint32_t PushProgramInitStackData(void* arg);
+  void DeAllocateResources() override;
 
 private:
   UserProcess& _parent;
+  uint32_t _stackPTEAddress;
 };
