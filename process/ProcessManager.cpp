@@ -71,6 +71,13 @@ ProcessManager::ProcessManager() : _currentProcessIt(_processMap.end()) {
 	KC::MDisplay().LoadMessage("Process Manager Initialization", Success);
 }
 
+upan::option<UserProcess&> ProcessManager::GetUserProcess(int pid) {
+  ProcessSwitchLock switchLock;
+  return GetAddressSpace(pid).map<UserProcess&>([](Process& p) -> UserProcess& {
+    return dynamic_cast<UserProcess&>(p);
+  });
+}
+
 upan::option<Process&> ProcessManager::GetAddressSpace(int pid) {
   ProcessSwitchLock switchLock;
   auto it = _processMap.find(pid);
@@ -322,14 +329,12 @@ void ProcessManager::Destroy(Process& pas) {
     }
   }
 }
-void ProcessManager::EnableTaskSwitch()
-{
-	PIT_SetTaskSwitch(true) ;
+void ProcessManager::EnableTaskSwitch() {
+	PIT_EnableTaskSwitch();
 }
 
-void ProcessManager::DisableTaskSwitch()
-{
-	PIT_SetTaskSwitch(false) ;
+void ProcessManager::DisableTaskSwitch() {
+  PIT_DisableTaskSwitch();
 }
 
 void ProcessManager::Sleep(__volatile__ unsigned uiSleepTime) // in Mili Seconds

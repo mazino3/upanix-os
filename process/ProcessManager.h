@@ -21,13 +21,15 @@
 #include <mosstd.h>
 #include <list.h>
 #include <map.h>
+#include <option.h>
 #include <MemConstants.h>
 #include <FileSystem.h>
 #include <ElfSectionHeader.h>
 #include <PIC.h>
 #include <Atomic.h>
 #include <Process.h>
-#include <option.h>
+
+#include <PIT.h>
 
 #define ProcessManager_SUCCESS						0
 #define ProcessManager_ERR_MAX_PROCESS_EXCEEDED		1
@@ -72,6 +74,7 @@ class ProcessManager
       return instance;
     }
 
+    upan::option<UserProcess&> GetUserProcess(int pid);
     upan::option<Process&> GetAddressSpace(int pid);
     Process& GetCurrentPAS();
 
@@ -127,16 +130,18 @@ class ProcessManager
     static int _currentProcessID;
 };
 
-class ProcessSwitchLock
-{
-  public:
-    ProcessSwitchLock()
-    {
-	    ProcessManager::DisableTaskSwitch();
-    }
+class ProcessSwitchLock {
+public:
+  ProcessSwitchLock() : _isOwner(false) {
+    _isOwner = PIT_DisableTaskSwitch();
+  }
 
-    ~ProcessSwitchLock()
-    {
-      ProcessManager::EnableTaskSwitch();
+  ~ProcessSwitchLock() {
+    if (_isOwner) {
+      PIT_EnableTaskSwitch();
     }
+  }
+
+private:
+  bool _isOwner;
 };

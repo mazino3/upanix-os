@@ -72,7 +72,7 @@ unsigned DMM_Allocate(Process* processAddressSpace, unsigned uiSizeInBytes, unsi
 	// RAM Size OR 4GB if virtual memory management is implemented
 	
 	// Dedicated Head Node. This will avoid Back Loop at Head
-	if(processAddressSpace->uiAUTAddress == NULL)
+	if(processAddressSpace->getAUTAddress() == NULL)
 	{
 		aut = (AllocationUnitTracker*)(uiHeapStartAddress) ;
 
@@ -80,12 +80,12 @@ unsigned DMM_Allocate(Process* processAddressSpace, unsigned uiSizeInBytes, unsi
 		aut->uiSize = 0 + sizeof(AllocationUnitTracker) ;
 
 		aut->uiNextAUTAddress = NULL ;
-		processAddressSpace->uiAUTAddress = uiHeapStartAddress ;
+		processAddressSpace->setAUTAddress(uiHeapStartAddress);
 	}
 
 	unsigned uiByteStuffForAlign = 0;
 
-	aut = prevAut = (AllocationUnitTracker*)(processAddressSpace->uiAUTAddress) ;
+	aut = prevAut = (AllocationUnitTracker*)(processAddressSpace->getAUTAddress()) ;
 	byte bStop = false ;
 	for(uiAddress = uiHeapStartAddress; ;)
 	{
@@ -112,7 +112,7 @@ unsigned DMM_Allocate(Process* processAddressSpace, unsigned uiSizeInBytes, unsi
 				else
 				{
 					aut->uiNextAUTAddress = NULL ;
-					processAddressSpace->uiAUTAddress = uiAddress ;
+					processAddressSpace->setAUTAddress(uiAddress);
 				}
 
 				//Make sure that all pages are allocated in the requested mem block
@@ -236,7 +236,7 @@ byte DMM_DeAllocate(Process* processAddressSpace, unsigned uiAddress)
 	if(uiAddress == uiHeapStartAddress)
 		return DMM_BAD_DEALLOC ;
 	
-	AllocationUnitTracker* curAUT = (AllocationUnitTracker*)processAddressSpace->uiAUTAddress ;
+	AllocationUnitTracker* curAUT = (AllocationUnitTracker*)processAddressSpace->getAUTAddress() ;
 	AllocationUnitTracker* prevAUT = NULL ;
 
 	while(curAUT != NULL)
@@ -244,7 +244,7 @@ byte DMM_DeAllocate(Process* processAddressSpace, unsigned uiAddress)
 		if(curAUT->uiReturnAddress == uiAddress)
 		{
 			if(prevAUT == NULL)
-				processAddressSpace->uiAUTAddress = curAUT->uiNextAUTAddress ;
+				processAddressSpace->setAUTAddress(curAUT->uiNextAUTAddress);
 			else
 				prevAUT->uiNextAUTAddress = curAUT->uiNextAUTAddress ;
 
@@ -262,7 +262,7 @@ byte DMM_GetAllocSize(Process* processAddressSpace, unsigned uiAddress, int* iSi
 {
 	uiAddress = REAL_ALLOCATED_ADDRESS(uiAddress) ;
 
-	AllocationUnitTracker* curAUT = (AllocationUnitTracker*)processAddressSpace->uiAUTAddress ;
+	AllocationUnitTracker* curAUT = (AllocationUnitTracker*)processAddressSpace->getAUTAddress() ;
 
 	while(curAUT != NULL)
 	{

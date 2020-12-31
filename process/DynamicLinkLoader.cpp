@@ -186,7 +186,7 @@ void DynamicLinkLoader_DoRelocation(Process* processAddressSpace, int iID, unsig
 	else
 	{
 		uiBaseAddress = PROCESS_BASE ;
-		pELFHeader = (ELF32Header*)(GLOBAL_REL_ADDR(processAddressSpace->_processBase, uiBaseAddress)) ;
+		pELFHeader = (ELF32Header*)(GLOBAL_REL_ADDR(processAddressSpace->getProcessBase(), uiBaseAddress)) ;
 		pELFSectionHeader = (ELF32SectionHeader*)(PROCESS_SEC_HEADER_ADDR - GLOBAL_DATA_SEGMENT_BASE) ;
 	}
 
@@ -210,7 +210,7 @@ void DynamicLinkLoader_DoRelocation(Process* processAddressSpace, int iID, unsig
 
 	const char* pProcessDynStrTable ;
 
-	pProcessELFHeader = (ELF32Header*)(GLOBAL_REL_ADDR(processAddressSpace->_processBase, PROCESS_BASE)) ;
+	pProcessELFHeader = (ELF32Header*)(GLOBAL_REL_ADDR(processAddressSpace->getProcessBase(), PROCESS_BASE)) ;
 	pProcessELFSectionHeader = (ELF32SectionHeader*)(PROCESS_SEC_HEADER_ADDR - GLOBAL_DATA_SEGMENT_BASE) ;
 	pProcessSecHeaderStrTable = (char*)((unsigned)pProcessELFSectionHeader + (pProcessELFHeader->e_shnum * sizeof(ELF32SectionHeader))) ;
 

@@ -41,7 +41,6 @@ Process::Process(const upan::string& name, int parentID, bool isFGProcess)
   : _name(name), _dmmFlag(false), _stateInfo(*new ProcessStateInfo()), _processGroup(nullptr) {
   _processID = _nextPid++;
   iParentProcessID = parentID;
-  uiAUTAddress = NULL;
   status = NEW;
 
   auto parentProcess = ProcessManager::Instance().GetAddressSpace(parentID);
@@ -110,11 +109,9 @@ void Process::Store() {
 KernelProcess::KernelProcess(const upan::string& name, uint32_t taskAddress, int parentID, bool isFGProcess, uint32_t param1, uint32_t param2)
   : Process(name, parentID, isFGProcess) {
   _mainThreadID = _processID;
-
   ProcessEnv_InitializeForKernelProcess() ;
-
+  _processBase = GLOBAL_DATA_SEGMENT_BASE;
   const uint32_t uiStackAddress = AllocateAddressSpace();
-
   const uint32_t uiStackTop = uiStackAddress - GLOBAL_DATA_SEGMENT_BASE + (PROCESS_KERNEL_STACK_PAGES * PAGE_SIZE) - 1;
   taskState.BuildForKernel(taskAddress, uiStackTop, param1, param2);
   processLDT.BuildForKernel();
@@ -153,6 +150,7 @@ UserProcess::UserProcess(const upan::string &name, int parentID, int userID,
                          bool isFGProcess, int noOfParams, char** args)
                          : Process(name, parentID, isFGProcess) {
   _mainThreadID = _processID;
+  _uiAUTAddress = NULL;
 
   Load(noOfParams, args);
 
@@ -615,17 +613,14 @@ bool Process::HasFilePermission(const FileSystem::Node& node, byte mode) const
 
 //thread must have a parent
 UserThread::UserThread(int parentID, uint32_t entryAddress, bool isFGProcess, int noOfParams, char** szArgumentList)
-  : Process("", parentID, isFGProcess), _parent(ProcessManager::Instance().GetAddressSpace(parentID).value()) {
+  : Process("", parentID, isFGProcess), _parent(ProcessManager::Instance().GetUserProcess(parentID).value()) {
   //TODO: enforce by adding a createThread() method in UserProcess
   if (_parent.isKernelProcess()) {
     throw upan::exception(XLOC, "Threads can be created only by user process");
   }
-
   _name = _name + "_T" + upan::string::to_string(_processID);
   _mainThreadID = parentID;
-
-  uiAUTAddress = _parent.uiAUTAddress;
-  _processBase = _parent._processBase;
+  _processBase = _parent.getProcessBase();
 }
 
 ProcessStateInfo::ProcessStateInfo() :

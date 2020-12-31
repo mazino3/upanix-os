@@ -61,8 +61,19 @@ unsigned PIT_GetClockCount() { return PIT_ClockCountForSleep ; }
 unsigned char PIT_IsContextSwitch() { return Process_bContextSwitch ; }
 void PIT_SetContextSwitch(bool flag) { Process_bContextSwitch = flag ; }
 
-uint32_t PIT_IsTaskSwitch() { return Process_iTaskSwitch ; }
-void PIT_SetTaskSwitch(bool flag) { Atomic::Swap(Process_iTaskSwitch, flag) ; }
+bool PIT_IsTaskSwitch() {
+  return Process_iTaskSwitch == 1;
+}
+
+//return true if it was previously disabled and now enabled
+bool PIT_EnableTaskSwitch() {
+  return Atomic::Swap(Process_iTaskSwitch, 1) == 0;
+}
+
+//return true if it was previously enabled and now disabled
+bool PIT_DisableTaskSwitch() {
+  return Atomic::Swap(Process_iTaskSwitch, 0) == 1;
+}
 
 void PIT_Handler()
 {
@@ -87,7 +98,7 @@ void PIT_Handler()
 	// 1 Int --> 10ms
 	++PIT_ClockCountForSleep;
 
-	if(Process_iTaskSwitch == 1)
+	if(PIT_IsTaskSwitch())
 	{
 		__volatile__ unsigned uiTaskReg = 0;
 		__asm__ __volatile__("STR %ax") ;

@@ -55,17 +55,18 @@ In MODES 2 and 3 (which are periodic) the Counter reloads itself with the initia
 
 class IRQ ;
 
-void PIT_Initialize() ;
-void PIT_Handler() ;
+void PIT_Initialize();
+void PIT_Handler();
 
-unsigned PIT_GetClockCount() ;
+unsigned PIT_GetClockCount();
 
-unsigned char PIT_IsContextSwitch() ;
-void PIT_SetContextSwitch(bool flag) ;
+unsigned char PIT_IsContextSwitch();
+void PIT_SetContextSwitch(bool flag);
 
-uint32_t PIT_IsTaskSwitch() ;
-void PIT_SetTaskSwitch(bool flag) ;
+bool PIT_IsTaskSwitch();
+bool PIT_EnableTaskSwitch();
+bool PIT_DisableTaskSwitch();
 
-unsigned PIT_RoundSleepTime(__volatile__ unsigned uiSleepTime) ;
+unsigned PIT_RoundSleepTime(__volatile__ unsigned uiSleepTime);
 
 #endif

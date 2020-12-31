@@ -77,6 +77,16 @@ public:
   virtual void MapDLLPagesToProcess(int dllEntryIndex, uint32_t noOfPagesForDLL, uint32_t allocatedPageCount) {
     throw upan::exception(XLOC, "MapDLLPagesToProcess unsupported");
   }
+  virtual uint32_t getAUTAddress() const {
+    throw upan::exception(XLOC, "getAUTAddress unsupported");
+  }
+  virtual void setAUTAddress(uint32_t addr) {
+    throw upan::exception(XLOC, "setAUTAddress unsupported");
+  }
+
+  uint32_t getProcessBase() {
+    return _processBase;
+  }
 
   void Load();
   void Store();
@@ -92,6 +102,8 @@ private:
 protected:
   virtual void DeAllocateResources() = 0;
 
+  uint32_t _processBase;
+
 public:
   upan::string _name;
   bool _dmmFlag;
@@ -104,9 +116,6 @@ public:
   PROCESS_STATUS status;
 
   int iParentProcessID;
-
-  unsigned uiAUTAddress;
-  unsigned _processBase;
 
   int iDriveID ;
   FileSystem::PresentWorkingDirectory processPWD ;
@@ -147,6 +156,12 @@ public:
     return _startPDEForDLL;
   }
   void MapDLLPagesToProcess(int dllEntryIndex, uint32_t noOfPagesForDLL, uint32_t allocatedPageCount) override;
+  uint32_t getAUTAddress() const override {
+    return _uiAUTAddress;
+  }
+  void setAUTAddress(uint32_t addr) {
+    _uiAUTAddress = addr;
+  }
 
 private:
   void Load(int noOfParams, char** szArgumentList);
@@ -168,10 +183,11 @@ private:
   void AllocatePagesForDLL(uint32_t noOfPagesForDLL, ProcessSharedObjectList& pso);
 
 private:
-  unsigned _noOfPagesForPTE;
-  unsigned _noOfPagesForProcess;
-  unsigned _uiNoOfPagesForDLLPTE;
-  unsigned _startPDEForDLL;
+  uint32_t _uiAUTAddress;
+  uint32_t _noOfPagesForPTE;
+  uint32_t _noOfPagesForProcess;
+  uint32_t _uiNoOfPagesForDLLPTE;
+  uint32_t _startPDEForDLL;
 };
 
 class UserThread : public Process {
@@ -186,9 +202,21 @@ public:
     return _parent.startPDEForDLL();
   }
 
+  void MapDLLPagesToProcess(int dllEntryIndex, uint32_t noOfPagesForDLL, uint32_t allocatedPageCount) override {
+    return _parent.MapDLLPagesToProcess(dllEntryIndex, noOfPagesForDLL, allocatedPageCount);
+  }
+
+  uint32_t getAUTAddress() const override {
+    return _parent.getAUTAddress();
+  }
+
+  void setAUTAddress(uint32_t addr) {
+    _parent.setAUTAddress(addr);
+  }
+
 private:
   void DeAllocateResources() override {}
 
 private:
-  Process& _parent;
+  UserProcess& _parent;
 };
