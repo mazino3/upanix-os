@@ -21,7 +21,6 @@
 # include <AsmUtil.h>
 # include <DynamicLinkLoader.h>
 # include <DLLLoader.h>
-# include <ProcessAllocator.h>
 # include <UserManager.h>
 # include <GenericUtil.h>
 # include <ProcessEnv.h>
@@ -34,27 +33,15 @@ KernelService::DLLAllocCopy::DLLAllocCopy(int iDLLEntryIndex, unsigned uiAllocPa
 {
 }
 
-void KernelService::DLLAllocCopy::Execute()
-{
-  Process* pPAS = &ProcessManager::Instance().GetAddressSpace( GetRequestProcessID() ).value() ;
-
-  ProcessSharedObjectList* pPSOList = (ProcessSharedObjectList*)pPAS->GetDLLPageAddressForKernel();
-	ProcessSharedObjectList* pPSO = &pPSOList[ m_iProcessDLLEntryIndex ] ;
-
-	if(ProcessAllocator_AllocatePagesForDLL(m_uiNoOfPagesForDLL, pPSO) != ProcessAllocator_SUCCESS)
-	{
-		//TODO
-		// Crash the Process..... With SegFault Or OutOfMemeory Error
-		KC::MDisplay().Message("\n Out Of Memory4\n", Display::WHITE_ON_BLACK()) ;
-		__asm__ __volatile__("HLT") ;
-	}
-
-	if(DLLLoader_MapDLLPagesToProcess(pPAS, pPSO, m_uiAllocatedPagesCount) != DLLLoader_SUCCESS)
-	{
-		m_bStatus = false ;
-		return ;
-	}
-
+void KernelService::DLLAllocCopy::Execute() {
+  try {
+    Process &pas = ProcessManager::Instance().GetAddressSpace(GetRequestProcessID()).value();
+    pas.MapDLLPagesToProcess(m_iProcessDLLEntryIndex, m_uiNoOfPagesForDLL, m_uiAllocatedPagesCount);
+  } catch(upan::exception& e) {
+    e.Print();
+    m_bStatus = false;
+    return;
+  }
 	m_bStatus = true ;
 }
 

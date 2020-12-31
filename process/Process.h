@@ -16,13 +16,21 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
 #pragma once
+
+#include <mosstd.h>
 #include <Atomic.h>
 #include <TaskStructures.h>
 #include <FileOperations.h>
-#include <mosstd.h>
 
 class ProcessGroup;
 class IRQ;
+
+typedef struct
+{
+  char szName[56] ;
+  unsigned uiNoOfPages ;
+  unsigned* uiAllocatedPageNumbers ;
+} PACKED ProcessSharedObjectList ;
 
 class ProcessStateInfo
 {
@@ -63,13 +71,18 @@ public:
   virtual ~Process() = 0;
 
   virtual bool isKernelProcess() const = 0;
+  virtual uint32_t startPDEForDLL() const {
+    throw upan::exception(XLOC, "startPDEForDLL unsupported");
+  }
+  virtual void MapDLLPagesToProcess(int dllEntryIndex, uint32_t noOfPagesForDLL, uint32_t allocatedPageCount) {
+    throw upan::exception(XLOC, "MapDLLPagesToProcess unsupported");
+  }
 
   void Load();
   void Store();
   void Destroy();
   void Release();
 
-  uint32_t GetDLLPageAddressForKernel();
   FILE_USER_TYPE FileUserType(const FileSystem::Node&) const;
   bool HasFilePermission(const FileSystem::Node&, byte mode) const;
 
@@ -86,23 +99,17 @@ public:
   int _mainThreadID;
   ProcessStateInfo& _stateInfo;
 
-  TaskState taskState ;
-  ProcessLDT processLDT ;
-  PROCESS_STATUS status ;
+  TaskState taskState;
+  ProcessLDT processLDT;
+  PROCESS_STATUS status;
 
-  int iParentProcessID ;
+  int iParentProcessID;
 
-  unsigned _noOfPagesForPTE ;
-  unsigned _noOfPagesForProcess ;
-
-  unsigned uiAUTAddress ;
-  unsigned _processBase ;
+  unsigned uiAUTAddress;
+  unsigned _processBase;
 
   int iDriveID ;
   FileSystem::PresentWorkingDirectory processPWD ;
-
-  unsigned uiNoOfPagesForDLLPTE;
-  unsigned _startPDEForDLL;
 
   //this is managed like a shared_ptr
   ProcessGroup* _processGroup;
@@ -136,8 +143,13 @@ public:
     return false;
   }
 
+  uint32_t startPDEForDLL() const override {
+    return _startPDEForDLL;
+  }
+  void MapDLLPagesToProcess(int dllEntryIndex, uint32_t noOfPagesForDLL, uint32_t allocatedPageCount) override;
+
 private:
-  void Load(int iNumberOfParameters, char** szArgumentList);
+  void Load(int noOfParams, char** szArgumentList);
   uint32_t AllocateAddressSpace();
   void CopyElfImage(unsigned uiPDEAddr, byte* bProcessImage, unsigned uiMemImageSize);
   uint32_t PushProgramInitStackData(unsigned uiPDEAddr, int iNumberOfParameters, char** szArgumentList);
@@ -147,19 +159,36 @@ private:
   void InitializeProcessSpaceForProcess(const unsigned uiPDEAddress);
 
   void DeAllocateResources() override;
+  void DeAllocateDLLPTEPages();
   void DeAllocateAddressSpace();
   void DeAllocateProcessSpace();
   void DeAllocatePTE();
+
+  uint32_t GetDLLPageAddressForKernel();
+  void AllocatePagesForDLL(uint32_t noOfPagesForDLL, ProcessSharedObjectList& pso);
+
+private:
+  unsigned _noOfPagesForPTE;
+  unsigned _noOfPagesForProcess;
+  unsigned _uiNoOfPagesForDLLPTE;
+  unsigned _startPDEForDLL;
 };
 
 class UserThread : public Process {
 public:
-  UserThread(int parentID, bool isFGProcess);
+  UserThread(int parentID, uint32_t entryAddress, bool isFGProcess, int noOfParams, char** szArgumentList);
 
   bool isKernelProcess() const override {
     return false;
   }
 
+  uint32_t startPDEForDLL() const override {
+    return _parent.startPDEForDLL();
+  }
+
 private:
   void DeAllocateResources() override {}
+
+private:
+  Process& _parent;
 };

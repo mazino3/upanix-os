@@ -25,7 +25,6 @@
 #include <PIT.h>
 #include <AsmUtil.h>
 #include <ProcessLoader.h>
-#include <ProcessAllocator.h>
 #include <DynamicLinkLoader.h>
 #include <DMM.h>
 #include <DLLLoader.h>
@@ -455,32 +454,10 @@ byte ProcessManager::Create(const upan::string& name, int iParentProcessID, byte
 //1: Lock Env Page access
 //2: Lock FileDescriptor Table access
 //3: Lock process heap access
-bool ProcessManager::CreateThreadTask(int parentID, unsigned threadEntryAddress, bool isFGProcess, int iNumberOfParameters, char** szArgumentList, int& threadID) {
+bool ProcessManager::CreateThreadTask(int parentID, uint32_t threadEntryAddress, bool isFGProcess, int noOfParams, char** szArgumentList, int& threadID) {
   try {
-    Process& parentPAS = GetAddressSpace(parentID).value();
-    upan::uniq_ptr<Process> threadPAS(new UserThread(parentID, isFGProcess));
-
-    threadPAS->iUserID = parentPAS.iUserID;
-    threadPAS->iDriveID = parentPAS.iDriveID;
-    threadPAS->_processGroup = parentPAS._processGroup;
-    threadPAS->_processGroup->AddProcess();
-    threadPAS->processPWD = parentPAS.processPWD;
-
-//    unsigned uiProcessEntryStackSize;
-//
-//    newPAS.load(szProcessName, &uiPDEAddress, &uiEntryAdddress, &uiProcessEntryStackSize, iNumberOfParameters, szArgumentList);
-//
-
-//
-//    threadPAS.uiNoOfPagesForDLLPTE = parentPAS.uiNoOfPagesForDLLPTE;
-//    threadPAS.processLDT.Build();
-//    threadPAS.taskState.Build(newPAS._processBase + newPAS._noOfPagesForProcess * PAGE_SIZE, uiPDEAddress, uiEntryAdddress, uiProcessEntryStackSize);
-//
-
-    threadPAS->status = RUN;
-
+    upan::uniq_ptr<Process> threadPAS(new UserThread(parentID, threadEntryAddress, isFGProcess, noOfParams, szArgumentList));
     AddToSchedulerList(*threadPAS.release());
-
     //MemManager::Instance().DisplayNoOfFreePages() ;
     return true;
   } catch(const upan::exception& e) {

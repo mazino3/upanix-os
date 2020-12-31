@@ -17,7 +17,6 @@
  */
 #include <ProcessLoader.h>
 #include <ProcessManager.h>
-#include <ProcessAllocator.h>
 #include <PIC.h>
 #include <FileSystem.h>
 #include <Directory.h>

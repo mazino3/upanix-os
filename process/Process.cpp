@@ -19,7 +19,6 @@
 #include <try.h>
 #include <Process.h>
 #include <ProcessLoader.h>
-#include <ProcessAllocator.h>
 #include <DynamicLinkLoader.h>
 #include <MountManager.h>
 #include <ElfParser.h>
@@ -108,17 +107,6 @@ void Process::Store() {
   MemUtil_CopyMemory(SYS_LINEAR_SELECTOR_DEFINED, MEM_USER_TSS_START,	MemUtil_GetDS(), (unsigned)&taskState, sizeof(TaskState)) ;
 }
 
-uint32_t Process::GetDLLPageAddressForKernel()
-{
-  unsigned uiPDEAddress = taskState.CR3_PDBR ;
-  unsigned uiPDEIndex = ((PROCESS_DLL_PAGE_ADDR >> 22) & 0x3FF) ;
-  unsigned uiPTEIndex = ((PROCESS_DLL_PAGE_ADDR >> 12) & 0x3FF) ;
-  unsigned uiPTEAddress = ((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPDEIndex] & 0xFFFFF000 ;
-  unsigned uiPageNumber = (((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPTEIndex] & 0xFFFFF000) / PAGE_SIZE ;
-
-  return (uiPageNumber * PAGE_SIZE) - GLOBAL_DATA_SEGMENT_BASE ;
-}
-
 KernelProcess::KernelProcess(const upan::string& name, uint32_t taskAddress, int parentID, bool isFGProcess, uint32_t param1, uint32_t param2)
   : Process(name, parentID, isFGProcess) {
   _mainThreadID = _processID;
@@ -168,7 +156,7 @@ UserProcess::UserProcess(const upan::string &name, int parentID, int userID,
 
   Load(noOfParams, args);
 
-  uiNoOfPagesForDLLPTE = 0 ;
+  _uiNoOfPagesForDLLPTE = 0 ;
   processLDT.BuildForUser();
 
   auto parentProcess = ProcessManager::Instance().GetAddressSpace(parentID);
@@ -458,7 +446,7 @@ void UserProcess::InitializeProcessSpaceForProcess(const unsigned uiPDEAddress)
 }
 
 void UserProcess::DeAllocateResources() {
-  DLLLoader_DeAllocateProcessDLLPTEPages(this) ;
+  DeAllocateDLLPTEPages() ;
   DynamicLinkLoader_UnInitialize(this) ;
 
   DMM_DeAllocatePhysicalPages(this) ;
@@ -467,6 +455,18 @@ void UserProcess::DeAllocateResources() {
   ProcFileManager_UnInitialize(this);
 
   DeAllocateAddressSpace();
+}
+
+void UserProcess::DeAllocateDLLPTEPages() {
+  unsigned* uiPDEAddress = ((unsigned*)(taskState.CR3_PDBR - GLOBAL_DATA_SEGMENT_BASE));
+
+  for(uint32_t i = 0; i < _uiNoOfPagesForDLLPTE; i++) {
+    auto uiPresentBit = uiPDEAddress[i + _startPDEForDLL] & 0x1 ;
+    auto uiPTEAddress = uiPDEAddress[i + _startPDEForDLL] & 0xFFFFF000 ;
+
+    if(uiPresentBit && uiPDEAddress != 0)
+      MemManager::Instance().DeAllocatePhysicalPage(uiPTEAddress / PAGE_SIZE) ;
+  }
 }
 
 void UserProcess::DeAllocateAddressSpace()
@@ -518,6 +518,60 @@ void UserProcess::DeAllocatePTE() {
   MemManager::Instance().DeAllocatePhysicalPage(stackPTEAddress / PAGE_SIZE);
 }
 
+uint32_t UserProcess::GetDLLPageAddressForKernel() {
+  unsigned uiPDEAddress = taskState.CR3_PDBR ;
+  unsigned uiPDEIndex = ((PROCESS_DLL_PAGE_ADDR >> 22) & 0x3FF) ;
+  unsigned uiPTEIndex = ((PROCESS_DLL_PAGE_ADDR >> 12) & 0x3FF) ;
+  unsigned uiPTEAddress = ((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPDEIndex] & 0xFFFFF000 ;
+  unsigned uiPageNumber = (((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPTEIndex] & 0xFFFFF000) / PAGE_SIZE ;
+
+  return (uiPageNumber * PAGE_SIZE) - GLOBAL_DATA_SEGMENT_BASE ;
+}
+
+void UserProcess::AllocatePagesForDLL(uint32_t noOfPagesForDLL, ProcessSharedObjectList& pso) {
+  pso.uiAllocatedPageNumbers = (unsigned*)DMM_AllocateForKernel(sizeof(unsigned) * noOfPagesForDLL);
+
+  for(uint32_t i = 0; i < noOfPagesForDLL; i++) {
+    uint32_t uiFreePageNo = MemManager::Instance().AllocatePhysicalPage();
+    pso.uiAllocatedPageNumbers[i] = uiFreePageNo;
+  }
+
+  pso.uiNoOfPages = noOfPagesForDLL;
+}
+
+void UserProcess::MapDLLPagesToProcess(int dllEntryIndex, uint32_t noOfPagesForDLL, uint32_t allocatedPageCount) {
+  ProcessSharedObjectList *pPSOList = (ProcessSharedObjectList*)GetDLLPageAddressForKernel();
+  ProcessSharedObjectList& pso = pPSOList[dllEntryIndex];
+
+  AllocatePagesForDLL(noOfPagesForDLL, pso);
+
+  const unsigned uiNoOfPagesAllocatedForDLL = allocatedPageCount + pso.uiNoOfPages ;
+  const unsigned uiNoOfPagesForDLLPTE = MemManager::Instance().GetPTESizeInPages(uiNoOfPagesAllocatedForDLL) ;
+
+  const unsigned uiPDEAddress = taskState.CR3_PDBR ;
+  if(uiNoOfPagesForDLLPTE > _uiNoOfPagesForDLLPTE) {
+    for(uint32_t i = _uiNoOfPagesForDLLPTE; i < uiNoOfPagesForDLLPTE; i++)
+    {
+      auto uiFreePageNo = MemManager::Instance().AllocatePhysicalPage();
+      auto uiPDEIndex = _startPDEForDLL + i;
+      ((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPDEIndex] = ((uiFreePageNo * PAGE_SIZE) & 0xFFFFF000) | 0x7 ;
+    }
+  }
+
+  for(uint32_t i = 0; i < pso.uiNoOfPages; i++)
+  {
+    auto uiPDEIndex = (i + allocatedPageCount) / PAGE_TABLE_ENTRIES + _startPDEForDLL ;
+    auto uiPTEIndex = (i + allocatedPageCount) % PAGE_TABLE_ENTRIES ;
+
+    auto uiPTEAddress = (((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPDEIndex]) & 0xFFFFF000 ;
+
+    ((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPTEIndex] =
+        (((pso.uiAllocatedPageNumbers[i]) * PAGE_SIZE) & 0xFFFFF000) | 0x7 ;
+  }
+
+  _uiNoOfPagesForDLLPTE = uiNoOfPagesForDLLPTE;
+}
+
 FILE_USER_TYPE Process::FileUserType(const FileSystem::Node &node) const
 {
   if(isKernelProcess() || iUserID == ROOT_USER_ID || node.UserID() == iUserID)
@@ -559,20 +613,19 @@ bool Process::HasFilePermission(const FileSystem::Node& node, byte mode) const
   return false;
 }
 
-UserThread::UserThread(int parentID, bool isFGProcess) : Process("", parentID, isFGProcess) {
-  auto parentPAS = ProcessManager::Instance().GetAddressSpace(parentID);
-
-  if (parentPAS.isEmpty()) {
-    throw upan::exception(XLOC, "Cannot create thread without parent process (%d)", parentID);
-  }
-
+//thread must have a parent
+UserThread::UserThread(int parentID, uint32_t entryAddress, bool isFGProcess, int noOfParams, char** szArgumentList)
+  : Process("", parentID, isFGProcess), _parent(ProcessManager::Instance().GetAddressSpace(parentID).value()) {
   //TODO: enforce by adding a createThread() method in UserProcess
-  if (parentPAS.value().isKernelProcess()) {
-    throw upan::exception(XLOC, "Threads can be created only by user processes");
+  if (_parent.isKernelProcess()) {
+    throw upan::exception(XLOC, "Threads can be created only by user process");
   }
 
   _name = _name + "_T" + upan::string::to_string(_processID);
   _mainThreadID = parentID;
+
+  uiAUTAddress = _parent.uiAUTAddress;
+  _processBase = _parent._processBase;
 }
 
 ProcessStateInfo::ProcessStateInfo() :

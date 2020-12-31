@@ -19,7 +19,6 @@
 #include <Display.h>
 #include <ProcessManager.h>
 #include <DMM.h>
-#include <ProcessAllocator.h>
 #include <KernelService.h>
 #include <MultiBoot.h>
 #include <MemUtil.h>
