@@ -97,6 +97,12 @@ void KernelService::ProcessExec::Execute()
                     sizeof(FileSystem::PresentWorkingDirectory));
 }
 
+void KernelService::ThreadExec::Execute() {
+  if(!ProcessManager::Instance().CreateThreadTask(GetRequestProcessID(), _entryAddress, _arg, _threadID)) {
+    _threadID = -1;
+  }
+}
+
 bool KernelService::RequestDLLAlloCopy(int iDLLEntryIndex, unsigned uiAllocPageCnt, unsigned uiNoOfPages)
 {
 	KernelService::DLLAllocCopy* pRequest = new KernelService::DLLAllocCopy(iDLLEntryIndex, uiAllocPageCnt, uiNoOfPages) ;
@@ -167,6 +173,17 @@ int KernelService::RequestProcessExec(const char* szFile, int iNoOfArgs, const c
 	delete pRequest ;
 
 	return iNewProcId ;
+}
+
+int KernelService::RequestThreadExec(uint32_t entryAddresss, void* arg) {
+  KernelService::ThreadExec* pRequest = new KernelService::ThreadExec(entryAddresss, arg);
+
+  AddRequest(pRequest) ;
+  ProcessManager::Instance().WaitOnKernelService() ;
+
+  int threadID = pRequest->GetThreadID();
+  delete pRequest;
+  return threadID;
 }
 
 void KernelService::AddRequest(Request* pRequest)

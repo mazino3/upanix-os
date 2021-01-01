@@ -74,6 +74,13 @@ __volatile__ unsigned uiP9)
 			}
 			break ;
 
+	  case SYS_CALL_THREAD_EXEC :
+	    // P1 => thread entry point
+	    // P2 => thread (input) arg
+      {
+        *piRetVal = KC::MKernelService().RequestThreadExec(uiP1, (void*)uiP2) ;
+      }
+      break;
 		case SYS_CALL_PROCESS_WAIT_PID :
 			// P1 => PID	
 			{

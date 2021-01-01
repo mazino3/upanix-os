@@ -483,7 +483,6 @@ ReturnCode MemManager::AllocatePage(int iProcessID, unsigned uiFaultyAddress)
 
 			uiPTEAddress = uiPTEFreePage * PAGE_SIZE ;
 			InitPage(uiPTEFreePage) ;
-
 		}
 		else
 		{
@@ -505,7 +504,7 @@ ReturnCode MemManager::AllocatePage(int iProcessID, unsigned uiFaultyAddress)
 		else
 		{
 			/* Crash the Process..... With SegFault Or OutOfMemeory Error*/
-			KC::MDisplay().Address("\n Segmentation/Permission Fault @ Address: ", uiFaultyAddress) ;
+			printf("\n Segmentation/Permission Fault @ Address: %x, PDE Index: %u", uiFaultyAddress, pdeIndex);
 			return Failure;
 		}
 	}

@@ -197,7 +197,7 @@ private:
 
 class UserThread : public Process {
 public:
-  UserThread(int parentID, uint32_t entryAddress, bool isFGProcess, void* arg);
+  UserThread(int parentID, uint32_t entryAddress, void* arg);
 
   bool isKernelProcess() const override {
     return false;
