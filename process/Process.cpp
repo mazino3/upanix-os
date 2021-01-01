@@ -41,23 +41,23 @@ int Process::_nextPid = 0;
 Process::Process(const upan::string& name, int parentID, bool isFGProcess)
   : _name(name), _dmmFlag(false), _stateInfo(*new ProcessStateInfo()), _processGroup(nullptr) {
   _processID = _nextPid++;
-  iParentProcessID = parentID;
-  status = NEW;
+  _parentProcessID = parentID;
+  _status = NEW;
 
   auto parentProcess = ProcessManager::Instance().GetAddressSpace(parentID);
 
   if(parentProcess.isEmpty()) {
-    iDriveID = ROOT_DRIVE_ID ;
-    if(iDriveID != CURRENT_DRIVE)
+    _driveID = ROOT_DRIVE_ID ;
+    if(_driveID != CURRENT_DRIVE)
     {
-      DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByID(iDriveID, false).goodValueOrThrow(XLOC);
+      DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByID(_driveID, false).goodValueOrThrow(XLOC);
       if(pDiskDrive->Mounted())
-        processPWD = pDiskDrive->_fileSystem.FSpwd;
+        _processPWD = pDiskDrive->_fileSystem.FSpwd;
     }
     _processGroup = new ProcessGroup(isFGProcess);
   } else {
-    iDriveID = parentProcess.value().iDriveID ;
-    processPWD = parentProcess.value().processPWD;
+    _driveID = parentProcess.value()._driveID ;
+    _processPWD = parentProcess.value()._processPWD;
     _processGroup = parentProcess.value()._processGroup;
   }
 
@@ -71,7 +71,7 @@ Process::~Process() {
 }
 
 void Process::Destroy() {
-  Atomic::Swap((__volatile__ uint32_t&)(status), static_cast<int>(TERMINATED)) ;
+  Atomic::Swap((__volatile__ uint32_t&)(_status), static_cast<int>(TERMINATED)) ;
   //MemManager::Instance().DisplayNoOfFreePages();
   //MemManager::Instance().DisplayNoOfAllocPages(0,0);
 
@@ -85,32 +85,32 @@ void Process::Destroy() {
   if(_processGroup->Size() == 0)
     delete _processGroup;
 
-  if(iParentProcessID == NO_PROCESS_ID) {
+  if(_parentProcessID == NO_PROCESS_ID) {
     Release();
   }
 
-  MemManager::Instance().DisplayNoOfFreePages();
+  //MemManager::Instance().DisplayNoOfFreePages();
   //MemManager::Instance().DisplayNoOfAllocPages(0,0);
 }
 
 void Process::Release() {
-  Atomic::Swap((__volatile__ uint32_t&)(status), static_cast<int>(RELEASED)) ;
+  Atomic::Swap((__volatile__ uint32_t&)(_status), static_cast<int>(RELEASED)) ;
 }
 
 void Process::Load() {
   onLoad();
-  MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&processLDT, SYS_LINEAR_SELECTOR_DEFINED, MEM_LDT_START, sizeof(ProcessLDT)) ;
-  MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&taskState, SYS_LINEAR_SELECTOR_DEFINED, MEM_USER_TSS_START, sizeof(TaskState)) ;
+  MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&_processLDT, SYS_LINEAR_SELECTOR_DEFINED, MEM_LDT_START, sizeof(ProcessLDT)) ;
+  MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&_taskState, SYS_LINEAR_SELECTOR_DEFINED, MEM_USER_TSS_START, sizeof(TaskState)) ;
 }
 
 void Process::Store() {
-  MemUtil_CopyMemory(SYS_LINEAR_SELECTOR_DEFINED, MEM_LDT_START, MemUtil_GetDS(), (unsigned)&processLDT, sizeof(ProcessLDT)) ;
-  MemUtil_CopyMemory(SYS_LINEAR_SELECTOR_DEFINED, MEM_USER_TSS_START,	MemUtil_GetDS(), (unsigned)&taskState, sizeof(TaskState)) ;
+  MemUtil_CopyMemory(SYS_LINEAR_SELECTOR_DEFINED, MEM_LDT_START, MemUtil_GetDS(), (unsigned)&_processLDT, sizeof(ProcessLDT)) ;
+  MemUtil_CopyMemory(SYS_LINEAR_SELECTOR_DEFINED, MEM_USER_TSS_START, MemUtil_GetDS(), (unsigned)&_taskState, sizeof(TaskState)) ;
 }
 
 FILE_USER_TYPE Process::FileUserType(const FileSystem::Node &node) const
 {
-  if(isKernelProcess() || iUserID == ROOT_USER_ID || node.UserID() == iUserID)
+  if(isKernelProcess() || _userID == ROOT_USER_ID || node.UserID() == _userID)
     return USER_OWNER ;
 
   return USER_OTHERS ;
@@ -202,9 +202,9 @@ KernelProcess::KernelProcess(const upan::string& name, uint32_t taskAddress, int
   _processBase = GLOBAL_DATA_SEGMENT_BASE;
   const uint32_t uiStackAddress = AllocateAddressSpace();
   const uint32_t uiStackTop = uiStackAddress - GLOBAL_DATA_SEGMENT_BASE + (PROCESS_KERNEL_STACK_PAGES * PAGE_SIZE) - 1;
-  taskState.BuildForKernel(taskAddress, uiStackTop, param1, param2);
-  processLDT.BuildForKernel();
-  iUserID = ROOT_USER_ID ;
+  _taskState.BuildForKernel(taskAddress, uiStackTop, param1, param2);
+  _processLDT.BuildForKernel();
+  _userID = ROOT_USER_ID ;
 }
 
 uint32_t KernelProcess::AllocateAddressSpace() {
@@ -244,10 +244,10 @@ UserProcess::UserProcess(const upan::string &name, int parentID, int userID,
   Load(noOfParams, args);
 
   _uiNoOfPagesForDLLPTE = 0 ;
-  processLDT.BuildForUser();
+  _processLDT.BuildForUser();
 
   auto parentProcess = ProcessManager::Instance().GetAddressSpace(parentID);
-  iUserID = userID == DERIVE_FROM_PARENT && !parentProcess.isEmpty() ? parentProcess.value().iUserID : iUserID;
+  _userID = userID == DERIVE_FROM_PARENT && !parentProcess.isEmpty() ? parentProcess.value().userID() : _userID;
 }
 
 void UserProcess::Load(int iNumberOfParameters, char** szArgumentList)
@@ -357,11 +357,11 @@ void UserProcess::Load(int iNumberOfParameters, char** szArgumentList)
   const uint32_t uiProcessEntryStackSize = PushProgramInitStackData(iNumberOfParameters, szArgumentList) ;
   const uint32_t uiEntryAdddress = mELFParser.GetProgramStartAddress();// uiMinMemAddr + uiProcessImageSize ;
 
-  ProcessEnv_Initialize(uiPDEAddress, iParentProcessID);
-  ProcFileManager_Initialize(uiPDEAddress, iParentProcessID);
+  ProcessEnv_Initialize(uiPDEAddress, _parentProcessID);
+  ProcFileManager_Initialize(uiPDEAddress, _parentProcessID);
 
   const uint32_t stackTopAddress = PROCESS_STACK_TOP_ADDRESS - PROCESS_BASE;
-  taskState.BuildForUser(stackTopAddress, uiPDEAddress, uiEntryAdddress, uiProcessEntryStackSize);
+  _taskState.BuildForUser(stackTopAddress, uiPDEAddress, uiEntryAdddress, uiProcessEntryStackSize);
 }
 
 uint32_t UserProcess::PushProgramInitStackData(int iNumberOfParameters, char** szArgumentList) {
@@ -516,7 +516,7 @@ void UserProcess::DeAllocateResources() {
 }
 
 void UserProcess::DeAllocateDLLPTEPages() {
-  unsigned* uiPDEAddress = ((unsigned*)(taskState.CR3_PDBR - GLOBAL_DATA_SEGMENT_BASE));
+  unsigned* uiPDEAddress = ((unsigned*)(_taskState.CR3_PDBR - GLOBAL_DATA_SEGMENT_BASE));
 
   for(uint32_t i = 0; i < _uiNoOfPagesForDLLPTE; i++) {
     auto uiPresentBit = uiPDEAddress[i + _startPDEForDLL] & 0x1 ;
@@ -530,7 +530,7 @@ void UserProcess::DeAllocateDLLPTEPages() {
 void UserProcess::DeAllocateAddressSpace() {
   DeAllocateProcessSpace();
   DeAllocatePTE();
-  MemManager::Instance().DeAllocatePhysicalPage(taskState.CR3_PDBR / PAGE_SIZE);
+  MemManager::Instance().DeAllocatePhysicalPage(_taskState.CR3_PDBR / PAGE_SIZE);
 }
 
 void UserProcess::DeAllocateProcessSpace()
@@ -544,7 +544,7 @@ void UserProcess::DeAllocateProcessSpace()
     auto uiPTEIndex = (uiProcessPageBase + i) % PAGE_TABLE_ENTRIES ;
     //Kernel Heap PTE and PROCESS_SPACE_FOR_OS need not be part of uiPTEIndex calculation as they shall be aligned at PAGE BOUNDARY
 
-    auto uiPTEAddress = (((unsigned*)(taskState.CR3_PDBR - GLOBAL_DATA_SEGMENT_BASE))[uiPDEIndex]) & 0xFFFFF000 ;
+    auto uiPTEAddress = (((unsigned*)(_taskState.CR3_PDBR - GLOBAL_DATA_SEGMENT_BASE))[uiPDEIndex]) & 0xFFFFF000 ;
 
     MemManager::Instance().DeAllocatePhysicalPage(
           (((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPTEIndex] & 0xFFFFF000) / PAGE_SIZE) ;
@@ -558,7 +558,7 @@ void UserProcess::DeAllocatePTE() {
 
   for(uint32_t i = 0; i < _noOfPagesForPTE; i++) {
     const uint32_t pdeIndex = (i < PROCESS_SPACE_FOR_OS) ? i : i + uiProcessPDEBase;
-    const uint32_t uiPTEAddress = ((unsigned*)(taskState.CR3_PDBR - GLOBAL_DATA_SEGMENT_BASE))[pdeIndex] & 0xFFFFF000;
+    const uint32_t uiPTEAddress = ((unsigned*)(_taskState.CR3_PDBR - GLOBAL_DATA_SEGMENT_BASE))[pdeIndex] & 0xFFFFF000;
     MemManager::Instance().DeAllocatePhysicalPage(uiPTEAddress / PAGE_SIZE) ;
   }
 
@@ -566,7 +566,7 @@ void UserProcess::DeAllocatePTE() {
 }
 
 uint32_t UserProcess::GetDLLPageAddressForKernel() {
-  unsigned uiPDEAddress = taskState.CR3_PDBR ;
+  unsigned uiPDEAddress = _taskState.CR3_PDBR ;
   unsigned uiPDEIndex = ((PROCESS_DLL_PAGE_ADDR >> 22) & 0x3FF) ;
   unsigned uiPTEIndex = ((PROCESS_DLL_PAGE_ADDR >> 12) & 0x3FF) ;
   unsigned uiPTEAddress = ((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPDEIndex] & 0xFFFFF000 ;
@@ -595,7 +595,7 @@ void UserProcess::MapDLLPagesToProcess(int dllEntryIndex, uint32_t noOfPagesForD
   const unsigned uiNoOfPagesAllocatedForDLL = allocatedPageCount + pso.uiNoOfPages ;
   const unsigned uiNoOfPagesForDLLPTE = MemManager::Instance().GetPTESizeInPages(uiNoOfPagesAllocatedForDLL) ;
 
-  const unsigned uiPDEAddress = taskState.CR3_PDBR ;
+  const unsigned uiPDEAddress = _taskState.CR3_PDBR ;
   if(uiNoOfPagesForDLLPTE > _uiNoOfPagesForDLLPTE) {
     for(uint32_t i = _uiNoOfPagesForDLLPTE; i < uiNoOfPagesForDLLPTE; i++)
     {
@@ -620,7 +620,7 @@ void UserProcess::MapDLLPagesToProcess(int dllEntryIndex, uint32_t noOfPagesForD
 }
 
 void UserProcess::onLoad() {
-  _process_common::UpdatePDEWithStackPTE(taskState.CR3_PDBR, _stackPTEAddress);
+  _process_common::UpdatePDEWithStackPTE(_taskState.CR3_PDBR, _stackPTEAddress);
 }
 
 //thread must have a parent
@@ -630,7 +630,7 @@ UserThread::UserThread(int parentID, uint32_t entryAddress, void* arg)
   if (_parent.isKernelProcess()) {
     throw upan::exception(XLOC, "Threads can be created only by user process");
   }
-  _name = _parent._name + "_T" + upan::string::to_string(_processID);
+  _name = _parent.name() + "_T" + upan::string::to_string(_processID);
   _mainThreadID = parentID;
   _processBase = _parent.getProcessBase();
 
@@ -638,11 +638,11 @@ UserThread::UserThread(int parentID, uint32_t entryAddress, void* arg)
   _process_common::AllocateStackSpace(_stackPTEAddress);
   const auto stackArgSize = PushProgramInitStackData(arg);
   const uint32_t stackTopAddress = PROCESS_STACK_TOP_ADDRESS - PROCESS_BASE;
-  taskState.BuildForUser(stackTopAddress, _parent.taskState.CR3_PDBR, entryAddress, stackArgSize);
+  _taskState.BuildForUser(stackTopAddress, _parent.taskState().CR3_PDBR, entryAddress, stackArgSize);
 
-  processLDT.BuildForUser();
+  _processLDT.BuildForUser();
 
-  iUserID = _parent.iUserID;
+  _userID = _parent.userID();
 }
 
 void UserThread::DeAllocateResources() {
@@ -666,7 +666,7 @@ uint32_t UserThread::PushProgramInitStackData(void* arg) {
 }
 
 void UserThread::onLoad() {
-  _process_common::UpdatePDEWithStackPTE(taskState.CR3_PDBR, _stackPTEAddress);
+  _process_common::UpdatePDEWithStackPTE(_taskState.CR3_PDBR, _stackPTEAddress);
 }
 
 ProcessStateInfo::ProcessStateInfo() :

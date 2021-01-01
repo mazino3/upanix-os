@@ -133,7 +133,7 @@ uint32_t DynamicLinkLoader_Initialize(unsigned uiPDEAddress)
 
 void DynamicLinkLoader_UnInitialize(Process* processAddressSpace)
 {
-	unsigned uiPDEAddress = processAddressSpace->taskState.CR3_PDBR ;
+	unsigned uiPDEAddress = processAddressSpace->taskState().CR3_PDBR ;
 	unsigned uiPDEIndex = ((PROCESS_DLL_PAGE_ADDR >> 22) & 0x3FF) ;
 	unsigned uiPTEIndex = ((PROCESS_DLL_PAGE_ADDR >> 12) & 0x3FF) ;
 	unsigned uiPTEAddress = ((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPDEIndex] & 0xFFFFF000 ;

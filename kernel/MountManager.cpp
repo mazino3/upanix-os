@@ -88,10 +88,10 @@ static void MountManager_MountDrive(char* szDriveName)
   pDiskDrive->Mount();
 
 	// Set Process Drive
-	ProcessManager::Instance().GetCurrentPAS().iDriveID = pDiskDrive->Id();
+	ProcessManager::Instance().GetCurrentPAS().setDriveID(pDiskDrive->Id());
 
 	MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&(pDiskDrive->_fileSystem.FSpwd),
-                    MemUtil_GetDS(), (unsigned)&ProcessManager::Instance().GetCurrentPAS().processPWD,
+                    MemUtil_GetDS(), (unsigned)&ProcessManager::Instance().GetCurrentPAS().processPWD(),
                     sizeof(FileSystem::PresentWorkingDirectory)) ;
 
 	// Change To Root Directory
@@ -156,7 +156,7 @@ int MountManager_GetRootDriveID()
 		if(pDiskDrive == NULL)
 		{
 			if(ProcessManager::GetCurrentProcessID() != NO_PROCESS_ID)
-				return ProcessManager::Instance().GetCurrentPAS().iDriveID ;
+				return ProcessManager::Instance().GetCurrentPAS().driveID() ;
 
 			return CURRENT_DRIVE ;
 		}

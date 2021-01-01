@@ -269,7 +269,7 @@ DisplayBuffer& Display::GetDisplayBuffer(int pid)
 {
 	if(IS_KERNEL())
 		return _kernelBuffer;
-	return ProcessManager::Instance().GetAddressSpace(pid).value()._processGroup->GetDisplayBuffer();
+	return ProcessManager::Instance().GetAddressSpace(pid).value().processGroup()->GetDisplayBuffer();
 }
 
 DisplayBuffer& Display::GetDisplayBuffer()

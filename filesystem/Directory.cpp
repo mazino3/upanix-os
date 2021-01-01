@@ -98,7 +98,7 @@ void Directory_Create(Process* processAddressSpace, int iDriveID, byte* bParentD
 
   DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByID(iDriveID, true).goodValueOrThrow(XLOC);
 
-  FileSystem::PresentWorkingDirectory* pPWD = &(processAddressSpace->processPWD) ;
+  FileSystem::PresentWorkingDirectory& pwd = processAddressSpace->processPWD() ;
 
   if(pCWD->pDirEntry->StartSectorID() == EOC)
 	{
@@ -121,7 +121,7 @@ void Directory_Create(Process* processAddressSpace, int iDriveID, byte* bParentD
 		}
 	}
 
-  ((FileSystem::Node*)bSectorBuffer)[bSectorPos].Init(szDirName, usDirAttribute, processAddressSpace->iUserID, pCWD->uiSectorNo, pCWD->bSectorEntryPosition);
+  ((FileSystem::Node*)bSectorBuffer)[bSectorPos].Init(szDirName, usDirAttribute, processAddressSpace->userID(), pCWD->uiSectorNo, pCWD->bSectorEntryPosition);
 
   pDiskDrive->xWrite(bSectorBuffer, uiSectorNo, 1);
 
@@ -129,10 +129,10 @@ void Directory_Create(Process* processAddressSpace, int iDriveID, byte* bParentD
 
   pDiskDrive->xWrite(bParentDirectoryBuffer, pCWD->uiSectorNo, 1);
 
-  if(pDiskDrive->Id() == processAddressSpace->iDriveID
-     && pCWD->uiSectorNo == pPWD->uiSectorNo
-     && pCWD->bSectorEntryPosition == pPWD->bSectorEntryPosition)
-    pPWD->DirEntry = *pCWD->pDirEntry;
+  if(pDiskDrive->Id() == processAddressSpace->driveID()
+     && pCWD->uiSectorNo == pwd.uiSectorNo
+     && pCWD->bSectorEntryPosition == pwd.bSectorEntryPosition)
+    pwd.DirEntry = *pCWD->pDirEntry;
 
 	//TODO: Required Only If "/" Dir Entry is Created
   if(strcmp((const char*)pCWD->pDirEntry->Name(), FS_ROOT_DIR) == 0)
@@ -147,7 +147,7 @@ void Directory_Delete(Process* processAddressSpace, int iDriveID, byte* bParentD
 
   DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByID(iDriveID, true).goodValueOrThrow(XLOC);
 
-  FileSystem::PresentWorkingDirectory* pPWD = &(processAddressSpace->processPWD) ;
+  FileSystem::PresentWorkingDirectory& pwd = processAddressSpace->processPWD() ;
 
   if(pCWD->pDirEntry->StartSectorID() == EOC)
 	{
@@ -184,10 +184,10 @@ void Directory_Delete(Process* processAddressSpace, int iDriveID, byte* bParentD
 
   pDiskDrive->xWrite(bParentDirectoryBuffer, pCWD->uiSectorNo, 1);
 	
-	if(pDiskDrive->Id() == processAddressSpace->iDriveID
-			&& pCWD->uiSectorNo == pPWD->uiSectorNo
-			&& pCWD->bSectorEntryPosition == pPWD->bSectorEntryPosition)
-    pPWD->DirEntry = *pCWD->pDirEntry;
+	if(pDiskDrive->Id() == processAddressSpace->driveID()
+			&& pCWD->uiSectorNo == pwd.uiSectorNo
+			&& pCWD->bSectorEntryPosition == pwd.bSectorEntryPosition)
+    pwd.DirEntry = *pCWD->pDirEntry;
 
 	//TODO: Required Only If "/" Dir Entry is Created
   if(strcmp((const char*)pCWD->pDirEntry->Name(), FS_ROOT_DIR) == 0)
@@ -205,7 +205,7 @@ void Directory_GetDirEntryForCreateDelete(const Process* processAddressSpace, in
 	if(strlen(szDirPath) == 0 ||	strcmp(FS_ROOT_DIR, szDirPath) == 0)
     throw upan::exception(XLOC, "can't create/delete current/root directory");
 
-	if(szDirPath[0] == '/' || processAddressSpace->iDriveID != iDriveID)
+	if(szDirPath[0] == '/' || processAddressSpace->driveID() != iDriveID)
 	{
 		CWD.pDirEntry = &(pFSMountInfo->FSpwd.DirEntry) ;
     CWD.uiSectorNo = uiSectorNo = pFSMountInfo->FSpwd.uiSectorNo ;
@@ -213,9 +213,9 @@ void Directory_GetDirEntryForCreateDelete(const Process* processAddressSpace, in
 	}
 	else
 	{
-    CWD.pDirEntry = const_cast<FileSystem::Node*>(&(processAddressSpace->processPWD.DirEntry)) ;
-    CWD.uiSectorNo = uiSectorNo = processAddressSpace->processPWD.uiSectorNo ;
-    CWD.bSectorEntryPosition = bSectorPos = processAddressSpace->processPWD.bSectorEntryPosition ;
+    CWD.pDirEntry = const_cast<FileSystem::Node*>(&(processAddressSpace->processPWD().DirEntry)) ;
+    CWD.uiSectorNo = uiSectorNo = processAddressSpace->processPWD().uiSectorNo ;
+    CWD.bSectorEntryPosition = bSectorPos = processAddressSpace->processPWD().bSectorEntryPosition ;
 	}
 
   pDiskDrive->xRead(bDirectoryBuffer, uiSectorNo, 1);
@@ -250,11 +250,11 @@ void Directory_GetDirectoryContent(const char* szFileName, Process* processAddre
 
   DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByID(iDriveID, true).goodValueOrThrow(XLOC);
   FileSystem::CWD CWD ;
-	if(processAddressSpace->iDriveID == iDriveID)
+	if(processAddressSpace->driveID() == iDriveID)
 	{
-		CWD.pDirEntry = &(processAddressSpace->processPWD.DirEntry) ;
-		CWD.uiSectorNo = processAddressSpace->processPWD.uiSectorNo ;
-		CWD.bSectorEntryPosition = processAddressSpace->processPWD.bSectorEntryPosition ;
+		CWD.pDirEntry = &(processAddressSpace->processPWD().DirEntry) ;
+		CWD.uiSectorNo = processAddressSpace->processPWD().uiSectorNo ;
+		CWD.bSectorEntryPosition = processAddressSpace->processPWD().bSectorEntryPosition ;
 	}
 	else
 	{
@@ -827,12 +827,12 @@ void Directory_Change(const char* szFileName, int iDriveID, Process* processAddr
   DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByID(iDriveID, true).goodValueOrThrow(XLOC);
 
   FileSystem::CWD CWD ;
-  FileSystem::PresentWorkingDirectory* pPWD = &(processAddressSpace->processPWD) ;
-	if(iDriveID == processAddressSpace->iDriveID)
+  FileSystem::PresentWorkingDirectory& pwd = processAddressSpace->processPWD();
+	if(iDriveID == processAddressSpace->driveID())
 	{
-		CWD.pDirEntry = &pPWD->DirEntry ;
-		CWD.uiSectorNo = pPWD->uiSectorNo ;
-		CWD.bSectorEntryPosition = pPWD->bSectorEntryPosition ;
+		CWD.pDirEntry = &pwd.DirEntry ;
+		CWD.uiSectorNo = pwd.uiSectorNo ;
+		CWD.bSectorEntryPosition = pwd.bSectorEntryPosition ;
 	}
 	else
 	{
@@ -848,11 +848,11 @@ void Directory_Change(const char* szFileName, int iDriveID, Process* processAddr
   if(!dirFile->IsDirectory())
     throw upan::exception(XLOC, "%s is not a directory", szFileName);
 
-	processAddressSpace->iDriveID = iDriveID ;
+	processAddressSpace->setDriveID(iDriveID);
 
-  MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)(((FileSystem::Node*)bDirectoryBuffer) + bSectorPos), MemUtil_GetDS(), (unsigned)&pPWD->DirEntry, sizeof(FileSystem::Node)) ;
-	pPWD->uiSectorNo = uiSectorNo ;
-	pPWD->bSectorEntryPosition = bSectorPos ;
+  MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)(((FileSystem::Node*)bDirectoryBuffer) + bSectorPos), MemUtil_GetDS(), (unsigned)&pwd.DirEntry, sizeof(FileSystem::Node)) ;
+  pwd.uiSectorNo = uiSectorNo ;
+  pwd.bSectorEntryPosition = bSectorPos ;
 	
 	unsigned uiSecNo ;
 	byte bSecPos ;
@@ -924,11 +924,11 @@ const FileSystem::Node Directory_GetDirEntry(const char* szFileName, Process* pr
   DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByID(iDriveID, true).goodValueOrThrow(XLOC);
 
   FileSystem::CWD CWD ;
-	if(processAddressSpace->iDriveID == iDriveID)
+	if(processAddressSpace->driveID() == iDriveID)
 	{
-		CWD.pDirEntry = &(processAddressSpace->processPWD.DirEntry) ;
-		CWD.uiSectorNo = processAddressSpace->processPWD.uiSectorNo ;
-		CWD.bSectorEntryPosition = processAddressSpace->processPWD.bSectorEntryPosition ;
+		CWD.pDirEntry = &(processAddressSpace->processPWD().DirEntry) ;
+		CWD.uiSectorNo = processAddressSpace->processPWD().uiSectorNo ;
+		CWD.bSectorEntryPosition = processAddressSpace->processPWD().bSectorEntryPosition ;
 	}
 	else
 	{
@@ -954,14 +954,14 @@ const FileSystem::Node Directory_GetDirEntry(const char* szFileName, Process* pr
 
 void Directory_SyncPWD(Process* processAddressSpace)
 {
-  DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByID(processAddressSpace->iDriveID, true).goodValueOrThrow(XLOC);
+  DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByID(processAddressSpace->driveID(), true).goodValueOrThrow(XLOC);
 
-	unsigned uiSectorNo = processAddressSpace->processPWD.uiSectorNo ;
-	byte bSectorEntryPos = processAddressSpace->processPWD.bSectorEntryPosition ;
+	unsigned uiSectorNo = processAddressSpace->processPWD().uiSectorNo ;
+	byte bSectorEntryPos = processAddressSpace->processPWD().bSectorEntryPosition ;
 
 	byte bSectorBuffer[512] ;
   pDiskDrive->xRead(bSectorBuffer, uiSectorNo, 1);
 
-  processAddressSpace->processPWD.DirEntry = (((FileSystem::Node*)bSectorBuffer)[bSectorEntryPos]);
+  processAddressSpace->processPWD().DirEntry = (((FileSystem::Node*)bSectorBuffer)[bSectorEntryPos]);
 }
 

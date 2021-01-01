@@ -470,7 +470,7 @@ ReturnCode MemManager::AllocatePage(int iProcessID, unsigned uiFaultyAddress)
       }
     }
 
-		uiPDEAddress = ProcessManager::Instance().GetAddressSpace(iProcessID).value().taskState.CR3_PDBR ;
+		uiPDEAddress = ProcessManager::Instance().GetAddressSpace(iProcessID).value().taskState().CR3_PDBR ;
 
 		uiPTEAddress = (((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[ ((uiFaultyAddress >> 22) & 0x3FF) ]) ;
 
@@ -585,7 +585,7 @@ void MemManager::DisplayNoOfFreePages()
 
 unsigned MemManager::GetFlatAddress(unsigned uiVirtualAddress)
 {
-	unsigned uiPDEAddress = ProcessManager::Instance().GetCurrentPAS().taskState.CR3_PDBR ;
+	unsigned uiPDEAddress = ProcessManager::Instance().GetCurrentPAS().taskState().CR3_PDBR ;
 
 	unsigned uiPTEAddress = (((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[((uiVirtualAddress >> 22) & 0x3FF)]) ;
 

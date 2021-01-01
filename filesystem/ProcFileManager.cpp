@@ -64,7 +64,7 @@ Mutex FDTableGuard::_fdMutex;
 
 static unsigned ProcFileManager_GetPage(Process* processAddressSpace)
 {
-	unsigned uiPDEAddress = processAddressSpace->taskState.CR3_PDBR ;
+	unsigned uiPDEAddress = processAddressSpace->taskState().CR3_PDBR ;
 	unsigned uiPDEIndex = ((PROCESS_FD_PAGE >> 22) & 0x3FF) ;
 	unsigned uiPTEIndex = ((PROCESS_FD_PAGE >> 12) & 0x3FF) ;
 	unsigned uiPTEAddress = ((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPDEIndex] & 0xFFFFF000 ;

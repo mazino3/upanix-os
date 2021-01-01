@@ -49,7 +49,7 @@ static void FileOperations_ParseFilePathWithDrive(const char* szFileNameWithDriv
 	
 	if(i == -1)
 	{
-		*pDriveID = ProcessManager::Instance().GetCurrentPAS().iDriveID ;
+		*pDriveID = ProcessManager::Instance().GetCurrentPAS().driveID() ;
 		strcpy(szFileName, szFileNameWithDrive) ;
 		return ;
 	}
@@ -167,11 +167,11 @@ int FileOperations_Read(int fd, char* buffer, int len)
 
   DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByID(iDriveID, true).goodValueOrThrow(XLOC);
   FileSystem::CWD CWD ;
-	if(pPAS->iDriveID == iDriveID)
+	if(pPAS->driveID() == iDriveID)
 	{
-		CWD.pDirEntry = &(pPAS->processPWD.DirEntry) ;
-		CWD.uiSectorNo = pPAS->processPWD.uiSectorNo ;
-		CWD.bSectorEntryPosition = pPAS->processPWD.bSectorEntryPosition ;
+		CWD.pDirEntry = &(pPAS->processPWD().DirEntry) ;
+		CWD.uiSectorNo = pPAS->processPWD().uiSectorNo ;
+		CWD.bSectorEntryPosition = pPAS->processPWD().bSectorEntryPosition ;
 	}
 	else
 	{
@@ -214,11 +214,11 @@ void FileOperations_Write(int fd, const char* buffer, int len, int* pWriteLen)
   DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByID(iDriveID, true).goodValueOrThrow(XLOC);
 
   FileSystem::CWD CWD ;
-	if(pPAS->iDriveID == iDriveID)
+	if(pPAS->driveID() == iDriveID)
 	{
-		CWD.pDirEntry = &(pPAS->processPWD.DirEntry) ;
-		CWD.uiSectorNo = pPAS->processPWD.uiSectorNo ;
-		CWD.bSectorEntryPosition = pPAS->processPWD.bSectorEntryPosition ;
+		CWD.pDirEntry = &(pPAS->processPWD().DirEntry) ;
+		CWD.uiSectorNo = pPAS->processPWD().uiSectorNo ;
+		CWD.bSectorEntryPosition = pPAS->processPWD().bSectorEntryPosition ;
 	}
 	else
 	{
@@ -343,12 +343,12 @@ uint32_t FileOperations_GetOffset(int fd)
 
 void FileOperations_GetCWD(char* szPathBuf, int iBufSize)
 {
-  FileSystem::PresentWorkingDirectory* pPWD = (FileSystem::PresentWorkingDirectory*)&(ProcessManager::Instance().GetCurrentPAS().processPWD) ;
-	int iDriveID = ProcessManager::Instance().GetCurrentPAS().iDriveID ;
+  FileSystem::PresentWorkingDirectory& pwd = ProcessManager::Instance().GetCurrentPAS().processPWD();
+	int iDriveID = ProcessManager::Instance().GetCurrentPAS().driveID() ;
 
   DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByID(iDriveID, true).goodValueOrThrow(XLOC);
 
-  const upan::string& fullPath = pPWD->DirEntry.FullPath(*pDiskDrive);
+  const upan::string& fullPath = pwd.DirEntry.FullPath(*pDiskDrive);
 
   if(fullPath.length() > iBufSize)
     throw upan::exception(XLOC, "%d buf-size is smaller than path size %d", iBufSize, fullPath.length());
@@ -365,12 +365,12 @@ const FileSystem::Node FileOperations_GetDirEntry(const char* szFileName)
   DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByID(iDriveID, true).goodValueOrThrow(XLOC);
 
   FileSystem::CWD CWD ;
-	if(iDriveID == ProcessManager::Instance().GetCurrentPAS().iDriveID)
+	if(iDriveID == ProcessManager::Instance().GetCurrentPAS().driveID())
 	{
-    FileSystem::PresentWorkingDirectory* pPWD = (FileSystem::PresentWorkingDirectory*)&(ProcessManager::Instance().GetCurrentPAS().processPWD) ;
-		CWD.pDirEntry = &pPWD->DirEntry ;
-		CWD.uiSectorNo = pPWD->uiSectorNo ;
-		CWD.bSectorEntryPosition = pPWD->bSectorEntryPosition ;
+    FileSystem::PresentWorkingDirectory& pwd = ProcessManager::Instance().GetCurrentPAS().processPWD();
+		CWD.pDirEntry = &pwd.DirEntry ;
+		CWD.uiSectorNo = pwd.uiSectorNo ;
+		CWD.bSectorEntryPosition = pwd.bSectorEntryPosition ;
 	}
 	else
 	{
@@ -404,12 +404,12 @@ const FileSystem_FileStat FileOperations_GetStat(const char* szFileName, int iDr
 
   FileSystem::CWD CWD ;
 
-	if(iDriveID == ProcessManager::Instance().GetCurrentPAS().iDriveID)
+	if(iDriveID == ProcessManager::Instance().GetCurrentPAS().driveID())
 	{
-    FileSystem::PresentWorkingDirectory* pPWD = (FileSystem::PresentWorkingDirectory*)&(ProcessManager::Instance().GetCurrentPAS().processPWD) ;
-		CWD.pDirEntry = &pPWD->DirEntry ;
-		CWD.uiSectorNo = pPWD->uiSectorNo ;
-		CWD.bSectorEntryPosition = pPWD->bSectorEntryPosition ;
+    FileSystem::PresentWorkingDirectory& pwd = ProcessManager::Instance().GetCurrentPAS().processPWD();
+		CWD.pDirEntry = &pwd.DirEntry ;
+		CWD.uiSectorNo = pwd.uiSectorNo ;
+		CWD.bSectorEntryPosition = pwd.bSectorEntryPosition ;
 	}
 	else
 	{
@@ -458,17 +458,17 @@ const FileSystem_FileStat FileOperations_GetStatFD(int iFD)
 void FileOperations_UpdateTime(const char* szFileName, int iDriveID, byte bTimeType)
 {
 	if(iDriveID == CURRENT_DRIVE)
-		iDriveID = ProcessManager::Instance().GetCurrentPAS().iDriveID ;
+		iDriveID = ProcessManager::Instance().GetCurrentPAS().driveID() ;
 
   DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByID(iDriveID, true).goodValueOrThrow(XLOC);
 
   FileSystem::CWD CWD ;
-	if(iDriveID == ProcessManager::Instance().GetCurrentPAS().iDriveID)
+	if(iDriveID == ProcessManager::Instance().GetCurrentPAS().driveID())
 	{
-    FileSystem::PresentWorkingDirectory* pPWD = (FileSystem::PresentWorkingDirectory*)&(ProcessManager::Instance().GetCurrentPAS().processPWD) ;
-		CWD.pDirEntry = &pPWD->DirEntry ;
-		CWD.uiSectorNo = pPWD->uiSectorNo ;
-		CWD.bSectorEntryPosition = pPWD->bSectorEntryPosition ;
+    FileSystem::PresentWorkingDirectory& pwd = ProcessManager::Instance().GetCurrentPAS().processPWD();
+		CWD.pDirEntry = &pwd.DirEntry ;
+		CWD.uiSectorNo = pwd.uiSectorNo ;
+		CWD.bSectorEntryPosition = pwd.bSectorEntryPosition ;
 	}
 	else
 	{

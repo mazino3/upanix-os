@@ -548,7 +548,7 @@ upan::result<DiskDrive*> DiskDriveManager::GetByID(int iID, bool bCheckMount)
 	if(iID == ROOT_DRIVE)
 		iID = ROOT_DRIVE_ID;
 	else if(iID == CURRENT_DRIVE)
-		iID = ProcessManager::Instance().GetCurrentPAS().iDriveID;
+		iID = ProcessManager::Instance().GetCurrentPAS().driveID();
   auto it = upan::find_if(_driveList.begin(), _driveList.end(), [iID, bCheckMount](const DiskDrive* d)
     {
       if(d->Id() == iID)
@@ -575,10 +575,10 @@ byte DiskDriveManager::Change(const upan::string& szDriveName)
 	if(pDiskDrive == NULL)
 		return DeviceDrive_ERR_INVALID_DRIVE_NAME ;
 
-	ProcessManager::Instance().GetCurrentPAS().iDriveID = pDiskDrive->Id();
+	ProcessManager::Instance().GetCurrentPAS().setDriveID(pDiskDrive->Id());
 
 	MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&(pDiskDrive->_fileSystem.FSpwd),
-                    MemUtil_GetDS(), (unsigned)&ProcessManager::Instance().GetCurrentPAS().processPWD,
+                    MemUtil_GetDS(), (unsigned)&ProcessManager::Instance().GetCurrentPAS().processPWD(),
                     sizeof(FileSystem::PresentWorkingDirectory)) ;
 
   ProcessEnv_Set("PWD", (const char*)pDiskDrive->_fileSystem.FSpwd.DirEntry.Name()) ;
@@ -646,7 +646,7 @@ void DiskDriveManager::UnMountDrive(const upan::string& szDriveName)
 	bool bKernel = IS_KERNEL() ? true : IS_KERNEL_PROCESS(ProcessManager::GetCurrentProcessID()) ;
 	if(!bKernel)
 	{
-		if(pDiskDrive->Id() == ProcessManager::Instance().GetCurrentPAS().iDriveID)
+		if(pDiskDrive->Id() == ProcessManager::Instance().GetCurrentPAS().driveID())
       throw upan::exception(XLOC, "can't unmount current drive: %s", szDriveName.c_str());
 	}
 
@@ -670,7 +670,7 @@ void DiskDriveManager::FormatDrive(const upan::string& szDriveName)
 
 void DiskDriveManager::GetCurrentDriveStat(DriveStat* pDriveStat)
 {
-  DiskDrive* pDiskDrive = GetByID(ProcessManager::Instance().GetCurrentPAS().iDriveID, true).goodValueOrThrow(XLOC);
+  DiskDrive* pDiskDrive = GetByID(ProcessManager::Instance().GetCurrentPAS().driveID(), true).goodValueOrThrow(XLOC);
 
   strncpy(pDriveStat->driveName, pDiskDrive->DriveName().c_str(), 32);
   pDriveStat->bMounted = pDiskDrive->Mounted();

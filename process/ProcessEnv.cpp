@@ -23,9 +23,9 @@
 
 #define PROCESS_ENV_LIST ((ProcessEnvEntry*)(PROCESS_ENV_PAGE - GLOBAL_DATA_SEGMENT_BASE))
 
-static unsigned ProcessEnv_GetProcessEnvPageNumber(__volatile__ Process& processAddressSpace)
+static unsigned ProcessEnv_GetProcessEnvPageNumber(Process& processAddressSpace)
 {
-	unsigned uiPDEAddress = processAddressSpace.taskState.CR3_PDBR ;
+	unsigned uiPDEAddress = processAddressSpace.taskState().CR3_PDBR ;
 	unsigned uiPDEIndex = ((PROCESS_ENV_PAGE >> 22) & 0x3FF) ;
 	unsigned uiPTEIndex = ((PROCESS_ENV_PAGE >> 12) & 0x3FF) ;
 	unsigned uiPTEAddress = ((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPDEIndex] & 0xFFFFF000 ;
@@ -54,7 +54,7 @@ void ProcessEnv_Initialize(__volatile__ unsigned uiPDEAddress, __volatile__ int 
 
 	if(iParentProcessID != NO_PROCESS_ID)
 	{
-		__volatile__ Process& parentProcessAddrSpace = ProcessManager::Instance().GetAddressSpace(iParentProcessID).value();
+		Process& parentProcessAddrSpace = ProcessManager::Instance().GetAddressSpace(iParentProcessID).value();
 
 		unsigned uiParentPageNo = ProcessEnv_GetProcessEnvPageNumber(parentProcessAddrSpace) ;
 

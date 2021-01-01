@@ -325,7 +325,7 @@ byte DMM_DeAllocateForKernel(unsigned uiAddress)
 	
 void DMM_DeAllocatePhysicalPages(Process* processAddressSpace)
 {
-	unsigned uiPDEAddress = processAddressSpace->taskState.CR3_PDBR ;
+	unsigned uiPDEAddress = processAddressSpace->taskState().CR3_PDBR ;
 	unsigned uiPDEIndex = ((PROCESS_HEAP_START_ADDRESS >> 22) & 0x3FF) ;
 	unsigned uiPTEIndex = ((PROCESS_HEAP_START_ADDRESS >> 12) & 0x3FF) ;
 

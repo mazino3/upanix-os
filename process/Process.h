@@ -18,6 +18,7 @@
 #pragma once
 
 #include <mosstd.h>
+#include <set.h>
 #include <Atomic.h>
 #include <TaskStructures.h>
 #include <FileOperations.h>
@@ -67,6 +68,9 @@ private:
 class Process
 {
 public:
+  typedef upan::set<int> ProcessIDs;
+
+public:
   Process(const upan::string& name, int parentID, bool isFGProcess);
   virtual ~Process() = 0;
 
@@ -85,10 +89,6 @@ public:
     throw upan::exception(XLOC, "setAUTAddress unsupported");
   }
 
-  uint32_t getProcessBase() {
-    return _processBase;
-  }
-
   void Load();
   void Store();
   void Destroy();
@@ -97,34 +97,67 @@ public:
   FILE_USER_TYPE FileUserType(const FileSystem::Node&) const;
   bool HasFilePermission(const FileSystem::Node&, byte mode) const;
 
+  uint32_t getProcessBase() { return _processBase; }
+  upan::string name() const { return _name; }
+  int processID() const { return _processID; }
+  int mainThreadID() const { return _mainThreadID; }
+
+  int parentProcessID() const { return _parentProcessID; }
+  void setParentProcessID(int parentProcessID) { _parentProcessID = parentProcessID; }
+
+  bool isDmmFlag() const { return _dmmFlag; }
+  void setDmmFlag(bool dmmFlag) { _dmmFlag = dmmFlag; }
+
+  PROCESS_STATUS status() const { return _status; }
+  PROCESS_STATUS setStatus(PROCESS_STATUS status) {
+    return (PROCESS_STATUS) Atomic::Swap((__volatile__ uint32_t &) (_status), static_cast<int>(status));
+  }
+
+  int driveID() const { return _driveID; }
+  void setDriveID(int driveID) { _driveID = driveID; }
+
+  int userID() const { return _userID; }
+
+  ProcessGroup* processGroup() { return _processGroup; }
+  void setProcessGroup(ProcessGroup* processGroup) { _processGroup = processGroup; }
+
+  ProcessStateInfo& stateInfo() { return _stateInfo; }
+  TaskState& taskState() { return _taskState; }
+  ProcessLDT& processLDT() { return _processLDT; }
+  FileSystem::PresentWorkingDirectory& processPWD() { return _processPWD; }
+  const FileSystem::PresentWorkingDirectory& processPWD() const { return _processPWD; }
+
+  const ProcessIDs& childProcessIDs() const { return _childProcessIDs; }
+  void addChildProcessID(int pid) { _childProcessIDs.insert(pid); }
+
+  const ProcessIDs& threadProcessIDs() const { return _threadIDs; }
+  void addThreadID(int pid) { _threadIDs.insert(pid); }
+
 private:
   static int _nextPid;
 
 protected:
   virtual void DeAllocateResources() = 0;
 
-  uint32_t _processBase;
-
-public:
+protected:
   upan::string _name;
-  bool _dmmFlag;
   int _processID;
   int _mainThreadID;
+  int _parentProcessID;
+  bool _dmmFlag;
+  uint32_t _processBase;
+  PROCESS_STATUS _status;
+  int _driveID;
+  int _userID;
   ProcessStateInfo& _stateInfo;
-
-  TaskState taskState;
-  ProcessLDT processLDT;
-  PROCESS_STATUS status;
-
-  int iParentProcessID;
-
-  int iDriveID ;
-  FileSystem::PresentWorkingDirectory processPWD ;
-
+  TaskState _taskState;
+  ProcessLDT _processLDT;
+  FileSystem::PresentWorkingDirectory _processPWD;
   //this is managed like a shared_ptr
   ProcessGroup* _processGroup;
 
-  int iUserID ;
+  ProcessIDs _childProcessIDs;
+  ProcessIDs _threadIDs;
 };
 
 //A KernelProcess is similar to a Thread in that they all share same address space (page tables), heap but different stack

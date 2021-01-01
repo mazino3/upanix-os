@@ -224,10 +224,10 @@ void ConsoleCommands_ChangeDrive()
 {
   DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByDriveName(CommandLineParser::Instance().GetParameterAt(0), false).goodValueOrThrow(XLOC);
 
-	ProcessManager::Instance().GetCurrentPAS().iDriveID = pDiskDrive->Id();
+	ProcessManager::Instance().GetCurrentPAS().setDriveID(pDiskDrive->Id());
 
   MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&(pDiskDrive->_fileSystem.FSpwd), MemUtil_GetDS(),
-                     (unsigned)&ProcessManager::Instance().GetCurrentPAS().processPWD, sizeof(FileSystem::PresentWorkingDirectory)) ;
+                     (unsigned)&ProcessManager::Instance().GetCurrentPAS().processPWD(), sizeof(FileSystem::PresentWorkingDirectory)) ;
 }
 
 void ConsoleCommands_ShowDrive()

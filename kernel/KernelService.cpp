@@ -91,9 +91,9 @@ void KernelService::ProcessExec::Execute()
 		m_iNewProcId = -1 ;
 
 	int iPID = ProcessManager::Instance().GetCurProcId() ;
-	ProcessManager::Instance().GetAddressSpace( iPID ).value().iDriveID = iOldDDriveID ;
+	ProcessManager::Instance().GetAddressSpace( iPID ).value().setDriveID(iOldDDriveID);
 	MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&(mOldPWD), MemUtil_GetDS(),
-                    (unsigned)&(ProcessManager::Instance().GetAddressSpace( iPID ).value().processPWD),
+                    (unsigned)&(ProcessManager::Instance().GetAddressSpace( iPID ).value().processPWD()),
                     sizeof(FileSystem::PresentWorkingDirectory));
 }
 
@@ -218,10 +218,10 @@ void KernelService::Server(KernelService* pService)
 		}
 
 		Process* pPAS = &ProcessManager::Instance().GetCurrentPAS();
-		auto ksProcessGroupID = pPAS->_processGroup;
-		pPAS->_processGroup = ProcessManager::Instance().GetAddressSpace( pRequest->GetRequestProcessID() ).value()._processGroup;
+		auto ksProcessGroupID = pPAS->processGroup();
+		pPAS->setProcessGroup(ProcessManager::Instance().GetAddressSpace( pRequest->GetRequestProcessID() ).value().processGroup());
     pRequest->Execute() ;
-		pPAS->_processGroup = ksProcessGroupID ;
+		pPAS->setProcessGroup(ksProcessGroupID);
     
 		ProcessManager::Instance().WakeUpFromKSWait(pRequest->GetRequestProcessID()) ;
 	}

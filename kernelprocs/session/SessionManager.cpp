@@ -135,7 +135,7 @@ void SessionManager_SwitchToSession(int key)
 		return ;
 	}
 
-  ProcessManager::Instance().GetAddressSpace(SessionManager_List[key]).value()._processGroup->SwitchToFG();
+  ProcessManager::Instance().GetAddressSpace(SessionManager_List[key]).value().processGroup()->SwitchToFG();
 	KC::MDisplay().RefreshScreen() ;
 }
 
