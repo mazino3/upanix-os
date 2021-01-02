@@ -64,9 +64,8 @@ static unsigned DynamicLinkLoader_GetHashValue(const char* name)
 
 static void DynamicLinkLoader_LoadDLL(const char* szJustDLLName, Process* processAddressSpace)
 {
-	ProcessSharedObjectList* pProcessSharedObjectList = DLLLoader_GetProcessSharedObjectListByName(szJustDLLName) ;
-
-	if(pProcessSharedObjectList == NULL)
+  auto dllInfo = processAddressSpace->getDLLInfo(szJustDLLName);
+	if(dllInfo.isEmpty())
 	{
 		char szDLLFullName[128] ;
 		char szLibPath[128] = "" ;
@@ -99,30 +98,14 @@ static byte* DynamicLinkLoader_LoadDLLFileIntoMemory(const ELFParser& elfParser)
 
 /**********************************************************************************************/
 
-uint32_t DynamicLinkLoader_Initialize(unsigned uiPDEAddress)
-{
-	unsigned uiFreePageNo ;
-
-  uiFreePageNo = MemManager::Instance().AllocatePhysicalPage();
-	ProcessSharedObjectList* pSharedObjectList = (ProcessSharedObjectList*)(uiFreePageNo * PAGE_SIZE - GLOBAL_DATA_SEGMENT_BASE) ;
-
-	for(int i = 0; i < DLLLoader_iNoOfProcessSharedObjectList; i++)
-		pSharedObjectList[i].szName[0] = '\0' ;
-
-	unsigned uiPDEIndex = ((PROCESS_DLL_PAGE_ADDR >> 22) & 0x3FF) ;
-	unsigned uiPTEIndex = ((PROCESS_DLL_PAGE_ADDR >> 12) & 0x3FF) ;
-
-	unsigned uiPTEAddress = (((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPDEIndex]) & 0xFFFFF000 ;
-
-	((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPTEIndex] = ((uiFreePageNo * PAGE_SIZE) & 0xFFFFF000) | 0x3 ;
-
-	uiFreePageNo = MemManager::Instance().AllocatePhysicalPage();
+uint32_t DynamicLinkLoader_Initialize(unsigned uiPDEAddress) {
+	const uint32_t uiFreePageNo = MemManager::Instance().AllocatePhysicalPage();
   unsigned realELFSectionHeadeAddr = (uiFreePageNo * PAGE_SIZE - GLOBAL_DATA_SEGMENT_BASE) ;
 
-	uiPDEIndex = ((PROCESS_SEC_HEADER_ADDR >> 22) & 0x3FF) ;
-	uiPTEIndex = ((PROCESS_SEC_HEADER_ADDR >> 12) & 0x3FF) ;
+	const auto uiPDEIndex = ((PROCESS_SEC_HEADER_ADDR >> 22) & 0x3FF) ;
+  const auto uiPTEIndex = ((PROCESS_SEC_HEADER_ADDR >> 12) & 0x3FF) ;
 
-	uiPTEAddress = (((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPDEIndex]) & 0xFFFFF000 ;
+  const auto uiPTEAddress = (((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPDEIndex]) & 0xFFFFF000 ;
 
 	((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPTEIndex] = ((uiFreePageNo * PAGE_SIZE) & 0xFFFFF000) | 0x3 ;
 
@@ -134,32 +117,10 @@ uint32_t DynamicLinkLoader_Initialize(unsigned uiPDEAddress)
 void DynamicLinkLoader_UnInitialize(Process* processAddressSpace)
 {
 	unsigned uiPDEAddress = processAddressSpace->taskState().CR3_PDBR ;
-	unsigned uiPDEIndex = ((PROCESS_DLL_PAGE_ADDR >> 22) & 0x3FF) ;
-	unsigned uiPTEIndex = ((PROCESS_DLL_PAGE_ADDR >> 12) & 0x3FF) ;
-	unsigned uiPTEAddress = ((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPDEIndex] & 0xFFFFF000 ;
-	unsigned uiPageNumber = (((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPTEIndex] & 0xFFFFF000) / PAGE_SIZE ;
-
-	ProcessSharedObjectList* pSharedObjectList = (ProcessSharedObjectList*)((uiPageNumber * PAGE_SIZE) - GLOBAL_DATA_SEGMENT_BASE) ;
-
-	for(int i = 0; i < DLLLoader_iNoOfProcessSharedObjectList; i++)
-	{
-		if(pSharedObjectList[i].szName[0] != '\0')
-		{
-			for(unsigned j = 0; j < pSharedObjectList[i].uiNoOfPages; j++)
-			{
-				MemManager::Instance().DeAllocatePhysicalPage(pSharedObjectList[i].uiAllocatedPageNumbers[j]) ;
-			}
-			DMM_DeAllocateForKernel((unsigned)pSharedObjectList[i].uiAllocatedPageNumbers) ;
-		}
-		else
-			break ;
-	}
-	MemManager::Instance().DeAllocatePhysicalPage(uiPageNumber) ;
-
-	uiPDEIndex = ((PROCESS_SEC_HEADER_ADDR >> 22) & 0x3FF) ;
-	uiPTEIndex = ((PROCESS_SEC_HEADER_ADDR >> 12) & 0x3FF) ;
-	uiPTEAddress = ((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPDEIndex] & 0xFFFFF000 ;
-	uiPageNumber = (((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPTEIndex] & 0xFFFFF000) / PAGE_SIZE ;
+	auto uiPDEIndex = ((PROCESS_SEC_HEADER_ADDR >> 22) & 0x3FF) ;
+  auto uiPTEIndex = ((PROCESS_SEC_HEADER_ADDR >> 12) & 0x3FF) ;
+  auto uiPTEAddress = ((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPDEIndex] & 0xFFFFF000 ;
+  auto uiPageNumber = (((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPTEIndex] & 0xFFFFF000) / PAGE_SIZE ;
 	MemManager::Instance().DeAllocatePhysicalPage(uiPageNumber) ;
 }
 
@@ -177,12 +138,11 @@ void DynamicLinkLoader_DoRelocation(Process* processAddressSpace, int iID, unsig
 
 	if(iID >= 0)
 	{
-		ProcessSharedObjectList* pProcessSharedObjectList = DLLLoader_GetProcessSharedObjectListByIndex(iID) ;
-		uiBaseAddress = DLLLoader_GetProcessDLLLoadAddress(processAddressSpace, iID) ;
-
-		pELFHeader = (ELF32Header*)(uiBaseAddress - GLOBAL_DATA_SEGMENT_BASE) ;
-		pELFSectionHeader = (ELF32SectionHeader*)(uiBaseAddress - GLOBAL_DATA_SEGMENT_BASE + (pProcessSharedObjectList->uiNoOfPages - 1) * PAGE_SIZE) ;
-	}
+		const ProcessDLLInfo& dllInfo = processAddressSpace->getDLLInfo(iID).value();
+    uiBaseAddress = dllInfo.rawLoadAddress();
+    pELFHeader = (ELF32Header*)dllInfo.loadAddressForKernel();
+    pELFSectionHeader = (ELF32SectionHeader*)dllInfo.elfSectionHeaderAddress();
+  }
 	else
 	{
 		uiBaseAddress = PROCESS_BASE ;
@@ -244,11 +204,8 @@ void DynamicLinkLoader_DoRelocation(Process* processAddressSpace, int iID, unsig
       {
         DynamicLinkLoader_LoadDLL(szDLLName, processAddressSpace);
 
-        int index = DLLLoader_GetProcessSharedObjectListIndexByName(szDLLName) ;
-        unsigned uiDLLLoadAddress = DLLLoader_GetProcessDLLLoadAddress(processAddressSpace, index) ;
         unsigned* uiGOTAddress = (unsigned*)GLOBAL_REL_ADDR(ELF32_REL_ENT(pELFRelTable, uiRelocationOffset)->r_offset, uiBaseAddress) ;
-        unsigned uiDynSymAddress = uiDLLLoadAddress + uiDynSymOffset - PROCESS_BASE ;
-
+        unsigned uiDynSymAddress = processAddressSpace->getDLLInfo(szDLLName).value().loadAddressForProcess() + uiDynSymOffset;
         uiGOTAddress[0] = uiDynSymAddress ;
         *iDynamicSymAddress = uiDynSymAddress ;
         return;
@@ -259,14 +216,12 @@ void DynamicLinkLoader_DoRelocation(Process* processAddressSpace, int iID, unsig
   throw upan::exception(XLOC, "Dynamic Symbol Look Up Failed: %s", szSymName);
 }
 
-bool DynamicLinkLoader_GetSymbolOffset(const char* szJustDLLName, const char* szSymName, unsigned* uiDynSymOffset, Process* processAddressSpace)
-{
-	ProcessSharedObjectList* pProcessSharedObjectList = DLLLoader_GetProcessSharedObjectListByName(szJustDLLName) ;
-
+bool DynamicLinkLoader_GetSymbolOffset(const char* szJustDLLName, const char* szSymName, unsigned* uiDynSymOffset, Process* processAddressSpace) {
   upan::uniq_ptr<byte[]> dllImage(nullptr);
   upan::uniq_ptr<ELFParser> pELFParser(nullptr);
+  auto dllInfo = processAddressSpace->getDLLInfo(szJustDLLName);
 
-	if(pProcessSharedObjectList == NULL)
+	if(dllInfo.isEmpty())
 	{
 		char szDLLFullName[128] ;
 		char szLibPath[128] = "" ;
@@ -283,13 +238,11 @@ bool DynamicLinkLoader_GetSymbolOffset(const char* szJustDLLName, const char* sz
 	}
 	else
 	{
-		int index = DLLLoader_GetProcessSharedObjectListIndexByName(szJustDLLName) ;
-
     dllImage.disown();
-    dllImage.reset((byte*)(DLLLoader_GetProcessDLLLoadAddress(processAddressSpace, index) - GLOBAL_DATA_SEGMENT_BASE));
+    dllImage.reset((byte*)dllInfo.value().loadAddressForKernel());
 
     ELF32Header* pELFHeader = (ELF32Header*)(dllImage.get()) ;
-    ELF32SectionHeader* pELFSectionHeader = (ELF32SectionHeader*)(dllImage.get() + (pProcessSharedObjectList->uiNoOfPages - 1) * PAGE_SIZE) ;
+    ELF32SectionHeader* pELFSectionHeader = (ELF32SectionHeader*)dllInfo.value().elfSectionHeaderAddress();
     pELFParser.reset(new ELFParser(pELFHeader, pELFSectionHeader, NULL));
 	}
 

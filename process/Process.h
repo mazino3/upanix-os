@@ -19,19 +19,42 @@
 
 #include <mosstd.h>
 #include <set.h>
+#include <map.h>
+#include <option.h>
 #include <Atomic.h>
 #include <TaskStructures.h>
 #include <FileOperations.h>
+#include <ProcessConstants.h>
 
 class ProcessGroup;
 class IRQ;
 
-typedef struct
-{
-  char szName[56] ;
-  unsigned uiNoOfPages ;
-  unsigned* uiAllocatedPageNumbers ;
-} PACKED ProcessSharedObjectList ;
+class ProcessDLLInfo {
+public:
+  ProcessDLLInfo(int id, uint32_t loadAddress, uint32_t noOfPages) : _id(id), _loadAddress(loadAddress), _noOfPages(noOfPages) {
+  }
+
+  int id() const { return _id; }
+  uint32_t rawLoadAddress() const {
+    return _loadAddress;
+  }
+  uint32_t loadAddressForKernel() const {
+    return _loadAddress - GLOBAL_DATA_SEGMENT_BASE;
+  }
+  uint32_t loadAddressForProcess() const {
+    return _loadAddress - PROCESS_BASE;
+  }
+  uint32_t elfSectionHeaderAddress() const {
+    // Last Page is for Elf Section Header
+    return loadAddressForKernel() + (_noOfPages - 1) * PAGE_SIZE;
+  }
+  uint32_t noOfPages() const { return _noOfPages; }
+
+private:
+  int _id;
+  uint32_t _loadAddress;
+  uint32_t _noOfPages;
+};
 
 class ProcessStateInfo
 {
@@ -76,12 +99,20 @@ public:
 
   virtual bool isKernelProcess() const = 0;
   virtual void onLoad() = 0;
+
   virtual uint32_t startPDEForDLL() const {
     throw upan::exception(XLOC, "startPDEForDLL unsupported");
   }
-  virtual void MapDLLPagesToProcess(int dllEntryIndex, uint32_t noOfPagesForDLL, uint32_t allocatedPageCount) {
+  virtual void MapDLLPagesToProcess(uint32_t noOfPagesForDLL, const upan::string& dllName) {
     throw upan::exception(XLOC, "MapDLLPagesToProcess unsupported");
   }
+  virtual upan::option<const ProcessDLLInfo&> getDLLInfo(const upan::string& dllName) const {
+    throw upan::exception(XLOC, "getDLLInfo unsupported");
+  }
+  virtual upan::option<const ProcessDLLInfo&> getDLLInfo(int id) const {
+    throw upan::exception(XLOC, "getDLLInfo unsupported");
+  }
+
   virtual uint32_t getAUTAddress() const {
     throw upan::exception(XLOC, "getAUTAddress unsupported");
   }
@@ -182,6 +213,9 @@ private:
 
 class UserProcess : public Process {
 public:
+  typedef upan::map<upan::string, ProcessDLLInfo> DLLInfoMap;
+
+public:
   UserProcess(const upan::string &name, int parentID, int userID, bool isFGProcess, int noOfParams, char** args);
 
   bool isKernelProcess() const override {
@@ -193,7 +227,10 @@ public:
   uint32_t startPDEForDLL() const override {
     return _startPDEForDLL;
   }
-  void MapDLLPagesToProcess(int dllEntryIndex, uint32_t noOfPagesForDLL, uint32_t allocatedPageCount) override;
+  void MapDLLPagesToProcess(uint32_t noOfPagesForDLL, const upan::string& dllName) override;
+  upan::option<const ProcessDLLInfo&> getDLLInfo(const upan::string& dllName) const override;
+  upan::option<const ProcessDLLInfo&> getDLLInfo(int id) const override;
+
   uint32_t getAUTAddress() const override {
     return _uiAUTAddress;
   }
@@ -211,21 +248,21 @@ private:
   void InitializeProcessSpaceForProcess(const unsigned uiPDEAddress);
 
   void DeAllocateResources() override;
-  void DeAllocateDLLPTEPages();
+  void DeAllocateDLLPages();
   void DeAllocateAddressSpace();
   void DeAllocateProcessSpace();
   void DeAllocatePTE();
-
-  uint32_t GetDLLPageAddressForKernel();
-  void AllocatePagesForDLL(uint32_t noOfPagesForDLL, ProcessSharedObjectList& pso);
 
 private:
   uint32_t _uiAUTAddress;
   uint32_t _noOfPagesForPTE;
   uint32_t _noOfPagesForProcess;
-  uint32_t _uiNoOfPagesForDLLPTE;
+  uint32_t _noOfPagesForDLLPTE;
+  uint32_t _totalNoOfPagesForDLL;
   uint32_t _startPDEForDLL;
   uint32_t _stackPTEAddress;
+  upan::vector<upan::string> _loadedDLLs;
+  DLLInfoMap _dllInfoMap;
 };
 
 class UserThread : public Process {
@@ -242,8 +279,15 @@ public:
     return _parent.startPDEForDLL();
   }
 
-  void MapDLLPagesToProcess(int dllEntryIndex, uint32_t noOfPagesForDLL, uint32_t allocatedPageCount) override {
-    return _parent.MapDLLPagesToProcess(dllEntryIndex, noOfPagesForDLL, allocatedPageCount);
+  void MapDLLPagesToProcess(uint32_t noOfPagesForDLL, const upan::string& dllName) override {
+    return _parent.MapDLLPagesToProcess(noOfPagesForDLL, dllName);
+  }
+
+  upan::option<const ProcessDLLInfo&> getDLLInfo(const upan::string& dllName) const override {
+    return _parent.getDLLInfo(dllName);
+  }
+  upan::option<const ProcessDLLInfo&> getDLLInfo(int id) const override {
+    return _parent.getDLLInfo(id);
   }
 
   uint32_t getAUTAddress() const override {

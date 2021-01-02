@@ -89,12 +89,12 @@ void Process::Destroy() {
     Release();
   }
 
-  //MemManager::Instance().DisplayNoOfFreePages();
+  MemManager::Instance().DisplayNoOfFreePages();
   //MemManager::Instance().DisplayNoOfAllocPages(0,0);
 }
 
 void Process::Release() {
-  Atomic::Swap((__volatile__ uint32_t&)(_status), static_cast<int>(RELEASED)) ;
+  setStatus(RELEASED);
 }
 
 void Process::Load() {
@@ -243,7 +243,8 @@ UserProcess::UserProcess(const upan::string &name, int parentID, int userID,
 
   Load(noOfParams, args);
 
-  _uiNoOfPagesForDLLPTE = 0 ;
+  _noOfPagesForDLLPTE = 0;
+  _totalNoOfPagesForDLL = 0;
   _processLDT.BuildForUser();
 
   auto parentProcess = ProcessManager::Instance().GetAddressSpace(parentID);
@@ -504,7 +505,7 @@ void UserProcess::InitializeProcessSpaceForProcess(const unsigned uiPDEAddress)
 }
 
 void UserProcess::DeAllocateResources() {
-  DeAllocateDLLPTEPages() ;
+  DeAllocateDLLPages() ;
   DynamicLinkLoader_UnInitialize(this) ;
 
   DMM_DeAllocatePhysicalPages(this) ;
@@ -515,15 +516,25 @@ void UserProcess::DeAllocateResources() {
   DeAllocateAddressSpace();
 }
 
-void UserProcess::DeAllocateDLLPTEPages() {
+void UserProcess::DeAllocateDLLPages() {
   unsigned* uiPDEAddress = ((unsigned*)(_taskState.CR3_PDBR - GLOBAL_DATA_SEGMENT_BASE));
+  uint32_t noOfPagesForDLL = _totalNoOfPagesForDLL;
 
-  for(uint32_t i = 0; i < _uiNoOfPagesForDLLPTE; i++) {
-    auto uiPresentBit = uiPDEAddress[i + _startPDEForDLL] & 0x1 ;
-    auto uiPTEAddress = uiPDEAddress[i + _startPDEForDLL] & 0xFFFFF000 ;
+  for(uint32_t i = 0; i < _noOfPagesForDLLPTE; i++) {
+    auto isPTEPagePresent = uiPDEAddress[i + _startPDEForDLL] & 0x1;
+    auto uiPTEAddress = uiPDEAddress[i + _startPDEForDLL] & 0xFFFFF000;
 
-    if(uiPresentBit && uiPDEAddress != 0)
-      MemManager::Instance().DeAllocatePhysicalPage(uiPTEAddress / PAGE_SIZE) ;
+    if(isPTEPagePresent && uiPTEAddress != 0) {
+      for(uint32_t k = 0; k < PAGE_TABLE_ENTRIES && noOfPagesForDLL > 0; --noOfPagesForDLL, ++k) {
+        auto pageAddress = ((unsigned*)uiPTEAddress)[k];
+        auto isPagePresent = pageAddress & 0x1;
+        pageAddress &= 0xFFFFF000;
+        if (isPagePresent && pageAddress != 0) {
+          MemManager::Instance().DeAllocatePhysicalPage(pageAddress / PAGE_SIZE);
+        }
+      }
+      MemManager::Instance().DeAllocatePhysicalPage(uiPTEAddress / PAGE_SIZE);
+    }
   }
 }
 
@@ -565,39 +576,12 @@ void UserProcess::DeAllocatePTE() {
   MemManager::Instance().DeAllocatePhysicalPage(_stackPTEAddress / PAGE_SIZE);
 }
 
-uint32_t UserProcess::GetDLLPageAddressForKernel() {
-  unsigned uiPDEAddress = _taskState.CR3_PDBR ;
-  unsigned uiPDEIndex = ((PROCESS_DLL_PAGE_ADDR >> 22) & 0x3FF) ;
-  unsigned uiPTEIndex = ((PROCESS_DLL_PAGE_ADDR >> 12) & 0x3FF) ;
-  unsigned uiPTEAddress = ((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPDEIndex] & 0xFFFFF000 ;
-  unsigned uiPageNumber = (((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPTEIndex] & 0xFFFFF000) / PAGE_SIZE ;
-
-  return (uiPageNumber * PAGE_SIZE) - GLOBAL_DATA_SEGMENT_BASE ;
-}
-
-void UserProcess::AllocatePagesForDLL(uint32_t noOfPagesForDLL, ProcessSharedObjectList& pso) {
-  pso.uiAllocatedPageNumbers = (unsigned*)DMM_AllocateForKernel(sizeof(unsigned) * noOfPagesForDLL);
-
-  for(uint32_t i = 0; i < noOfPagesForDLL; i++) {
-    uint32_t uiFreePageNo = MemManager::Instance().AllocatePhysicalPage();
-    pso.uiAllocatedPageNumbers[i] = uiFreePageNo;
-  }
-
-  pso.uiNoOfPages = noOfPagesForDLL;
-}
-
-void UserProcess::MapDLLPagesToProcess(int dllEntryIndex, uint32_t noOfPagesForDLL, uint32_t allocatedPageCount) {
-  ProcessSharedObjectList *pPSOList = (ProcessSharedObjectList*)GetDLLPageAddressForKernel();
-  ProcessSharedObjectList& pso = pPSOList[dllEntryIndex];
-
-  AllocatePagesForDLL(noOfPagesForDLL, pso);
-
-  const unsigned uiNoOfPagesAllocatedForDLL = allocatedPageCount + pso.uiNoOfPages ;
-  const unsigned uiNoOfPagesForDLLPTE = MemManager::Instance().GetPTESizeInPages(uiNoOfPagesAllocatedForDLL) ;
-
+void UserProcess::MapDLLPagesToProcess(uint32_t noOfPagesForDLL, const upan::string& dllName) {
+  const unsigned uiNoOfPagesForDLLPTE = MemManager::Instance().GetPTESizeInPages(_totalNoOfPagesForDLL + noOfPagesForDLL) ;
   const unsigned uiPDEAddress = _taskState.CR3_PDBR ;
-  if(uiNoOfPagesForDLLPTE > _uiNoOfPagesForDLLPTE) {
-    for(uint32_t i = _uiNoOfPagesForDLLPTE; i < uiNoOfPagesForDLLPTE; i++)
+
+  if(uiNoOfPagesForDLLPTE > _noOfPagesForDLLPTE) {
+    for(uint32_t i = _noOfPagesForDLLPTE; i < uiNoOfPagesForDLLPTE; i++)
     {
       auto uiFreePageNo = MemManager::Instance().AllocatePhysicalPage();
       auto uiPDEIndex = _startPDEForDLL + i;
@@ -605,18 +589,39 @@ void UserProcess::MapDLLPagesToProcess(int dllEntryIndex, uint32_t noOfPagesForD
     }
   }
 
-  for(uint32_t i = 0; i < pso.uiNoOfPages; i++)
+  for(uint32_t i = 0; i < noOfPagesForDLL; i++)
   {
-    auto uiPDEIndex = (i + allocatedPageCount) / PAGE_TABLE_ENTRIES + _startPDEForDLL ;
-    auto uiPTEIndex = (i + allocatedPageCount) % PAGE_TABLE_ENTRIES ;
+    auto uiFreePageNo = MemManager::Instance().AllocatePhysicalPage();
+
+    auto uiPDEIndex = (i + _totalNoOfPagesForDLL) / PAGE_TABLE_ENTRIES + _startPDEForDLL ;
+    auto uiPTEIndex = (i + _totalNoOfPagesForDLL) % PAGE_TABLE_ENTRIES ;
 
     auto uiPTEAddress = (((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPDEIndex]) & 0xFFFFF000 ;
 
-    ((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPTEIndex] =
-        (((pso.uiAllocatedPageNumbers[i]) * PAGE_SIZE) & 0xFFFFF000) | 0x7 ;
+    ((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPTEIndex] = ((uiFreePageNo * PAGE_SIZE) & 0xFFFFF000) | 0x7 ;
   }
 
-  _uiNoOfPagesForDLLPTE = uiNoOfPagesForDLLPTE;
+  auto loadAddress = _startPDEForDLL * PAGE_SIZE * PAGE_TABLE_ENTRIES + _totalNoOfPagesForDLL * PAGE_SIZE;
+  _loadedDLLs.push_back(dllName);
+  _dllInfoMap.insert(DLLInfoMap::value_type(dllName, ProcessDLLInfo(_loadedDLLs.size() - 1, loadAddress, noOfPagesForDLL)));
+
+  _noOfPagesForDLLPTE = uiNoOfPagesForDLLPTE;
+  _totalNoOfPagesForDLL += noOfPagesForDLL;
+}
+
+upan::option<const ProcessDLLInfo&> UserProcess::getDLLInfo(const upan::string& dllName) const {
+  auto it = _dllInfoMap.find(dllName);
+  if (it == _dllInfoMap.end()) {
+    return upan::option<const ProcessDLLInfo&>::empty();
+  }
+  return upan::option<const ProcessDLLInfo&>(it->second);
+}
+
+upan::option<const ProcessDLLInfo&> UserProcess::getDLLInfo(int id) const {
+  if (id < 0 || id >= _loadedDLLs.size()) {
+    return upan::option<const ProcessDLLInfo&>::empty();
+  }
+  return getDLLInfo(_loadedDLLs[id]);
 }
 
 void UserProcess::onLoad() {

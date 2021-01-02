@@ -41,40 +41,12 @@ using namespace ELFHeader ;
 using namespace ELFRelocSection ;
 using namespace ELFSymbolTable ;
 
-int DLLLoader_iNoOfProcessSharedObjectList ;
-
 /************************ static functions *******************************************/
 
-static int DLLLoader_GetFreeProcessDLLEntry()
+static void DLLLoader_CopyElfDLLImage(uint32_t uiStartAddress, uint32_t uiNoOfPagesForDLL, byte* bDLLImage, uint32_t uiMemImageSize)
 {
-	ProcessSharedObjectList* pProcessSharedObjectList = (ProcessSharedObjectList*)(PROCESS_DLL_PAGE_ADDR - GLOBAL_DATA_SEGMENT_BASE) ;
-
-	for(int i = 0; i < DLLLoader_iNoOfProcessSharedObjectList; i++)
-		if(pProcessSharedObjectList[i].szName[0] == '\0')
-			return i ;
-
-  throw upan::exception(XLOC, "out of memory for process dll entries");
-}
-
-static unsigned DLLLoader_GetNoOfPagesAllocated()
-{
-	ProcessSharedObjectList* pProcessSharedObjectList = (ProcessSharedObjectList*)(PROCESS_DLL_PAGE_ADDR - GLOBAL_DATA_SEGMENT_BASE) ;
-
-  unsigned uiNoOfPagesAllocated = 0;
-  for(uint32_t i = 0; pProcessSharedObjectList[i].szName[0] != '\0'; i++)
-		uiNoOfPagesAllocated += pProcessSharedObjectList[i].uiNoOfPages ;
-
-	return uiNoOfPagesAllocated ;
-}
-
-static void DLLLoader_CopyElfDLLImage(Process* processAddressSpace, unsigned uiNoOfPagesForDLL, byte* bDLLImage, unsigned uiMemImageSize)
-{
-	unsigned uiOffset = 0 ;
-	unsigned uiAllocatedPagesCount = DLLLoader_GetNoOfPagesAllocated() ;
-	unsigned uiCopySize = uiMemImageSize ;
-
-  unsigned uiStartAddress = processAddressSpace->startPDEForDLL() * PAGE_TABLE_ENTRIES * PAGE_SIZE +
-      uiAllocatedPagesCount * PAGE_SIZE - GLOBAL_DATA_SEGMENT_BASE ;
+	unsigned uiOffset = 0;
+	unsigned uiCopySize = uiMemImageSize;
 
   for(uint32_t i = 0; i < uiNoOfPagesForDLL; i++)
 	{
@@ -98,67 +70,13 @@ static void DLLLoader_CopyElfDLLImage(Process* processAddressSpace, unsigned uiN
 
 /**************************************************************************************************/
 
-int DLLLoader_GetProcessSharedObjectListIndexByName(const char* szDLLName)
-{
-	ProcessSharedObjectList* pProcessSharedObjectList = (ProcessSharedObjectList*)(PROCESS_DLL_PAGE_ADDR - GLOBAL_DATA_SEGMENT_BASE) ;
-	for(int i = 0; i < DLLLoader_iNoOfProcessSharedObjectList; i++)
-		if(strcmp(pProcessSharedObjectList[i].szName, szDLLName) == 0)
-      return i;
-  throw upan::exception(XLOC, "Failed to find entry for shared object (.so) file: %s", szDLLName);
-}
-
-ProcessSharedObjectList* DLLLoader_GetProcessSharedObjectListByName(const char* szDLLName)
-{
-	ProcessSharedObjectList* pProcessSharedObjectList = (ProcessSharedObjectList*)(PROCESS_DLL_PAGE_ADDR - GLOBAL_DATA_SEGMENT_BASE) ;
-
-	for(int i = 0; i < DLLLoader_iNoOfProcessSharedObjectList; i++)
-	{
-		if(strcmp(pProcessSharedObjectList[i].szName, szDLLName) == 0)
-			return &pProcessSharedObjectList[i] ;
-	}
-
-	return NULL ;
-}
-
-ProcessSharedObjectList* DLLLoader_GetProcessSharedObjectListByIndex(int iIndex)
-{
-	ProcessSharedObjectList* pProcessSharedObjectList = (ProcessSharedObjectList*)(PROCESS_DLL_PAGE_ADDR - GLOBAL_DATA_SEGMENT_BASE) ;
-
-	if(iIndex >= 0 && iIndex < DLLLoader_iNoOfProcessSharedObjectList && pProcessSharedObjectList[iIndex].szName[0] != '\0')
-		return &pProcessSharedObjectList[iIndex] ;
-
-	return NULL ;
-}
-
-int DLLLoader_GetRelativeDLLStartAddress(const char* szDLLName)
-{
-	ProcessSharedObjectList* pProcessSharedObjectList = (ProcessSharedObjectList*)(PROCESS_DLL_PAGE_ADDR - GLOBAL_DATA_SEGMENT_BASE) ;
-
-  int iRelDLLStartAddress = 0 ;
-	for(int i = 0; i < DLLLoader_iNoOfProcessSharedObjectList; i++)
-	{
-		if(strcmp(pProcessSharedObjectList[i].szName, szDLLName) == 0)
-			return iRelDLLStartAddress ;
-
-		iRelDLLStartAddress += (pProcessSharedObjectList[i].uiNoOfPages * PAGE_SIZE) ;
-	}
-
-	return -1 ;
-}
-
-void DLLLoader_Initialize()
-{
-	DLLLoader_iNoOfProcessSharedObjectList = PAGE_SIZE / sizeof(ProcessSharedObjectList) ;
+void DLLLoader_Initialize() {
 }
 
 void DLLLoader_LoadELFDLL(const char* szDLLName, const char* szJustDLLName, Process* processAddressSpace)
 {
 	ELFParser mELFParser(szDLLName) ;
 
-  const int iProcessDLLEntryIndex = DLLLoader_GetFreeProcessDLLEntry();
-
-	ProcessSharedObjectList* pProcessSharedObjectList = (ProcessSharedObjectList*)(PROCESS_DLL_PAGE_ADDR - GLOBAL_DATA_SEGMENT_BASE) ;
-		
 	unsigned uiMinMemAddr, uiMaxMemAddr ;
 
 	mELFParser.GetMemImageSize(&uiMinMemAddr, &uiMaxMemAddr) ;
@@ -168,29 +86,20 @@ void DLLLoader_LoadELFDLL(const char* szDLLName, const char* szJustDLLName, Proc
 	unsigned uiDLLSectionSize ;
   upan::uniq_ptr<byte[]> bDLLSectionImage(ProcessLoader::Instance().LoadDLLInitSection(uiDLLSectionSize));
 
-	unsigned uiDLLImageSize = ProcessLoader_GetCeilAlignedAddress(uiMaxMemAddr - uiMinMemAddr, 4) ;
-	unsigned uiMemImageSize = uiDLLImageSize + uiDLLSectionSize ;
-	unsigned uiNoOfPagesForDLL = MemManager::Instance().GetProcessSizeInPages(uiMemImageSize) + DLL_ELF_SEC_HEADER_PAGE ;
+  const uint32_t uiDLLImageSize = ProcessLoader_GetCeilAlignedAddress(uiMaxMemAddr - uiMinMemAddr, 4) ;
+  const uint32_t uiMemImageSize = uiDLLImageSize + uiDLLSectionSize ;
+	const uint32_t uiNoOfPagesForDLL = MemManager::Instance().GetProcessSizeInPages(uiMemImageSize) + DLL_ELF_SEC_HEADER_PAGE ;
 
 	if(uiNoOfPagesForDLL > MAX_PAGES_PER_PROCESS)
     throw upan::exception(XLOC, "No. of pages for DLL %u exceeds max limit per dll %u", uiNoOfPagesForDLL, MAX_PAGES_PER_PROCESS);
 
-	unsigned uiNoOfPagesAllocatedForOtherDLLs = DLLLoader_GetNoOfPagesAllocated() ;
-
-	if(!KC::MKernelService().RequestDLLAlloCopy(iProcessDLLEntryIndex, uiNoOfPagesAllocatedForOtherDLLs, uiNoOfPagesForDLL))
-	{
-    for(uint32_t i = 0; i < pProcessSharedObjectList[iProcessDLLEntryIndex].uiNoOfPages; i++)
-			MemManager::Instance().DeAllocatePhysicalPage(pProcessSharedObjectList[iProcessDLLEntryIndex].uiAllocatedPageNumbers[i]) ;
+	if(!KC::MKernelService().RequestDLLAlloCopy(uiNoOfPagesForDLL, szJustDLLName)) {
     throw upan::exception(XLOC, "Failed to allocate memory for DLL via kernal service");
 	}
 
-  unsigned uiDLLLoadAddress = (processAddressSpace->startPDEForDLL() * PAGE_SIZE * PAGE_TABLE_ENTRIES) + uiNoOfPagesAllocatedForOtherDLLs * PAGE_SIZE - PROCESS_BASE ;
-
-	// Last Page is for Elf Section Header
-	unsigned a = (pProcessSharedObjectList[iProcessDLLEntryIndex].uiNoOfPages - 1) * PAGE_SIZE ;
-	unsigned b = uiNoOfPagesAllocatedForOtherDLLs * PAGE_SIZE ;
-  unsigned c = processAddressSpace->startPDEForDLL() * PAGE_TABLE_ENTRIES * PAGE_SIZE ;
-	unsigned pRealELFSectionHeaderAddr = a + b + c - GLOBAL_DATA_SEGMENT_BASE ;
+	const ProcessDLLInfo& dllInfo = processAddressSpace->getDLLInfo(szJustDLLName).value();
+  const uint32_t uiDLLLoadAddress = dllInfo.loadAddressForProcess();
+	const uint32_t pRealELFSectionHeaderAddr = dllInfo.elfSectionHeaderAddress();
 
 	unsigned uiCopySize = mELFParser.CopyELFSectionHeader((ELF32SectionHeader*)pRealELFSectionHeaderAddr) ;
 	mELFParser.CopyELFSecStrTable((char*)(pRealELFSectionHeaderAddr + uiCopySize)) ;
@@ -198,8 +107,6 @@ void DLLLoader_LoadELFDLL(const char* szDLLName, const char* szJustDLLName, Proc
   upan::uniq_ptr<byte[]> bDLLImage(new byte[sizeof(char) * uiMemImageSize]);
 
   upan::trycall([&] () { mELFParser.CopyProcessImage(bDLLImage.get(), 0, uiMemImageSize); }).onBad([&] (const upan::error& err) {
-    for(unsigned i = 0; i < pProcessSharedObjectList[iProcessDLLEntryIndex].uiNoOfPages; i++)
-      MemManager::Instance().DeAllocatePhysicalPage(pProcessSharedObjectList[iProcessDLLEntryIndex].uiAllocatedPageNumbers[i]) ;
     throw upan::exception(XLOC, err);
   });
 
@@ -207,8 +114,8 @@ void DLLLoader_LoadELFDLL(const char* szDLLName, const char* szJustDLLName, Proc
 
 	// Setting the Dynamic Link Loader Address in GOT
   mELFParser.GetGOTAddress(bDLLImage.get(), uiMinMemAddr).onGood([&](uint32_t* uiGOT) {
-    uiGOT[1] = iProcessDLLEntryIndex ;
-    uiGOT[2] = uiDLLImageSize + uiDLLLoadAddress ;
+    uiGOT[1] = dllInfo.id();
+    uiGOT[2] = uiDLLImageSize + uiDLLLoadAddress;
 
     mELFParser.GetNoOfGOTEntries().onGood([&](uint32_t uiNoOfGOTEntries) {
       for(uint32_t i = 3; i < uiNoOfGOTEntries; i++)
@@ -245,19 +152,6 @@ void DLLLoader_LoadELFDLL(const char* szDLLName, const char* szJustDLLName, Proc
     }
   });
 
-/* Enf of Dynamic Relocation Entries resolution */
-  DLLLoader_CopyElfDLLImage(processAddressSpace, pProcessSharedObjectList[iProcessDLLEntryIndex].uiNoOfPages, bDLLImage.get(), uiMemImageSize) ;
-	strcpy(pProcessSharedObjectList[iProcessDLLEntryIndex].szName, szJustDLLName) ;
-}
-
-unsigned DLLLoader_GetProcessDLLLoadAddress(Process* processAddressSpace, int iIndex)
-{
-	ProcessSharedObjectList* pProcessSharedObjectList = (ProcessSharedObjectList*)(PROCESS_DLL_PAGE_ADDR - GLOBAL_DATA_SEGMENT_BASE) ;
-
-	unsigned uiAllocatedPagesCount = 0 ;
-	int i ;
-	for(i = 0; i < iIndex; i++)
-		uiAllocatedPagesCount += pProcessSharedObjectList[i].uiNoOfPages ;
-
-  return (processAddressSpace->startPDEForDLL() * PAGE_SIZE * PAGE_TABLE_ENTRIES) + (uiAllocatedPagesCount * PAGE_SIZE) ;
+/* End of Dynamic Relocation Entries resolution */
+  DLLLoader_CopyElfDLLImage(dllInfo.loadAddressForKernel(), uiNoOfPagesForDLL, bDLLImage.get(), uiMemImageSize) ;
 }

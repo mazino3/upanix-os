@@ -123,7 +123,6 @@ extern unsigned RAM_SIZE ;
 
 // Mapped to Different Address Space
 // Should be aligned to Page Boundary
-#define PROCESS_DLL_PAGE_ADDR	0x153E000 // 21 MB + 248 KB 
 #define PROCESS_SEC_HEADER_ADDR	0x153F000 // 21 MB + 252 KB
 #define PROCESS_ENV_PAGE		0x1540000 // 21 MB + 256 KB
 #define PROCESS_VIDEO_BUFFER	0x1541000 // 21 MB + 260 KB

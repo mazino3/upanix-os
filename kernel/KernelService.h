@@ -57,7 +57,7 @@ class KernelService
 		bool Stop(int iServerProcessID) ;
 
 		// RequestFactory
-		bool RequestDLLAlloCopy(int iDLLEntryIndex, unsigned uiAllocPageCnt, unsigned uiNoOfPages) ;
+		bool RequestDLLAlloCopy(unsigned uiNoOfPages, const upan::string& dllName) ;
 		unsigned RequestFlatAddress(unsigned uiAddress) ;
 		bool RequestPageFault(unsigned uiFaultyAddress) ;
 		int RequestProcessExec(const char* szFile, int iNoOfArgs, const char** szArgs) ;
@@ -73,15 +73,14 @@ class KernelService
 		class DLLAllocCopy : public Request
 		{
 			private:
-				int m_iProcessDLLEntryIndex ;
-				unsigned m_uiAllocatedPagesCount ;
-				unsigned m_uiNoOfPagesForDLL ;
-				bool m_bStatus ;
+				unsigned _noOfPagesForDLL;
+				const upan::string _dllName;
+				bool _status;
 
 			public:
-				DLLAllocCopy(int iDLLEntryIndex, unsigned uiAllocPageCnt, unsigned uiNoOfPages) ;
+				DLLAllocCopy(unsigned uiNoOfPages, const upan::string& dllName) ;
         void Execute() ;
-				inline bool GetStatus() { return m_bStatus ; }
+				inline bool GetStatus() { return _status ; }
 		} ;
 
 		class FlatAddress : public Request

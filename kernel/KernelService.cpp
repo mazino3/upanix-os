@@ -26,23 +26,19 @@
 # include <ProcessEnv.h>
 # include <MemManager.h>
 
-KernelService::DLLAllocCopy::DLLAllocCopy(int iDLLEntryIndex, unsigned uiAllocPageCnt, unsigned uiNoOfPages) :
-	m_iProcessDLLEntryIndex(iDLLEntryIndex),
-	m_uiAllocatedPagesCount(uiAllocPageCnt),
-	m_uiNoOfPagesForDLL(uiNoOfPages)
-{
+KernelService::DLLAllocCopy::DLLAllocCopy(unsigned uiNoOfPages, const upan::string& dllName) : _noOfPagesForDLL(uiNoOfPages), _dllName(dllName) {
 }
 
 void KernelService::DLLAllocCopy::Execute() {
   try {
     Process &pas = ProcessManager::Instance().GetAddressSpace(GetRequestProcessID()).value();
-    pas.MapDLLPagesToProcess(m_iProcessDLLEntryIndex, m_uiNoOfPagesForDLL, m_uiAllocatedPagesCount);
+    pas.MapDLLPagesToProcess(_noOfPagesForDLL, _dllName);
   } catch(upan::exception& e) {
     e.Print();
-    m_bStatus = false;
+    _status = false;
     return;
   }
-	m_bStatus = true ;
+  _status = true ;
 }
 
 KernelService::FlatAddress::FlatAddress(unsigned uiVirtualAddress) : m_uiAddress(uiVirtualAddress)
@@ -103,9 +99,9 @@ void KernelService::ThreadExec::Execute() {
   }
 }
 
-bool KernelService::RequestDLLAlloCopy(int iDLLEntryIndex, unsigned uiAllocPageCnt, unsigned uiNoOfPages)
+bool KernelService::RequestDLLAlloCopy(unsigned uiNoOfPages, const upan::string& dllName)
 {
-	KernelService::DLLAllocCopy* pRequest = new KernelService::DLLAllocCopy(iDLLEntryIndex, uiAllocPageCnt, uiNoOfPages) ;
+	KernelService::DLLAllocCopy* pRequest = new KernelService::DLLAllocCopy(uiNoOfPages, dllName) ;
 	AddRequest(pRequest) ;
 
 	ProcessManager::Instance().WaitOnKernelService() ;
