@@ -89,9 +89,7 @@ void KernelService::ProcessExec::Execute()
 }
 
 void KernelService::ThreadExec::Execute() {
-  if(!ProcessManager::Instance().CreateThreadTask(GetRequestProcessID(), _entryAddress, _arg, _threadID)) {
-    _threadID = -1;
-  }
+  _threadID = ProcessManager::Instance().CreateThreadTask(GetRequestProcessID(), _entryAddress, _arg);
 }
 
 bool KernelService::RequestDLLAlloCopy(unsigned uiNoOfPages, const upan::string& dllName)

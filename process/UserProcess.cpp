@@ -50,6 +50,7 @@ UserProcess::UserProcess(const upan::string &name, int parentID, int userID,
   _processLDT.BuildForUser();
 
   auto parentProcess = ProcessManager::Instance().GetAddressSpace(parentID);
+  parentProcess.ifPresent([this](Process& p) { p.addChildProcessID(_processID); });
   _userID = userID == DERIVE_FROM_PARENT && !parentProcess.isEmpty() ? parentProcess.value().userID() : _userID;
 }
 

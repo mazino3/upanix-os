@@ -30,6 +30,9 @@ KernelProcess::KernelProcess(const upan::string& name, uint32_t taskAddress, int
   _taskState.BuildForKernel(taskAddress, uiStackTop, param1, param2);
   _processLDT.BuildForKernel();
   _userID = ROOT_USER_ID ;
+
+  auto parentProcess = ProcessManager::Instance().GetAddressSpace(parentID);
+  parentProcess.ifPresent([this](Process& p) { p.addChildProcessID(_processID); });
 }
 
 uint32_t KernelProcess::AllocateAddressSpace() {
