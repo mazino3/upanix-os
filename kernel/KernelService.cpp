@@ -20,7 +20,6 @@
 # include <Display.h>
 # include <AsmUtil.h>
 # include <DynamicLinkLoader.h>
-# include <DLLLoader.h>
 # include <UserManager.h>
 # include <GenericUtil.h>
 # include <ProcessEnv.h>
@@ -82,15 +81,11 @@ void KernelService::ProcessExec::Execute()
 	FileSystem::PresentWorkingDirectory mOldPWD ;
 	ProcessManager::Instance().CopyDiskDrive(GetRequestProcessID(), iOldDDriveID, mOldPWD) ;
 
-	byte bStatus = ProcessManager::Instance().Create(_szFile.c_str(), GetRequestProcessID(), true, &m_iNewProcId, DERIVE_FROM_PARENT, m_iNoOfArgs, m_szArgs) ;
-	if(bStatus != ProcessManager_SUCCESS)
-		m_iNewProcId = -1 ;
+  m_iNewProcId = ProcessManager::Instance().Create(_szFile.c_str(), GetRequestProcessID(), true, DERIVE_FROM_PARENT, m_iNoOfArgs, m_szArgs) ;
 
-	int iPID = ProcessManager::Instance().GetCurProcId() ;
-	ProcessManager::Instance().GetAddressSpace( iPID ).value().setDriveID(iOldDDriveID);
-	MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&(mOldPWD), MemUtil_GetDS(),
-                    (unsigned)&(ProcessManager::Instance().GetAddressSpace( iPID ).value().processPWD()),
-                    sizeof(FileSystem::PresentWorkingDirectory));
+  auto& curProc = ProcessManager::Instance().GetCurrentPAS();
+  curProc.setDriveID(iOldDDriveID);
+	memcpy((void*)&curProc.processPWD(), (void*)&mOldPWD, sizeof(FileSystem::PresentWorkingDirectory));
 }
 
 void KernelService::ThreadExec::Execute() {
@@ -234,17 +229,13 @@ int KernelService::Spawn()
   szName += upan::string::to_string(iID);
 	iID++ ;
 
-	int pid ;
-	if(ProcessManager::Instance().CreateKernelProcess(szName, (unsigned) &(KernelService::Server),
-                                                    ProcessManager::GetCurrentProcessID(),
-                                                    false, (unsigned) this, NULL, &pid) !=
-			ProcessManager_SUCCESS)
-	{
+	int pid = ProcessManager::Instance().CreateKernelProcess(szName, (unsigned) &(KernelService::Server),
+                                                          ProcessManager::GetCurrentProcessID(), false, (unsigned) this, NULL);
+	if(pid < 0) {
 		printf("\n Failed to create Kernel Service Process %s", szName.c_str()) ;
-		return -1 ;
-	}
-
-	m_lServerList.push_back(pid) ;
+	} else {
+    m_lServerList.push_back(pid);
+  }
 
 	return pid ;
 }

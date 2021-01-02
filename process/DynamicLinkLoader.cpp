@@ -26,7 +26,6 @@
 #include <ElfDynamicSection.h>
 #include <Display.h>
 #include <DMM.h>
-#include <DLLLoader.h>
 #include <ProcessLoader.h>
 #include <StringUtil.h>
 #include <MemUtil.h>
@@ -43,6 +42,8 @@ using namespace ELFHeader ;
 using namespace ELFRelocSection ;
 using namespace ELFSymbolTable ;
 using namespace ELFDynamicSection ;
+
+# define REL_PLT_SUB_NAME	".plt"
 
 /****************************** Static Functions *******************************************/
 static unsigned DynamicLinkLoader_GetHashValue(const char* name)
@@ -70,13 +71,14 @@ static void DynamicLinkLoader_LoadDLL(const char* szJustDLLName, Process* proces
 		char szDLLFullName[128] ;
 		char szLibPath[128] = "" ;
 
-		if(!GenericUtil_GetFullFilePathFromEnv(LD_LIBRARY_PATH_ENV, LIB_PATH, szJustDLLName, szLibPath))
+		if(!GenericUtil_GetFullFilePathFromEnv(LD_LIBRARY_PATH_ENV, LIB_PATH, szJustDLLName, szLibPath)) {
       throw upan::exception(XLOC, "DLL shared object file not found: %s", szJustDLLName);
+    }
 
 		strcpy(szDLLFullName, szLibPath) ;
 		strcat(szDLLFullName, szJustDLLName) ;
-		
-    DLLLoader_LoadELFDLL(szDLLFullName, szJustDLLName, processAddressSpace) ;
+
+		processAddressSpace->LoadELFDLL(szDLLFullName, szJustDLLName);
 	}
 }
 

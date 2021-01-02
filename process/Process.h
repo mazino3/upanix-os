@@ -103,6 +103,9 @@ public:
   virtual uint32_t startPDEForDLL() const {
     throw upan::exception(XLOC, "startPDEForDLL unsupported");
   }
+  virtual void LoadELFDLL(const upan::string& szDLLName, const upan::string& szJustDLLName) {
+    throw upan::exception(XLOC, "LoadELFDLL unsupported");
+  }
   virtual void MapDLLPagesToProcess(uint32_t noOfPagesForDLL, const upan::string& dllName) {
     throw upan::exception(XLOC, "MapDLLPagesToProcess unsupported");
   }
@@ -170,6 +173,15 @@ private:
 protected:
   virtual void DeAllocateResources() = 0;
 
+  class Common {
+  public:
+    static uint32_t AllocatePDE();
+    static void UpdatePDEWithStackPTE(uint32_t pdeAddress, uint32_t stackPTEAddress);
+    static uint32_t AllocatePTEForStack();
+    static void AllocateStackSpace(uint32_t pteAddress);
+    static void DeAllocateStackSpace(uint32_t stackPTEAddress);
+  };
+
 protected:
   upan::string _name;
   int _processID;
@@ -189,120 +201,4 @@ protected:
 
   ProcessIDs _childProcessIDs;
   ProcessIDs _threadIDs;
-};
-
-//A KernelProcess is similar to a Thread in that they all share same address space (page tables), heap but different stack
-//But it is a process in that if the parent process dies before child, then child kernel process will continue to execute under the root kernel process
-class KernelProcess : public Process {
-public:
-  KernelProcess(const upan::string& name, uint32_t taskAddress, int parentID, bool isFGProcess, uint32_t param1, uint32_t param2);
-
-  bool isKernelProcess() const override {
-    return true;
-  }
-
-  void onLoad() override {}
-
-private:
-  void DeAllocateResources() override;
-  uint32_t AllocateAddressSpace();
-
-private:
-  int kernelStackBlockId;
-};
-
-class UserProcess : public Process {
-public:
-  typedef upan::map<upan::string, ProcessDLLInfo> DLLInfoMap;
-
-public:
-  UserProcess(const upan::string &name, int parentID, int userID, bool isFGProcess, int noOfParams, char** args);
-
-  bool isKernelProcess() const override {
-    return false;
-  }
-
-  void onLoad() override;
-
-  uint32_t startPDEForDLL() const override {
-    return _startPDEForDLL;
-  }
-  void MapDLLPagesToProcess(uint32_t noOfPagesForDLL, const upan::string& dllName) override;
-  upan::option<const ProcessDLLInfo&> getDLLInfo(const upan::string& dllName) const override;
-  upan::option<const ProcessDLLInfo&> getDLLInfo(int id) const override;
-
-  uint32_t getAUTAddress() const override {
-    return _uiAUTAddress;
-  }
-  void setAUTAddress(uint32_t addr) {
-    _uiAUTAddress = addr;
-  }
-
-private:
-  void Load(int noOfParams, char** szArgumentList);
-  uint32_t AllocateAddressSpace();
-  void CopyElfImage(unsigned uiPDEAddr, byte* bProcessImage, unsigned uiMemImageSize);
-  uint32_t PushProgramInitStackData(int iNumberOfParameters, char** szArgumentList);
-  void AllocatePTE(const unsigned uiPDEAddress);
-  void InitializeProcessSpaceForOS(const unsigned uiPDEAddress);
-  void InitializeProcessSpaceForProcess(const unsigned uiPDEAddress);
-
-  void DeAllocateResources() override;
-  void DeAllocateDLLPages();
-  void DeAllocateAddressSpace();
-  void DeAllocateProcessSpace();
-  void DeAllocatePTE();
-
-private:
-  uint32_t _uiAUTAddress;
-  uint32_t _noOfPagesForPTE;
-  uint32_t _noOfPagesForProcess;
-  uint32_t _noOfPagesForDLLPTE;
-  uint32_t _totalNoOfPagesForDLL;
-  uint32_t _startPDEForDLL;
-  uint32_t _stackPTEAddress;
-  upan::vector<upan::string> _loadedDLLs;
-  DLLInfoMap _dllInfoMap;
-};
-
-class UserThread : public Process {
-public:
-  UserThread(int parentID, uint32_t entryAddress, void* arg);
-
-  bool isKernelProcess() const override {
-    return false;
-  }
-
-  void onLoad() override;
-
-  uint32_t startPDEForDLL() const override {
-    return _parent.startPDEForDLL();
-  }
-
-  void MapDLLPagesToProcess(uint32_t noOfPagesForDLL, const upan::string& dllName) override {
-    return _parent.MapDLLPagesToProcess(noOfPagesForDLL, dllName);
-  }
-
-  upan::option<const ProcessDLLInfo&> getDLLInfo(const upan::string& dllName) const override {
-    return _parent.getDLLInfo(dllName);
-  }
-  upan::option<const ProcessDLLInfo&> getDLLInfo(int id) const override {
-    return _parent.getDLLInfo(id);
-  }
-
-  uint32_t getAUTAddress() const override {
-    return _parent.getAUTAddress();
-  }
-
-  void setAUTAddress(uint32_t addr) {
-    _parent.setAUTAddress(addr);
-  }
-
-private:
-  uint32_t PushProgramInitStackData(void* arg);
-  void DeAllocateResources() override;
-
-private:
-  UserProcess& _parent;
-  uint32_t _stackPTEAddress;
 };

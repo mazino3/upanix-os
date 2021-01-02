@@ -29,9 +29,9 @@ is not completely beyond file size. So, to avoid this, request to file op is sen
 to ensure some non zero byte request is there within file size limit*/
 #define OVERFLOW_ADJUST 2
 
-BufferedReader::BufferedReader(const char* szFileName, unsigned uiOffSet, unsigned uiBufferSize) : m_uiOffSet(uiOffSet), m_szBuffer(nullptr)
+BufferedReader::BufferedReader(const upan::string& szFileName, unsigned uiOffSet, unsigned uiBufferSize) : m_uiOffSet(uiOffSet), m_szBuffer(nullptr)
 {
-  m_iFD = FileOperations_Open(szFileName, O_RDONLY);
+  m_iFD = FileOperations_Open(szFileName.c_str(), O_RDONLY);
 
   try
   {

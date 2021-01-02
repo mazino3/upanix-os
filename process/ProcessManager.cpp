@@ -27,7 +27,6 @@
 #include <ProcessLoader.h>
 #include <DynamicLinkLoader.h>
 #include <DMM.h>
-#include <DLLLoader.h>
 #include <ProcessEnv.h>
 #include <KernelService.h>
 #include <ProcFileManager.h>
@@ -42,6 +41,8 @@
 #include <Atomic.h>
 #include <uniq_ptr.h>
 #include <syscalldefs.h>
+#include <KernelProcess.h>
+#include <UserThread.h>
 
 int ProcessManager::_currentProcessID = NO_PROCESS_ID;
 
@@ -65,8 +66,6 @@ ProcessManager::ProcessManager() : _currentProcessIt(_processMap.end()) {
 	sysTSS->IO_MAP_BASE = 103 ;
 
   ProcessLoader::Instance();
-
-	DLLLoader_Initialize() ;	
 
 	KC::MDisplay().LoadMessage("Process Manager Initialization", Success);
 }
@@ -424,35 +423,35 @@ bool ProcessManager::IsChildAlive(int iChildProcessID) {
   return !process.isEmpty() && process.value().parentProcessID() == ProcessManager::GetCurrentProcessID();
 }
 
-byte ProcessManager::CreateKernelProcess(const upan::string& name, const unsigned uiTaskAddress, int iParentProcessID,
-                                         byte bIsFGProcess, unsigned uiParam1, unsigned uiParam2,
-                                         int* iProcessID)
-{
+int ProcessManager::CreateKernelProcess(const upan::string& name, const unsigned uiTaskAddress, int iParentProcessID,
+                                        byte bIsFGProcess, unsigned uiParam1, unsigned uiParam2) {
   try {
     upan::uniq_ptr<Process> newPAS(new KernelProcess(name, uiTaskAddress, iParentProcessID, bIsFGProcess, uiParam1, uiParam2));
-    *iProcessID = newPAS->processID();
+    GetAddressSpace(iParentProcessID).ifPresent([&newPAS](Process& parent) {
+      parent.addChildProcessID(newPAS->processID());
+    });
     AddToSchedulerList(*newPAS.release());
+    return newPAS->processID();
   } catch(upan::exception& ex) {
     ex.Print();
-    return ProcessManager_FAILURE;
   }
-	return ProcessManager_SUCCESS ;
+	return -1;
 }
 
-byte ProcessManager::Create(const upan::string& name, int iParentProcessID, byte bIsFGProcess, int* iProcessID, int iUserID, int iNumberOfParameters, char** szArgumentList)
-{
+int ProcessManager::Create(const upan::string& name, int iParentProcessID, byte bIsFGProcess, int iUserID, int iNumberOfParameters, char** szArgumentList) {
   try {
     upan::uniq_ptr<Process> newPAS(new UserProcess(name, iParentProcessID, iUserID, bIsFGProcess, iNumberOfParameters, szArgumentList));
-    *iProcessID = newPAS->processID();
+    GetAddressSpace(iParentProcessID).ifPresent([&newPAS](Process& parent) {
+      parent.addChildProcessID(newPAS->processID());
+    });
     AddToSchedulerList(*newPAS.release());
     //MemManager::Instance().DisplayNoOfFreePages() ;
-    return ProcessManager_SUCCESS ;
+    return newPAS->processID();
   }
-  catch(const upan::exception& e)
-  {
+  catch(const upan::exception& e) {
     e.Print();
-    return ProcessManager_FAILURE;
   }
+  return -1;
 }
 
 //TODO:

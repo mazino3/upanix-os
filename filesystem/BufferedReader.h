@@ -18,7 +18,8 @@
 #ifndef _BUFFERED_READER_H_
 #define _BUFFERED_READER_H_
 
-# include <Global.h>
+#include <Global.h>
+#include <ustring.h>
 
 class BufferedReader
 {
@@ -29,7 +30,7 @@ class BufferedReader
 
 	public:
 		int m_iFD ;
-		BufferedReader(const char* szFileName, unsigned uiOffSet, unsigned uiBufferSize) ;
+		BufferedReader(const upan::string& szFileName, unsigned uiOffSet, unsigned uiBufferSize) ;
 		~BufferedReader() ;
 
     void Seek(unsigned uiOffSet) ;

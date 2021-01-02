@@ -20,7 +20,6 @@
 
 #include <Global.h>
 #include <ElfSectionHeader.h>
-#include <DLLLoader.h>
 #include <BufferedReader.h>
 
 #define __PROCESS_DLL_FILE		".dll"

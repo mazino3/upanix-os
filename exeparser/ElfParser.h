@@ -47,7 +47,7 @@ class ELFParser
 
 	public:
 		ELFParser(ELF32Header* pELFHeader, ELF32SectionHeader* pELFSectionHeader, char* pSecHeaderStrTable) ;
-		ELFParser(const char* szFileName) ;
+		ELFParser(const upan::string& szFileName) ;
 		~ELFParser() ;
 
     void CopyProcessImage(byte* bProcessImage, unsigned uiProcessBase, unsigned uiMaxImageSize) const;

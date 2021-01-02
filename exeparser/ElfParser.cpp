@@ -43,7 +43,7 @@ ELFParser::ELFParser(ELF32Header* pELFHeader, ELF32SectionHeader* pELFSectionHea
 {
 }
 
-ELFParser::ELFParser(const char* szFileName) : 
+ELFParser::ELFParser(const upan::string& szFileName) :
 	m_uiSymTabCount(0),
 	m_pBR(NULL),
 	m_pHeader(NULL),
