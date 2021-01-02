@@ -453,10 +453,10 @@ int ProcessManager::Create(const upan::string& name, int iParentProcessID, byte 
 //2: Lock FileDescriptor Table access
 //3: Lock process heap access
 //4: DLL service
-int ProcessManager::CreateThreadTask(int parentID, uint32_t threadEntryAddress, void* arg) {
+int ProcessManager::CreateThreadTask(int parentID, uint32_t threadCaller, uint32_t threadEntryAddress, void* arg) {
   try {
     UserProcess& parent = ProcessManager::Instance().GetThreadParentProcess(parentID);
-    upan::uniq_ptr<Process> threadPAS(new UserThread(parent, threadEntryAddress, arg));
+    upan::uniq_ptr<Process> threadPAS(new UserThread(parent, threadCaller, threadEntryAddress, arg));
     int threadID = threadPAS->processID();
     AddToSchedulerList(*threadPAS.release());
     //MemManager::Instance().DisplayNoOfFreePages() ;

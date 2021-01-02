@@ -89,7 +89,7 @@ void KernelService::ProcessExec::Execute()
 }
 
 void KernelService::ThreadExec::Execute() {
-  _threadID = ProcessManager::Instance().CreateThreadTask(GetRequestProcessID(), _entryAddress, _arg);
+  _threadID = ProcessManager::Instance().CreateThreadTask(GetRequestProcessID(), _threadCaller, _entryAddress, _arg);
 }
 
 bool KernelService::RequestDLLAlloCopy(unsigned uiNoOfPages, const upan::string& dllName)
@@ -164,8 +164,8 @@ int KernelService::RequestProcessExec(const char* szFile, int iNoOfArgs, const c
 	return iNewProcId ;
 }
 
-int KernelService::RequestThreadExec(uint32_t entryAddresss, void* arg) {
-  KernelService::ThreadExec* pRequest = new KernelService::ThreadExec(entryAddresss, arg);
+int KernelService::RequestThreadExec(uint32_t threadCaller, uint32_t entryAddresss, void* arg) {
+  KernelService::ThreadExec* pRequest = new KernelService::ThreadExec(threadCaller, entryAddresss, arg);
 
   AddRequest(pRequest) ;
   ProcessManager::Instance().WaitOnKernelService() ;

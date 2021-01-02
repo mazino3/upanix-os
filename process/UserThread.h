@@ -21,7 +21,7 @@
 
 class UserThread : public Process {
 public:
-  UserThread(UserProcess& parent, uint32_t entryAddress, void* arg);
+  UserThread(UserProcess& parent, uint32_t threadCaller, uint32_t entryAddress, void* arg);
 
   bool isKernelProcess() const override {
     return false;
@@ -61,7 +61,7 @@ public:
   }
 
 private:
-  uint32_t PushProgramInitStackData(void* arg);
+  uint32_t PushProgramInitStackData(uint32_t entryAddress, void* arg);
   void DeAllocateResources() override;
 
 private:

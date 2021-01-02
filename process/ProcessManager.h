@@ -94,7 +94,7 @@ class ProcessManager
     bool IsChildAlive(int iChildProcessID);
     int CreateKernelProcess(const upan::string& name, const unsigned uiTaskAddress, int iParentProcessID, byte bIsFGProcess, unsigned uiParam1, unsigned uiParam2);
     int Create(const upan::string& name, int iParentProcessID, byte bIsFGProcess, int iUserID, int iNumberOfParameters, char** szArgumentList);
-    int CreateThreadTask(int parentID, uint32_t threadEntryAddress, void* arg);
+    int CreateThreadTask(int parentID, uint32_t threadCaller, uint32_t threadEntryAddress, void* arg);
     void SetDMMFlag(int iProcessID, bool flag);
     bool IsDMMOn(int iProcessID);
     void WaitOnChild(int iChildProcessID);

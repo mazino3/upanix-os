@@ -61,7 +61,7 @@ class KernelService
 		unsigned RequestFlatAddress(unsigned uiAddress) ;
 		bool RequestPageFault(unsigned uiFaultyAddress) ;
 		int RequestProcessExec(const char* szFile, int iNoOfArgs, const char** szArgs) ;
-		int RequestThreadExec(uint32_t entryAddresss, void* arg);
+		int RequestThreadExec(uint32_t threadCaller, uint32_t entryAddresss, void* arg);
 
 	private:
 		static void Server(KernelService* pService) ;
@@ -124,12 +124,14 @@ class KernelService
 
 		class ThreadExec : public Request {
 		private:
+		  uint32_t _threadCaller;
 		  uint32_t _entryAddress;
 		  void* _arg;
 		  int _threadID;
 
 		public:
-		  ThreadExec(uint32_t entryAddress, void* arg) : _entryAddress(entryAddress), _arg(arg), _threadID(-1) {}
+		  ThreadExec(uint32_t threadCaller, uint32_t entryAddress, void* arg)
+		    : _threadCaller(threadCaller), _entryAddress(entryAddress), _arg(arg), _threadID(-1) {}
 		  void Execute() override;
 		  int GetThreadID() const {
 		    return _threadID;
