@@ -413,16 +413,13 @@ void DiskDrive::StartReleaseCacheTask()
 {
   StopReleaseCacheTask(false);
 
-	int pid;
 	const upan::string dcfName = upan::string("dcf-") + DriveName();
   ProcessManager::Instance().CreateKernelProcess(dcfName, (unsigned) &DiskCache_TaskFlushCache,
-                                                 ProcessManager::Instance().GetCurProcId(), false, (unsigned) this, 0,
-                                                 &pid);
+                                                           ProcessManager::Instance().GetCurProcId(), false, (unsigned) this, 0);
 
   const upan::string dcrName = upan::string("dcr-") + DriveName();
   ProcessManager::Instance().CreateKernelProcess(dcrName, (unsigned) &DiskCache_TaskReleaseCache,
-                                                 ProcessManager::Instance().GetCurProcId(), false, (unsigned) this, 0,
-                                                 &pid);
+                                                 ProcessManager::Instance().GetCurProcId(), false, (unsigned) this, 0);
 }
 
 void DiskDrive::ReleaseCache()

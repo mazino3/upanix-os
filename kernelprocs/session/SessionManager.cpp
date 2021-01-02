@@ -126,13 +126,9 @@ void SessionManager_SetSessionIDMap(int key, int pid)
 
 void SessionManager_SwitchToSession(int key)
 {
-	if(SessionManager_List[key] == NO_PROCESS_ID)
-	{
-		int pid ;
-    ProcessManager::Instance().CreateKernelProcess("session", (unsigned) &SessionManager_StartSession, NO_PROCESS_ID,
-                                                   true, NULL, NULL, &pid) ;
-		SessionManager_List[key] = pid ;
-		return ;
+	if(SessionManager_List[key] == NO_PROCESS_ID) {
+    SessionManager_List[key] = ProcessManager::Instance().CreateKernelProcess("session", (unsigned) &SessionManager_StartSession, NO_PROCESS_ID, true, NULL, NULL);
+    return ;
 	}
 
   ProcessManager::Instance().GetAddressSpace(SessionManager_List[key]).value().processGroup()->SwitchToFG();

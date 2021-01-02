@@ -74,24 +74,20 @@ void DummyPrint()
 
 void UpanixMain_KernelProcess()
 {
-	int pid ;
-
 	//MountManager_MountDrives() ;
-	
 	UpanixMain_KernelPID = ProcessManager::GetCurrentProcessID() ;
 
 	KC::MKernelService().Spawn() ;
 	KC::MKernelService().Spawn() ;
 
 //	ProcessManager::Instance().CreateKernelImage((unsigned)&DummyPrint, ProcessManager::GetCurrentProcessID(), true, NULL, NULL, &pid, "dummy") ;
-  ProcessManager::Instance().CreateKernelProcess("console", (unsigned) &Console_StartUpanixConsole,
-                                                 ProcessManager::GetCurrentProcessID(), true, NULL, NULL, &pid) ;
+  const int pid = ProcessManager::Instance().CreateKernelProcess("console", (unsigned) &Console_StartUpanixConsole,
+                                                                 ProcessManager::GetCurrentProcessID(), true, NULL, NULL) ;
   GraphicsVideo::Instance()->CreateRefreshTask();
 //	ProcessManager_CreateKernelImage((unsigned)&FloatProcess, ProcessManager::GetCurrentProcessID(), false, NULL, NULL, &pid, "float") ;
 //	ProcessManager_CreateKernelImage((unsigned)&FloatProcess, ProcessManager::GetCurrentProcessID(), false, NULL, NULL, &pid, "float1") ;
 //	ProcessManager_CreateKernelImage((unsigned)&SessionManager_StartSession, NO_PROCESS_ID, true, NULL, NULL, &pid, "sesman") ;
 //	SessionManager_SetSessionIDMap(SessionManager_KeyToSessionIDMap(Keyboard_F1), pid) ;
-
 	ProcessManager::Instance().WaitOnChild(pid) ;
 	ProcessManager_EXIT() ;
 }
@@ -241,11 +237,8 @@ void UpanixMain()
 
 	Initialize() ;
 
-	int pid ;
-  ProcessManager::Instance().CreateKernelProcess("kerparent", (unsigned) &UpanixMain_KernelProcess, NO_PROCESS_ID, true,
-                                                 NULL, NULL, &pid);
+	ProcessManager::Instance().CreateKernelProcess("kerparent", (unsigned) &UpanixMain_KernelProcess, NO_PROCESS_ID, true, NULL, NULL);
 //	ProcessManager_CreateKernelImage((unsigned)&Console_StartMOSConsole, NO_PROCESS_ID, true, NULL, NULL, &pid) ;
-
 	ProcessManager::Instance().StartScheduler();
 	while(1) ;
 }

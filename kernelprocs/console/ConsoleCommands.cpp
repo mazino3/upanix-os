@@ -436,11 +436,8 @@ void ConsoleCommands_DeleteUser()
     printf("\n User deleted!");
 }
 
-void ConsoleCommands_OpenSession()
-{
-	int pid ;
-  ProcessManager::Instance().CreateKernelProcess("session", (unsigned) &SessionManager_StartSession, NO_PROCESS_ID,
-                                                 true, NULL, NULL, &pid);
+void ConsoleCommands_OpenSession() {
+	const int pid = ProcessManager::Instance().CreateKernelProcess("session", (unsigned) &SessionManager_StartSession, NO_PROCESS_ID, true, NULL, NULL);
 	ProcessManager::Instance().WaitOnChild(pid) ;
 }
 
@@ -611,30 +608,24 @@ void ConsoleCommands_DeleteExtendedPartition()
   printf("\n Partition Deleted");
 }
 
-void ConsoleCommands_LoadExe()
-{
-	byte bStatus ;
-	int iChildProcessID ;
-	char a1[14], a2[40], a3[40] ;
-	strcpy(a1, "100") ;
-	strcpy(a2, "200") ;
-  strcpy(a3, "300") ;
-	char* argv[3] ;
-	argv[0] = (char*)&a1 ;
-	argv[1] = (char*)&a2 ;
-  argv[2] = (char*)&a3 ;
+void ConsoleCommands_LoadExe() {
+  char a1[14], a2[40], a3[40];
+  strcpy(a1, "100");
+  strcpy(a2, "200");
+  strcpy(a3, "300");
+  char *argv[3];
+  argv[0] = (char *) &a1;
+  argv[1] = (char *) &a2;
+  argv[2] = (char *) &a3;
 
-  if((bStatus = ProcessManager::Instance().Create(CommandLineParser::Instance().GetParameterAt(0),
-                                                  ProcessManager::GetCurrentProcessID(), true,
-                                                  &iChildProcessID, DERIVE_FROM_PARENT, 3, argv)) != ProcessManager_SUCCESS)
-	{
-		KC::MDisplay().Address("\n Load User Process Failed: ", bStatus) ;
-		KC::MDisplay().Character('\n', Display::WHITE_ON_BLACK()) ;
-	}
-	else
-	{
-		ProcessManager::Instance().WaitOnChild(iChildProcessID) ;
-	}
+  const int iChildProcessID = ProcessManager::Instance().Create(CommandLineParser::Instance().GetParameterAt(0),
+                                                                ProcessManager::GetCurrentProcessID(), true,
+                                                                DERIVE_FROM_PARENT, 3, argv);
+  if (iChildProcessID < 0) {
+    printf("\n Load User Process Failed: %d", iChildProcessID);
+  } else {
+    ProcessManager::Instance().WaitOnChild(iChildProcessID);
+  }
 }
 
 void ConsoleCommands_WaitPID()
@@ -653,14 +644,9 @@ void ConsoleCommands_Exit()
 
 void ConsoleCommands_Clone()
 {
-	int pid ;
-
 	extern void Console_StartUpanixConsole() ;
-
-  ProcessManager::Instance().CreateKernelProcess("console_1", (unsigned) &Console_StartUpanixConsole,
-                                                 ProcessManager::GetCurrentProcessID(),
-                                                 true, NULL, NULL, &pid) ;
-	
+  const int pid = ProcessManager::Instance().CreateKernelProcess("console_1", (unsigned) &Console_StartUpanixConsole,
+                                                 ProcessManager::GetCurrentProcessID(), true, NULL, NULL) ;
 	ProcessManager::Instance().WaitOnChild(pid) ;
 }
 
