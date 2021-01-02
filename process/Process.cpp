@@ -22,6 +22,7 @@
 #include <ProcessGroup.h>
 #include <MemUtil.h>
 #include <ProcessManager.h>
+#include <Display.h>
 
 //#define INIT_NAME "_stdio_init-NOTINUSE"
 //#define TERM_NAME "_stdio_term-NOTINUSE"
@@ -60,8 +61,47 @@ Process::~Process() {
   delete &_stateInfo;
 }
 
+// 1. KernelProcess can have child processes of type either KernelProcess or UserProcess
+// 2. KernelProcess cannot have threads
+// 3. UserProcess can have a child UserProcess or UserThread
+// 4. UserThread can have a child UserProcess or UserThread
+// 5. a UserThread created by another UserThread will have its parent set to the parent of the creator UserThread (which will be a UserProcess - main thread)
+// 6. If a parent process (Kernel or User) is terminated then
+//   a. all terminated child processes are released and all non-terminated child processes are redirected the parent of the current process
+//   b. all child threads are destroyed and released
+// 7. If a child thread terminates then
+//   a. all terminated child processes are released and all non-terminated child processes are redirected to main thread process
+//   b. as per (5), there can't be any child threads under another child thread
 void Process::Destroy() {
   setStatus(TERMINATED);
+
+  // child threads should be destroyed
+  // threads must be destroyed before dealing with child processes because
+  // child processes if any of a thread will be redirected to current process (main thread)
+  for(auto tid : _threadIDs) {
+    ProcessManager::Instance().GetAddressSpace(tid).ifPresent([](Process& t) {
+      if (t.status() != TERMINATED && t.status() != RELEASED) {
+        t.Destroy();
+      }
+      t.Release();
+    });
+  }
+
+  // child processes of this process (if any) will be redirected to the parent of the current process
+  auto parentProcess = ProcessManager::Instance().GetAddressSpace(_parentProcessID);
+  for(auto pid : _childProcessIDs) {
+    ProcessManager::Instance().GetAddressSpace(pid).ifPresent([&parentProcess](Process &p) {
+      if (p.status() == TERMINATED) {
+        p.Release();
+      } else {
+        parentProcess.ifPresent([&p](Process& pp) {
+          p.setParentProcessID(pp.processID());
+          pp.addChildProcessID(p.processID());
+        });
+      }
+    });
+  }
+
   //MemManager::Instance().DisplayNoOfFreePages();
   //MemManager::Instance().DisplayNoOfAllocPages(0,0);
 
@@ -79,7 +119,7 @@ void Process::Destroy() {
     Release();
   }
 
-  MemManager::Instance().DisplayNoOfFreePages();
+  //MemManager::Instance().DisplayNoOfFreePages();
   //MemManager::Instance().DisplayNoOfAllocPages(0,0);
 }
 

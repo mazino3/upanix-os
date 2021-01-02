@@ -45,6 +45,7 @@
 #include <UserThread.h>
 
 int ProcessManager::_currentProcessID = NO_PROCESS_ID;
+int ProcessManager::_upanixKernelProcessID = NO_PROCESS_ID;
 
 static void ProcessManager_Yield()
 {
@@ -70,11 +71,24 @@ ProcessManager::ProcessManager() : _currentProcessIt(_processMap.end()) {
 	KC::MDisplay().LoadMessage("Process Manager Initialization", Success);
 }
 
-upan::option<UserProcess&> ProcessManager::GetUserProcess(int pid) {
+UserProcess& ProcessManager::GetThreadParentProcess(int pid) {
   ProcessSwitchLock switchLock;
-  return GetAddressSpace(pid).map<UserProcess&>([](Process& p) -> UserProcess& {
-    return dynamic_cast<UserProcess&>(p);
-  });
+  auto parent = GetAddressSpace(pid);
+  if (parent.isEmpty()) {
+    throw upan::exception(XLOC, "No parent process found for pid: %d", pid);
+  }
+
+  UserProcess* userProcess = dynamic_cast<UserProcess*>(&parent.value());
+  if (userProcess) {
+    return *userProcess;
+  }
+
+  UserThread* userThread = dynamic_cast<UserThread*>(&parent.value());
+  if (userThread) {
+    return userThread->threadParent();
+  }
+
+  throw upan::exception(XLOC, "parent of a thread can be either a UserProcess or a UserThread");
 }
 
 upan::option<Process&> ProcessManager::GetAddressSpace(int pid) {
@@ -166,7 +180,7 @@ void ProcessManager::DoContextSwitch(Process& process) {
 	  case RELEASED:
 	    return;
 	  case TERMINATED:
-	    if (pPAS->parentProcessID() == UpanixMain_KernelProcessID()) {
+	    if (pPAS->parentProcessID() == UpanixKernelProcessID()) {
 	      pPAS->Release();
 	    }
 	    return;
@@ -217,12 +231,14 @@ void ProcessManager::DoContextSwitch(Process& process) {
 			  auto childProcess = GetAddressSpace(stateInfo.WaitChildProcId());
 				if(childProcess.isEmpty() || childProcess.value().parentProcessID() != iProcessID)
 				{
+          pPAS->removeChildProcessID(stateInfo.WaitChildProcId());
           stateInfo.WaitChildProcId(NO_PROCESS_ID);
 					pPAS->setStatus(RUN);
 				}
 				else if(childProcess.value().status() == TERMINATED && childProcess.value().parentProcessID() == iProcessID)
 				{
           childProcess.value().Release();
+          pPAS->removeChildProcessID(stateInfo.WaitChildProcId());
           stateInfo.WaitChildProcId(NO_PROCESS_ID);
 					pPAS->setStatus(RUN);
 				}
@@ -282,7 +298,7 @@ void ProcessManager::DoContextSwitch(Process& process) {
 	pPAS->Store();
 
   if(PIT_IsContextSwitch() == false || pPAS->status() == TERMINATED) {
-    Destroy(*pPAS);
+    pPAS->Destroy();
   }
 
 	if(debug_point) TRACE_LINE ;
@@ -310,24 +326,6 @@ void ProcessManager::StartScheduler() {
 	}
 }
 
-void ProcessManager::Destroy(Process& pas) {
-  pas.Destroy();
-  // Child processes of this process (if any) will be redirected to "kernel" process
-  for(auto p : _processMap) {
-    if (p.first == pas.processID())  {
-      continue;
-    }
-
-    Process* pc = p.second;
-    if(pc->parentProcessID() == pas.processID()) {
-      if(pc->status() == TERMINATED) {
-        pc->Release();
-      }	else {
-        pc->setParentProcessID(UpanixMain_KernelProcessID());
-      }
-    }
-  }
-}
 void ProcessManager::EnableTaskSwitch() {
 	PIT_EnableTaskSwitch();
 }
@@ -427,11 +425,9 @@ int ProcessManager::CreateKernelProcess(const upan::string& name, const unsigned
                                         byte bIsFGProcess, unsigned uiParam1, unsigned uiParam2) {
   try {
     upan::uniq_ptr<Process> newPAS(new KernelProcess(name, uiTaskAddress, iParentProcessID, bIsFGProcess, uiParam1, uiParam2));
-    GetAddressSpace(iParentProcessID).ifPresent([&newPAS](Process& parent) {
-      parent.addChildProcessID(newPAS->processID());
-    });
+    int pid = newPAS->processID();
     AddToSchedulerList(*newPAS.release());
-    return newPAS->processID();
+    return pid;
   } catch(upan::exception& ex) {
     ex.Print();
   }
@@ -441,12 +437,10 @@ int ProcessManager::CreateKernelProcess(const upan::string& name, const unsigned
 int ProcessManager::Create(const upan::string& name, int iParentProcessID, byte bIsFGProcess, int iUserID, int iNumberOfParameters, char** szArgumentList) {
   try {
     upan::uniq_ptr<Process> newPAS(new UserProcess(name, iParentProcessID, iUserID, bIsFGProcess, iNumberOfParameters, szArgumentList));
-    GetAddressSpace(iParentProcessID).ifPresent([&newPAS](Process& parent) {
-      parent.addChildProcessID(newPAS->processID());
-    });
+    int pid = newPAS->processID();
     AddToSchedulerList(*newPAS.release());
     //MemManager::Instance().DisplayNoOfFreePages() ;
-    return newPAS->processID();
+    return pid;
   }
   catch(const upan::exception& e) {
     e.Print();
@@ -459,18 +453,18 @@ int ProcessManager::Create(const upan::string& name, int iParentProcessID, byte 
 //2: Lock FileDescriptor Table access
 //3: Lock process heap access
 //4: DLL service
-//5:
-bool ProcessManager::CreateThreadTask(int parentID, uint32_t threadEntryAddress, void* arg, int& threadID) {
+int ProcessManager::CreateThreadTask(int parentID, uint32_t threadEntryAddress, void* arg) {
   try {
-    upan::uniq_ptr<Process> threadPAS(new UserThread(parentID, threadEntryAddress, arg));
-    threadID = threadPAS->processID();
+    UserProcess& parent = ProcessManager::Instance().GetThreadParentProcess(parentID);
+    upan::uniq_ptr<Process> threadPAS(new UserThread(parent, threadEntryAddress, arg));
+    int threadID = threadPAS->processID();
     AddToSchedulerList(*threadPAS.release());
     //MemManager::Instance().DisplayNoOfFreePages() ;
-    return true;
+    return threadID;
   } catch(const upan::exception& e) {
     e.Print();
-    return false;
   }
+  return -1;
 }
 
 PS* ProcessManager::GetProcList(unsigned& uiListSize)

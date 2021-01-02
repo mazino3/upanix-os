@@ -163,6 +163,7 @@ public:
 
   const ProcessIDs& childProcessIDs() const { return _childProcessIDs; }
   void addChildProcessID(int pid) { _childProcessIDs.insert(pid); }
+  void removeChildProcessID(int pid) { _childProcessIDs.erase(pid); }
 
   const ProcessIDs& threadProcessIDs() const { return _threadIDs; }
   void addThreadID(int pid) { _threadIDs.insert(pid); }

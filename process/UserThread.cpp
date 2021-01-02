@@ -20,14 +20,10 @@
 #include <ProcessManager.h>
 
 //thread must have a parent
-UserThread::UserThread(int parentID, uint32_t entryAddress, void* arg)
-    : Process("", parentID, false), _parent(ProcessManager::Instance().GetUserProcess(parentID).value()) {
-  //TODO: enforce by adding a createThread() method in UserProcess
-  if (_parent.isKernelProcess()) {
-    throw upan::exception(XLOC, "Threads can be created only by user process");
-  }
+UserThread::UserThread(UserProcess& parent, uint32_t entryAddress, void* arg)
+    : Process("", parent.processID(), false), _parent(parent) {
   _name = _parent.name() + "_T" + upan::string::to_string(_processID);
-  _mainThreadID = parentID;
+  _mainThreadID = parent.processID();
   _processBase = _parent.getProcessBase();
 
   _stackPTEAddress = Process::Common::AllocatePTEForStack();
@@ -35,10 +31,10 @@ UserThread::UserThread(int parentID, uint32_t entryAddress, void* arg)
   const auto stackArgSize = PushProgramInitStackData(arg);
   const uint32_t stackTopAddress = PROCESS_STACK_TOP_ADDRESS - PROCESS_BASE;
   _taskState.BuildForUser(stackTopAddress, _parent.taskState().CR3_PDBR, entryAddress, stackArgSize);
-
   _processLDT.BuildForUser();
-
   _userID = _parent.userID();
+
+  _parent.addThreadID(_processID);
 }
 
 void UserThread::DeAllocateResources() {

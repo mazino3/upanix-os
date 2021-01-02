@@ -39,7 +39,6 @@ typedef enum
 
 extern "C" void UpanixMain() ;
 bool UpanixMain_isCoProcPresent() ;
-int UpanixMain_KernelProcessID() ;
 Mutex& UpanixMain_GetDMMMutex() ;
 void DummyProcess() ;
 

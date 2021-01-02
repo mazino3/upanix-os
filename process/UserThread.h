@@ -21,7 +21,7 @@
 
 class UserThread : public Process {
 public:
-  UserThread(int parentID, uint32_t entryAddress, void* arg);
+  UserThread(UserProcess& parent, uint32_t entryAddress, void* arg);
 
   bool isKernelProcess() const override {
     return false;
@@ -54,6 +54,10 @@ public:
 
   void setAUTAddress(uint32_t addr) {
     _parent.setAUTAddress(addr);
+  }
+
+  UserProcess& threadParent() {
+    return _parent;
   }
 
 private:

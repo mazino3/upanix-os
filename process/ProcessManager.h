@@ -74,9 +74,9 @@ class ProcessManager
       return instance;
     }
 
-    upan::option<UserProcess&> GetUserProcess(int pid);
     upan::option<Process&> GetAddressSpace(int pid);
     Process& GetCurrentPAS();
+    UserProcess& GetThreadParentProcess(int pid);
 
     PS* GetProcList(unsigned& uiListSize);
     void FreeProcListMem(PS* pProcList, unsigned uiListSize);
@@ -94,7 +94,7 @@ class ProcessManager
     bool IsChildAlive(int iChildProcessID);
     int CreateKernelProcess(const upan::string& name, const unsigned uiTaskAddress, int iParentProcessID, byte bIsFGProcess, unsigned uiParam1, unsigned uiParam2);
     int Create(const upan::string& name, int iParentProcessID, byte bIsFGProcess, int iUserID, int iNumberOfParameters, char** szArgumentList);
-    bool CreateThreadTask(int parentID, uint32_t threadEntryAddress, void* arg, int& threadID);
+    int CreateThreadTask(int parentID, uint32_t threadEntryAddress, void* arg);
     void SetDMMFlag(int iProcessID, bool flag);
     bool IsDMMOn(int iProcessID);
     void WaitOnChild(int iChildProcessID);
@@ -109,6 +109,13 @@ class ProcessManager
     static int GetCurrentProcessID() {
       return _currentProcessID;
     }
+    static int UpanixKernelProcessID() {
+      return _upanixKernelProcessID;
+    }
+    static void setUpanixKernelProcessID(int pid) {
+      _upanixKernelProcessID = pid;
+    }
+
     static void EnableTaskSwitch() ;
     static void DisableTaskSwitch() ;
   private:
@@ -128,6 +135,7 @@ class ProcessManager
     ProcessMap::iterator _currentProcessIt;
     //This is required even before initializing the ProcessManager for fetching
     static int _currentProcessID;
+    static int _upanixKernelProcessID;
 };
 
 class ProcessSwitchLock {

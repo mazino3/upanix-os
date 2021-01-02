@@ -60,8 +60,6 @@ byte SPECIAL_TASK ;
 int debug_point ;
 /***********************************************/
 
-static int UpanixMain_KernelPID ;
-
 void DummyPrint()
 {
   static int i = 1;
@@ -75,20 +73,23 @@ void DummyPrint()
 void UpanixMain_KernelProcess()
 {
 	//MountManager_MountDrives() ;
-	UpanixMain_KernelPID = ProcessManager::GetCurrentProcessID() ;
+	ProcessManager::setUpanixKernelProcessID(ProcessManager::GetCurrentProcessID());
 
 	KC::MKernelService().Spawn() ;
 	KC::MKernelService().Spawn() ;
 
-//	ProcessManager::Instance().CreateKernelImage((unsigned)&DummyPrint, ProcessManager::GetCurrentProcessID(), true, NULL, NULL, &pid, "dummy") ;
-  const int pid = ProcessManager::Instance().CreateKernelProcess("console", (unsigned) &Console_StartUpanixConsole,
-                                                                 ProcessManager::GetCurrentProcessID(), true, NULL, NULL) ;
   GraphicsVideo::Instance()->CreateRefreshTask();
+
+	while(true) {
+    const int pid = ProcessManager::Instance().CreateKernelProcess("console", (unsigned) &Console_StartUpanixConsole,
+                                                                   ProcessManager::GetCurrentProcessID(), true, NULL,
+                                                                   NULL);
 //	ProcessManager_CreateKernelImage((unsigned)&FloatProcess, ProcessManager::GetCurrentProcessID(), false, NULL, NULL, &pid, "float") ;
 //	ProcessManager_CreateKernelImage((unsigned)&FloatProcess, ProcessManager::GetCurrentProcessID(), false, NULL, NULL, &pid, "float1") ;
 //	ProcessManager_CreateKernelImage((unsigned)&SessionManager_StartSession, NO_PROCESS_ID, true, NULL, NULL, &pid, "sesman") ;
 //	SessionManager_SetSessionIDMap(SessionManager_KeyToSessionIDMap(Keyboard_F1), pid) ;
-	ProcessManager::Instance().WaitOnChild(pid) ;
+    ProcessManager::Instance().WaitOnChild(pid);
+  }
 	ProcessManager_EXIT() ;
 }
 
@@ -259,9 +260,3 @@ bool UpanixMain_isCoProcPresent()
 		return false ;
 	return true ;
 }
-
-int UpanixMain_KernelProcessID()
-{
-	return UpanixMain_KernelPID ;
-}
-
