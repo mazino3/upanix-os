@@ -82,6 +82,8 @@ class ProcessManager
     void FreeProcListMem(PS* pProcList, unsigned uiListSize);
     void StartScheduler();
     void AddToSchedulerList(Process& process);
+    void AddToProcessMap(Process& process);
+    void RemoveFromProcessMap(Process& process);
     bool WakeupProcessOnInterrupt(Process& process);
     bool IsResourceBusy(__volatile__ RESOURCE_KEYS uiType);
     void SetResourceBusy(RESOURCE_KEYS uiType, bool bVal);
@@ -132,7 +134,10 @@ class ProcessManager
     ProcessStateInfo _kernelModeStateInfo;
     typedef upan::map<int, Process*> ProcessMap;
     ProcessMap _processMap;
-    ProcessMap::iterator _currentProcessIt;
+
+    typedef upan::list<Process*> ProcessSchedulerList;
+    ProcessSchedulerList _processSchedulerList;
+
     //This is required even before initializing the ProcessManager for fetching
     static int _currentProcessID;
     static int _upanixKernelProcessID;

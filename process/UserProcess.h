@@ -17,7 +17,10 @@
  */
 #pragma once
 
+#include <list.h>
 #include <Process.h>
+
+class UserThread;
 
 class UserProcess : public Process {
 public:
@@ -48,6 +51,9 @@ public:
     _uiAUTAddress = addr;
   }
 
+  Process& forSchedule() override;
+  void addToThreadScheduler(UserThread& thread);
+
 private:
   void Load(int noOfParams, char** szArgumentList);
   uint32_t AllocateAddressSpace();
@@ -57,6 +63,7 @@ private:
   void InitializeProcessSpaceForOS(const unsigned uiPDEAddress);
   void InitializeProcessSpaceForProcess(const unsigned uiPDEAddress);
 
+  void DestroyThreads() override;
   void DeAllocateResources() override;
   void DeAllocateDLLPages();
   void DeAllocateAddressSpace();
@@ -73,4 +80,8 @@ private:
   uint32_t _stackPTEAddress;
   upan::vector<upan::string> _loadedDLLs;
   DLLInfoMap _dllInfoMap;
+
+  typedef upan::list<UserThread*> ThreadSchedulerList;
+  ThreadSchedulerList _threadSchedulerList;
+  ThreadSchedulerList::iterator _nextThreadIt;
 };

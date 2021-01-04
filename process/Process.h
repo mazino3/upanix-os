@@ -97,6 +97,10 @@ public:
   Process(const upan::string& name, int parentID, bool isFGProcess);
   virtual ~Process() = 0;
 
+  bool isChildThread() {
+    return _processID != _mainThreadID;
+  }
+
   virtual bool isKernelProcess() const = 0;
   virtual void onLoad() = 0;
 
@@ -121,6 +125,10 @@ public:
   }
   virtual void setAUTAddress(uint32_t addr) {
     throw upan::exception(XLOC, "setAUTAddress unsupported");
+  }
+
+  virtual Process& forSchedule() {
+    throw upan::exception(XLOC, "forSchedule unsupported");
   }
 
   void Load();
@@ -165,14 +173,13 @@ public:
   void addChildProcessID(int pid) { _childProcessIDs.insert(pid); }
   void removeChildProcessID(int pid) { _childProcessIDs.erase(pid); }
 
-  const ProcessIDs& threadProcessIDs() const { return _threadIDs; }
-  void addThreadID(int pid) { _threadIDs.insert(pid); }
-
 private:
   static int _nextPid;
 
 protected:
   virtual void DeAllocateResources() = 0;
+  virtual void DestroyThreads() {
+  }
 
   class Common {
   public:
@@ -201,5 +208,4 @@ protected:
   ProcessGroup* _processGroup;
 
   ProcessIDs _childProcessIDs;
-  ProcessIDs _threadIDs;
 };

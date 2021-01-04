@@ -34,7 +34,7 @@ UserThread::UserThread(UserProcess& parent, uint32_t threadCaller, uint32_t entr
   _processLDT.BuildForUser();
   _userID = _parent.userID();
 
-  _parent.addThreadID(_processID);
+  _parent.addToThreadScheduler(*this);
 }
 
 void UserThread::DeAllocateResources() {

@@ -115,20 +115,15 @@ void GraphicsVideo::DrawChar(byte ch, unsigned x, unsigned y, unsigned fg, unsig
   fg |= 0xFF000000;
   bg |= 0xFF000000;
   const byte* font_data = GraphicsFont::Get(ch);
-  unsigned yr = 0;
+  bool yr = false;
   for(unsigned f = 0; f < 8; ++y)
   {
     unsigned lfbp = _zBuffer + y * _pitch + x * _bytesPerPixel;
     for(unsigned i = 0x80; i != 0; i >>= 1, lfbp += _bytesPerPixel)
       *(unsigned*)lfbp = font_data[f] & i ? fg : bg;
 
-    if(yr == 1)
-    {
-      ++f;
-      yr = 0;
-    }
-    else
-      ++yr;
+    if(yr) ++f;
+    yr = !yr;
   }
 
   NeedRefresh();

@@ -75,17 +75,7 @@ Process::~Process() {
 void Process::Destroy() {
   setStatus(TERMINATED);
 
-  // child threads should be destroyed
-  // threads must be destroyed before dealing with child processes because
-  // child processes if any of a thread will be redirected to current process (main thread)
-  for(auto tid : _threadIDs) {
-    ProcessManager::Instance().GetAddressSpace(tid).ifPresent([](Process& t) {
-      if (t.status() != TERMINATED && t.status() != RELEASED) {
-        t.Destroy();
-      }
-      t.Release();
-    });
-  }
+  DestroyThreads();
 
   // child processes of this process (if any) will be redirected to the parent of the current process
   auto parentProcess = ProcessManager::Instance().GetAddressSpace(_parentProcessID);

@@ -31,6 +31,10 @@ public:
 
   void onLoad() override {}
 
+  Process& forSchedule() override {
+    return *this;
+  }
+
 private:
   void DeAllocateResources() override;
   uint32_t AllocateAddressSpace();

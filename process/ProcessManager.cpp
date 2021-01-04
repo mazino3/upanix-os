@@ -54,7 +54,7 @@ static void ProcessManager_Yield()
 	ProcessManager_RESTORE() ;	
 }
 
-ProcessManager::ProcessManager() : _currentProcessIt(_processMap.end()) {
+ProcessManager::ProcessManager() {
   for(int i = 0; i < MAX_RESOURCE; i++)
     _resourceList[i] = false ;
 
@@ -104,7 +104,7 @@ Process& ProcessManager::GetCurrentPAS() {
   ProcessSwitchLock switchLock;
   //This function is a utility that assumes that a ProcessAddressSpace entry always exists for current (active) process
   //Caller should take care of cases when ProcessID = NO_PROCESS_ID - which is usually the case before kernel scheduler is initialized
-  return GetAddressSpace(_currentProcessIt->first).value();
+  return GetAddressSpace(_currentProcessID).value();
 }
 
 void ProcessManager::BuildCallGate(unsigned short usGateSelector, unsigned uiOffset, unsigned short usSelector, byte bParameterCount)
@@ -165,23 +165,33 @@ void ProcessManager::BuildIntTaskState(const unsigned uiTaskAddress, const unsig
 
 void ProcessManager::AddToSchedulerList(Process& process) {
   ProcessSwitchLock switchLock;
+  AddToProcessMap(process);
+  process.setStatus(RUN);
+  _processSchedulerList.push_back(&process);
+}
+
+void ProcessManager::AddToProcessMap(Process& process) {
+  ProcessSwitchLock switchLock;
   if(_processMap.size() + 1 > MAX_NO_PROCESS)
     throw upan::exception(XLOC, "Max process limit reached!");
-  process.setStatus(RUN);
   _processMap.insert(ProcessMap::value_type(process.processID(), &process));
 }
 
-void ProcessManager::DoContextSwitch(Process& process) {
-  Process* pPAS = &process;
-  const int iProcessID = process.processID();
-  ProcessStateInfo& stateInfo = pPAS->stateInfo();
+void ProcessManager::RemoveFromProcessMap(Process& process) {
+  ProcessSwitchLock switchLock;
+  _processMap.erase(process.processID());
+}
 
-	switch(pPAS->status()) {
+void ProcessManager::DoContextSwitch(Process& process) {
+  _currentProcessID = process.processID();
+  ProcessStateInfo& stateInfo = process.stateInfo();
+
+	switch(process.status()) {
 	  case RELEASED:
 	    return;
 	  case TERMINATED:
-	    if (pPAS->parentProcessID() == UpanixKernelProcessID()) {
-	      pPAS->Release();
+	    if (process.parentProcessID() == UpanixKernelProcessID()) {
+	      process.Release();
 	    }
 	    return;
   	case WAIT_SLEEP:
@@ -189,7 +199,7 @@ void ProcessManager::DoContextSwitch(Process& process) {
       if(PIT_GetClockCount() >= stateInfo.SleepTime())
 			{
         stateInfo.SleepTime(0) ;
-				pPAS->setStatus(RUN);
+				process.setStatus(RUN);
 			}
 			else
 			{
@@ -206,16 +216,16 @@ void ProcessManager::DoContextSwitch(Process& process) {
 
 	  case WAIT_INT:
 		{
-			if(!WakeupProcessOnInterrupt(*pPAS))
+			if(!WakeupProcessOnInterrupt(process))
 				return ;
 		}
 		break ;
 
     case WAIT_EVENT:
     {
-      if(!IsEventCompleted(pPAS->processID()))
+      if(!IsEventCompleted(process.processID()))
         return;
-      pPAS->setStatus(RUN);
+      process.setStatus(RUN);
     }
     break;
 	
@@ -224,23 +234,23 @@ void ProcessManager::DoContextSwitch(Process& process) {
       if(stateInfo.WaitChildProcId() < 0)
 			{
         stateInfo.WaitChildProcId(NO_PROCESS_ID);
-				pPAS->setStatus(RUN);
+				process.setStatus(RUN);
 			}
 			else
 			{
 			  auto childProcess = GetAddressSpace(stateInfo.WaitChildProcId());
-				if(childProcess.isEmpty() || childProcess.value().parentProcessID() != iProcessID)
+				if(childProcess.isEmpty() || childProcess.value().parentProcessID() != _currentProcessID)
 				{
-          pPAS->removeChildProcessID(stateInfo.WaitChildProcId());
+          process.removeChildProcessID(stateInfo.WaitChildProcId());
           stateInfo.WaitChildProcId(NO_PROCESS_ID);
-					pPAS->setStatus(RUN);
+					process.setStatus(RUN);
 				}
-				else if(childProcess.value().status() == TERMINATED && childProcess.value().parentProcessID() == iProcessID)
+				else if(childProcess.value().status() == TERMINATED && childProcess.value().parentProcessID() == _currentProcessID)
 				{
           childProcess.value().Release();
-          pPAS->removeChildProcessID(stateInfo.WaitChildProcId());
+          process.removeChildProcessID(stateInfo.WaitChildProcId());
           stateInfo.WaitChildProcId(NO_PROCESS_ID);
-					pPAS->setStatus(RUN);
+					process.setStatus(RUN);
 				}
 				else
 					return ;
@@ -252,14 +262,14 @@ void ProcessManager::DoContextSwitch(Process& process) {
 		{
       if(stateInfo.WaitResourceId() == RESOURCE_NIL)
 			{
-				pPAS->setStatus(RUN);
+				process.setStatus(RUN);
 			}
 			else
 			{
         if(_resourceList[stateInfo.WaitResourceId()] == false)
 				{ 
           stateInfo.WaitResourceId(RESOURCE_NIL);
-					pPAS->setStatus(RUN);
+					process.setStatus(RUN);
 				}
 				else
 					return ;
@@ -272,7 +282,7 @@ void ProcessManager::DoContextSwitch(Process& process) {
       if(stateInfo.IsKernelServiceComplete())
 			{
         stateInfo.KernelServiceComplete(false);
-        pPAS->setStatus(RUN);
+        process.setStatus(RUN);
 			}
 			else
 				return ;
@@ -286,7 +296,7 @@ void ProcessManager::DoContextSwitch(Process& process) {
 		  return ;
 	}
 
-	pPAS->Load();
+	process.Load();
 
 	PIT_SetContextSwitch(false) ;
 
@@ -295,10 +305,10 @@ void ProcessManager::DoContextSwitch(Process& process) {
 	__asm__ __volatile__("lcall $0x28, $0x00") ;
 	KERNEL_MODE = true ;
 
-	pPAS->Store();
+	process.Store();
 
-  if(PIT_IsContextSwitch() == false || pPAS->status() == TERMINATED) {
-    pPAS->Destroy();
+  if(PIT_IsContextSwitch() == false || process.status() == TERMINATED) {
+    process.Destroy();
   }
 
 	if(debug_point) TRACE_LINE ;
@@ -308,20 +318,19 @@ void ProcessManager::DoContextSwitch(Process& process) {
 }
 
 void ProcessManager::StartScheduler() {
-  _currentProcessIt = _processMap.end();
-	while(!_processMap.empty()) {
-	  if (_currentProcessIt == _processMap.end()) {
-      _currentProcessIt = _processMap.begin();
+  auto it = _processSchedulerList.begin();
+	while(!_processSchedulerList.empty()) {
+	  if (it == _processSchedulerList.end()) {
+	    it = _processSchedulerList.begin();
 	  }
-    _currentProcessID = _currentProcessIt->first;
-    Process& process = *_currentProcessIt->second;
+    Process& process = (*it)->forSchedule();
+		DoContextSwitch(process);
 
-		DoContextSwitch(process) ;
-
-    auto oldProcessIt = _currentProcessIt++;
-    if (process.status() == RELEASED) {
+    auto oldIt = it++;
+    if (!process.isChildThread() && process.status() == RELEASED) {
+      _processSchedulerList.erase(oldIt);
+      RemoveFromProcessMap(process);
       delete &process;
-      _processMap.erase(oldProcessIt);
     }
 	}
 }
@@ -458,7 +467,7 @@ int ProcessManager::CreateThreadTask(int parentID, uint32_t threadCaller, uint32
     UserProcess& parent = ProcessManager::Instance().GetThreadParentProcess(parentID);
     upan::uniq_ptr<Process> threadPAS(new UserThread(parent, threadCaller, threadEntryAddress, arg));
     int threadID = threadPAS->processID();
-    AddToSchedulerList(*threadPAS.release());
+    AddToProcessMap(*threadPAS.release());
     //MemManager::Instance().DisplayNoOfFreePages() ;
     return threadID;
   } catch(const upan::exception& e) {

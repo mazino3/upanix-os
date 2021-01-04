@@ -19,6 +19,7 @@
 #include <uniq_ptr.h>
 #include <try.h>
 #include <UserProcess.h>
+#include <UserThread.h>
 #include <ProcessManager.h>
 #include <ProcessLoader.h>
 #include <DynamicLinkLoader.h>
@@ -39,7 +40,7 @@
 
 UserProcess::UserProcess(const upan::string &name, int parentID, int userID,
                          bool isFGProcess, int noOfParams, char** args)
-    : Process(name, parentID, isFGProcess) {
+    : Process(name, parentID, isFGProcess), _nextThreadIt(_threadSchedulerList.begin()) {
   _mainThreadID = _processID;
   _uiAUTAddress = NULL;
 
@@ -104,17 +105,16 @@ void UserProcess::Load(int iNumberOfParameters, char** szArgumentList)
   });
 
   // Initialize BSS segment to 0
-  mELFParser.GetSectionHeaderByTypeAndName(ELFSectionHeader::SHT_NOBITS, BSS_SEC_NAME).onGood([&] (ELF32SectionHeader* pBSSSectionHeader)
-                                                                                              {
-                                                                                                unsigned* pBSS = (unsigned*)(bProcessImage.get() + pBSSSectionHeader->sh_addr - uiMinMemAddr) ;
-                                                                                                unsigned uiBSSSize = pBSSSectionHeader->sh_size ;
+  mELFParser.GetSectionHeaderByTypeAndName(ELFSectionHeader::SHT_NOBITS, BSS_SEC_NAME).onGood([&] (ELF32SectionHeader* pBSSSectionHeader) {
+    unsigned *pBSS = (unsigned *) (bProcessImage.get() + pBSSSectionHeader->sh_addr - uiMinMemAddr);
+    unsigned uiBSSSize = pBSSSectionHeader->sh_size;
 
-                                                                                                unsigned q ;
-                                                                                                for(q = 0; q < uiBSSSize / sizeof(unsigned); q++) pBSS[q] = 0 ;
+    unsigned q;
+    for (q = 0; q < uiBSSSize / sizeof(unsigned); q++) pBSS[q] = 0;
 
-                                                                                                unsigned r ;
-                                                                                                for(r = q * sizeof(unsigned); r < uiBSSSize; r++) ((char*)pBSS)[r] = 0 ;
-                                                                                              });
+    unsigned r;
+    for (r = q * sizeof(unsigned); r < uiBSSSize; r++) ((char *) pBSS)[r] = 0;
+  });
 
   CopyElfImage(uiPDEAddress, bProcessImage.get(), uiMemImageSize);
 
@@ -381,6 +381,21 @@ void UserProcess::InitializeProcessSpaceForProcess(const unsigned uiPDEAddress)
   Process::Common::AllocateStackSpace(_stackPTEAddress);
 }
 
+void UserProcess::DestroyThreads() {
+  // child threads should be destroyed
+  // threads must be destroyed before dealing with child processes because
+  // child processes if any of a thread will be redirected to current process (main thread)
+  for(auto t : _threadSchedulerList) {
+    if (t->status() != TERMINATED && t->status() != RELEASED) {
+      t->Destroy();
+    }
+    t->Release();
+    ProcessManager::Instance().RemoveFromProcessMap(*t);
+    delete t;
+  }
+  _threadSchedulerList.clear();
+}
+
 void UserProcess::DeAllocateResources() {
   DeAllocateDLLPages() ;
   DynamicLinkLoader_UnInitialize(this) ;
@@ -503,4 +518,41 @@ upan::option<const ProcessDLLInfo&> UserProcess::getDLLInfo(int id) const {
 
 void UserProcess::onLoad() {
   Process::Common::UpdatePDEWithStackPTE(_taskState.CR3_PDBR, _stackPTEAddress);
+}
+
+Process& UserProcess::forSchedule() {
+  if (_status == TERMINATED || _status == RELEASED) {
+    return *this;
+  }
+
+  if (_nextThreadIt == _threadSchedulerList.end()) {
+    _nextThreadIt = _threadSchedulerList.begin();
+    return *this;
+  }
+
+  while(!_threadSchedulerList.empty()) {
+    if (_nextThreadIt == _threadSchedulerList.end()) {
+      _nextThreadIt = _threadSchedulerList.begin();
+    }
+
+    auto curThreadIt = _nextThreadIt++;
+    UserThread &thread = **curThreadIt;
+
+    if (thread.status() == RELEASED) {
+      _threadSchedulerList.erase(curThreadIt);
+      ProcessManager::Instance().RemoveFromProcessMap(thread);
+      delete &thread;
+    } else {
+      return thread;
+    }
+  }
+
+  return *this;
+}
+
+//TODO: use a process level lock instead of global process switch lock
+void UserProcess::addToThreadScheduler(UserThread& thread) {
+  ProcessSwitchLock lock;
+  _threadSchedulerList.push_back(&thread);
+  thread.setStatus(RUN);
 }
