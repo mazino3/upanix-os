@@ -20,6 +20,9 @@
 #include <UserManager.h>
 #include <ProcessManager.h>
 
+Mutex KernelProcess::_envMutex;
+Mutex KernelProcess::_fdMutex;
+
 KernelProcess::KernelProcess(const upan::string& name, uint32_t taskAddress, int parentID, bool isFGProcess, uint32_t param1, uint32_t param2)
     : Process(name, parentID, isFGProcess) {
   _mainThreadID = _processID;
