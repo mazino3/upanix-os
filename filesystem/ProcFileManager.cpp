@@ -38,30 +38,6 @@ constexpr int PROC_SYS_MAX_OPEN_FILES((PAGE_SIZE - sizeof(ProcFileManager_FDHead
 #define NORMAL_FILES_START_FD 3
 #define IS_VALID_PROC_FD(fd) (fd >= 0 && fd < PROC_SYS_MAX_OPEN_FILES)
 
-class FDTableGuard
-{
-public:
-  FDTableGuard()
-  {
-    if(ProcessManager::Instance().IsKernelProcess(ProcessManager::Instance().GetCurProcId()))
-      _fdMutex.Lock();
-  }
-
-  ~FDTableGuard()
-  {
-    if(ProcessManager::Instance().IsKernelProcess(ProcessManager::Instance().GetCurProcId()))
-      _fdMutex.UnLock();
-  }
-
-  FDTableGuard(const FDTableGuard&) = delete;
-  FDTableGuard& operator=(const FDTableGuard&) = delete;
-
-private:
-  static Mutex _fdMutex;
-};
-
-Mutex FDTableGuard::_fdMutex;
-
 static unsigned ProcFileManager_GetPage(Process* processAddressSpace)
 {
 	unsigned uiPDEAddress = processAddressSpace->taskState().CR3_PDBR ;
@@ -156,9 +132,17 @@ void ProcFileManager_InitForKernel()
 	}
 }
 
-int ProcFileManager_GetFD()
-{
-  FDTableGuard g;
+static Mutex& getFDMutex() {
+  if (IS_KERNEL()) {
+    static Mutex kernelFDMutex;
+    return kernelFDMutex;
+  } else {
+    return ProcessManager::Instance().GetCurrentPAS().fdMutex().value();
+  }
+}
+
+int ProcFileManager_GetFD() {
+  MutexGuard g(getFDMutex());
 
 	if(PROCESS_FD_TABLE_HEADER->TotalFDCount == PROC_SYS_MAX_OPEN_FILES)
     throw upan::exception(XLOC, "can't open new file - max open files limit %d reached", PROC_SYS_MAX_OPEN_FILES);
@@ -205,9 +189,8 @@ int ProcFileManager_AllocateFD(const char* szFileName, const byte mode, int iDri
   return fd;
 }
 
-byte ProcFileManager_FreeFD(int fd)
-{
-  FDTableGuard g;
+byte ProcFileManager_FreeFD(int fd) {
+  MutexGuard g(getFDMutex());
 
 	if(!IS_VALID_PROC_FD(fd))
 		return ProcFileManager_ERR_INVALID_FD ;

@@ -78,13 +78,13 @@ bool TestSuite::TestAtomicSwap()
 	printf("\n Running TestAtomicSwap...") ;
 	Mutex m ;
 
-	ASSERT_CONDITION(m.m_iLock == 0) ;
-	ASSERT_CONDITION(Atomic::Swap(m.m_iLock, 1) == 0) ;
-	ASSERT_CONDITION(m.m_iLock == 1) ;
-	ASSERT_CONDITION(Atomic::Swap(m.m_iLock, 0) == 1) ;
-	ASSERT_CONDITION(m.m_iLock == 0) ;
-	ASSERT_CONDITION(Atomic::Swap(m.m_iLock, 1) == 0) ;
-	ASSERT_CONDITION(m.m_iLock == 1) ;
+	ASSERT_CONDITION(m._lock == 0) ;
+	ASSERT_CONDITION(Atomic::Swap(m._lock, 1) == 0) ;
+	ASSERT_CONDITION(m._lock == 1) ;
+	ASSERT_CONDITION(Atomic::Swap(m._lock, 0) == 1) ;
+	ASSERT_CONDITION(m._lock == 0) ;
+	ASSERT_CONDITION(Atomic::Swap(m._lock, 1) == 0) ;
+	ASSERT_CONDITION(m._lock == 1) ;
 
 	return true ;
 }

@@ -120,8 +120,10 @@ unsigned KernelService::RequestFlatAddress(unsigned uiVirtualAddress)
 	return uiFlatAddress ;
 }
 
-bool KernelService::RequestPageFault(unsigned uiFaultyAddress)
-{
+//This request to allocate a page upon page-fault is triggered via PageFault interrupt 0xE
+//So, this function is called from an interrupt handler - and hence, there won't be any other interrupts while
+//this interrupt is active ==> No PIT interrupts ==> No task switch
+bool KernelService::RequestPageFault(unsigned uiFaultyAddress) {
 	KernelService::PageFault* pRequest = new KernelService::PageFault(uiFaultyAddress) ;
 
 	AddRequest(pRequest) ;

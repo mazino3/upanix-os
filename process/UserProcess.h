@@ -50,6 +50,18 @@ public:
   void setAUTAddress(uint32_t addr) {
     _uiAUTAddress = addr;
   }
+  upan::option<Mutex&> heapMutex() override {
+    return upan::option<Mutex&>(_heapMutex);
+  }
+  upan::option<Mutex&> pageAllocMutex() override {
+    return upan::option<Mutex&>(_pageFaultMutex);
+  }
+  upan::option<Mutex&> envMutex() override {
+    return upan::option<Mutex&>(_envMutex);
+  }
+  upan::option<Mutex&> fdMutex() override {
+    return upan::option<Mutex&>(_fdMutex);
+  }
 
   Process& forSchedule() override;
   void addToThreadScheduler(UserThread& thread);
@@ -80,6 +92,10 @@ private:
   uint32_t _stackPTEAddress;
   upan::vector<upan::string> _loadedDLLs;
   DLLInfoMap _dllInfoMap;
+  Mutex _heapMutex;
+  Mutex _pageFaultMutex;
+  Mutex _envMutex;
+  Mutex _fdMutex;
 
   typedef upan::list<UserThread*> ThreadSchedulerList;
   ThreadSchedulerList _threadSchedulerList;

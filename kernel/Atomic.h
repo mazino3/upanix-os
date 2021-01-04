@@ -23,8 +23,8 @@
 class Mutex
 {
 	private:
-		__volatile__ uint32_t m_iLock ;
-		__volatile__ int m_iID ;
+		__volatile__ uint32_t _lock ;
+		__volatile__ int _processID ;
 		
 		static const int FREE_MUTEX = -999 ;
 
@@ -33,7 +33,8 @@ class Mutex
 		~Mutex() ;
 
 		bool Lock(bool bBlock = true) ;
-		bool UnLock() ;
+		bool UnLock();
+    bool UnLock(int pid);
 
 	private:
 

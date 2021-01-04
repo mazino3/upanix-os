@@ -56,6 +56,19 @@ public:
     _parent.setAUTAddress(addr);
   }
 
+  upan::option<Mutex&> heapMutex() override {
+    return _parent.heapMutex();
+  }
+  upan::option<Mutex&> pageAllocMutex() override {
+    return _parent.pageAllocMutex();
+  }
+  upan::option<Mutex&> envMutex() override {
+    return _parent.envMutex();
+  }
+  upan::option<Mutex&> fdMutex() override {
+    return _parent.fdMutex();
+  }
+
   UserProcess& threadParent() {
     return _parent;
   }

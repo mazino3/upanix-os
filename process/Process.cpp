@@ -105,6 +105,11 @@ void Process::Destroy() {
   if(_processGroup->Size() == 0)
     delete _processGroup;
 
+  heapMutex().ifPresent([this](Mutex& m) { m.UnLock(_processID); });
+  pageAllocMutex().ifPresent([this](Mutex& m) { m.UnLock(_processID); });
+  envMutex().ifPresent([this](Mutex& m) { m.UnLock(_processID); });
+  fdMutex().ifPresent([this](Mutex& m) { m.UnLock(_processID); });
+
   if(_parentProcessID == NO_PROCESS_ID) {
     Release();
   }

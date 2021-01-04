@@ -31,6 +31,13 @@ public:
 
   void onLoad() override {}
 
+  upan::option<Mutex&> envMutex() override {
+    return upan::option<Mutex&>(_envMutex);
+  }
+  upan::option<Mutex&> fdMutex() override {
+    return upan::option<Mutex&>(_fdMutex);
+  }
+
   Process& forSchedule() override {
     return *this;
   }
@@ -41,4 +48,8 @@ private:
 
 private:
   int kernelStackBlockId;
+
+  //common mutex for all kernel processes
+  static Mutex _envMutex;
+  static Mutex _fdMutex;
 };

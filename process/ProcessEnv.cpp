@@ -78,8 +78,18 @@ void ProcessEnv_UnInitialize(Process& pas)
 	MemManager::Instance().DeAllocatePhysicalPage(ProcessEnv_GetProcessEnvPageNumber(pas)) ;
 }
 
-char* ProcessEnv_Get(const char* szEnvVar)
-{
+static Mutex& getEnvMutex() {
+  if (IS_KERNEL()) {
+    static Mutex kernelEnvMutex;
+    return kernelEnvMutex;
+  } else {
+    return ProcessManager::Instance().GetCurrentPAS().envMutex().value();
+  }
+}
+
+char* ProcessEnv_Get(const char* szEnvVar) {
+  MutexGuard g(getEnvMutex());
+
 	for(uint32_t i = 0; i < NO_OF_ENVS; i++)
 	{
 		if(strcmp(PROCESS_ENV_LIST[i].Var, szEnvVar) == 0)
@@ -91,8 +101,9 @@ char* ProcessEnv_Get(const char* szEnvVar)
 	return NULL ;
 }
 
-byte ProcessEnv_Set(const char* szEnvVar, const char* szEnvValue)
-{
+byte ProcessEnv_Set(const char* szEnvVar, const char* szEnvValue) {
+  MutexGuard g(getEnvMutex());
+
 	for(uint32_t i = 0; i < NO_OF_ENVS; i++)
 	{
 		if(strcmp(PROCESS_ENV_LIST[i].Var, szEnvVar) == 0)

@@ -57,10 +57,11 @@ void DMM_CheckAlignNumber(unsigned uiAlignNumber)
 
 /***************************************************************/
 
-unsigned DMM_Allocate(Process* processAddressSpace, unsigned uiSizeInBytes, unsigned uiAlignNumber)
-{
+unsigned DMM_Allocate(Process* processAddressSpace, unsigned uiSizeInBytes, unsigned uiAlignNumber) {
+  MutexGuard g(processAddressSpace->heapMutex().value());
+
 	DMM_CheckAlignNumber(uiAlignNumber);
-	
+
 	ProcessManager::Instance().SetDMMFlag(ProcessManager::GetCurrentProcessID(), true) ;
 
 	__volatile__ unsigned uiHeapStartAddress = PROCESS_HEAP_START_ADDRESS - GLOBAL_DATA_SEGMENT_BASE ;
@@ -225,8 +226,9 @@ unsigned DMM_AllocateForKernel(unsigned uiSizeInBytes, unsigned uiAlignNumber)
   throw upan::exception(XLOC, "out of memory!");
 }
 
-byte DMM_DeAllocate(Process* processAddressSpace, unsigned uiAddress)
-{
+byte DMM_DeAllocate(Process* processAddressSpace, unsigned uiAddress) {
+  MutexGuard g(processAddressSpace->heapMutex().value());
+
 	uiAddress = REAL_ALLOCATED_ADDRESS(uiAddress) ;
 	unsigned uiHeapStartAddress = PROCESS_HEAP_START_ADDRESS - GLOBAL_DATA_SEGMENT_BASE ;
 

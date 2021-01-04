@@ -434,9 +434,10 @@ void MemManager::DeAllocatePageForKernel(unsigned uiPageNumber)
 extern __volatile__ int SYS_CALL_ID;
 extern __volatile__ int KERNEL_DMM_ON;
 
-ReturnCode MemManager::AllocatePage(int iProcessID, unsigned uiFaultyAddress)
-{
-	unsigned uiFreePageNo, uiVirtualPageNo ;
+ReturnCode MemManager::AllocatePage(int iProcessID, unsigned uiFaultyAddress) {
+  MutexGuard g(ProcessManager::Instance().GetAddressSpace(iProcessID).value().pageAllocMutex().value());
+
+  unsigned uiFreePageNo, uiVirtualPageNo ;
 	unsigned uiPDEAddress, uiPTEAddress, uiPTEFreePage ;
 
 	//KC::MDisplay().Address("\n Addr: ", uiFaultyAddress) ; 
@@ -514,8 +515,7 @@ ReturnCode MemManager::AllocatePage(int iProcessID, unsigned uiFaultyAddress)
 	return Success;
 }
 
-ReturnCode MemManager::DeAllocatePage(const unsigned uiAddress)
-{
+ReturnCode MemManager::DeAllocatePage(const unsigned uiAddress) {
 	unsigned uiFreePageNo, uiVirtualPageNo ;
 
 	uiVirtualPageNo = uiAddress / PAGE_SIZE ;

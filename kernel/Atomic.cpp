@@ -38,7 +38,7 @@ void Atomic::Add(__volatile__ uint32_t& var, uint32_t val)
     : "memory", "cc");
 }
 
-Mutex::Mutex() : m_iLock(0), m_iID(FREE_MUTEX)
+Mutex::Mutex() : _lock(0), _processID(FREE_MUTEX)
 {
 }
 
@@ -52,7 +52,7 @@ void Mutex::Acquire()
 
 	while(true)
 	{
-		val = Atomic::Swap(m_iLock, 1) ;
+		val = Atomic::Swap(_lock, 1) ;
 		if(val == 0)
 			break ;
 
@@ -62,7 +62,7 @@ void Mutex::Acquire()
 
 void Mutex::Release()
 {
-	Atomic::Swap(m_iLock, 0) ;
+	Atomic::Swap(_lock, 0) ;
 }
 
 bool Mutex::Lock(bool bBlock)
@@ -75,7 +75,7 @@ bool Mutex::Lock(bool bBlock)
 
 		val = ProcessManager::Instance().GetCurProcId() ;
 
-		if(m_iID != FREE_MUTEX && m_iID != val)
+		if(_processID != FREE_MUTEX && _processID != val)
 		{
 			Release() ;
 
@@ -86,8 +86,8 @@ bool Mutex::Lock(bool bBlock)
 			continue ;
 		}
 
-		if(m_iID == FREE_MUTEX)
-			m_iID = val ;
+		if(_processID == FREE_MUTEX)
+      _processID = val ;
 
 		Release() ;
 		break ;
@@ -98,17 +98,34 @@ bool Mutex::Lock(bool bBlock)
 
 bool Mutex::UnLock()
 {
+  Acquire() ;
+
+  __volatile__ int pid = ProcessManager::Instance().GetCurProcId() ;
+
+  if(_processID != pid)
+  {
+    Release() ;
+    return false ;
+  }
+
+  _processID = FREE_MUTEX ;
+
+  Release() ;
+
+  return true ;
+}
+
+bool Mutex::UnLock(int pid)
+{
 	Acquire() ;
 
-	__volatile__ int val = ProcessManager::Instance().GetCurProcId() ;
-
-	if(m_iID != val)
+	if(_processID != pid)
 	{
 		Release() ;
 		return false ;
 	}
 
-	m_iID = FREE_MUTEX ;
+  _processID = FREE_MUTEX ;
 
 	Release() ;
 

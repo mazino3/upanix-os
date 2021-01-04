@@ -127,6 +127,20 @@ public:
     throw upan::exception(XLOC, "setAUTAddress unsupported");
   }
 
+  //thread synchronization mutex
+  virtual upan::option<Mutex&> heapMutex() {
+    return upan::option<Mutex&>::empty();
+  }
+  virtual upan::option<Mutex&> pageAllocMutex() {
+    return upan::option<Mutex&>::empty();
+  }
+  virtual upan::option<Mutex&> envMutex() {
+    return upan::option<Mutex&>::empty();
+  }
+  virtual upan::option<Mutex&> fdMutex() {
+    return upan::option<Mutex&>::empty();
+  }
+
   virtual Process& forSchedule() {
     throw upan::exception(XLOC, "forSchedule unsupported");
   }
