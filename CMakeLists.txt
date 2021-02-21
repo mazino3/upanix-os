@@ -92,6 +92,10 @@ include_directories(${UPANLIB_SOURCE_DIR}/libc/stdio)
 include_directories(${UPANLIB_SOURCE_DIR}/libc/sysdeps/mos/common/)
 include_directories(${UPANLIB_SOURCE_DIR}/libc/sysdeps/mos/common/bits)
 
+include_directories(${UPANLIB_SOURCE_DIR}/libsfn)
+include_directories(${UPANLIB_SOURCE_DIR}/libsfn/freetype2/devel)
+include_directories(${UPANLIB_SOURCE_DIR}/libsfn/freetype2/include)
+
 include_directories(${UPANLIB_SOURCE_DIR}/libustdcpp/infra)
 include_directories(${UPANLIB_SOURCE_DIR}/libustdcpp/algo)
 include_directories(${UPANLIB_SOURCE_DIR}/libustdcpp/ds)
@@ -103,6 +107,7 @@ include_directories(${UPANLIB_SOURCE_DIR}/libcxxrt)
 add_custom_target(osutils COMMAND make WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/osutils)
 add_custom_target(boot COMMAND make boot_elf WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/boot)
 add_custom_target(mem COMMAND make WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/memory)
+add_custom_target(fonts COMMAND make WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/fonts)
 
 execute_process(COMMAND bash ${PROJECT_SOURCE_DIR}/upanix_src_files.sh WORKING_DIRECTORY ${PROJECT_SOURCE_DIR} OUTPUT_VARIABLE UPANIX_SRCS)
 string(REPLACE "\n" ";" UPANIX_SRCS ${UPANIX_SRCS})
@@ -115,7 +120,9 @@ string(REPLACE "\n" "" CRTEND_OBJ ${CRTEND_OBJ})
 set(CRTINIT_OBJ "${PROJECT_SOURCE_DIR}/osutils/crti.o ${CRTBEGIN_OBJ}")
 set(CRTFINI_OBJ "${CRTEND_OBJ} ${PROJECT_SOURCE_DIR}/osutils/crtn.o")
 
-set(OTHER_OBJS ${PROJECT_SOURCE_DIR}/memory/Mem.o)
+execute_process(COMMAND bash -c "cd ${PROJECT_SOURCE_DIR}; find ${PROJECT_SOURCE_DIR}/fonts/ -name '*.sfn' -exec sh -c 'echo \${1%.sfn}.o' _ {} \;" OUTPUT_VARIABLE FONT_OBJS)
+string(REPLACE "\n" ";" FONT_OBJS ${FONT_OBJS})
+set(OTHER_OBJS ${PROJECT_SOURCE_DIR}/memory/Mem.o ${FONT_OBJS})
 
 set(CMAKE_CXX_LINK_EXECUTABLE "<CMAKE_CXX_COMPILER> ${CMAKE_CXX_FLAGS} ${CMAKE_EXE_LINKER_FLAGS} ${PROJECT_SOURCE_DIR}/boot/fpu_init.obj ${PROJECT_SOURCE_DIR}/boot/UpanixStart_Main.grub ${CRTINIT_OBJ} <OBJECTS> -o <TARGET> <LINK_LIBRARIES> ${CRTFINI_OBJ}")
 
@@ -132,10 +139,13 @@ add_dependencies(${TARGET_BIN} mcpp)
 add_dependencies(${TARGET_BIN} osutils)
 add_dependencies(${TARGET_BIN} boot)
 add_dependencies(${TARGET_BIN} mem)
+add_dependencies(${TARGET_BIN} fonts)
 
 target_link_libraries(${TARGET_BIN} ${UPANLIB_OUT_DIR}/libcxxrt.a)
 target_link_libraries(${TARGET_BIN} mcpp)
+target_link_libraries(${TARGET_BIN} ${UPANLIB_OUT_DIR}/libsfn.a)
 target_link_libraries(${TARGET_BIN} ${UPANLIB_OUT_DIR}/libc.a)
+target_link_libraries(${TARGET_BIN} ${UPANLIB_OUT_DIR}/libm.a)
 target_link_libraries(${TARGET_BIN} ${UPANLIB_OUT_DIR}/libgcceh.a)
 target_link_libraries(${TARGET_BIN} ${UPANLIB_OUT_DIR}/libustdcpp.a)
 

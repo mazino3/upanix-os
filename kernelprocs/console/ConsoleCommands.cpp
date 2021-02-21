@@ -56,6 +56,7 @@
 #include <typeinfo.h>
 #include <NetworkManager.h>
 #include <ARPHandler.h>
+#include <GraphicsVideo.h>
 
 /**** Command Fucntion Declarations  *****/
 static void ConsoleCommands_ChangeDrive() ;
@@ -119,6 +120,7 @@ static void ConsoleCommands_Test() ;
 static void ConsoleCommands_Testv() ;
 static void ConsoleCommands_TestNet() ;
 static void ConsoleCommands_TestCPP() ;
+static void ConsoleCommands_TestGraphics() ;
 static void ConsoleCommands_Beep();
 static void ConsoleCommands_Sleep();
 
@@ -186,6 +188,7 @@ static const ConsoleCommand ConsoleCommands_CommandList[] = {
 	{ "initata",	&ConsoleCommands_InitATAController },
 	{ "initmntmgr",	&ConsoleCommands_InitMountManager },
 	{ "test",		&ConsoleCommands_Test },
+	{ "testg",		&ConsoleCommands_TestGraphics },
 	{ "testv",		&ConsoleCommands_Testv },
 	{ "testn",		&ConsoleCommands_TestNet },
 	{ "testcpp", &ConsoleCommands_TestCPP },
@@ -891,6 +894,11 @@ void ConsoleCommands_Test()
 {
 	TestSuite t ;
   t.Run() ;
+}
+
+void ConsoleCommands_TestGraphics() {
+  //GraphicsVideo::Instance()->InitSFN();
+  GraphicsVideo::Instance()->PrintSSFNContext();
 }
 
 extern void TestMTerm() ;

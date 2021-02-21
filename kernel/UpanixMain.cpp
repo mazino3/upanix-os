@@ -163,6 +163,7 @@ void Initialize()
 
     KC::MKernelService() ;
 
+    GraphicsVideo::Instance()->InitializeSSFN();
   /* Start - Peripheral Device Initialization */
   //TODO: An Abstract Bus Handler which should internally take care of different
   //types of bus like ISA, PCI etc... 

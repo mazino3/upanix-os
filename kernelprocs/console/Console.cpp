@@ -76,7 +76,7 @@ void Console::Start()
 	Console_ProcessCommand("chd usda");
 	Console_ProcessCommand("test");
 */
-	while(SUCCESS)
+	while(true)
 	{
     int ch = KeyboardHandler::Instance().GetCharInBlockMode();
 

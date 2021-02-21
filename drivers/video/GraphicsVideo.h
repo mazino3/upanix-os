@@ -27,6 +27,7 @@ class GraphicsVideo : protected KernelUtil::TimerTask
     GraphicsVideo(const framebuffer_info_t&);
 
   public:
+    void PrintSSFNContext();
     static void Create();
     static GraphicsVideo* Instance() { return _instance; }
     unsigned FlatLFBAddress() const { return _flatLFBAddress; }
@@ -41,10 +42,12 @@ class GraphicsVideo : protected KernelUtil::TimerTask
     void DrawChar(byte ch, unsigned x, unsigned y, unsigned fg, unsigned bg);
     void ScrollDown();
     void CreateRefreshTask();
-
+    void InitializeSSFN();
+    
   private:
     virtual bool TimerTrigger();
     void NeedRefresh();
+    void DrawSSFNChar(byte ch, unsigned x, unsigned y, unsigned fg, unsigned bg);
 
     static GraphicsVideo* _instance;
     unsigned _flatLFBAddress;
@@ -57,6 +60,8 @@ class GraphicsVideo : protected KernelUtil::TimerTask
     uint32_t _needRefresh;
     byte     _bpp;
     byte     _bytesPerPixel;
+
+    bool     _ssfnInitialized;
 };
 
 #endif

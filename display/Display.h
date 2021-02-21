@@ -15,8 +15,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
-#ifndef _DISPLAY_H_
-#define _DISPLAY_H_
+#pragma once
 
 #define CURSOR_HIEGHT 16
 #define CRT_INDEX_REG 0x03D4
@@ -47,12 +46,12 @@ class DisplayBuffer
 {
   public:
     ~DisplayBuffer();
+    byte* GetBuffer() { return _buffer; }
 	private:
 		DisplayBuffer(byte* buffer, unsigned rows, unsigned height, bool isKernel);
 
     void PutChar(int pos, byte val) { _buffer[pos] = val; }
     byte GetChar(int pos) { return _buffer[pos]; }
-    byte* GetBuffer() { return _buffer; }
 		inline Cursor& GetCursor() { return _cursor; }
 		inline const Cursor& GetCursor() const { return _cursor; }
 
@@ -171,6 +170,7 @@ class Display
 		static const int START_CURSOR_POS = -1;
 		static const Attribute& WHITE_ON_BLACK();
 
+		DisplayBuffer& GetDisplayBuffer();
 	protected:
 		Display(unsigned rows, unsigned columns);
 		
@@ -178,7 +178,6 @@ class Display
     void PutChar(int iPos, byte ch, byte attr);
     virtual void DirectPutChar(int iPos, byte ch, byte attr) = 0;
 		DisplayBuffer& GetDisplayBuffer(int pid);
-		DisplayBuffer& GetDisplayBuffer();
 
 		virtual void Goto(int x, int y) = 0;
     virtual void DoScrollDown() = 0;
@@ -195,45 +194,3 @@ class Display
     const unsigned _maxColumns;
     DisplayBuffer  _kernelBuffer;
 };
-
-class VGATextConsole : public Display
-{
-  private:
-    VGATextConsole();
-		void InitCursor();
-		virtual void Goto(int x, int y);
-    virtual void DirectPutChar(int iPos, byte ch, byte attr);
-    virtual void DoScrollDown();
-
-    class VideoBuffer : public DisplayBuffer
-    {
-      public:
-        VideoBuffer(unsigned uiDisplayMemAddr);
-    };
-  friend class Display;
-};
-
-class GraphicsTextConsole : public Display
-{
-  private:
-    GraphicsTextConsole(unsigned rows, unsigned columns);
-		virtual void Goto(int x, int y);
-    virtual void DirectPutChar(int iPos, byte ch, byte attr);
-    virtual void DoScrollDown();
-
-    class VideoBuffer : public DisplayBuffer
-    {
-      public:
-        VideoBuffer(unsigned uiDisplayMemAddr);
-
-      private:
-        const unsigned _width;
-        const unsigned _height;
-        const unsigned _pitch;
-        const byte     _bpp;
-        const byte     _bytesPerPixel;
-    };
-  friend class Display;
-};
-
-#endif
