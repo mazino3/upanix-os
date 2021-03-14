@@ -164,7 +164,7 @@ unsigned DMM_AllocateForKernel(unsigned uiSizeInBytes, unsigned uiAlignNumber)
 	DMM_CheckAlignNumber(uiAlignNumber);
 	AllocationUnitTracker *aut, *prevAut;
 	unsigned& uiAUTAddress = MemManager::Instance().GetKernelAUTAddress();
-	
+
 	// Dedicated Head Node. This will avoid Back Loop at Head
 	if(uiAUTAddress == NULL)
 	{
@@ -260,45 +260,34 @@ byte DMM_DeAllocate(Process* processAddressSpace, unsigned uiAddress) {
 	return DMM_BAD_DEALLOC ;
 }
 
-byte DMM_GetAllocSize(Process* processAddressSpace, unsigned uiAddress, int* iSize)
-{
-	uiAddress = REAL_ALLOCATED_ADDRESS(uiAddress) ;
+byte DMM_GetAllocSize(Process* processAddressSpace, unsigned uiAddress, int* iSize) {
+  uiAddress = REAL_ALLOCATED_ADDRESS(uiAddress);
 
-	AllocationUnitTracker* curAUT = (AllocationUnitTracker*)processAddressSpace->getAUTAddress() ;
+  AllocationUnitTracker *curAUT = (AllocationUnitTracker *) processAddressSpace->getAUTAddress();
 
-	while(curAUT != NULL)
-	{
-		if(curAUT->uiReturnAddress == uiAddress)
-		{
-			*iSize = curAUT->uiSize - (curAUT->uiReturnAddress - curAUT->uiAllocatedAddress) ;
-			return DMM_SUCCESS ;
-		}
+  while (curAUT != NULL) {
+    if (curAUT->uiReturnAddress == uiAddress) {
+      *iSize = curAUT->uiSize - (curAUT->uiReturnAddress - curAUT->uiAllocatedAddress);
+      return DMM_SUCCESS;
+    }
 
-		curAUT = (AllocationUnitTracker*)(curAUT->uiNextAUTAddress) ;
-	}
+    curAUT = (AllocationUnitTracker *) (curAUT->uiNextAUTAddress);
+  }
 
-	return DMM_BAD_DEALLOC ;
+  return DMM_BAD_DEALLOC;
 }
 
-byte DMM_GetAllocSizeForKernel(unsigned uiAddress, int* iSize)
-{
+byte DMM_GetAllocSizeForKernel(unsigned uiAddress, int* iSize) {
   IrqGuard g;
-	unsigned& uiAUTAddress = MemManager::Instance().GetKernelAUTAddress();
+  unsigned uiHeapStartAddress = MemManager::Instance().GetKernelHeapStartAddr();
+  if (uiAddress == NULL || uiAddress < sizeof(AllocationUnitTracker) || uiAddress == uiHeapStartAddress) {
+    *iSize = 0;
+    return DMM_FAILURE;
+  }
 
-	AllocationUnitTracker* curAUT = (AllocationUnitTracker*)(uiAUTAddress);
-
-	while(curAUT != NULL)
-	{
-		if(curAUT->uiReturnAddress == uiAddress)
-		{
-			*iSize = curAUT->uiSize - (curAUT->uiReturnAddress - curAUT->uiAllocatedAddress) ;
-			return DMM_SUCCESS ;
-		}
-
-		curAUT = (AllocationUnitTracker*)(curAUT->uiNextAUTAddress) ;
-	}
-
-	return DMM_BAD_DEALLOC ;
+  AllocationUnitTracker* aut = (AllocationUnitTracker *) (uiAddress - sizeof(AllocationUnitTracker));
+  *iSize = aut->uiSize;
+  return DMM_SUCCESS;
 }
 
 byte DMM_DeAllocateForKernel(unsigned uiAddress)

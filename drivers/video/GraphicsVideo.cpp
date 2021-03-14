@@ -25,15 +25,21 @@
 
 #define SSFN_IMPLEMENTATION
 #include <ssfn.h>
+
+#include <usfncontext.h>
+#include <usfntypes.h>
 #include "GraphicsFont.h"
 
 extern unsigned _binary_fonts_FreeSans_sfn_start;
 extern unsigned _binary_unifont_sfn_start;
 extern unsigned _binary_u_vga16_sfn_start;
 
-ssfn_t*  _ssfnContext;
+usfn::Context* _ssfnContext;
+ssfn_t* _ssfnContext_t;
 
 GraphicsVideo* GraphicsVideo::_instance = nullptr;
+
+bool use_usfn = true;
 
 void GraphicsVideo::Create()
 {
@@ -70,24 +76,31 @@ void GraphicsVideo::InitializeSSFN() {
   // You can as well read a .sfn file in a buffer and call ssfn_load on the same
   // In here, the .sfn file was included as part of the kernel binary
   _ssfnInitialized = false;
-  //_ssfnContext = new ssfn_t();
-  _ssfnContext = DMM_AllocateForKernel(sizeof(ssfn_t));//= { 0 };                                 /* the renderer context */
+  try {
+    if (use_usfn)
+      _ssfnContext = new usfn::Context();
+      //_ssfnContext = (usfn::Context*)DMM_AllocateForKernel(sizeof(usfn::Context)); /* the renderer context */
+    else {
+      _ssfnContext_t = (ssfn_t *) DMM_AllocateForKernel(sizeof(ssfn_t)); /* the renderer context */
+      memset(_ssfnContext_t, 0, sizeof(ssfn_t));
+    }
 
-  //int r = ssfn_load(_ssfnContext, &_binary_fonts_FreeSans_sfn_start);
-  int r = ssfn_load(_ssfnContext, &_binary_unifont_sfn_start);
-  //int r = ssfn_load(_ssfnContext, &_binary_u_vga16_sfn_start);
-  if (r != SSFN_OK) {
-    printf("\n Failed to load SSFN font - error code: %d", r);
-    return;
-  }
-  //SSFN_STYLE_REGULAR | SSFN_STYLE_UNDERLINE
-  r = ssfn_select(_ssfnContext, SSFN_FAMILY_MONOSPACE, NULL, SSFN_STYLE_REGULAR, 16);
-  if (r != SSFN_OK) {
-    printf("\n Failed to select SSFN font - error code: %d", r);
-    return;
-  }
+    if (use_usfn)
+      _ssfnContext->Load((uint8_t *) &_binary_u_vga16_sfn_start);
+    else
+      int r = ssfn_load(_ssfnContext_t, &_binary_unifont_sfn_start);
 
-  _ssfnInitialized = true;
+    //SSFN_STYLE_REGULAR | SSFN_STYLE_UNDERLINE
+    if (use_usfn)
+      _ssfnContext->Select(usfn::FAMILY_MONOSPACE, NULL, usfn::STYLE_REGULAR, 16);
+    else
+      ssfn_select(_ssfnContext_t, SSFN_FAMILY_MONOSPACE, NULL, SSFN_STYLE_REGULAR, 16);
+
+    _ssfnInitialized = true;
+  } catch(upan::exception& e) {
+    printf("\n Failed to load USFN font: %s", e.ErrorMsg().c_str());
+    while(1);
+  }
 }
 
 void GraphicsVideo::CreateRefreshTask()
@@ -139,10 +152,6 @@ void GraphicsVideo::FillRect(unsigned sx, unsigned sy, unsigned width, unsigned 
   NeedRefresh();
 }
 
-void GraphicsVideo::PrintSSFNContext() {
-  printf("%d %d %d %d\n", _ssfnContext->mx, _ssfnContext->my, _ssfnContext->lx, _ssfnContext->ly);
-}
-
 void GraphicsVideo::DrawChar(byte ch, unsigned x, unsigned y, unsigned fg, unsigned bg) {
   if (_ssfnInitialized && ch != ' ') {
     DrawSSFNChar(ch, x, y, fg, bg);
@@ -182,20 +191,37 @@ void GraphicsVideo::DrawSSFNChar(byte ch, unsigned x, unsigned y, unsigned fg, u
   if(y >= _height || (x + xScale) >= _width)
     return;
 
-  ssfn_buf_t buf = {                                  /* the destination pixel buffer */
-      .ptr = (uint8_t*)_zBuffer,                      /* address of the buffer */
-      .w = (int16_t)_width,                             /* width */
-      .h = (int16_t)_height,                             /* height */
-      .p = (uint16_t)_pitch,                         /* bytes per line */
-      .x = (int16_t)x,                                       /* pen position */
-      .y = (int16_t)y,
-      .fg = 0xFF000000 | fg,
-      .bg = 0xFF000000 | bg
-  };
+  if (use_usfn) {
+    usfn::FrameBuffer buf = {                                  /* the destination pixel buffer */
+        .ptr = (uint8_t*)_zBuffer,                      /* address of the buffer */
+        .w = (int16_t)_width,                             /* width */
+        .h = (int16_t)_height,                             /* height */
+        .p = (uint16_t)_pitch,                         /* bytes per line */
+        .x = (int16_t)x,                                       /* pen position */
+        .y = (int16_t)y,
+        .fg = 0xFF000000 | fg,
+        .bg = 0xFF000000 | bg
+    };
 
-  const char s[2] = { (const char)ch, '\0' };
-  ssfn_render(_ssfnContext, &buf, s);
+    const char s[2] = { (const char)ch, '\0' };
+    _ssfnContext->Render(buf, s);
+  } else {
+    ssfn_buf_t buf = {                                  /* the destination pixel buffer */
+        .ptr = (uint8_t *) _zBuffer,                      /* address of the buffer */
+        .w = (int16_t) _width,                             /* width */
+        .h = (int16_t) _height,                             /* height */
+        .p = (uint16_t) _pitch,                         /* bytes per line */
+        .x = (int16_t) x,                                       /* pen position */
+        .y = (int16_t) y,
+        .fg = 0xFF000000 | fg,
+        .bg = 0xFF000000 | bg
+    };
+
+    const char s[2] = {(const char) ch, '\0'};
+    ssfn_render(_ssfnContext_t, &buf, s);
+  }
   NeedRefresh();
+
 }
 
 //TODO: this is assuming 4 bytes per pixel

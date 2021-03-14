@@ -35,8 +35,6 @@ else
 	exitcode=$?
 fi
 
-(cd test && ./compile.sh)
-
 if [ $exitcode -eq 0 ]
 then
 	if [ "$cmd" = "elf" ]

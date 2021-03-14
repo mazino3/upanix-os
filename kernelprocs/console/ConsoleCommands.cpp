@@ -898,7 +898,6 @@ void ConsoleCommands_Test()
 
 void ConsoleCommands_TestGraphics() {
   //GraphicsVideo::Instance()->InitSFN();
-  GraphicsVideo::Instance()->PrintSSFNContext();
 }
 
 extern void TestMTerm() ;

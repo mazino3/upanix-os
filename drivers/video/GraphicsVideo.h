@@ -27,7 +27,6 @@ class GraphicsVideo : protected KernelUtil::TimerTask
     GraphicsVideo(const framebuffer_info_t&);
 
   public:
-    void PrintSSFNContext();
     static void Create();
     static GraphicsVideo* Instance() { return _instance; }
     unsigned FlatLFBAddress() const { return _flatLFBAddress; }
