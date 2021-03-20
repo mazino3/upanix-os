@@ -23,16 +23,18 @@ Cpu::Cpu()
 {
   uint32_t result = 0;
   // Test if the CPU supports the CPUID-Command
-  __asm__ __volatile__("pushfl\n"
-                    "pop %%ecx\n"
-                    "mov %%ecx, %%eax\n"
-                    "xor %%eax, 0x200000\n"
-                    "push %%eax\n"
-                    "popfl\n"
-                    "pushfl\n"
-                    "pop %%eax\n"
-                    "sub %%ecx, %%eax\n"
-                    "mov %%eax, %0\n" : "=r"(result) : : "ecx", "eax");
+  __asm__ __volatile__("pushfl;"
+                       "pushfl;"
+                       "pop %%eax;"
+                       "mov %%eax, %%ecx;"
+                       "xorl $0x200000, %%eax;"
+                       "push %%eax;"
+                       "popfl;"
+                       "pushfl;"
+                       "pop %%eax;"
+                       "xorl %%ecx, %%eax;"
+                       "shrl $21, %%eax;"
+                       "popfl;" : "=m"(result) : : "eax", "ecx", "memory");
   _cpuIdAvailable = (result == 0);
   if(_cpuIdAvailable)
     printf("\n CPUID is available");
