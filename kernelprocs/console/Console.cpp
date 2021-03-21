@@ -60,8 +60,6 @@ void Console::Start()
 {
   KC::MDisplay().RefreshScreen() ;
 	
-	debug_point = 0 ;
-
 //	byte bStatus ;
 //	if((bStatus = FileOperations_ChangeDir(FS_ROOT_DIR)) != FileOperations_SUCCESS)
 //	{

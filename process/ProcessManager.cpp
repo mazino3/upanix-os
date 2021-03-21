@@ -203,7 +203,7 @@ void ProcessManager::DoContextSwitch(Process& process) {
 			}
 			else
 			{
-				if(debug_point) 
+				if(false)
 				{
           printf("\n Sleep Time: %u", stateInfo.SleepTime()) ;
 					printf("\n PIT Tick Count: %u", PIT_GetClockCount()) ;
@@ -311,10 +311,8 @@ void ProcessManager::DoContextSwitch(Process& process) {
     process.Destroy();
   }
 
-	if(debug_point) TRACE_LINE ;
 	//IrqManager::Instance().EnableIRQ(TIMER_IRQ) ;
 	EnableTaskSwitch();
-	if(debug_point) TRACE_LINE ;
 }
 
 void ProcessManager::StartScheduler() {

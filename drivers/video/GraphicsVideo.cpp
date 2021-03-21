@@ -25,6 +25,7 @@
 
 #define SSFN_IMPLEMENTATION
 #include <ssfn.h>
+#include <Display.h>
 
 #include <usfncontext.h>
 #include <usfntypes.h>
@@ -206,7 +207,8 @@ void GraphicsVideo::DrawUSFNChar(byte ch, unsigned x, unsigned y, unsigned fg, u
         .bg = 0xFF000000 | bg
     };
 
-    //const char s[2] = { (const char)ch, '\0' };
+//    const char s[2] = { (const char)ch, '\0' };
+//    _ssfnContext->Render(buf, s, true);
     _ssfnContext->RenderCharacter(buf, ch);
   } else {
     ssfn_buf_t buf = {                                  /* the destination pixel buffer */

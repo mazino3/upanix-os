@@ -58,7 +58,6 @@ return X ;
 
 extern byte KERNEL_MODE ;
 extern byte SPECIAL_TASK ;
-extern int debug_point ;
 
 #define LIB_PATH ":ROOT@/lib:ROOT@/usr/lib:"
 #define BIN_PATH "ROOT@/bin/"
