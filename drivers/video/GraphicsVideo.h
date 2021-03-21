@@ -20,6 +20,7 @@
 
 #include <MultiBoot.h>
 #include <KernelUtil.h>
+#include <usfncontext.h>
 
 class GraphicsVideo : protected KernelUtil::TimerTask
 {
@@ -46,7 +47,7 @@ class GraphicsVideo : protected KernelUtil::TimerTask
   private:
     virtual bool TimerTrigger();
     void NeedRefresh();
-    void DrawSSFNChar(byte ch, unsigned x, unsigned y, unsigned fg, unsigned bg);
+    void DrawUSFNChar(byte ch, unsigned x, unsigned y, unsigned fg, unsigned bg);
 
     static GraphicsVideo* _instance;
     unsigned _flatLFBAddress;
@@ -60,7 +61,8 @@ class GraphicsVideo : protected KernelUtil::TimerTask
     byte     _bpp;
     byte     _bytesPerPixel;
 
-    bool     _ssfnInitialized;
+    usfn::Context* _ssfnContext;
+    bool     _usfnInitialized;
 };
 
 #endif

@@ -34,10 +34,8 @@ extern unsigned _binary_fonts_FreeSans_sfn_start;
 extern unsigned _binary_unifont_sfn_start;
 extern unsigned _binary_u_vga16_sfn_start;
 
-usfn::Context* _ssfnContext;
-ssfn_t* _ssfnContext_t;
-
 GraphicsVideo* GraphicsVideo::_instance = nullptr;
+ssfn_t* _ssfnContext_t;
 
 bool use_usfn = true;
 
@@ -75,18 +73,17 @@ GraphicsVideo::GraphicsVideo(const framebuffer_info_t& fbinfo) : _needRefresh(0)
 void GraphicsVideo::InitializeSSFN() {
   // You can as well read a .sfn file in a buffer and call ssfn_load on the same
   // In here, the .sfn file was included as part of the kernel binary
-  _ssfnInitialized = false;
+  _usfnInitialized = false;
   try {
     if (use_usfn)
       _ssfnContext = new usfn::Context();
-      //_ssfnContext = (usfn::Context*)DMM_AllocateForKernel(sizeof(usfn::Context)); /* the renderer context */
     else {
       _ssfnContext_t = (ssfn_t *) DMM_AllocateForKernel(sizeof(ssfn_t)); /* the renderer context */
       memset(_ssfnContext_t, 0, sizeof(ssfn_t));
     }
 
     if (use_usfn)
-      _ssfnContext->Load((uint8_t *) &_binary_u_vga16_sfn_start);
+      _ssfnContext->Load((uint8_t *) &_binary_unifont_sfn_start);
     else
       int r = ssfn_load(_ssfnContext_t, &_binary_unifont_sfn_start);
 
@@ -96,7 +93,7 @@ void GraphicsVideo::InitializeSSFN() {
     else
       ssfn_select(_ssfnContext_t, SSFN_FAMILY_MONOSPACE, NULL, SSFN_STYLE_REGULAR, 16);
 
-    _ssfnInitialized = true;
+    _usfnInitialized = true;
   } catch(upan::exception& e) {
     printf("\n Failed to load USFN font: %s", e.ErrorMsg().c_str());
     while(1);
@@ -153,9 +150,14 @@ void GraphicsVideo::FillRect(unsigned sx, unsigned sy, unsigned width, unsigned 
 }
 
 void GraphicsVideo::DrawChar(byte ch, unsigned x, unsigned y, unsigned fg, unsigned bg) {
-  if (_ssfnInitialized && ch != ' ') {
-    DrawSSFNChar(ch, x, y, fg, bg);
-    return;
+  if (_usfnInitialized) {
+    try {
+      DrawUSFNChar(ch, x, y, fg, bg);
+      return;
+    } catch(upan::exception& e) {
+      _usfnInitialized = false;
+      printf("failed to render character using usfn: %s", e.ErrorMsg().c_str());
+    }
   }
   const int xScale = 8;
   const int yScale = 16;
@@ -180,9 +182,10 @@ void GraphicsVideo::DrawChar(byte ch, unsigned x, unsigned y, unsigned fg, unsig
   NeedRefresh();
 }
 
-void GraphicsVideo::DrawSSFNChar(byte ch, unsigned x, unsigned y, unsigned fg, unsigned bg) {
-  //for SSFN, y is the baseline, the characters are drawn above y and hence add yScale to y
-  ++y;
+void GraphicsVideo::DrawUSFNChar(byte ch, unsigned x, unsigned y, unsigned fg, unsigned bg) {
+  //for SSFN, y is the baseline, the characters are drawn above y and hence add yScale to y --> this is only for Render() which is used for GUI
+  //we don't have to do it for a standard text console display using RenderCharacter()
+  //++y;
   const int xScale = 8;
   const int yScale = 16;
   x *= xScale;
@@ -203,8 +206,8 @@ void GraphicsVideo::DrawSSFNChar(byte ch, unsigned x, unsigned y, unsigned fg, u
         .bg = 0xFF000000 | bg
     };
 
-    const char s[2] = { (const char)ch, '\0' };
-    _ssfnContext->Render(buf, s);
+    //const char s[2] = { (const char)ch, '\0' };
+    _ssfnContext->RenderCharacter(buf, ch);
   } else {
     ssfn_buf_t buf = {                                  /* the destination pixel buffer */
         .ptr = (uint8_t *) _zBuffer,                      /* address of the buffer */
@@ -221,7 +224,6 @@ void GraphicsVideo::DrawSSFNChar(byte ch, unsigned x, unsigned y, unsigned fg, u
     ssfn_render(_ssfnContext_t, &buf, s);
   }
   NeedRefresh();
-
 }
 
 //TODO: this is assuming 4 bytes per pixel
