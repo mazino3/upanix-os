@@ -29,6 +29,8 @@
 
 #include <usfncontext.h>
 #include <usfntypes.h>
+#include <Cpu.h>
+#include <Pat.h>
 #include "GraphicsFont.h"
 
 extern unsigned _binary_fonts_FreeSans_sfn_start;
@@ -71,7 +73,27 @@ GraphicsVideo::GraphicsVideo(const framebuffer_info_t& fbinfo) : _needRefresh(0)
   FillRect(0, 0, _width, _height, 0x0);
 }
 
-void GraphicsVideo::InitializeSSFN() {
+void GraphicsVideo::Initialize() {
+  const auto wc = Pat::Instance().writeCombiningPageTableFlag();
+  if (wc >= 0) {
+    unsigned noOfPages = (LFBSize() / PAGE_SIZE) + 1;
+    unsigned lfbaddress = FlatLFBAddress();
+    unsigned mapAddress = MEM_GRAPHICS_VIDEO_MAP_START;
+    for(unsigned i = 0; i < noOfPages; ++i) {
+      unsigned addr = lfbaddress + PAGE_SIZE * i;
+      unsigned uiPDEIndex = ((mapAddress >> 22) & 0x3FF);
+      unsigned uiPTEAddress = (((unsigned*)(MEM_PDBR - GLOBAL_DATA_SEGMENT_BASE))[uiPDEIndex]) & 0xFFFFF000;
+      unsigned uiPTEIndex = ((mapAddress >> 12) & 0x3FF);
+      // This page is a Read Only area for user process. 0x5 => 101 => User Domain, Read Only, Present Bit
+      ((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPTEIndex] = (addr & 0xFFFFF000) | 0x5 | (wc & 0xFF);
+      mapAddress += PAGE_SIZE;
+    }
+    Mem_FlushTLB();
+  }
+  InitializeUSFN();
+}
+
+void GraphicsVideo::InitializeUSFN() {
   // You can as well read a .sfn file in a buffer and call ssfn_load on the same
   // In here, the .sfn file was included as part of the kernel binary
   _usfnInitialized = false;
@@ -84,7 +106,7 @@ void GraphicsVideo::InitializeSSFN() {
     }
 
     if (use_usfn)
-      _ssfnContext->Load((uint8_t *) &_binary_unifont_sfn_start);
+      _ssfnContext->Load((uint8_t *) &_binary_u_vga16_sfn_start);
     else
       int r = ssfn_load(_ssfnContext_t, &_binary_unifont_sfn_start);
 
@@ -108,12 +130,10 @@ void GraphicsVideo::CreateRefreshTask()
   KernelUtil::ScheduleTimedTask("xgrefresh", 50, *this);
 }
 
-bool GraphicsVideo::TimerTrigger()
-{
-  if(_needRefresh)
-  {
+bool GraphicsVideo::TimerTrigger() {
+  if(_needRefresh) {
     ProcessSwitchLock p;
-    memcpy((void*)_mappedLFBAddress, (void*)_zBuffer, _lfbSize);
+    memcpy((void *) _mappedLFBAddress, (void *) _zBuffer, _lfbSize);
     Atomic::Swap(_needRefresh, 0);
   }
   return true;

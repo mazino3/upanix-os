@@ -38,13 +38,13 @@ enum CPU_FEATURE
   CF_IOBREAKPOINT = CR_EDX|2,
   CF_PAGES4MB     = CR_EDX|3,
   CF_RDTSC        = CR_EDX|4,
-  CF_MSR          = CR_EDX|5,
+  CF_MSR          = CR_EDX|5, // Model Specific Registers
   CF_PAE          = CR_EDX|6,
   CF_MCE          = CR_EDX|7,
   CF_X8           = CR_EDX|8,
   CF_APIC         = CR_EDX|9,
   CF_SYSENTEREXIT = CR_EDX|11,
-  CF_MTTR         = CR_EDX|12,
+  CF_MTTR         = CR_EDX|12, // Memory-Type Range Registers
   CF_PGE          = CR_EDX|13,
   CF_MCA          = CR_EDX|14,
   CF_CMOV         = CR_EDX|15,
@@ -75,7 +75,6 @@ enum CPU_FEATURE
   CF_RDRAND       = CR_ECX|30,
 };
 
-
 class Cpu
 {
   private:
@@ -91,6 +90,17 @@ class Cpu
     bool HasSupport(CPU_FEATURE feature);
     uint64_t MSRread(uint32_t msr);
     void MSRwrite(uint32_t msr, uint64_t value);
+
+    typedef enum {
+      UNCACHEABLE = 0,
+      WRITE_COMBINING = 1,
+      WRITE_THROUGH = 4,
+      WRITE_PROTECTED = 5,
+      WRITE_BACK = 6,
+      UNCACHED = 7
+    } MEM_TYPE;
+
+    static const char* memTypeToStr(MEM_TYPE memType);
 
   private:
     uint32_t GetIdRegister(uint32_t function, CPU_REGISTER reg);

@@ -23,6 +23,7 @@
 
 # include <Global.h>
 # include <ctype.h>
+#include <cdisplay.h>
 
 class Display;
 
@@ -50,7 +51,13 @@ class DisplayBuffer
 	private:
 		DisplayBuffer(byte* buffer, unsigned rows, unsigned height, bool isKernel);
 
-    void PutChar(int pos, byte val) { _buffer[pos] = val; }
+    bool PutChar(int pos, byte val) {
+      bool changed = _buffer[pos] != val;
+      if (changed) {
+        _buffer[pos] = val;
+      }
+      return changed;
+    }
     byte GetChar(int pos) { return _buffer[pos]; }
 		inline Cursor& GetCursor() { return _cursor; }
 		inline const Cursor& GetCursor() const { return _cursor; }
@@ -153,7 +160,8 @@ class Display
 		void DDNumberInHex(const char *message, DDWORD ddNumber);
 		void DDNumberInDec(const char *message, DDWORD ddNumber);
     void Character(char ch, const Attribute& attr);
-    void RawCharacter(char ch, const Attribute& attr, bool bUpdateCursorOnScreen);
+    void RawCharacter(byte ch, const Attribute& attr, bool bUpdateCursorOnScreen);
+    void RawCharacterArea(const MChar* src, uint32_t rows, uint32_t cols, int curPos);
     void MoveCursor(int iOffSet);
     void SetCursor(int iCurPos, bool bUpdateCursorOnScreen);
 		void LoadMessage(const char* loadMessage, ReturnCode result);
@@ -174,7 +182,7 @@ class Display
 	protected:
 		Display(unsigned rows, unsigned columns);
 		
-    void PutCharOnBuffer(int iPos, byte ch, byte attr);
+    bool PutCharOnBuffer(int iPos, byte ch, byte attr);
     void PutChar(int iPos, byte ch, byte attr);
     virtual void DirectPutChar(int iPos, byte ch, byte attr) = 0;
 		DisplayBuffer& GetDisplayBuffer(int pid);

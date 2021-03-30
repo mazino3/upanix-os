@@ -94,3 +94,15 @@ void Cpu::MSRwrite(uint32_t msr, uint64_t value)
   uint32_t high = value >> 32;
   __asm__ __volatile__("wrmsr" :: "a"(low), "c"(msr), "d"(high));
 }
+
+const char* Cpu::memTypeToStr(MEM_TYPE memType) {
+  switch (memType) {
+    case UNCACHEABLE: return "Uncacheable";
+    case WRITE_COMBINING: return "Write-Combining";
+    case WRITE_THROUGH: return "Write-Through";
+    case WRITE_PROTECTED: return "Write-Protected";
+    case WRITE_BACK: return "WriteBack";
+    case UNCACHED: return "Uncached";
+  }
+  return "undefined";
+}

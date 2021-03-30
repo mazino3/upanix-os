@@ -25,6 +25,7 @@
 #include <GraphicsVideo.h>
 #include <VGAConsole.h>
 #include <GraphicsConsole.h>
+#include <cdisplay.h>
 
 DisplayBuffer::DisplayBuffer(byte* buffer, unsigned rows, unsigned columns, bool isKernel)
   : _cursor(0, 0), 
@@ -319,8 +320,21 @@ void Display::ClearLine(int iStartPos)
     PutChar(i, ' ', WHITE_ON_BLACK());
 }
 
-void Display::RawCharacter(char ch, const Attribute& attr, bool bUpdateCursorOnScreen)
-{
+void Display::RawCharacterArea(const MChar* src, uint32_t rows, uint32_t cols, int curPos) {
+  SetCursor(curPos, false);
+  int i = 0;
+  for(auto r = 0u; r < rows; ++r) {
+    for(auto c = 0u; c < cols; ++c) {
+      RawCharacter(src[i]._ch, src[i]._attr, false);
+      ++i;
+    }
+    curPos += MaxColumns();
+    SetCursor(curPos, false);
+  }
+}
+
+void Display::RawCharacter(byte ch, const Attribute& attr, bool bUpdateCursorOnScreen) {
+  if (ch == NO_CHAR) ch = ' ';
   PutChar(GetCurrentDisplayBytePosition(), ch, attr);
   UpdateCursorPosition(GetCurrentCursorPosition() + 1, bUpdateCursorOnScreen);
 }
@@ -416,17 +430,18 @@ byte Display::GetChar(int iPos)
   return GetDisplayBuffer().GetChar(iPos);
 }
 
-void Display::PutCharOnBuffer(int iPos, byte ch, byte attr)
+bool Display::PutCharOnBuffer(int iPos, byte ch, byte attr)
 {
   auto& db = GetDisplayBuffer();
-  db.PutChar(iPos, ch);
-  db.PutChar(iPos + 1, attr);
+  bool charChanged = db.PutChar(iPos, ch);
+  bool attrChanged = db.PutChar(iPos + 1, attr);
+  return charChanged || attrChanged;
 }
 
 void Display::PutChar(int iPos, byte ch, byte attr)
 {
-  PutCharOnBuffer(iPos, ch, attr);
-	if(IS_KERNEL() || IS_FG_PROCESS_GROUP())
+  bool changed = PutCharOnBuffer(iPos, ch, attr);
+	if(changed && (IS_KERNEL() || IS_FG_PROCESS_GROUP()))
     DirectPutChar(iPos, ch, attr);
 }
 

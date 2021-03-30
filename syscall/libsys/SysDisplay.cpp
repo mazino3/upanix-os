@@ -74,3 +74,7 @@ void SysDisplay_RawCharacter(__volatile__ const char ch, __volatile__ unsigned u
 	SysCallDisplay_Handle(&iRetStatus, SYS_CALL_DISPLAY_RAW_CHAR, false, v, uiAttr, bUpdateCursorOnScreen, 4, 5, 6, 7, 8, 9);
 }
 
+void SysDisplay_RawCharacterArea(const MChar* src, uint32_t rows, uint32_t cols, int curPos) {
+  int iRetStatus ;
+  SysCallDisplay_Handle(&iRetStatus, SYS_CALL_DISPLAY_RAW_CHAR_AREA, false, (uint32_t)src, rows, cols, curPos, 5, 6, 7, 8, 9);
+}

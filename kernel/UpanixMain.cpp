@@ -53,6 +53,8 @@
 # include <Cpu.h>
 # include <IrqManager.h>
 # include <NetworkManager.h>
+# include <Mtrr.h>
+# include <Pat.h>
 
 /**** Global Variable declaration/definition *****/
 byte KERNEL_MODE ;
@@ -154,6 +156,8 @@ void Initialize()
   {
     Cpu::Instance();
     Acpi::Instance();
+    Pat::Instance();
+    Mtrr::Instance();
     IDT::Instance();
     DMA_Initialize();
     StdIRQ::Instance();
@@ -163,7 +167,7 @@ void Initialize()
 
     KC::MKernelService() ;
 
-    GraphicsVideo::Instance()->InitializeSSFN();
+    GraphicsVideo::Instance()->Initialize();
   /* Start - Peripheral Device Initialization */
   //TODO: An Abstract Bus Handler which should internally take care of different
   //types of bus like ISA, PCI etc... 

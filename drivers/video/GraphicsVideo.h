@@ -42,9 +42,10 @@ class GraphicsVideo : protected KernelUtil::TimerTask
     void DrawChar(byte ch, unsigned x, unsigned y, unsigned fg, unsigned bg);
     void ScrollDown();
     void CreateRefreshTask();
-    void InitializeSSFN();
-    
+    void Initialize();
+
   private:
+    void InitializeUSFN();
     virtual bool TimerTrigger();
     void NeedRefresh();
     void DrawUSFNChar(byte ch, unsigned x, unsigned y, unsigned fg, unsigned bg);

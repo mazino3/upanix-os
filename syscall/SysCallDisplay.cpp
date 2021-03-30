@@ -104,9 +104,16 @@ __volatile__ unsigned uiP9)
 			// P2 => Color Attr
 			// P3 => Update Cursor On Screen
 			{
-				KC::MDisplay().RawCharacter((char)(uiP1), uiP2, uiP3) ; 
+				KC::MDisplay().RawCharacter((char)(uiP1), uiP2, uiP3) ;
 			}
 			break ;
+
+    case SYS_CALL_DISPLAY_RAW_CHAR_AREA:
+      {
+        const MChar* src = KERNEL_ADDR(bDoAddrTranslation, MChar*, uiP1);
+        KC::MDisplay().RawCharacterArea(src, uiP2, uiP3, (int)uiP4);
+      }
+      break;
 
     case SYS_CALL_DISPLAY_SIZE:
       // P1 => Row size (return)
