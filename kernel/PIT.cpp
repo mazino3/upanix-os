@@ -95,10 +95,9 @@ void PIT_Handler()
 	__asm__ __volatile__("pushw %0" : : "i"(SYS_DATA_SELECTOR_DEFINED)) ; 
 	__asm__ __volatile__("popw %es") ; 
 
-	// 1 Int --> 10ms
+	// 1 Int --> 1ms
 	++PIT_ClockCountForSleep;
-
-	if(PIT_IsTaskSwitch())
+	if((PIT_ClockCountForSleep % 10) == 0 && PIT_IsTaskSwitch())
 	{
 		__volatile__ unsigned uiTaskReg = 0;
 		__asm__ __volatile__("STR %ax") ;
@@ -139,12 +138,12 @@ void PIT_Handler()
 		}
 	}
 
+  IrqManager::Instance().SendEOI(StdIRQ::Instance().TIMER_IRQ);
+
 	__asm__ __volatile__("movw %%ss:%0, %%ds" :: "m"(usDS) ) ;
 	__asm__ __volatile__("movw %%ss:%0, %%es" :: "m"(usES) ) ;
 	__asm__ __volatile__("movw %%ss:%0, %%fs" :: "m"(usFS) ) ;
 	__asm__ __volatile__("movw %%ss:%0, %%gs" :: "m"(usGS) ) ;
-
-	IrqManager::Instance().SendEOI(StdIRQ::Instance().TIMER_IRQ);
 
 	AsmUtil_RESTORE_GPR(GPRStack) ;
 
@@ -154,9 +153,10 @@ void PIT_Handler()
 
 unsigned PIT_RoundSleepTime(__volatile__ unsigned uiSleepTime)
 {
-	if((uiSleepTime % 10) >= 5)
-		return uiSleepTime / 10 + 1 ;
-
-	return uiSleepTime / 10 ;
+  return uiSleepTime;
+//	if((uiSleepTime % 10) >= 5)
+//		return uiSleepTime / 10 + 1 ;
+//
+//	return uiSleepTime / 10 ;
 }
 

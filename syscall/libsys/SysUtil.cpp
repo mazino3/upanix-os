@@ -37,8 +37,6 @@ int SysUtil_GetTimeOfDay(struct timeval* pTV)
 	return iRetStatus ;
 }
 
-int gettimeofday(struct timeval* pTV)
-{
-	return SysUtil_GetTimeOfDay(pTV) ;
+uint32_t SysUtil_GetTimeSinceBoot() {
+  return PIT_GetClockCount();
 }
-

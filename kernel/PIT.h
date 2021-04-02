@@ -51,7 +51,7 @@ In MODES 2 and 3 (which are periodic) the Counter reloads itself with the initia
 #define PIT_COUNTER_1            0x40 // select counter 1
 #define PIT_COUNTER_2            0x80 // select counter 2
 
-#define INT_PER_SEC 100
+#define INT_PER_SEC 1000
 
 class IRQ ;
 

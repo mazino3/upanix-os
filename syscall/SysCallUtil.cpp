@@ -51,27 +51,33 @@ __volatile__ unsigned uiP9)
 			}
 			break ;
 
-		case SYS_CALL_UTIL_REBOOT : 
-			{
-				*piRetVal = 0 ;
-				SystemUtil_Reboot() ;
-			}
-			break ;
+    case SYS_CALL_UTIL_BTIME:
+      {
+        *piRetVal = SysUtil_GetTimeSinceBoot();
+      }
+      break;
 
-		case SYS_CALL_UTIL_TOD :
-			// P1 => Ret timeval Pointer 
-			{
-				struct timeval* tv = KERNEL_ADDR(bDoAddrTranslation, struct timeval*, uiP1) ;
+    case SYS_CALL_UTIL_TOD :
+      // P1 => Ret timeval Pointer
+      {
+        struct timeval* tv = KERNEL_ADDR(bDoAddrTranslation, struct timeval*, uiP1) ;
 
-				*piRetVal = 0 ;
+        *piRetVal = 0 ;
         try
         {
           tv->tSec = SystemUtil_GetTimeOfDay();
         }
         catch(...)
         {
-					*piRetVal = -1 ;
+          *piRetVal = -1 ;
         }
+      }
+      break ;
+
+    case SYS_CALL_UTIL_REBOOT :
+			{
+				*piRetVal = 0 ;
+				SystemUtil_Reboot() ;
 			}
 			break ;
 	}
