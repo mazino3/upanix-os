@@ -30,23 +30,24 @@
 //unsigned IDEPrimary_GPRStack[NO_OF_GPR] ;
 //unsigned IDESecondary_GPRStack[NO_OF_GPR] ;
 
-#define AsmUtil_STORE_GPR(BufferStack) \
-__asm__ __volatile__("movl %%eax, %%ss:%0" : "=m"(BufferStack[0]): ) ; \
-__asm__ __volatile__("movl %%ebx, %%ss:%0" : "=m"(BufferStack[1]): ) ; \
-__asm__ __volatile__("movl %%ecx, %%ss:%0" : "=m"(BufferStack[2]): ) ; \
-__asm__ __volatile__("movl %%edx, %%ss:%0" : "=m"(BufferStack[3]): ) ; \
-__asm__ __volatile__("movl %%esi, %%ss:%0" : "=m"(BufferStack[4]): ) ; \
-__asm__ __volatile__("movl %%edi, %%ss:%0" : "=m"(BufferStack[5]): ) ;
+#define AsmUtil_STORE_GPR() \
+__volatile__ uint32_t __gpr_stack[NO_OF_GPR];  \
+__asm__ __volatile__("movl %%eax, %%ss:%0" : "=m"(__gpr_stack[0]): ) ; \
+__asm__ __volatile__("movl %%ebx, %%ss:%0" : "=m"(__gpr_stack[1]): ) ; \
+__asm__ __volatile__("movl %%ecx, %%ss:%0" : "=m"(__gpr_stack[2]): ) ; \
+__asm__ __volatile__("movl %%edx, %%ss:%0" : "=m"(__gpr_stack[3]): ) ; \
+__asm__ __volatile__("movl %%esi, %%ss:%0" : "=m"(__gpr_stack[4]): ) ; \
+__asm__ __volatile__("movl %%edi, %%ss:%0" : "=m"(__gpr_stack[5]): ) ;
 //__asm__ __volatile__("movl %%ebp, %%ss:%0" : "=m"(BufferStack[6]): ) ; 
 //__asm__ __volatile__("movl %%esp, %%ss:%0" : "=m"(BufferStack[7]): )
 
-#define AsmUtil_RESTORE_GPR(BufferStack) \
-__asm__ __volatile__("movl %%ss:%0, %%eax" : : "m"(BufferStack[0])) ; \
-__asm__ __volatile__("movl %%ss:%0, %%ebx" : : "m"(BufferStack[1])) ; \
-__asm__ __volatile__("movl %%ss:%0, %%ecx" : : "m"(BufferStack[2])) ; \
-__asm__ __volatile__("movl %%ss:%0, %%edx" : : "m"(BufferStack[3])) ; \
-__asm__ __volatile__("movl %%ss:%0, %%esi" : : "m"(BufferStack[4])) ; \
-__asm__ __volatile__("movl %%ss:%0, %%edi" : : "m"(BufferStack[5])) ;
+#define AsmUtil_RESTORE_GPR() \
+__asm__ __volatile__("movl %%ss:%0, %%eax" : : "m"(__gpr_stack[0])) ; \
+__asm__ __volatile__("movl %%ss:%0, %%ebx" : : "m"(__gpr_stack[1])) ; \
+__asm__ __volatile__("movl %%ss:%0, %%ecx" : : "m"(__gpr_stack[2])) ; \
+__asm__ __volatile__("movl %%ss:%0, %%edx" : : "m"(__gpr_stack[3])) ; \
+__asm__ __volatile__("movl %%ss:%0, %%esi" : : "m"(__gpr_stack[4])) ; \
+__asm__ __volatile__("movl %%ss:%0, %%edi" : : "m"(__gpr_stack[5])) ;
 //__asm__ __volatile__("movl %%ss:%0, %%ebp" : : "m"(BufferStack[6])) ; 
 //__asm__ __volatile__("movl %%ss:%0, %%esp" : : "m"(BufferStack[7])) 
 

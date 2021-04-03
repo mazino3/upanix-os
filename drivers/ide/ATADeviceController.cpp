@@ -96,8 +96,7 @@ ATAPCIDevice ATADeviceController_Devices[] = {
 
 static void ATADeviceController_PrimaryIRQHandler()
 {
-	unsigned GPRStack[NO_OF_GPR] ;
-	AsmUtil_STORE_GPR(GPRStack) ;
+	AsmUtil_STORE_GPR() ;
 	AsmUtil_SET_KERNEL_DATA_SEGMENTS
 
   HD_PRIMARY_IRQ->Signal();
@@ -105,7 +104,7 @@ static void ATADeviceController_PrimaryIRQHandler()
 	IrqManager::Instance().SendEOI(*HD_PRIMARY_IRQ) ;
 	
 	AsmUtil_REVOKE_KERNEL_DATA_SEGMENTS
-	AsmUtil_RESTORE_GPR(GPRStack) ;
+	AsmUtil_RESTORE_GPR() ;
 
 	__asm__ __volatile__("leave") ;
 	__asm__ __volatile__("IRET") ;
@@ -113,8 +112,7 @@ static void ATADeviceController_PrimaryIRQHandler()
 
 static void ATADeviceController_SecondaryIRQHandler()
 {
-	unsigned GPRStack[NO_OF_GPR] ;
-	AsmUtil_STORE_GPR(GPRStack) ;
+	AsmUtil_STORE_GPR() ;
 	AsmUtil_SET_KERNEL_DATA_SEGMENTS
 
   HD_SECONDARY_IRQ->Signal();
@@ -122,7 +120,7 @@ static void ATADeviceController_SecondaryIRQHandler()
 	IrqManager::Instance().SendEOI(*HD_SECONDARY_IRQ) ;
 
 	AsmUtil_REVOKE_KERNEL_DATA_SEGMENTS
-	AsmUtil_RESTORE_GPR(GPRStack) ;
+	AsmUtil_RESTORE_GPR() ;
 
 	asm("leave") ;
 	asm("IRET") ;

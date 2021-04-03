@@ -130,10 +130,41 @@ void GraphicsVideo::CreateRefreshTask()
   KernelUtil::ScheduleTimedTask("xgrefresh", 50, *this);
 }
 
+static void optimized_memcpy(uint32_t dest, uint32_t src, int len) {
+  const int inc = 16 * 8; // number of bytes copied per iteration = 16 bytes per xmm register * 8 xmm registers
+  for(int i = 0; i < len; i += inc) {
+    __asm__ __volatile__ (
+        "prefetchnta 128(%0);"
+        "prefetchnta 160(%0);"
+        "prefetchnta 192(%0);"
+        "prefetchnta 224(%0);"
+        "movdqa 0(%0), %%xmm0;"
+        "movdqa 16(%0), %%xmm1;"
+        "movdqa 32(%0), %%xmm2;"
+        "movdqa 48(%0), %%xmm3;"
+        "movdqa 64(%0), %%xmm4;"
+        "movdqa 80(%0), %%xmm5;"
+        "movdqa 96(%0), %%xmm6;"
+        "movdqa 112(%0), %%xmm7;"
+        "movntdq %%xmm0, 0(%1);"
+        "movntdq %%xmm1, 16(%1);"
+        "movntdq %%xmm2, 32(%1);"
+        "movntdq %%xmm3, 48(%1);"
+        "movntdq %%xmm4, 64(%1);"
+        "movntdq %%xmm5, 80(%1);"
+        "movntdq %%xmm6, 96(%1);"
+        "movntdq %%xmm7, 112(%1);"
+        : : "r"(src), "r"(dest) : "memory");
+    src += inc;
+    dest += inc;
+  }
+}
+
 bool GraphicsVideo::TimerTrigger() {
   if(_needRefresh) {
     ProcessSwitchLock p;
-    memcpy((void *) _mappedLFBAddress, (void *) _zBuffer, _lfbSize);
+    optimized_memcpy(_mappedLFBAddress, _zBuffer, _lfbSize);
+    //memcpy((void *) _mappedLFBAddress, (void *) _zBuffer, _lfbSize);
     Atomic::Swap(_needRefresh, 0);
   }
   return true;

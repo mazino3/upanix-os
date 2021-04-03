@@ -190,6 +190,9 @@ public:
 private:
   static int _nextPid;
 
+  __inline__ void FXSave();
+  __inline__ void FXRestore();
+
 protected:
   virtual void DeAllocateResources() = 0;
   virtual void DestroyThreads() {
@@ -222,4 +225,7 @@ protected:
   ProcessGroup* _processGroup;
 
   ProcessIDs _childProcessIDs;
+  //C++11 -> alignas() or __attribute__((aligned(16)) doesn't work on member attributes of class (in this case Process) that is allocated by new
+  //alignas(16) uint8_t _sseRegs[512];// __attribute__((aligned(16)));
+  uint8_t* _sseRegs;
 };

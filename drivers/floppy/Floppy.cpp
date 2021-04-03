@@ -412,8 +412,7 @@ static void Floppy_FullFormat(const DiskDrive* pDiskDrive)
 /********************************************************************************************/
 void Floppy_Handler()
 {
-	unsigned GPRStack[NO_OF_GPR] ;
-	AsmUtil_STORE_GPR(GPRStack) ;
+	AsmUtil_STORE_GPR() ;
 	AsmUtil_SET_KERNEL_DATA_SEGMENTS
 
 	StdIRQ::Instance().FLOPPY_IRQ.Signal();
@@ -421,7 +420,7 @@ void Floppy_Handler()
 	IrqManager::Instance().SendEOI(StdIRQ::Instance().FLOPPY_IRQ);
 
 	AsmUtil_REVOKE_KERNEL_DATA_SEGMENTS
-	AsmUtil_RESTORE_GPR(GPRStack) ;
+	AsmUtil_RESTORE_GPR() ;
 
 	asm("leave") ;
 	asm("IRET") ;

@@ -39,8 +39,7 @@ static const IRQ* UHCI_USB_IRQ ;
 
 static void UHCIController_IRQHandler()
 {
-	unsigned GPRStack[NO_OF_GPR] ;
-	AsmUtil_STORE_GPR(GPRStack) ;
+	AsmUtil_STORE_GPR() ;
 	AsmUtil_SET_KERNEL_DATA_SEGMENTS
 
 	KC::MDisplay().Message("\n USB IRQ \n", ' ') ;
@@ -49,7 +48,7 @@ static void UHCIController_IRQHandler()
 	IrqManager::Instance().SendEOI(*UHCI_USB_IRQ) ;
 	
 	AsmUtil_REVOKE_KERNEL_DATA_SEGMENTS
-	AsmUtil_RESTORE_GPR(GPRStack) ;
+	AsmUtil_RESTORE_GPR() ;
 	
 	asm("leave") ;
 	asm("IRET") ;

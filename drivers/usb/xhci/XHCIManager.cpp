@@ -27,8 +27,7 @@ static const IRQ* XHCI_IRQ = nullptr;
 
 static void XHCI_IRQHandler()
 {
-  unsigned GPRStack[NO_OF_GPR];
-  AsmUtil_STORE_GPR(GPRStack);
+  AsmUtil_STORE_GPR();
   AsmUtil_SET_KERNEL_DATA_SEGMENTS
 
   //printf("\n XHCI IRQ");
@@ -41,7 +40,7 @@ static void XHCI_IRQHandler()
   IrqManager::Instance().SendEOI(*XHCI_IRQ);
 
   AsmUtil_REVOKE_KERNEL_DATA_SEGMENTS
-  AsmUtil_RESTORE_GPR(GPRStack);
+  AsmUtil_RESTORE_GPR();
 
   asm("leave");
   asm("IRET");

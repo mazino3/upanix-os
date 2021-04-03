@@ -23,6 +23,7 @@
 #include <MemUtil.h>
 #include <ProcessManager.h>
 #include <Display.h>
+#include <DMM.h>
 
 //#define INIT_NAME "_stdio_init-NOTINUSE"
 //#define TERM_NAME "_stdio_term-NOTINUSE"
@@ -55,9 +56,13 @@ Process::Process(const upan::string& name, int parentID, bool isFGProcess)
   _processGroup->AddProcess();
   if(isFGProcess)
     _processGroup->PutOnFGProcessList(_processID);
+  _sseRegs = (uint8_t*) DMM_AllocateForKernel(512, 16);
+  //Initialize _sseRegs with some legitimate value
+  FXSave();
 }
 
 Process::~Process() {
+  DMM_DeAllocateForKernel(reinterpret_cast<unsigned int>(_sseRegs));
   delete &_stateInfo;
 }
 
@@ -122,13 +127,36 @@ void Process::Release() {
   setStatus(RELEASED);
 }
 
+void Process::FXSave() {
+//  uint32_t cr0;
+//  __asm__ __volatile__("mov %%cr0, %0" :  "=r"(cr0) : );
+//  printf("\n CR0: %x, %x", cr0, _sseRegs);
+  /* As per Intel manuals, when TS flag is set and EM is clear then SSE instructions will cause GP
+   * But in Qemu, this didn't cause any GP but I am doing it just to go by the doc */
+  __asm__ __volatile__("clts");
+  /* Below will not work because fxsave will then access _sseRegs like a pointer - in which case, it will require
+   * both the address of _sseRegs and the address pointed by _sseRegs to be 16-byte aligned
+   * However, only the address pointed by _sseRegs will 16 byte aligned and the address of _sseRegs could
+   * potentially be a non 16 byte aligned address - so, below code will cause a General Protection Fault --> Exception 13 (0xD)
+   * __asm__ __volatile__("fxsave %0" : : "m"(_sseRegs));
+   */
+  __asm__ __volatile__("fxsave (%0)" : : "r"(_sseRegs));
+}
+
+void Process::FXRestore() {
+  __asm__ __volatile__("clts");
+  __asm__ __volatile__("fxrstor (%0)" : : "r"(_sseRegs));
+}
+
 void Process::Load() {
   onLoad();
+  FXRestore();
   MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&_processLDT, SYS_LINEAR_SELECTOR_DEFINED, MEM_LDT_START, sizeof(ProcessLDT)) ;
   MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&_taskState, SYS_LINEAR_SELECTOR_DEFINED, MEM_USER_TSS_START, sizeof(TaskState)) ;
 }
 
 void Process::Store() {
+  FXSave();
   MemUtil_CopyMemory(SYS_LINEAR_SELECTOR_DEFINED, MEM_LDT_START, MemUtil_GetDS(), (unsigned)&_processLDT, sizeof(ProcessLDT)) ;
   MemUtil_CopyMemory(SYS_LINEAR_SELECTOR_DEFINED, MEM_USER_TSS_START, MemUtil_GetDS(), (unsigned)&_taskState, sizeof(TaskState)) ;
 }

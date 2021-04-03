@@ -101,8 +101,7 @@ void RTC::GetDateTime(RTCDateTime& rRTCDateTime)
 
 void RTC_Handler()
 {
-	unsigned GPRStack[NO_OF_GPR] ;
-	AsmUtil_STORE_GPR(GPRStack) ;
+	AsmUtil_STORE_GPR() ;
 	// Not required as DataSegment is not being accessed. But lets play it safe...
 	AsmUtil_SET_KERNEL_DATA_SEGMENTS
 
@@ -112,7 +111,7 @@ void RTC_Handler()
 	IrqManager::Instance().SendEOI(StdIRQ::Instance().RTC_IRQ);
 
 	AsmUtil_REVOKE_KERNEL_DATA_SEGMENTS
-	AsmUtil_RESTORE_GPR(GPRStack) ;
+	AsmUtil_RESTORE_GPR() ;
 
 	asm("leave") ;
 	asm("IRET") ;

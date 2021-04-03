@@ -90,8 +90,7 @@ __volatile__ unsigned uiP7,
 __volatile__ unsigned uiP8, 
 __volatile__ unsigned uiP9)
 {
-	__volatile__ unsigned GPRStack[NO_OF_GPR] ;
-	AsmUtil_STORE_GPR(GPRStack) ;
+	AsmUtil_STORE_GPR() ;
 	
 	__volatile__ unsigned short usDS = MemUtil_GetDS() ; 
 	__volatile__ unsigned short usES = MemUtil_GetES() ; 
@@ -135,7 +134,7 @@ __volatile__ unsigned uiP9)
 	__asm__ __volatile__("movw %%ss:%0, %%fs" :: "m"(usFS) ) ;
 	__asm__ __volatile__("movw %%ss:%0, %%gs" :: "m"(usGS) ) ;
 
-	AsmUtil_RESTORE_GPR(GPRStack) ;
+	AsmUtil_RESTORE_GPR() ;
 
 	__asm__ __volatile__("movl %0, %%eax" : : "m"(iRetVal)) ;
 	__asm__ __volatile__("leave") ;

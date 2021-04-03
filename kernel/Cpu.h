@@ -103,6 +103,7 @@ class Cpu
     static const char* memTypeToStr(MEM_TYPE memType);
 
   private:
+    void EnableSSE();
     uint32_t GetIdRegister(uint32_t function, CPU_REGISTER reg);
 
     bool _cpuIdAvailable;

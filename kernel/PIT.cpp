@@ -77,9 +77,8 @@ bool PIT_DisableTaskSwitch() {
 
 void PIT_Handler()
 {
-	__volatile__ unsigned GPRStack[NO_OF_GPR] ;
-	AsmUtil_STORE_GPR(GPRStack) ;
-	
+	AsmUtil_STORE_GPR() ;
+
 	__volatile__ unsigned short usDS = MemUtil_GetDS() ; 
 	__volatile__ unsigned short usES = MemUtil_GetES() ; 
 	__volatile__ unsigned short usFS = MemUtil_GetFS() ; 
@@ -125,13 +124,13 @@ void PIT_Handler()
 			__asm__ __volatile__("pushl %eax") ;
 			__asm__ __volatile__("popf") ;
 
-//			AsmUtil_REVOKE_KERNEL_DATA_SEGMENTS
+			//AsmUtil_REVOKE_KERNEL_DATA_SEGMENTS
 			__asm__ __volatile__("movw %%ss:%0, %%ds" :: "m"(usDS) ) ;
 			__asm__ __volatile__("movw %%ss:%0, %%es" :: "m"(usES) ) ;
 			__asm__ __volatile__("movw %%ss:%0, %%fs" :: "m"(usFS) ) ;
 			__asm__ __volatile__("movw %%ss:%0, %%gs" :: "m"(usGS) ) ;
 	
-			AsmUtil_RESTORE_GPR(GPRStack) ;
+			AsmUtil_RESTORE_GPR() ;
 
 			__asm__ __volatile__("leave") ;
 			__asm__ __volatile__("IRET") ;
@@ -145,7 +144,7 @@ void PIT_Handler()
 	__asm__ __volatile__("movw %%ss:%0, %%fs" :: "m"(usFS) ) ;
 	__asm__ __volatile__("movw %%ss:%0, %%gs" :: "m"(usGS) ) ;
 
-	AsmUtil_RESTORE_GPR(GPRStack) ;
+	AsmUtil_RESTORE_GPR() ;
 
 	__asm__ __volatile__("leave") ;
 	__asm__ __volatile__("IRET") ;

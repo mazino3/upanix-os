@@ -36,8 +36,10 @@ Cpu::Cpu()
                        "shrl $21, %%eax;"
                        "popfl;" : "=m"(result) : : "eax", "ecx", "memory");
   _cpuIdAvailable = (result == 0);
-  if(_cpuIdAvailable)
+  if(_cpuIdAvailable) {
     printf("\n CPUID is available");
+    EnableSSE();
+  }
 }
 
 bool Cpu::HasSupport(CPU_FEATURE feature)
@@ -93,6 +95,23 @@ void Cpu::MSRwrite(uint32_t msr, uint64_t value)
   uint32_t low = value & 0xFFFFFFFF;
   uint32_t high = value >> 32;
   __asm__ __volatile__("wrmsr" :: "a"(low), "c"(msr), "d"(high));
+}
+
+void Cpu::EnableSSE() {
+  if (HasSupport(CF_SSE) && HasSupport(CF_SSE2)) {
+    printf("\n SSE/SSE2 is supported.");
+    __asm__ __volatile__("mov %%cr0, %%eax;"
+                         "and $0xFFFB, %%ax;" // clear coprocessor emulation CR0.EM
+                         "or $0x2, %%ax;" // set coprocessor monitoring CR0.MP
+                         "mov %%eax, %%cr0;"
+                         "mov %%cr4, %%eax;"
+                         "or 3 << 9, %%ax;" // set CR4.OSFXSR and CR4.OSXMMEXCPT
+                         "mov %%eax, %%cr4;" : : : );
+    printf("\n SSE/SSE2 enabled");
+  } else {
+    printf("\n SSE/SSE2 is not supported!!");
+    while(1);
+  }
 }
 
 const char* Cpu::memTypeToStr(MEM_TYPE memType) {
