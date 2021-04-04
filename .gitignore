@@ -19,7 +19,7 @@ cmake_install.cmake
 ovmf.*
 bin
 Upanix.cbp
-Makefile
+/Makefile
 *.log
 .idea/workspace.xml
 .cmake
