@@ -81,6 +81,7 @@ void UpanixMain_KernelProcess()
 	KC::MKernelService().Spawn() ;
 
   GraphicsVideo::Instance()->CreateRefreshTask();
+  KC::MDisplay().StartCursorBlink();
 
 	while(true) {
     const int pid = ProcessManager::Instance().CreateKernelProcess("console", (unsigned) &Console_StartUpanixConsole,

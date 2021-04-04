@@ -19,14 +19,19 @@
 #pragma once
 
 #include <Display.h>
+#include <KernelUtil.h>
+#include <Atomic.h>
 
-class GraphicsConsole : public Display
+class GraphicsConsole : public Display, KernelUtil::TimerTask
 {
 private:
   GraphicsConsole(unsigned rows, unsigned columns);
-  virtual void Goto(int x, int y);
-  virtual void DirectPutChar(int iPos, byte ch, byte attr);
-  virtual void DoScrollDown();
+  void GotoCursor() override;
+  void DirectPutChar(int iPos, byte ch, byte attr) override;
+  void DoScrollDown() override;
+  void PutCursor(int pos, bool show);
+  bool TimerTrigger() override;
+  void StartCursorBlink() override;
 
   class VideoBuffer : public DisplayBuffer
   {
@@ -41,4 +46,7 @@ private:
     const byte     _bytesPerPixel;
   };
   friend class Display;
+  int _cursorPos;
+  bool _cursorEnabled;
+  Mutex _cursorMutex;
 };

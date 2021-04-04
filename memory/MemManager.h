@@ -80,7 +80,7 @@ class MemManager
 		{
 			return m_uiKernelAUTAddress ;
 		}
-    void MemMapGraphicsLFB(unsigned uiPDEAddress);
+    void MemMapGraphicsLFB(uint32_t memTypeFlag);
 
 	private:
 		bool BuildRawPageMap() ;

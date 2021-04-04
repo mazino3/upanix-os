@@ -29,7 +29,6 @@
 
 #include <usfncontext.h>
 #include <usfntypes.h>
-#include <Cpu.h>
 #include <Pat.h>
 #include "GraphicsFont.h"
 
@@ -69,6 +68,8 @@ GraphicsVideo::GraphicsVideo(const framebuffer_info_t& fbinfo) : _needRefresh(0)
   _bpp = fbinfo.framebuffer_bpp;
   _bytesPerPixel = _bpp / 8;
   _lfbSize = _height * _width * _bytesPerPixel;
+  _xCharScale = 8;
+  _yCharScale = 16;
 
   FillRect(0, 0, _width, _height, 0x0);
 }
@@ -76,18 +77,8 @@ GraphicsVideo::GraphicsVideo(const framebuffer_info_t& fbinfo) : _needRefresh(0)
 void GraphicsVideo::Initialize() {
   const auto wc = Pat::Instance().writeCombiningPageTableFlag();
   if (wc >= 0) {
-    unsigned noOfPages = (LFBSize() / PAGE_SIZE) + 1;
-    unsigned lfbaddress = FlatLFBAddress();
-    unsigned mapAddress = MEM_GRAPHICS_VIDEO_MAP_START;
-    for(unsigned i = 0; i < noOfPages; ++i) {
-      unsigned addr = lfbaddress + PAGE_SIZE * i;
-      unsigned uiPDEIndex = ((mapAddress >> 22) & 0x3FF);
-      unsigned uiPTEAddress = (((unsigned*)(MEM_PDBR - GLOBAL_DATA_SEGMENT_BASE))[uiPDEIndex]) & 0xFFFFF000;
-      unsigned uiPTEIndex = ((mapAddress >> 12) & 0x3FF);
-      // This page is a Read Only area for user process. 0x5 => 101 => User Domain, Read Only, Present Bit
-      ((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPTEIndex] = (addr & 0xFFFFF000) | 0x5 | (wc & 0xFF);
-      mapAddress += PAGE_SIZE;
-    }
+    //remap the video framebuffer address space with write-combining flag
+    MemManager::Instance().MemMapGraphicsLFB(wc);
     Mem_FlushTLB();
   }
   InitializeUSFN();
@@ -201,6 +192,14 @@ void GraphicsVideo::FillRect(unsigned sx, unsigned sy, unsigned width, unsigned 
   NeedRefresh();
 }
 
+void GraphicsVideo::DrawCursor(uint32_t x, uint32_t y, uint32_t color) {
+  x *= _xCharScale;
+  y *= _yCharScale;
+  if(y >= _height || (x + _xCharScale) >= _width)
+    return;
+  FillRect(x + 1, y + _yCharScale - 1, _xCharScale - 1, 1, color);
+}
+
 void GraphicsVideo::DrawChar(byte ch, unsigned x, unsigned y, unsigned fg, unsigned bg) {
   if (_usfnInitialized) {
     try {
@@ -211,11 +210,9 @@ void GraphicsVideo::DrawChar(byte ch, unsigned x, unsigned y, unsigned fg, unsig
       printf("failed to render character using usfn: %s", e.ErrorMsg().c_str());
     }
   }
-  const int xScale = 8;
-  const int yScale = 16;
-  x *= xScale;
-  y *= yScale;
-  if((y + yScale) >= _height || (x + xScale) >= _width)
+  x *= _xCharScale;
+  y *= _yCharScale;
+  if((y + _yCharScale) >= _height || (x + _xCharScale) >= _width)
     return;
   fg |= 0xFF000000;
   bg |= 0xFF000000;
@@ -238,12 +235,10 @@ void GraphicsVideo::DrawUSFNChar(byte ch, unsigned x, unsigned y, unsigned fg, u
   //for SSFN, y is the baseline, the characters are drawn above y and hence add yScale to y --> this is only for Render() which is used for GUI
   //we don't have to do it for a standard text console display using RenderCharacter()
   //++y;
-  const int xScale = 8;
-  const int yScale = 16;
-  x *= xScale;
-  y *= yScale;
+  x *= _xCharScale;
+  y *= _yCharScale;
 
-  if(y >= _height || (x + xScale) >= _width)
+  if(y >= _height || (x + _xCharScale) >= _width)
     return;
 
   if (use_usfn) {

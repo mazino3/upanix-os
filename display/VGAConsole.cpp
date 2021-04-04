@@ -20,6 +20,9 @@
 #include <PortCom.h>
 
 #define VIDEO_BUFFER_ADDRESS			0xB8000
+#define CURSOR_HIEGHT 16
+#define CRT_INDEX_REG 0x03D4
+#define CRT_DATA_REG 0x03D5
 
 VGAConsole::VGAConsole() : Display(25, 80)
 {
@@ -46,9 +49,12 @@ void VGAConsole::InitCursor()
   PortCom_SendByte(CRT_DATA_REG, bCurEnd);
 }
 
-void VGAConsole::Goto(int x, int y)
+void VGAConsole::GotoCursor()
 {
-  int iPos = x + y * _maxColumns;
+  int iPos = GetCurrentCursorPosition();
+  if (iPos >= _maxColumns * _maxRows) {
+    return;
+  }
 
   PortCom_SendByte(CRT_INDEX_REG, 15);
   PortCom_SendByte(CRT_DATA_REG, iPos & 0xFF);
@@ -59,12 +65,12 @@ void VGAConsole::Goto(int x, int y)
 
 void VGAConsole::DoScrollDown()
 {
-  static const unsigned NO_OF_DISPLAY_BYTES = (_maxRows - 1) * _maxColumns * NO_BYTES_PER_CHARACTER;
-  static const unsigned OFFSET = _maxColumns * NO_BYTES_PER_CHARACTER;
+  static const unsigned NO_OF_DISPLAY_BYTES = (_maxRows - 1) * _maxColumns * DisplayConstants::NO_BYTES_PER_CHARACTER;
+  static const unsigned OFFSET = _maxColumns * DisplayConstants::NO_BYTES_PER_CHARACTER;
 
   static byte* vga_frame_buffer = (byte*)(VIDEO_BUFFER_ADDRESS - GLOBAL_DATA_SEGMENT_BASE);
   memcpy(vga_frame_buffer, vga_frame_buffer + OFFSET, NO_OF_DISPLAY_BYTES);
-  for(unsigned i = NO_OF_DISPLAY_BYTES; i < NO_OF_DISPLAY_BYTES + _maxColumns * NO_BYTES_PER_CHARACTER; i += 2)
+  for(unsigned i = NO_OF_DISPLAY_BYTES; i < NO_OF_DISPLAY_BYTES + _maxColumns * DisplayConstants::NO_BYTES_PER_CHARACTER; i += 2)
   {
     vga_frame_buffer[i] = ' ';
     vga_frame_buffer[i + 1] = WHITE_ON_BLACK();

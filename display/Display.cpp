@@ -28,12 +28,12 @@
 #include <cdisplay.h>
 
 DisplayBuffer::DisplayBuffer(byte* buffer, unsigned rows, unsigned columns, bool isKernel)
-  : _cursor(0, 0), 
+  : _cursor(0),
     _buffer(buffer), 
-    _bufSize(rows * columns * Display::NO_BYTES_PER_CHARACTER), 
+    _bufSize(rows * columns * DisplayConstants::NO_BYTES_PER_CHARACTER),
     _isKerel(isKernel)
 {
-	for(unsigned i = 0; i < _bufSize; i += Display::NO_BYTES_PER_CHARACTER)
+	for(unsigned i = 0; i < _bufSize; i += DisplayConstants::NO_BYTES_PER_CHARACTER)
 	{
 		_buffer[i] = ' ';
 		_buffer[i + 1] = Display::WHITE_ON_BLACK();
@@ -47,22 +47,22 @@ DisplayBuffer::~DisplayBuffer()
 }
 
 Display::Attribute::Attribute() : 
-	m_blink(Display::NO_BLINK), 
-	m_fgColor(Display::FG_WHITE),
-	m_bgColor(Display::BG_BLACK)
+	m_blink(DisplayConstants::NO_BLINK),
+	m_fgColor(DisplayConstants::FG_WHITE),
+	m_bgColor(DisplayConstants::BG_BLACK)
 {
 	UpdateAttrVal();
 }
 
-Display::Attribute::Attribute(const Display::FGColor& fgColor, const Display::BGColor& bgColor) :
-	m_blink(Display::NO_BLINK),
+Display::Attribute::Attribute(const DisplayConstants::FGColor& fgColor, const DisplayConstants::BGColor& bgColor) :
+	m_blink(DisplayConstants::NO_BLINK),
 	m_fgColor(fgColor),
 	m_bgColor(bgColor)
 {
 	UpdateAttrVal();
 }
 
-Display::Attribute::Attribute(const Display::Blink& blink, const Display::FGColor& fgColor, const Display::BGColor& bgColor) :
+Display::Attribute::Attribute(const DisplayConstants::Blink& blink, const DisplayConstants::FGColor& fgColor, const DisplayConstants::BGColor& bgColor) :
 	m_blink(blink),
 	m_fgColor(fgColor),
 	m_bgColor(bgColor)
@@ -72,25 +72,25 @@ Display::Attribute::Attribute(const Display::Blink& blink, const Display::FGColo
 
 Display::Attribute::Attribute(const byte& rawAttr)
 {
-	m_blink = static_cast<Display::Blink>(rawAttr & 0x80);
-	m_fgColor = static_cast<Display::FGColor>(rawAttr & Display::FG_BRIGHT_WHITE);
-	m_bgColor = static_cast<Display::BGColor>(rawAttr & Display::BG_WHITE);
+	m_blink = static_cast<DisplayConstants::Blink>(rawAttr & 0x80);
+	m_fgColor = static_cast<DisplayConstants::FGColor>(rawAttr & DisplayConstants::FG_BRIGHT_WHITE);
+	m_bgColor = static_cast<DisplayConstants::BGColor>(rawAttr & DisplayConstants::BG_WHITE);
   UpdateAttrVal();
 }
 
-void Display::Attribute::SetBlink(const Display::Blink& blink)
+void Display::Attribute::SetBlink(const DisplayConstants::Blink& blink)
 {
 	m_blink = blink;
 	UpdateAttrVal();
 }
 
-void Display::Attribute::SetFGColor(const Display::FGColor& fgColor)
+void Display::Attribute::SetFGColor(const DisplayConstants::FGColor& fgColor)
 {
 	m_fgColor = fgColor;
 	UpdateAttrVal();
 }
 
-void Display::Attribute::SetBGColor(const Display::BGColor& bgColor)
+void Display::Attribute::SetBGColor(const DisplayConstants::BGColor& bgColor)
 {
 	m_bgColor = bgColor;
 	UpdateAttrVal();
@@ -133,25 +133,16 @@ Display::Display(unsigned rows, unsigned height)
 
 void Display::ClearScreen()
 {
-	static const unsigned NO_OF_DISPLAY_BYTES = _maxRows * _maxColumns * NO_BYTES_PER_CHARACTER;
+	static const unsigned NO_OF_DISPLAY_BYTES = _maxRows * _maxColumns * DisplayConstants::NO_BYTES_PER_CHARACTER;
 	for(unsigned i = 0; i < NO_OF_DISPLAY_BYTES; i += 2)
     PutChar(i, ' ', WHITE_ON_BLACK());
   UpdateCursorPosition(0, true);
 }
 
-void Display::UpdateCursorPosition(int iCursorPos, bool bUpdateCursorOnScreen)
-{
-	DisplayBuffer& mDisplayBuffer = GetDisplayBuffer();
-	
-	mDisplayBuffer.GetCursor().SetCurPos(iCursorPos);
-	mDisplayBuffer.GetCursor().SetCurBytePos(iCursorPos * 2);
-
-	if(bUpdateCursorOnScreen && ( IS_KERNEL() || IS_FG_PROCESS_GROUP() ))
-	{
-		int x = mDisplayBuffer.GetCursor().GetCurPos() % _maxColumns;
-		int y = mDisplayBuffer.GetCursor().GetCurPos() / _maxColumns;
-
-		Goto(x, y);
+void Display::UpdateCursorPosition(int iCursorPos, bool bUpdateCursorOnScreen) {
+  GetDisplayBuffer().GetCursor().SetCurPos(iCursorPos);
+	if(bUpdateCursorOnScreen && (IS_KERNEL() || IS_FG_PROCESS_GROUP())) {
+		GotoCursor();
 	}
 }
 
@@ -287,25 +278,10 @@ int Display::GetCurrentDisplayBytePosition()
 	return GetDisplayBuffer().GetCursor().GetCurBytePos();
 }
 
-void Display::SetCurrentCursorPosition(int iPos)
-{
-	GetDisplayBuffer().GetCursor().SetCurPos(iPos);
-}
-
-void Display::SetCurrentDisplayBytePosition(int iPos)
-{
-	GetDisplayBuffer().GetCursor().SetCurBytePos(iPos);
-}
-
 void Display::NextLine()
 {
-	int curLine = (GetCurrentCursorPosition() / _maxColumns) + 1;
-
-	if(curLine < (int)_maxColumns)
-		UpdateCursorPosition(curLine * _maxColumns, true);
-	else
-		SetCurrentCursorPosition(_maxRows * _maxColumns);
-
+  int curLine = (GetCurrentCursorPosition() / _maxColumns) + 1;
+	UpdateCursorPosition(curLine * _maxColumns, true);
   ScrollDown();
 }
 
@@ -318,6 +294,7 @@ void Display::ClearLine(int iStartPos)
 
 	for(int i = iStartPos * 2; (i % (_maxColumns * 2)) != 0; i += 2)
     PutChar(i, ' ', WHITE_ON_BLACK());
+  UpdateCursorPosition(iStartPos, true);
 }
 
 void Display::RawCharacterArea(const MChar* src, uint32_t rows, uint32_t cols, int curPos) {
@@ -369,7 +346,6 @@ void Display::Character(char ch, const Attribute& attr)
 	{
     PutChar(GetCurrentDisplayBytePosition(), ch, attr);
     UpdateCursorPosition(GetCurrentCursorPosition() + 1, true);
-
 		ScrollDown();
 	}
 }
@@ -412,9 +388,9 @@ void Display::LoadMessage(const char* loadMessage, ReturnCode result)
 	Message(spaces, WHITE_ON_BLACK()); 
 
 	if(result == Success)
-		Message("[ OK ]", Attribute(Display::FG_BLACK, Display::BG_GREEN));
+		Message("[ OK ]", Attribute(DisplayConstants::FG_BLACK, DisplayConstants::BG_GREEN));
 	else
-		Message("[ FAILED ]", Attribute(Display::FG_RED, Display::BG_WHITE));
+		Message("[ FAILED ]", Attribute(DisplayConstants::FG_RED, DisplayConstants::BG_WHITE));
 }
 
 void Display::ShowProgress(const char* msg, int startCur, unsigned progNum)
@@ -450,12 +426,12 @@ void Display::ScrollDown()
 	if(!(GetCurrentCursorPosition() >= (int)(_maxRows * _maxColumns)))
 		return;
 
-  static const unsigned NO_OF_DISPLAY_BYTES = (_maxRows - 1) * _maxColumns * NO_BYTES_PER_CHARACTER;
-  static const unsigned OFFSET = _maxColumns * NO_BYTES_PER_CHARACTER;
+  static const unsigned NO_OF_DISPLAY_BYTES = (_maxRows - 1) * _maxColumns * DisplayConstants::NO_BYTES_PER_CHARACTER;
+  static const unsigned OFFSET = _maxColumns * DisplayConstants::NO_BYTES_PER_CHARACTER;
 
   byte* buffer = GetDisplayBuffer().GetBuffer();
   memcpy(buffer, buffer + OFFSET, NO_OF_DISPLAY_BYTES);
-	for(unsigned i = NO_OF_DISPLAY_BYTES; i < NO_OF_DISPLAY_BYTES + _maxColumns * NO_BYTES_PER_CHARACTER; i += 2)
+	for(unsigned i = NO_OF_DISPLAY_BYTES; i < NO_OF_DISPLAY_BYTES + _maxColumns * DisplayConstants::NO_BYTES_PER_CHARACTER; i += 2)
   {
     buffer[i] = ' '; 
     buffer[i + 1] = WHITE_ON_BLACK();
@@ -482,10 +458,7 @@ void Display::RefreshScreen()
   for(unsigned i = 0; i < noOfDisplayBytes; i += 2)
     DirectPutChar(i, buffer[i], buffer[i+1]);
 
-  int x = db.GetCursor().GetCurPos() % _maxColumns;
-  int y = db.GetCursor().GetCurPos() / _maxColumns;
-
-  Goto(x, y);
+  GotoCursor();
 }
 
 DisplayBuffer& Display::CreateDisplayBuffer()
@@ -495,6 +468,6 @@ DisplayBuffer& Display::CreateDisplayBuffer()
 
 const Display::Attribute& Display::WHITE_ON_BLACK()
 {
-  static const Attribute mAttr(FG_WHITE, BG_BLACK);
+  static const Attribute mAttr(DisplayConstants::FG_WHITE, DisplayConstants::BG_BLACK);
   return mAttr;
 }

@@ -104,7 +104,7 @@ MemManager::MemManager() :
     {
         if(BuildPagePoolMap())
         {
-          MemMapGraphicsLFB(MEM_PDBR);
+          MemMapGraphicsLFB(0x0);
           Mem_EnablePaging() ;
 
           KC::MDisplay().LoadMessage("Memory Manager Initialization", Success) ;
@@ -120,7 +120,7 @@ MemManager::MemManager() :
   while(1) ;
 }
 
-void MemManager::MemMapGraphicsLFB(unsigned uiPDEAddress)
+void MemManager::MemMapGraphicsLFB(uint32_t memTypeFlag)
 {
   if(!GraphicsVideo::Instance())
     return;
@@ -137,10 +137,10 @@ void MemManager::MemMapGraphicsLFB(unsigned uiPDEAddress)
   {
     unsigned addr = lfbaddress + PAGE_SIZE * i;
     unsigned uiPDEIndex = ((mapAddress >> 22) & 0x3FF);
-    unsigned uiPTEAddress = (((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPDEIndex]) & 0xFFFFF000;
+    unsigned uiPTEAddress = (((unsigned*)(MEM_PDBR - GLOBAL_DATA_SEGMENT_BASE))[uiPDEIndex]) & 0xFFFFF000;
     unsigned uiPTEIndex = ((mapAddress >> 12) & 0x3FF);
     // This page is a Read Only area for user process. 0x5 => 101 => User Domain, Read Only, Present Bit
-    ((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPTEIndex] = (addr & 0xFFFFF000) | 0x5;
+    ((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPTEIndex] = (addr & 0xFFFFF000) | 0x5 | memTypeFlag & 0xFF;
     //No need to mark page as allocated as that would be already done while building PTE for reserved area
     MarkPageAsAllocated(addr / PAGE_SIZE);
     mapAddress += PAGE_SIZE;

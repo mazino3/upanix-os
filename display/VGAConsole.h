@@ -23,9 +23,9 @@ class VGAConsole : public Display
 private:
   VGAConsole();
   void InitCursor();
-  virtual void Goto(int x, int y);
-  virtual void DirectPutChar(int iPos, byte ch, byte attr);
-  virtual void DoScrollDown();
+  void GotoCursor() override;
+  void DirectPutChar(int iPos, byte ch, byte attr) override;
+  void DoScrollDown() override;
 
   class VideoBuffer : public DisplayBuffer
   {

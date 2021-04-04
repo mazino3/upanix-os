@@ -43,10 +43,11 @@ class GraphicsVideo : protected KernelUtil::TimerTask
     void ScrollDown();
     void CreateRefreshTask();
     void Initialize();
+    void DrawCursor(uint32_t x, uint32_t y, uint32_t color);
 
   private:
     void InitializeUSFN();
-    virtual bool TimerTrigger();
+    bool TimerTrigger() override;
     void NeedRefresh();
     void DrawUSFNChar(byte ch, unsigned x, unsigned y, unsigned fg, unsigned bg);
 
@@ -64,6 +65,8 @@ class GraphicsVideo : protected KernelUtil::TimerTask
 
     usfn::Context* _ssfnContext;
     bool     _usfnInitialized;
+    uint32_t _xCharScale;
+    uint32_t _yCharScale;
 };
 
 #endif
