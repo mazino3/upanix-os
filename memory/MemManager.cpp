@@ -133,6 +133,7 @@ void MemManager::MemMapGraphicsLFB(uint32_t memTypeFlag)
   }
   unsigned lfbaddress = GraphicsVideo::Instance()->FlatLFBAddress();
   unsigned mapAddress = MEM_GRAPHICS_VIDEO_MAP_START;
+  ReturnCode markPageRetCode = Success;
   for(unsigned i = 0; i < noOfPages; ++i)
   {
     unsigned addr = lfbaddress + PAGE_SIZE * i;
@@ -140,9 +141,9 @@ void MemManager::MemMapGraphicsLFB(uint32_t memTypeFlag)
     unsigned uiPTEAddress = (((unsigned*)(MEM_PDBR - GLOBAL_DATA_SEGMENT_BASE))[uiPDEIndex]) & 0xFFFFF000;
     unsigned uiPTEIndex = ((mapAddress >> 12) & 0x3FF);
     // This page is a Read Only area for user process. 0x5 => 101 => User Domain, Read Only, Present Bit
-    ((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPTEIndex] = (addr & 0xFFFFF000) | 0x5 | memTypeFlag & 0xFF;
+    ((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPTEIndex] = (addr & 0xFFFFF000) | 0x5 | (memTypeFlag & 0xFF);
     //No need to mark page as allocated as that would be already done while building PTE for reserved area
-    MarkPageAsAllocated(addr / PAGE_SIZE);
+    markPageRetCode = MarkPageAsAllocated(addr / PAGE_SIZE, markPageRetCode);
     mapAddress += PAGE_SIZE;
   }
   GraphicsVideo::Instance()->MappedLFBAddress(MEM_GRAPHICS_VIDEO_MAP_START);
@@ -276,22 +277,22 @@ void MemManager::FreeKernelProcessStackBlock(int id)
 	m_bAllocationMapForKernelProcessStackBlock[id] = false ;
 }
 
-ReturnCode MemManager::MarkPageAsAllocated(unsigned uiPageNumber)
-{
-  ProcessSwitchLock pLock;
-	unsigned uiPageMapIndex = uiPageNumber / 32 ;
-  //Sometimes MEM IO addresses can fall beyond actual ram size (?) - no need to mark those pages as allocated then
-  if(uiPageMapIndex >= m_uiPageMapSize)
-    return Success;
-	unsigned uiPageBitIndex = uiPageNumber % 32 ;
-	unsigned uiCurVal = (m_uiPageMap[ uiPageMapIndex ] >> uiPageBitIndex) & 0x1 ;
-	if(uiCurVal)
-	{
-		printf("\n Error: Page: %u is already marked as allocated", uiPageNumber) ;
-		return Failure;
-	}
-	m_uiPageMap[ uiPageMapIndex ] |= (0x1 << uiPageBitIndex) ;
-	return Success ;
+ReturnCode MemManager::MarkPageAsAllocated(unsigned uiPageNumber, ReturnCode prevRetCode) {
+    ProcessSwitchLock pLock;
+    unsigned uiPageMapIndex = uiPageNumber / 32 ;
+    //Sometimes MEM IO addresses can fall beyond actual ram size (?) - no need to mark those pages as allocated then
+    if(uiPageMapIndex >= m_uiPageMapSize)
+        return Success;
+    unsigned uiPageBitIndex = uiPageNumber % 32 ;
+    unsigned uiCurVal = (m_uiPageMap[ uiPageMapIndex ] >> uiPageBitIndex) & 0x1 ;
+    if(uiCurVal) {
+        if (prevRetCode == Success) {
+            printf("\n Error: Page: %u is already marked as allocated", uiPageNumber) ;
+        }
+        return Failure;
+    }
+    m_uiPageMap[ uiPageMapIndex ] |= (0x1 << uiPageBitIndex) ;
+    return Success ;
 }
 
 unsigned MemManager::AllocatePhysicalPage()

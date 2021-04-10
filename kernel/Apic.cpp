@@ -194,7 +194,7 @@ uint32_t* Apic::MmapBase(uint32_t vAddr, uint32_t pAddr)
   unsigned uiPTEAddress = (((unsigned*)(KERNEL_VIRTUAL_ADDRESS(PDE_ADDRESS)))[uiPDEIndex]) & 0xFFFFF000 ;
   // This page is a Read Only area for user process. 0x5 => 101 => User Domain, Read Only, Present Bit
   ((unsigned*)(KERNEL_VIRTUAL_ADDRESS(uiPTEAddress)))[uiPTEIndex] = (pAddr & 0xFFFFF000) | 0x5 ;
-  if(MemManager::Instance().MarkPageAsAllocated(pAddr / PAGE_SIZE) != Success) {}
+  if(MemManager::Instance().MarkPageAsAllocated(pAddr / PAGE_SIZE, Success) != Success) {}
 	Mem_FlushTLB();
   return (uint32_t*)KERNEL_VIRTUAL_ADDRESS(vAddr + (pAddr % PAGE_SIZE));
 }

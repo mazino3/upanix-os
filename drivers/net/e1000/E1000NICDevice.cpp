@@ -96,6 +96,7 @@ void E1000NICDevice::Initialize() {
   unsigned uiPDEAddress = MEM_PDBR ;
   unsigned memMapBaseAddress = NET_E1000_MMIO_BASE_ADDR;
   printf("\n Total pages to Map: %d", pagesToMap);
+  ReturnCode markPageRetCode = Success;
   for(unsigned i = 0; i < pagesToMap; ++i)
   {
   	unsigned uiPDEIndex = ((memMapBaseAddress >> 22) & 0x3FF) ;
@@ -103,8 +104,8 @@ void E1000NICDevice::Initialize() {
 	  unsigned uiPTEAddress = (((unsigned*)(KERNEL_VIRTUAL_ADDRESS(uiPDEAddress)))[uiPDEIndex]) & 0xFFFFF000 ;
     // This page is a Read Only area for user process. 0x5 => 101 => User Domain, Read Only, Present Bit
     ((unsigned*)(KERNEL_VIRTUAL_ADDRESS(uiPTEAddress)))[uiPTEIndex] = (ioAddr & 0xFFFFF000) | 0x5 ;
-    if(MemManager::Instance().MarkPageAsAllocated(ioAddr / PAGE_SIZE) != Success)
-    {
+    markPageRetCode = MemManager::Instance().MarkPageAsAllocated(ioAddr / PAGE_SIZE, markPageRetCode);
+    if(markPageRetCode != Success) {
     }
 
     memMapBaseAddress += PAGE_SIZE;

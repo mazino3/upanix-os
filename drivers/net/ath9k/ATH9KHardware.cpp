@@ -21,6 +21,7 @@ ATH9KHardware::ATH9KHardware(const PCIEntry& pciEntry) : _pciEntry(pciEntry)
   unsigned uiPDEAddress = MEM_PDBR ;
   uint32_t memMapAddress = NET_ATH9K_MMIO_BASE_ADDR;
   printf("\n Total pages to Map: %d", pagesToMap);
+  ReturnCode markPageRetCode = Success;
   for(unsigned i = 0; i < pagesToMap; ++i)
   {
     unsigned uiPDEIndex = ((memMapAddress >> 22) & 0x3FF) ;
@@ -28,8 +29,8 @@ ATH9KHardware::ATH9KHardware(const PCIEntry& pciEntry) : _pciEntry(pciEntry)
     unsigned uiPTEAddress = (((unsigned*)(KERNEL_VIRTUAL_ADDRESS(uiPDEAddress)))[uiPDEIndex]) & 0xFFFFF000 ;
     // This page is a Read Only area for user process. 0x5 => 101 => User Domain, Read Only, Present Bit
     ((unsigned*)(KERNEL_VIRTUAL_ADDRESS(uiPTEAddress)))[uiPTEIndex] = (uiIOAddr & 0xFFFFF000) | 0x5 ;
-    if(MemManager::Instance().MarkPageAsAllocated(uiIOAddr / PAGE_SIZE) != Success)
-    {
+    markPageRetCode = MemManager::Instance().MarkPageAsAllocated(uiIOAddr / PAGE_SIZE, markPageRetCode);
+    if(markPageRetCode != Success) {
     }
 
     memMapAddress += PAGE_SIZE;

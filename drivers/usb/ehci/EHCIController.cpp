@@ -71,7 +71,7 @@ EHCIController::EHCIController(PCIEntry* pPCIEntry, int iMemMapIndex)
 	((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPTEIndex] = (uiIOAddr & 0xFFFFF000) | 0x5 ;
 	Mem_FlushTLB();
 	
-	if(MemManager::Instance().MarkPageAsAllocated(uiIOAddr / PAGE_SIZE) != Success)
+	if(MemManager::Instance().MarkPageAsAllocated(uiIOAddr / PAGE_SIZE, Success) != Success)
 	{
 	}
 

@@ -52,6 +52,7 @@ XHCIController::XHCIController(PCIEntry* pPCIEntry)
 	unsigned uiPDEAddress = MEM_PDBR ;
   const unsigned uiMappedIOAddr = KERNEL_VIRTUAL_ADDRESS(_memMapBaseAddress + (uiIOAddr % PAGE_SIZE));
   printf("\n Total pages to Map: %d", pagesToMap);
+  ReturnCode markPageRetCode = Success;
   for(unsigned i = 0; i < pagesToMap; ++i)
   {
   	unsigned uiPDEIndex = ((_memMapBaseAddress >> 22) & 0x3FF) ;
@@ -59,8 +60,8 @@ XHCIController::XHCIController(PCIEntry* pPCIEntry)
 	  unsigned uiPTEAddress = (((unsigned*)(KERNEL_VIRTUAL_ADDRESS(uiPDEAddress)))[uiPDEIndex]) & 0xFFFFF000 ;
     // This page is a Read Only area for user process. 0x5 => 101 => User Domain, Read Only, Present Bit
     ((unsigned*)(KERNEL_VIRTUAL_ADDRESS(uiPTEAddress)))[uiPTEIndex] = (uiIOAddr & 0xFFFFF000) | 0x5 ;
-    if(MemManager::Instance().MarkPageAsAllocated(uiIOAddr / PAGE_SIZE) != Success)
-    {
+    markPageRetCode = MemManager::Instance().MarkPageAsAllocated(uiIOAddr / PAGE_SIZE, markPageRetCode);
+    if(markPageRetCode != Success) {
     }
 
     _memMapBaseAddress += PAGE_SIZE;
