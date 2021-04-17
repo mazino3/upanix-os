@@ -15,8 +15,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
-#ifndef _GRAPHICS_VIDEO_H_
-#define _GRAPHICS_VIDEO_H_
+#pragma once
 
 #include <MultiBoot.h>
 #include <KernelUtil.h>
@@ -38,18 +37,30 @@ class GraphicsVideo : protected KernelUtil::TimerTask
     }
     unsigned LFBSize() const { return _lfbSize; }
     void SetPixel(unsigned x, unsigned y, unsigned color);
-    void FillRect(unsigned sx, unsigned sy, unsigned width, unsigned height, unsigned color);
+    void DrawRect(unsigned sx, unsigned sy, unsigned width, unsigned height, unsigned resolution, uint32_t* colorTable, void* colorMap);
+    void FillRect(unsigned sx, unsigned sy, unsigned width, unsigned height, unsigned color, bool directWrite);
     void DrawChar(byte ch, unsigned x, unsigned y, unsigned fg, unsigned bg);
     void ScrollDown();
     void CreateRefreshTask();
     void Initialize();
     void DrawCursor(uint32_t x, uint32_t y, uint32_t color);
 
+
+    int GetMouseX() {
+      return _mouseX;
+    }
+    int GetMouseY() {
+      return _mouseY;
+    }
+    void SetMouseCursorPos(int x, int y);
+    void ExperimentWithMouseCursor(int i);
+
   private:
     void InitializeUSFN();
     bool TimerTrigger() override;
     void NeedRefresh();
     void DrawUSFNChar(byte ch, unsigned x, unsigned y, unsigned fg, unsigned bg);
+    void DrawMouseCursor(uint32_t x, uint32_t y, uint32_t color);
 
     static GraphicsVideo* _instance;
     unsigned _flatLFBAddress;
@@ -67,6 +78,6 @@ class GraphicsVideo : protected KernelUtil::TimerTask
     bool     _usfnInitialized;
     uint32_t _xCharScale;
     uint32_t _yCharScale;
+    int _mouseX;
+    int _mouseY;
 };
-
-#endif

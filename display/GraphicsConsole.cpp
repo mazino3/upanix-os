@@ -18,25 +18,7 @@
 
 #include <GraphicsConsole.h>
 #include <GraphicsVideo.h>
-
-static const unsigned GRAPHICS_COLOR[] = {
-    0x000000, //FG_BLACK
-    0x0000FF, //FG_BLUE
-    0x00FF00, //FG_GREEN
-    0x00FFFF, //FG_CYAN
-    0xFF0000, //FG_RED
-    0xFF00FF, //FG_MAGENTA
-    0xA52A2A, //FG_BROWN
-    0xFFFFFF, //FG_WHITE
-    0x404040, //FG_DARK_GRAY
-    0x1A1AFF, //FG_BRIGHT_BLUE
-    0x1AFF1A, //FG_BRIGHT_GREEN
-    0x1AFFFF, //FG_BRIGHT_CYAN
-    0xFFC0CB, //FG_PINK
-    0xFF1AFF, //FG_BRIGHT_MAGENTA
-    0xFFFF00, //FG_YELLOW
-    0xFFFFFF, //FG_BRIGHT_WHITE
-};
+#include <ColorPalettes.h>
 
 GraphicsConsole::GraphicsConsole(unsigned rows, unsigned columns) : Display(rows, columns),
   _cursorPos(0), _cursorEnabled(false) {
@@ -66,10 +48,13 @@ void GraphicsConsole::PutCursor(int pos, bool show) {
   if ((uint32_t)pos >= _maxRows * _maxColumns) {
     return;
   }
+
   const auto attr = GetChar(pos * DisplayConstants::NO_BYTES_PER_CHARACTER + 1);
-  const auto color = show ? GRAPHICS_COLOR[attr & DisplayConstants::FG_BRIGHT_WHITE] : GRAPHICS_COLOR[(attr & DisplayConstants::BG_WHITE) >> 4];
+  const auto color = show ? ColorPalettes::CP16::Get(attr & ColorPalettes::CP16::FG_WHITE)
+      : ColorPalettes::CP16::Get((attr & ColorPalettes::CP16::BG_WHITE) >> 4);
   const auto x = (pos % _maxColumns);
   const auto y = (pos / _maxColumns);
+
   GraphicsVideo::Instance()->DrawCursor(x, y, color);
 }
 
@@ -88,8 +73,8 @@ void GraphicsConsole::DirectPutChar(int iPos, byte ch, byte attr)
   const unsigned y = (curPos / _maxColumns);
 
   GraphicsVideo::Instance()->DrawChar(ch, x, y,
-                                      GRAPHICS_COLOR[attr & DisplayConstants::FG_BRIGHT_WHITE],
-                                      GRAPHICS_COLOR[(attr & DisplayConstants::BG_WHITE) >> 4]);
+                                      ColorPalettes::CP16::Get(attr & ColorPalettes::CP16::FG_WHITE),
+                                      ColorPalettes::CP16::Get((attr & ColorPalettes::CP16::BG_WHITE) >> 4));
 }
 
 void GraphicsConsole::DoScrollDown()

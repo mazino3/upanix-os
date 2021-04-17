@@ -20,7 +20,7 @@
 
 class MemManager;
 class KernelService;
-class MouseDriver;
+class PS2MouseDriver;
 class NetworkManager;
 class Display;
 
@@ -29,7 +29,6 @@ class KC
 	public:
 		static Display& MDisplay(); 
 		static KernelService& MKernelService();
-		static MouseDriver& MMouseDriver();
 
   private:
     static void SetDisplay(Display& dm) { _dm = &dm; }

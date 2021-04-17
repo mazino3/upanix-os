@@ -17,7 +17,7 @@
  */
 # include <SystemUtil.h>
 # include <DMM.h>
-# include <BuiltInKeyboardDriver.h>
+# include <PS2KeyboardDriver.h>
 # include <RTC.h>
 # include <dtime.h>
 # include <stdio.h>
@@ -26,6 +26,7 @@
 # include <DiskCache.h>
 # include <try.h>
 # include <DeviceDrive.h>
+#include <PS2Controller.h>
 
 void SystemUtil_Reboot()
 {
@@ -44,7 +45,7 @@ void SystemUtil_Reboot()
 		}
 	}
 	ProcessManager::Instance().Sleep(2000) ;
-  BuiltInKeyboardDriver::Instance().Reboot() ;
+  PS2Controller::Instance().Reboot() ;
 }
 
 uint32_t SystemUtil_GetTimeOfDay()

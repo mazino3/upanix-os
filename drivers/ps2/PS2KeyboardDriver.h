@@ -15,22 +15,28 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
-#include <KernelComponents.h>
-#include <Display.h>
-#include <MemManager.h>
-#include <KernelService.h>
-#include <PS2MouseDriver.h>
-#include <NetworkManager.h>
+#pragma once
 
-Display* KC::_dm = nullptr;
+#include <Global.h>
 
-Display& KC::MDisplay()
+class PS2KeyboardDriver
 {
-	return *_dm;
-}
+private:
+  PS2KeyboardDriver();
+  PS2KeyboardDriver(const PS2KeyboardDriver&) = delete;
+  PS2KeyboardDriver& operator=(const PS2KeyboardDriver&) = delete;
 
-KernelService& KC::MKernelService()
-{
-	static KernelService kKernelService ;
-	return kKernelService ;
-}
+public:
+  static PS2KeyboardDriver& Instance() {
+    static PS2KeyboardDriver instance;
+    return instance;
+  }
+  void Process(byte rawKey);
+
+private:
+  byte Decode(byte rawKey);
+
+  bool _isShiftKey;
+  bool _isCapsLock;
+  bool _isCtrlKey;
+};

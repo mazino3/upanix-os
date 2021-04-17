@@ -55,6 +55,7 @@
 # include <NetworkManager.h>
 # include <Mtrr.h>
 # include <Pat.h>
+#include <ps2/PS2Controller.h>
 
 /**** Global Variable declaration/definition *****/
 byte KERNEL_MODE ;
@@ -181,8 +182,7 @@ void Initialize()
 
     DiskDriveManager::Instance();
 
-    KeyboardHandler::Instance();
-    BuiltInKeyboardDriver::Instance();
+    PS2Controller::Instance();
 
     //Floppy_Initialize() ;
     //ATADeviceController_Initialize() ;

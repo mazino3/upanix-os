@@ -48,13 +48,13 @@ DisplayBuffer::~DisplayBuffer()
 
 Display::Attribute::Attribute() : 
 	m_blink(DisplayConstants::NO_BLINK),
-	m_fgColor(DisplayConstants::FG_WHITE),
-	m_bgColor(DisplayConstants::BG_BLACK)
+	m_fgColor(ColorPalettes::CP16::FG_WHITE),
+	m_bgColor(ColorPalettes::CP16::BG_BLACK)
 {
 	UpdateAttrVal();
 }
 
-Display::Attribute::Attribute(const DisplayConstants::FGColor& fgColor, const DisplayConstants::BGColor& bgColor) :
+Display::Attribute::Attribute(const ColorPalettes::CP16::FGColor& fgColor, const ColorPalettes::CP16::BGColor& bgColor) :
 	m_blink(DisplayConstants::NO_BLINK),
 	m_fgColor(fgColor),
 	m_bgColor(bgColor)
@@ -62,7 +62,7 @@ Display::Attribute::Attribute(const DisplayConstants::FGColor& fgColor, const Di
 	UpdateAttrVal();
 }
 
-Display::Attribute::Attribute(const DisplayConstants::Blink& blink, const DisplayConstants::FGColor& fgColor, const DisplayConstants::BGColor& bgColor) :
+Display::Attribute::Attribute(const DisplayConstants::Blink& blink, const ColorPalettes::CP16::FGColor& fgColor, const ColorPalettes::CP16::BGColor& bgColor) :
 	m_blink(blink),
 	m_fgColor(fgColor),
 	m_bgColor(bgColor)
@@ -73,8 +73,8 @@ Display::Attribute::Attribute(const DisplayConstants::Blink& blink, const Displa
 Display::Attribute::Attribute(const byte& rawAttr)
 {
 	m_blink = static_cast<DisplayConstants::Blink>(rawAttr & 0x80);
-	m_fgColor = static_cast<DisplayConstants::FGColor>(rawAttr & DisplayConstants::FG_BRIGHT_WHITE);
-	m_bgColor = static_cast<DisplayConstants::BGColor>(rawAttr & DisplayConstants::BG_WHITE);
+	m_fgColor = static_cast<ColorPalettes::CP16::FGColor>(rawAttr & ColorPalettes::CP16::FG_WHITE);
+	m_bgColor = static_cast<ColorPalettes::CP16::BGColor>(rawAttr & ColorPalettes::CP16::BG_WHITE);
   UpdateAttrVal();
 }
 
@@ -84,13 +84,13 @@ void Display::Attribute::SetBlink(const DisplayConstants::Blink& blink)
 	UpdateAttrVal();
 }
 
-void Display::Attribute::SetFGColor(const DisplayConstants::FGColor& fgColor)
+void Display::Attribute::SetFGColor(const ColorPalettes::CP16::FGColor& fgColor)
 {
 	m_fgColor = fgColor;
 	UpdateAttrVal();
 }
 
-void Display::Attribute::SetBGColor(const DisplayConstants::BGColor& bgColor)
+void Display::Attribute::SetBGColor(const ColorPalettes::CP16::BGColor& bgColor)
 {
 	m_bgColor = bgColor;
 	UpdateAttrVal();
@@ -324,10 +324,10 @@ void Display::MoveCursor(int iOffSet)
 		UpdateCursorPosition(iPos, true);
 }
 
-void Display::SetCursor(int iCurPos, bool bUpdateCursorOnScreen)
-{
-	if(iCurPos >= 0 && iCurPos < (int)(_maxRows * _maxColumns))
-		UpdateCursorPosition(iCurPos, bUpdateCursorOnScreen);
+void Display::SetCursor(int iCurPos, bool bUpdateCursorOnScreen) {
+	if(iCurPos >= 0 && iCurPos < (int)(_maxRows * _maxColumns)) {
+    UpdateCursorPosition(iCurPos, bUpdateCursorOnScreen);
+	}
 }
 
 void Display::Character(char ch, const Attribute& attr)
@@ -388,9 +388,9 @@ void Display::LoadMessage(const char* loadMessage, ReturnCode result)
 	Message(spaces, WHITE_ON_BLACK()); 
 
 	if(result == Success)
-		Message("[ OK ]", Attribute(DisplayConstants::FG_BLACK, DisplayConstants::BG_GREEN));
+		Message("[ OK ]", Attribute(ColorPalettes::CP16::FG_BLACK, ColorPalettes::CP16::BG_GREEN));
 	else
-		Message("[ FAILED ]", Attribute(DisplayConstants::FG_RED, DisplayConstants::BG_WHITE));
+		Message("[ FAILED ]", Attribute(ColorPalettes::CP16::FG_RED, ColorPalettes::CP16::BG_WHITE));
 }
 
 void Display::ShowProgress(const char* msg, int startCur, unsigned progNum)
@@ -468,6 +468,6 @@ DisplayBuffer& Display::CreateDisplayBuffer()
 
 const Display::Attribute& Display::WHITE_ON_BLACK()
 {
-  static const Attribute mAttr(DisplayConstants::FG_WHITE, DisplayConstants::BG_BLACK);
+  static const Attribute mAttr(ColorPalettes::CP16::FG_WHITE, ColorPalettes::CP16::BG_BLACK);
   return mAttr;
 }

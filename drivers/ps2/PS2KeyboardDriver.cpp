@@ -15,27 +15,24 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
-#include <BuiltInKeyboardDriver.h>
+#include <PS2KeyboardDriver.h>
 #include <Display.h>
 #include <AsmUtil.h>
 #include <PortCom.h>
 #include <IrqManager.h>
 #include <KeyboardHandler.h>
 #include <KBInputHandler.h>
-
-#define KB_STAT_OBF 0x01
-#define KB_STAT_IBF 0x02
-#define KB_REBOOT	0xFE
+#include <PS2Controller.h>
 
 static void KBDriver_Handler()
 {
   AsmUtil_STORE_GPR() ;
   AsmUtil_SET_KERNEL_DATA_SEGMENTS
 
-//  printf("\nKB IRQ\n") ;
-  BuiltInKeyboardDriver::Instance().WaitForRead();
-  if(!(PortCom_ReceiveByte(KB_STAT_PORT) & 0x20))
-    BuiltInKeyboardDriver::Instance().Process((PortCom_ReceiveByte(KB_DATA_PORT)) & 0xFF);
+  //printf("\nKB IRQ\n") ;
+  PS2Controller::Instance().WaitForRead();
+  if(!(PortCom_ReceiveByte(PS2Controller::COMMAND_PORT) & 0x20))
+    PS2KeyboardDriver::Instance().Process((PortCom_ReceiveByte(PS2Controller::DATA_PORT)) & 0xFF);
 
   IrqManager::Instance().SendEOI(StdIRQ::Instance().KEYBOARD_IRQ);
 
@@ -101,18 +98,20 @@ static const byte Keyboard_GENERIC_SHIFTED_KEY_MAP[MAX_KEYBOARD_CHARS] = { Keybo
   Keyboard_KEY_PG_DOWN, Keyboard_KEY_INST, Keyboard_KEY_DEL
 };
 
-BuiltInKeyboardDriver::BuiltInKeyboardDriver() : _isShiftKey(false), _isCapsLock(false), _isCtrlKey(false)
+PS2KeyboardDriver::PS2KeyboardDriver() : _isShiftKey(false), _isCapsLock(false), _isCtrlKey(false)
 {
+  KeyboardHandler::Instance();
+
   IrqManager::Instance().DisableIRQ(StdIRQ::Instance().KEYBOARD_IRQ);
   IrqManager::Instance().RegisterIRQ(StdIRQ::Instance().KEYBOARD_IRQ, (unsigned)&KBDriver_Handler);
   IrqManager::Instance().EnableIRQ(StdIRQ::Instance().KEYBOARD_IRQ);
 
-  PortCom_ReceiveByte(KB_DATA_PORT);
+  PortCom_ReceiveByte(PS2Controller::DATA_PORT);
 
-  KC::MDisplay().LoadMessage("Built-In Keyboard Driver Initialization", Success);
+  KC::MDisplay().LoadMessage("PS2 Keyboard Driver Initialization", Success);
 }
 
-void BuiltInKeyboardDriver::Process(byte rawKey)
+void PS2KeyboardDriver::Process(byte rawKey)
 {
   byte kbKey = Decode(rawKey);
   if (kbKey == Keyboard_NA_CHAR)
@@ -128,7 +127,7 @@ void BuiltInKeyboardDriver::Process(byte rawKey)
   }
 }
 
-byte BuiltInKeyboardDriver::Decode(byte rawKey)
+byte PS2KeyboardDriver::Decode(byte rawKey)
 {
   if (rawKey == EXTRA_KEYS)
     return Keyboard_NA_CHAR;
@@ -174,27 +173,4 @@ byte BuiltInKeyboardDriver::Decode(byte rawKey)
     }
   }
   return Keyboard_NA_CHAR;
-}
-
-bool BuiltInKeyboardDriver::WaitForWrite()
-{
-  int iTimeOut = 0xFFFFF ;
-  while((iTimeOut > 0) && (PortCom_ReceiveByte(KB_STAT_PORT) & KB_STAT_IBF))
-    iTimeOut--;
-  return (iTimeOut > 0) ;
-}
-
-bool BuiltInKeyboardDriver::WaitForRead()
-{
-  int iTimeOut = 0xFFFFF ;
-  while((iTimeOut > 0) && !(PortCom_ReceiveByte(KB_STAT_PORT) & KB_STAT_OBF))
-    iTimeOut--;
-  return (iTimeOut > 0) ;
-}
-
-void BuiltInKeyboardDriver::Reboot()
-{
-  WaitForWrite();
-  PortCom_SendByte(KB_STAT_PORT, KB_REBOOT);
-  __asm__ __volatile__("cli; hlt");
 }

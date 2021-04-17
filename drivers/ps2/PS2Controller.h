@@ -15,35 +15,36 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
-#ifndef _MOUSE_DRIVER_H_
-#define _MOUSE_DRIVER_H_
+#pragma once
 
-#define MouseDriver_SUCCESS				0
-#define MouseDriver_ERR_BUFFER_FULL		1
-#define MouseDriver_ERR_BUFFER_EMPTY	2
+#include <option.h>
 
-class MouseDriver
-{
-	public:
-		void Process(unsigned data) ;
+class PS2Controller {
+public:
+  static const int DATA_PORT = 0x60;
+  static const int COMMAND_PORT = 0x64;
 
-	private:
-		MouseDriver() ;
-		void Initialize() ;
-		static void Handler() ;
+private:
+  PS2Controller();
 
-	private:
-		bool SendCommand1(byte command) ;
-		bool SendCommand2(byte command) ;
-		bool WaitForAck() ;
-		bool ReceiveData(byte& data) ;
-		bool ReceiveIRQData(byte& data) ;
-		bool SendData(byte data) ;
+public:
+  static PS2Controller& Instance() {
+    static PS2Controller instance;
+    return instance;
+  }
 
-	private:
-		bool m_bProcessToggle ;
+  bool WaitForWrite();
+  bool WaitForRead();
+  void Reboot();
 
-	friend class KC ;
-} ;
+private:
+  void Initialize();
+  void InitDriver(uint32_t devCode);
+  void SendCommand(uint16_t port, uint8_t cmd, const upan::string& opName);
+  void SendCommand2(byte command, const upan::string& opName);
+  void WaitForAck();
+  upan::option<uint8_t> ReceiveData();
 
-#endif
+  friend class KC;
+};
+

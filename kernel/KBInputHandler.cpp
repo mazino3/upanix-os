@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
 # include <KBInputHandler.h>
-# include <BuiltInKeyboardDriver.h>
+# include <PS2KeyboardDriver.h>
 # include <SessionManager.h>
 
 /******************* Static Functions ***************************/

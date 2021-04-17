@@ -21,7 +21,7 @@
 #include <Console.h>
 #include <Display.h>
 #include <Global.h>
-#include <BuiltInKeyboardDriver.h>
+#include <PS2KeyboardDriver.h>
 #include <IDT.h>
 #include <PIC.h>
 #include <PIT.h>

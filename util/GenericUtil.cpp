@@ -17,7 +17,7 @@
  */
 # include <GenericUtil.h>
 # include <Display.h>
-# include <BuiltInKeyboardDriver.h>
+# include <PS2KeyboardDriver.h>
 # include <KeyboardHandler.h>
 # include <Display.h>
 # include <MemConstants.h>

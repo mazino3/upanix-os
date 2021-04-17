@@ -21,6 +21,7 @@
 # include <ctype.h>
 # include <cdisplay.h>
 # include <DisplayConstants.h>
+# include <ColorPalettes.h>
 
 class Display;
 
@@ -74,17 +75,17 @@ class Display
 		{
 			public:
 				Attribute();
-				Attribute(const DisplayConstants::FGColor& fgColor, const DisplayConstants::BGColor& bgColor);
-				Attribute(const DisplayConstants::Blink& blink, const DisplayConstants::FGColor& fgColor, const DisplayConstants::BGColor& bgColor);
+				Attribute(const ColorPalettes::CP16::FGColor& fgColor, const ColorPalettes::CP16::BGColor& bgColor);
+				Attribute(const DisplayConstants::Blink& blink, const ColorPalettes::CP16::FGColor& fgColor, const ColorPalettes::CP16::BGColor& bgColor);
 				Attribute(const byte& rawAttr);
 
 				void SetBlink(const DisplayConstants::Blink& blink);
-				void SetFGColor(const DisplayConstants::FGColor& fgColor);
-				void SetBGColor(const DisplayConstants::BGColor& bgColor);
+				void SetFGColor(const ColorPalettes::CP16::FGColor& fgColor);
+				void SetBGColor(const ColorPalettes::CP16::BGColor& bgColor);
 
 				inline DisplayConstants::Blink GetBlink() { return m_blink; }
-				inline DisplayConstants::FGColor GetFGColor() { return m_fgColor; }
-				inline DisplayConstants::BGColor GetBGColor() { return m_bgColor; }
+				inline ColorPalettes::CP16::FGColor GetFGColor() { return m_fgColor; }
+				inline ColorPalettes::CP16::BGColor GetBGColor() { return m_bgColor; }
 
 				inline byte GetAttrVal() { return m_Attr; }
 				inline byte GetAttrVal() const { return m_Attr; }
@@ -94,8 +95,8 @@ class Display
 
 			private:
         DisplayConstants::Blink m_blink;
-        DisplayConstants::FGColor m_fgColor;
-        DisplayConstants::BGColor m_bgColor;
+        ColorPalettes::CP16::FGColor m_fgColor;
+        ColorPalettes::CP16::BGColor m_bgColor;
 				byte m_Attr;
 
 				void UpdateAttrVal();
@@ -128,10 +129,6 @@ class Display
 		int GetCurrentCursorPosition();
     void ScrollDown();
 
-    //TODO
-    int GetMouseCursorPos() { return 0; }
-    void SetMouseCursorPos(int pos) { }
-
 		static const int START_CURSOR_POS = -1;
 		static const Attribute& WHITE_ON_BLACK();
 
@@ -150,7 +147,7 @@ protected:
 		virtual void GotoCursor() = 0;
     virtual void DoScrollDown() = 0;
 
-		byte* GetDisplayMemAddress(int pid);
+		//byte* GetDisplayMemAddress(int pid);
 		byte GetChar(int iPos);
 
 		int GetCurrentDisplayBytePosition();

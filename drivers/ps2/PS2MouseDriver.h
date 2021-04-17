@@ -15,40 +15,30 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
-#ifndef _BUILTINKEYBOARDDRIVER_H_
-#define _BUILTINKEYBOARDDRIVER_H_
+#pragma once
 
-#include <Global.h>
+#include <option.h>
 
-#define KB_DATA_PORT 0x60
-#define KB_STAT_PORT 0x64
-
-class BuiltInKeyboardDriver
+class PS2MouseDriver
 {
-private:
-  BuiltInKeyboardDriver();
-  BuiltInKeyboardDriver(const BuiltInKeyboardDriver&) = delete;
-  BuiltInKeyboardDriver& operator=(const BuiltInKeyboardDriver&) = delete;
+	public:
+    static PS2MouseDriver& Instance() {
+      static PS2MouseDriver instance;
+      return instance;
+    }
+		void Process() ;
 
-public:
-  static BuiltInKeyboardDriver& Instance()
-  {
-    static BuiltInKeyboardDriver instance;
-    return instance;
-  }
-  void Process(byte rawKey);
+	private:
+		PS2MouseDriver() ;
+		static void Handler() ;
 
-  bool WaitForWrite();
-  bool WaitForRead();
-  void Reboot();
+	private:
+		upan::option<uint8_t> ReceiveIRQData();
 
-private:
-  byte Decode(byte rawKey);
+	private:
+		uint32_t _dataCounter;
+		uint32_t _packetSize;
+		uint8_t _packetData[10];
 
-  bool _isShiftKey;
-  bool _isCapsLock;
-  bool _isCtrlKey;
-};
-
-#endif
-
+	friend class KC ;
+} ;

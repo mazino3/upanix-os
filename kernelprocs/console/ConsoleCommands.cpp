@@ -19,7 +19,7 @@
 # include <CommandLineParser.h>
 
 #include <Display.h>
-#include <BuiltInKeyboardDriver.h>
+#include <PS2KeyboardDriver.h>
 #include <StringUtil.h>
 #include <Floppy.h>
 #include <MemUtil.h>
@@ -48,7 +48,7 @@
 #include <BTree.h>
 #include <TestSuite.h>
 #include <video.h>
-#include <MouseDriver.h>
+#include <PS2MouseDriver.h>
 #include <exception.h>
 #include <stdio.h>
 #include <PCSound.h>
@@ -1041,8 +1041,8 @@ void ConsoleCommands_Testv()
 	//_DisplayReadStat() ;
 	//printf("\n RAM SIZE: %u", MemManager::Instance().GetRamSize()) ;
 	//VM86_Test() ;
-	KC::MMouseDriver() ;
 	//KC::MDisplay().SetMouseCursorPos(KC::MDisplay().GetMouseCursorPos() + 70) ;
+	GraphicsVideo::Instance()->ExperimentWithMouseCursor(atoi(CommandLineParser::Instance().GetParameterAt(0)));
 }
 
 void ConsoleCommands_TestNet()

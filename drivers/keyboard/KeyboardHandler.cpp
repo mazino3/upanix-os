@@ -21,7 +21,7 @@
 #include <IDT.h>
 #include <ProcessManager.h>
 #include <MemUtil.h>
-#include <BuiltInKeyboardDriver.h>
+#include <PS2KeyboardDriver.h>
 
 KeyboardHandler::KeyboardHandler() : _qBuffer(1024)
 {

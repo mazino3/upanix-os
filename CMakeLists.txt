@@ -56,8 +56,8 @@ include_directories(${PROJECT_SOURCE_DIR}/kernelprocs/session)
 include_directories(${PROJECT_SOURCE_DIR}/kernelprocs)
 
 include_directories(${PROJECT_SOURCE_DIR}/drivers/floppy)
+include_directories(${PROJECT_SOURCE_DIR}/drivers/ps2)
 include_directories(${PROJECT_SOURCE_DIR}/drivers/keyboard)
-include_directories(${PROJECT_SOURCE_DIR}/drivers/mouse)
 include_directories(${PROJECT_SOURCE_DIR}/drivers/bus)
 include_directories(${PROJECT_SOURCE_DIR}/drivers/ide)
 include_directories(${PROJECT_SOURCE_DIR}/drivers/ide/vendorspec)
@@ -102,6 +102,10 @@ include_directories(${PROJECT_SOURCE_DIR}/libmcpp/cal)
 
 include_directories(${UPANLIB_SOURCE_DIR}/libcxxrt)
 
+include_directories(${UPANLIB_SOURCE_DIR}/libupanui)
+
+link_directories(${UPANLIB_OUT_DIR})
+
 add_custom_target(osutils COMMAND make WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/osutils)
 add_custom_target(boot COMMAND make boot_elf WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/boot)
 add_custom_target(mem COMMAND make WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/memory)
@@ -119,10 +123,9 @@ set(CRTINIT_OBJ "${PROJECT_SOURCE_DIR}/osutils/crti.o ${CRTBEGIN_OBJ}")
 set(CRTFINI_OBJ "${CRTEND_OBJ} ${PROJECT_SOURCE_DIR}/osutils/crtn.o")
 
 execute_process(COMMAND bash -c "cd ${PROJECT_SOURCE_DIR}; find ${PROJECT_SOURCE_DIR}/fonts/ -name '*.sfn' -exec sh -c 'echo \${1%.sfn}.o' _ {} \;" OUTPUT_VARIABLE FONT_OBJS)
-#execute_process(COMMAND bash -c "cd ${PROJECT_SOURCE_DIR}; find ${PROJECT_SOURCE_DIR}/fonts/ -name '*.o'" OUTPUT_VARIABLE FONT_OBJS)
 message(${FONT_OBJS})
 string(REPLACE "\n" ";" FONT_OBJS ${FONT_OBJS})
-set(OTHER_OBJS ${PROJECT_SOURCE_DIR}/memory/Mem.o ${FONT_OBJS})
+set(OTHER_OBJS ${PROJECT_SOURCE_DIR}/memory/Mem.o ${FONT_OBJS} mouse_cursor.o)
 
 set(CMAKE_CXX_LINK_EXECUTABLE "<CMAKE_CXX_COMPILER> ${CMAKE_CXX_FLAGS} ${CMAKE_EXE_LINKER_FLAGS} ${PROJECT_SOURCE_DIR}/boot/fpu_init.obj ${PROJECT_SOURCE_DIR}/boot/UpanixStart_Main.grub ${CRTINIT_OBJ} <OBJECTS> -o <TARGET> <LINK_LIBRARIES> ${CRTFINI_OBJ}")
 
@@ -141,13 +144,14 @@ add_dependencies(${TARGET_BIN} boot)
 add_dependencies(${TARGET_BIN} mem)
 add_dependencies(${TARGET_BIN} fonts)
 
-target_link_libraries(${TARGET_BIN} ${UPANLIB_OUT_DIR}/libcxxrt.a)
+target_link_libraries(${TARGET_BIN} cxxrt)
 target_link_libraries(${TARGET_BIN} mcpp)
-target_link_libraries(${TARGET_BIN} ${UPANLIB_OUT_DIR}/libusfn.a)
-target_link_libraries(${TARGET_BIN} ${UPANLIB_OUT_DIR}/libc.a)
-target_link_libraries(${TARGET_BIN} ${UPANLIB_OUT_DIR}/libm.a)
-target_link_libraries(${TARGET_BIN} ${UPANLIB_OUT_DIR}/libgcceh.a)
-target_link_libraries(${TARGET_BIN} ${UPANLIB_OUT_DIR}/libustdcpp.a)
+target_link_libraries(${TARGET_BIN} usfn)
+target_link_libraries(${TARGET_BIN} libc.a)
+target_link_libraries(${TARGET_BIN} m)
+target_link_libraries(${TARGET_BIN} gcceh)
+target_link_libraries(${TARGET_BIN} ustdcpp)
+target_link_libraries(${TARGET_BIN} upanui)
 
 set_source_files_properties(${OTHER_OBJS} PROPERTIES EXTERNAL_OBJECT true GENERATED true)
 
