@@ -20,6 +20,7 @@
 #include <MultiBoot.h>
 #include <KernelUtil.h>
 #include <usfncontext.h>
+#include <BmpImage.h>
 
 class GraphicsVideo : protected KernelUtil::TimerTask
 {
@@ -37,8 +38,7 @@ class GraphicsVideo : protected KernelUtil::TimerTask
     }
     unsigned LFBSize() const { return _lfbSize; }
     void SetPixel(unsigned x, unsigned y, unsigned color);
-    void DrawRect(unsigned sx, unsigned sy, unsigned width, unsigned height, unsigned resolution, uint32_t* colorTable, void* colorMap);
-    void FillRect(unsigned sx, unsigned sy, unsigned width, unsigned height, unsigned color, bool directWrite);
+    void FillRect(unsigned sx, unsigned sy, unsigned width, unsigned height, unsigned color);
     void DrawChar(byte ch, unsigned x, unsigned y, unsigned fg, unsigned bg);
     void ScrollDown();
     void CreateRefreshTask();
@@ -60,7 +60,8 @@ class GraphicsVideo : protected KernelUtil::TimerTask
     bool TimerTrigger() override;
     void NeedRefresh();
     void DrawUSFNChar(byte ch, unsigned x, unsigned y, unsigned fg, unsigned bg);
-    void DrawMouseCursor(uint32_t x, uint32_t y, uint32_t color);
+    void CopyArea(unsigned sx, unsigned sy, uint32_t width, uint32_t height, const uint32_t* src, bool directWrite);
+    void DrawMouseCursor();
 
     static GraphicsVideo* _instance;
     unsigned _flatLFBAddress;
@@ -80,4 +81,5 @@ class GraphicsVideo : protected KernelUtil::TimerTask
     uint32_t _yCharScale;
     int _mouseX;
     int _mouseY;
+    upan::uniq_ptr<upanui::BmpImage> _mouseCursorImg;
 };
