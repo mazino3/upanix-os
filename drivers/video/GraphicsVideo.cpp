@@ -27,6 +27,8 @@
 #include <usfntypes.h>
 #include <Pat.h>
 #include <BmpImage.h>
+#include <RawImage.h>
+#include <ColorPalettes.h>
 
 extern unsigned _binary_fonts_FreeSans_sfn_start;
 extern unsigned _binary_unifont_sfn_start;
@@ -82,7 +84,11 @@ void GraphicsVideo::Initialize() {
     MemManager::Instance().MemMapGraphicsLFB(wc);
     Mem_FlushTLB();
   }
-  _mouseCursorImg.reset(new upanui::BmpImage(&_binary_mouse_cursor_bmp_start));
+
+  printf("\n Initializing mouse cursor image");
+  upanui::BmpImage mouseCursorBmp(&_binary_mouse_cursor_bmp_start, ColorPalettes::CP16::Get(ColorPalettes::CP16::FGColor::FG_RED));
+  _mouseCursorImg.reset(new upanui::RawImage(mouseCursorBmp, 16, 16));
+
   InitializeUSFN();
 }
 
@@ -304,9 +310,14 @@ void GraphicsVideo::ExperimentWithMouseCursor(int i) {
     return;
   }
 
-  upanui::BmpImage image(img);
+  upanui::BmpImage image(img, ColorPalettes::CP16::Get(ColorPalettes::CP16::FGColor::FG_RED));
   image.DebugPrint();
-  CopyArea(200, 200, image.width(), image.height(), image.frameBuffer(), false);
+  CopyArea(10, 160, image.width(), image.height(), image.frameBuffer(), false);
+
+  uint32_t s = btime();
+  upanui::RawImage rawImage(image, 16, 16);
+  printf("\n Time Taken: %u", btime() - s);
+  CopyArea(420, 160, rawImage.width(), rawImage.height(), rawImage.frameBuffer(), false);
 }
 
 void GraphicsVideo::DrawMouseCursor() {
@@ -321,8 +332,12 @@ void GraphicsVideo::CopyArea(unsigned sx, unsigned sy, uint32_t width, uint32_t 
     for(unsigned x = sx; x < (sx + width) && x < _width; ++x) {
       auto p = (unsigned*)(frameBuffer + y_offset + x * _bytesPerPixel);
       auto v = src[src_y_offset + (x - sx)];
-      if ((v & 0xFF000000) == 0)
+
+      //transparent color alpha --> TODO: blend with alpha of the underlying canvas
+      const auto alpha = v >> 24;
+      if (alpha < 0xAA)
         continue;
+
       *p = v;
     }
   }

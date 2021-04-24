@@ -81,5 +81,5 @@ class GraphicsVideo : protected KernelUtil::TimerTask
     uint32_t _yCharScale;
     int _mouseX;
     int _mouseY;
-    upan::uniq_ptr<upanui::BmpImage> _mouseCursorImg;
+    upan::uniq_ptr<upanui::Image> _mouseCursorImg;
 };
