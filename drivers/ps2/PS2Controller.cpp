@@ -26,6 +26,11 @@
 static constexpr int STAT_OBF = 0x01;
 static constexpr int STAT_IBF = 0x02;
 static constexpr int CMD_REBOOT	= 0xFE;
+static constexpr int CMD_DISABLE_PORT1 = 0xAD;
+static constexpr int CMD_ENABLE_PORT1 = 0xAE;
+static constexpr int CMD_DISABLE_PORT2 = 0xA7;
+static constexpr int CMD_ENABLE_PORT2 = 0xA8;
+static constexpr int CMD_WRITE_NEXT_PORT2 = 0xD4;
 
 PS2Controller::PS2Controller() {
   try {
@@ -42,9 +47,9 @@ void PS2Controller::Initialize() {
   IrqManager::Instance().DisableIRQ(StdIRQ::Instance().MOUSE_IRQ);
 
   printf("\nInitializing PS2 controller");
-  SendCommand(COMMAND_PORT, 0xAD, "");
-  SendCommand(COMMAND_PORT, 0xA7, "");
-  PortCom_ReceiveByte(DATA_PORT);
+  SendCommand(COMMAND_PORT, CMD_DISABLE_PORT1, "");
+  SendCommand(COMMAND_PORT, CMD_DISABLE_PORT2, "");
+  ClearOutputBuffer();
 
   SendCommand(COMMAND_PORT, 0x20, "Read status");
 
@@ -79,7 +84,7 @@ void PS2Controller::Initialize() {
 
   if (dualChannelController) {
     //confirm controller supports 2 channels (ports)
-    SendCommand(COMMAND_PORT, 0xA8, "Status");
+    SendCommand(COMMAND_PORT, CMD_ENABLE_PORT2, "Status");
     //read config byte again
     SendCommand(COMMAND_PORT, 0x20, "Init Command");
     status = ReceiveData().valueOrThrow(XLOC, "failed to read status");
@@ -87,7 +92,7 @@ void PS2Controller::Initialize() {
     dualChannelController = !(status & 0x20);
     if (dualChannelController) {
       //disable second port again
-      SendCommand(COMMAND_PORT, 0xA7, "Status");
+      SendCommand(COMMAND_PORT, CMD_DISABLE_PORT2, "Status");
     }
   }
 
@@ -107,7 +112,7 @@ void PS2Controller::Initialize() {
     //enable IRQ1
     status |= 0x1;
     printf("\n enable port1");
-    SendCommand(COMMAND_PORT, 0xAE, "enabled port1");
+    SendCommand(COMMAND_PORT, CMD_ENABLE_PORT1, "enabled port1");
 
     SendCommand(DATA_PORT, 0xF5, "disable scanning");
     WaitForAck();
@@ -125,11 +130,13 @@ void PS2Controller::Initialize() {
     InitDriver(devCode1);
   }
 
+  ClearOutputBuffer();
+  
   if (port2Good) {
     //enable IRQ12
     status |= 0x2;
     printf("\n enable port2");
-    SendCommand(COMMAND_PORT, 0xA8, "enabled port2");
+    SendCommand(COMMAND_PORT, CMD_ENABLE_PORT2, "enabled port2");
 
     SendCommand2(0xF5, "disable scanning");
     WaitForAck();
@@ -191,14 +198,14 @@ void PS2Controller::SendCommand(uint16_t port, uint8_t cmd, const upan::string& 
 }
 
 void PS2Controller::SendCommand2(byte command, const upan::string& opName) {
-  SendCommand(COMMAND_PORT, 0xD4, "prep port2 command");
+  SendCommand(COMMAND_PORT, CMD_WRITE_NEXT_PORT2, "prep port2 command");
   SendCommand(DATA_PORT, command, opName);
 }
 
 void PS2Controller::WaitForAck() {
   const auto data = ReceiveData();
   if (data.valueOrThrow(XLOC, "ack timed out") != 0xFA) {
-    throw upan::exception(XLOC, "invalid ack: %x", data);
+    throw upan::exception(XLOC, "invalid ack: %x", data.value());
   }
 }
 
@@ -207,4 +214,16 @@ upan::option<uint8_t> PS2Controller::ReceiveData() {
     return upan::option<uint8_t>::empty();
   }
 	return PortCom_ReceiveByte(DATA_PORT);
+}
+
+void PS2Controller::ClearOutputBuffer() {
+  int i = 0;
+  do {
+    if (!WaitForRead()) {
+      break;
+    }
+    auto data = PortCom_ReceiveByte(DATA_PORT);
+    //printf("\n Clearing Output buffer data: %x", data);
+    ++i;
+  } while(i < 1000);
 }

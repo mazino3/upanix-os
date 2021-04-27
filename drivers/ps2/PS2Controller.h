@@ -44,6 +44,7 @@ private:
   void SendCommand2(byte command, const upan::string& opName);
   void WaitForAck();
   upan::option<uint8_t> ReceiveData();
+  void ClearOutputBuffer();
 
   friend class KC;
 };
