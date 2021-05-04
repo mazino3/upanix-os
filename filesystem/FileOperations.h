@@ -88,8 +88,8 @@ void FileOperations_SyncPWD() ;
 void FileOperations_ChangeDir(const char* szFileName) ;
 void FileOperations_GetDirectoryContent(const char* szPathAddress, FileSystem::Node** pDirList, int* iListSize) ;
 bool FileOperations_FileAccess(const char* szFileName, int iDriveID, int mode) ;
-byte FileOperations_Dup2(int oldFD, int newFD) ;
-byte FileOperations_ReInitStdFd(int StdFD) ;
+void FileOperations_Dup2(int oldFD, int newFD) ;
+void FileOperations_ReInitStdFd(int StdFD) ;
 void FileOperations_GetCWD(char* szPathBuf, int iBufSize) ;
 
 #endif

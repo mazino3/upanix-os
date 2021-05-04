@@ -16,24 +16,15 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
 
-#ifndef _PROC_FILE_MANAGER_H_
-#define _PROC_FILE_MANAGER_H_
+#pragma once
 
-# include <Global.h>
-# include <ProcessManager.h>
+#include <Global.h>
+#include <map.h>
+#include <uniq_ptr.h>
+#include <fs.h>
+#include <Atomic.h>
 
-#define ProcFileManager_SUCCESS					0
-#define ProcFileManager_ERR_MAX_OPEN_FILES		1
-#define ProcFileManager_ERR_INVALID_FD			2
-#define ProcFileManager_ERR_INVALID_SEEK_TYPE	3
-#define ProcFileManager_ERR_INVALID_OFFSET		4
-#define ProcFileManager_ERR_REF_OPEN			5
-#define ProcFileManager_ERR_INVALID_STDFD		6
-#define ProcFileManager_FAILURE					7
-
-typedef enum
-{
-
+typedef enum {
 	PROC_FREE_FD = 1100,
 	PROC_STDIN,
 	PROC_STDOUT,
@@ -45,34 +36,109 @@ typedef enum
 #define	SEEK_CUR 1
 #define	SEEK_END 2
 
-typedef struct
-{
-	char* szFileName ;
-	unsigned uiOffset ;
-	byte mode ;
-	int iDriveID ;
-	unsigned uiFileSize ;
-	int RefCount ;
-	int iLastReadSectorIndex ;
-	unsigned uiLastReadSectorNumber ;
-} PACKED ProcFileDescriptor ;
+class FileDescriptor {
+public:
+  FileDescriptor(const upan::string& fileName, byte mode, int driveID, uint32_t fileSize, uint32_t startSectorID) :
+      _fileName(fileName), _offset(mode & O_APPEND ? fileSize : 0), _mode(mode),
+      _driveID(driveID), _fileSize(fileSize), _refCount(1), _lastReadSectorIndex(0),
+      _lastReadSectorNo(startSectorID) {
+  }
 
-void ProcFileManager_Initialize(__volatile__ unsigned uiPDEAddress, __volatile__ int iParentProcessID) ;
-void ProcFileManager_InitForKernel() ;
+  const upan::string& getFileName() const {
+    return _fileName;
+  }
 
-void ProcFileManager_UnInitialize(Process* processAddressSpace) ;
+  uint32_t getOffset() const {
+    return _offset;
+  }
 
-int ProcFileManager_GetFD() ;
-int ProcFileManager_AllocateFD(const char* szFileName, const byte mode, int iDriveID, const unsigned uiFileSize, unsigned uiStartSectorID) ;
-byte ProcFileManager_FreeFD(int fd) ;
-void ProcFileManager_UpdateOffset(int fd, int seekType, int iOffset) ;
-uint32_t ProcFileManager_GetOffset(int fd) ;
-ProcFileDescriptor* ProcFileManager_GetFDEntry(int fd) ;
-byte ProcFileManager_GetMode(int fd) ;
-byte ProcFileManager_IsSTDOUT(int fd) ;
-byte ProcFileManager_IsSTDIN(int fd) ;
-byte ProcFileManager_Dup2(int oldFD, int newFD) ;
-int ProcFileManager_GetRealNonDuppedFD(int dupedFD);
-byte ProcFileManager_InitSTDFile(int StdFD) ;
+  void addOffset(uint32_t val) {
+    _offset += val;
+  }
 
-#endif
+  int getDriveId() const {
+    return _driveID;
+  }
+
+  byte getMode() const {
+    return _mode;
+  }
+
+  uint32_t getFileSize() const {
+    return _fileSize;
+  }
+
+  int getRefCount() const {
+    return _refCount;
+  }
+
+  int getLastReadSectorIndex() const {
+    return _lastReadSectorIndex;
+  }
+
+  void setLastReadSectorIndex(int v) {
+    _lastReadSectorIndex = v;
+  }
+
+  uint32_t getLastReadSectorNo() const {
+    return _lastReadSectorNo;
+  }
+
+  void setLastReadSectorNo(uint32_t v) {
+    _lastReadSectorNo = v;
+  }
+
+  void setOffset(int offset) {
+    _offset = offset;
+  }
+
+  void decrementRefCount() {
+    --_refCount;
+  }
+
+  void incrementRefCount() {
+    ++_refCount;
+  }
+
+  bool isStdOut() const {
+    return _driveID == PROC_STDOUT || _driveID == PROC_STDERR;
+  }
+
+  bool isStdIn() const {
+    return _driveID  == PROC_STDIN;
+  }
+
+private:
+  upan::string _fileName;
+  uint32_t _offset;
+  byte _mode;
+  int _driveID;
+  uint32_t _fileSize;
+  int _refCount;
+  int _lastReadSectorIndex;
+  uint32_t _lastReadSectorNo;
+};
+
+class FileDescriptorTable {
+public:
+  typedef upan::map<int, FileDescriptor*> FDTable;
+
+  FileDescriptorTable();
+  ~FileDescriptorTable() noexcept;
+
+  int allocate(const upan::string& fileName, byte mode, int driveID, unsigned fileSize, unsigned startSectorID);
+  void free(int fd);
+  void updateOffset(int fd, int seekType, int offset);
+  uint32_t getOffset(int fd);
+  void dup2(int oldFD, int newFD);
+  void initStdFile(int stdFD);
+  FileDescriptor& getRealNonDupped(int fd);
+
+private:
+  FDTable::iterator getItr(int fd);
+  FileDescriptor& get(int fd);
+
+  int _fdIdCounter;
+  Mutex _fdMutex;
+  FDTable _fdTable;
+};

@@ -293,6 +293,7 @@ void GraphicsVideo::SetMouseCursorPos(int x, int y) {
     NeedRefresh();
   }
 }
+
 void GraphicsVideo::ExperimentWithMouseCursor(int i) {
   void* img;
   if (i == 0) {

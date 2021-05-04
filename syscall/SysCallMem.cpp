@@ -74,8 +74,9 @@ __volatile__ unsigned uiP9)
         ProcessSwitchLock pLock;
 				int* pRetAllocSize = KERNEL_ADDR(bDoAddrTranslation, int*, uiP2) ;
 				*piRetVal = 0 ;
-				if(DMM_GetAllocSize(&ProcessManager::Instance().GetCurrentPAS(), uiP1, pRetAllocSize) != DMM_SUCCESS)
-					*piRetVal = -1 ;
+				if(DMM_GetAllocSize(uiP1, pRetAllocSize) != DMM_SUCCESS) {
+          *piRetVal = -1;
+        }
 			}
 			break ;
 	}

@@ -56,6 +56,7 @@
 # include <Mtrr.h>
 # include <Pat.h>
 #include <ps2/PS2Controller.h>
+#include <KernelRootProcess.h>
 
 /**** Global Variable declaration/definition *****/
 byte KERNEL_MODE ;
@@ -147,12 +148,15 @@ void Initialize()
 	MultiBoot::Instance();
 	Display::Create();
 	KC::MDisplay().Message("\n****    Welcome To Upanix   ****\n", Display::Attribute(' ')) ;
-	ProcFileManager_InitForKernel();
 
 	MemManager::Instance();
-
+  ProcessManager::Instance();
+  //KernelRootProcess must be initialized to setup kernel FD table with stdin/out/err before using stdio functions like printf.
+  KernelRootProcess::Instance();
+  MemManager::Instance().PrintInitStatus();
 	//defined in osutils/crti.s - this is C++ init to call global objects' constructor
 	_cxx_global_init();
+
 //	TestException(); while(1);
   try
   {
@@ -164,7 +168,6 @@ void Initialize()
     DMA_Initialize();
     StdIRQ::Instance();
 
-    ProcessManager::Instance();
     SysCall_Initialize() ;
 
     KC::MKernelService() ;

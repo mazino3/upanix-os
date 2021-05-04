@@ -31,13 +31,6 @@
 
 #include <PIT.h>
 
-#define ProcessManager_SUCCESS						0
-#define ProcessManager_ERR_MAX_PROCESS_EXCEEDED		1
-#define ProcessManager_ERR_NO_FREE_PAS				2
-#define ProcessManager_ERR_INT_QUEUE_EMPTY			3
-#define ProcessManager_ERR_INT_QUEUE_FULL			4
-#define ProcessManager_FAILURE						5
-
 #define ProcessManager_EXIT() \
 	__asm__ __volatile__("pusha") ; \
 	__asm__ __volatile__("pushf") ; \
@@ -74,17 +67,17 @@ class ProcessManager
       return instance;
     }
 
-    upan::option<Process&> GetAddressSpace(int pid);
+    upan::option<SchedulableProcess&> GetAddressSpace(int pid);
     Process& GetCurrentPAS();
     UserProcess& GetThreadParentProcess(int pid);
 
     PS* GetProcList(unsigned& uiListSize);
     void FreeProcListMem(PS* pProcList, unsigned uiListSize);
     void StartScheduler();
-    void AddToSchedulerList(Process& process);
-    void AddToProcessMap(Process& process);
-    void RemoveFromProcessMap(Process& process);
-    bool WakeupProcessOnInterrupt(Process& process);
+    void AddToSchedulerList(SchedulableProcess& process);
+    void AddToProcessMap(SchedulableProcess& process);
+    void RemoveFromProcessMap(SchedulableProcess& process);
+    bool WakeupProcessOnInterrupt(SchedulableProcess& process);
     bool IsResourceBusy(__volatile__ RESOURCE_KEYS uiType);
     void SetResourceBusy(RESOURCE_KEYS uiType, bool bVal);
     void Sleep(unsigned uiSleepTime);
@@ -121,8 +114,8 @@ class ProcessManager
     static void EnableTaskSwitch() ;
     static void DisableTaskSwitch() ;
   private:
-    void DoContextSwitch(Process& process);
-    void Destroy(Process& pas);
+    void DoContextSwitch(SchedulableProcess& process);
+    void Destroy(SchedulableProcess& pas);
     bool DoPollWait();
     void BuildIntTaskState(const unsigned uiTaskAddress, const unsigned uiTSSAddress, const int stack);
     void BuildIntGate(unsigned short usGateSelector, unsigned uiOffset, unsigned short usSelector, byte bParameterCount);
@@ -132,10 +125,10 @@ class ProcessManager
     bool _resourceList[MAX_RESOURCE];
 
     ProcessStateInfo _kernelModeStateInfo;
-    typedef upan::map<int, Process*> ProcessMap;
+    typedef upan::map<int, SchedulableProcess*> ProcessMap;
     ProcessMap _processMap;
 
-    typedef upan::list<Process*> ProcessSchedulerList;
+    typedef upan::list<SchedulableProcess*> ProcessSchedulerList;
     ProcessSchedulerList _processSchedulerList;
 
     //This is required even before initializing the ProcessManager for fetching

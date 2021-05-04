@@ -23,7 +23,7 @@
 
 #define PROCESS_ENV_LIST ((ProcessEnvEntry*)(PROCESS_ENV_PAGE - GLOBAL_DATA_SEGMENT_BASE))
 
-static unsigned ProcessEnv_GetProcessEnvPageNumber(Process& processAddressSpace)
+static unsigned ProcessEnv_GetProcessEnvPageNumber(SchedulableProcess& processAddressSpace)
 {
 	unsigned uiPDEAddress = processAddressSpace.taskState().CR3_PDBR ;
 	unsigned uiPDEIndex = ((PROCESS_ENV_PAGE >> 22) & 0x3FF) ;
@@ -54,7 +54,7 @@ void ProcessEnv_Initialize(__volatile__ unsigned uiPDEAddress, __volatile__ int 
 
 	if(iParentProcessID != NO_PROCESS_ID)
 	{
-		Process& parentProcessAddrSpace = ProcessManager::Instance().GetAddressSpace(iParentProcessID).value();
+		SchedulableProcess& parentProcessAddrSpace = ProcessManager::Instance().GetAddressSpace(iParentProcessID).value();
 
 		unsigned uiParentPageNo = ProcessEnv_GetProcessEnvPageNumber(parentProcessAddrSpace) ;
 
@@ -73,18 +73,13 @@ void ProcessEnv_InitializeForKernelProcess()
 	ProcessEnv_Set("PWD", FS_ROOT_DIR) ;
 }
 
-void ProcessEnv_UnInitialize(Process& pas)
+void ProcessEnv_UnInitialize(SchedulableProcess& pas)
 {
 	MemManager::Instance().DeAllocatePhysicalPage(ProcessEnv_GetProcessEnvPageNumber(pas)) ;
 }
 
 static Mutex& getEnvMutex() {
-  if (IS_KERNEL()) {
-    static Mutex kernelEnvMutex;
-    return kernelEnvMutex;
-  } else {
-    return ProcessManager::Instance().GetCurrentPAS().envMutex().value();
-  }
+  return ProcessManager::Instance().GetCurrentPAS().envMutex().value();
 }
 
 char* ProcessEnv_Get(const char* szEnvVar) {

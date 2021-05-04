@@ -28,9 +28,9 @@
 //#define INIT_NAME "_stdio_init-NOTINUSE"
 //#define TERM_NAME "_stdio_term-NOTINUSE"
 
-int Process::_nextPid = 0;
+int SchedulableProcess::_nextPid = 0;
 
-Process::Process(const upan::string& name, int parentID, bool isFGProcess)
+SchedulableProcess::SchedulableProcess(const upan::string& name, int parentID, bool isFGProcess)
   : _name(name), _dmmFlag(false), _stateInfo(*new ProcessStateInfo()), _processGroup(nullptr) {
   _processID = _nextPid++;
   _parentProcessID = parentID;
@@ -61,7 +61,7 @@ Process::Process(const upan::string& name, int parentID, bool isFGProcess)
   FXSave();
 }
 
-Process::~Process() {
+SchedulableProcess::~SchedulableProcess() {
   DMM_DeAllocateForKernel(reinterpret_cast<unsigned int>(_sseRegs));
   delete &_stateInfo;
 }
@@ -77,7 +77,7 @@ Process::~Process() {
 // 7. If a child thread terminates then
 //   a. all terminated child processes are released and all non-terminated child processes are redirected to main thread process
 //   b. as per (5), there can't be any child threads under another child thread
-void Process::Destroy() {
+void SchedulableProcess::Destroy() {
   setStatus(TERMINATED);
 
   DestroyThreads();
@@ -85,11 +85,11 @@ void Process::Destroy() {
   // child processes of this process (if any) will be redirected to the parent of the current process
   auto parentProcess = ProcessManager::Instance().GetAddressSpace(_parentProcessID);
   for(auto pid : _childProcessIDs) {
-    ProcessManager::Instance().GetAddressSpace(pid).ifPresent([&parentProcess](Process &p) {
+    ProcessManager::Instance().GetAddressSpace(pid).ifPresent([&parentProcess](SchedulableProcess &p) {
       if (p.status() == TERMINATED) {
         p.Release();
       } else {
-        parentProcess.ifPresent([&p](Process& pp) {
+        parentProcess.ifPresent([&p](SchedulableProcess& pp) {
           p.setParentProcessID(pp.processID());
           pp.addChildProcessID(p.processID());
         });
@@ -113,7 +113,8 @@ void Process::Destroy() {
   heapMutex().ifPresent([this](Mutex& m) { m.UnLock(_processID); });
   pageAllocMutex().ifPresent([this](Mutex& m) { m.UnLock(_processID); });
   envMutex().ifPresent([this](Mutex& m) { m.UnLock(_processID); });
-  fdMutex().ifPresent([this](Mutex& m) { m.UnLock(_processID); });
+
+  //TODO: release all the mutex held by the process or an individual thread
 
   if(_parentProcessID == NO_PROCESS_ID) {
     Release();
@@ -123,11 +124,11 @@ void Process::Destroy() {
   //MemManager::Instance().DisplayNoOfAllocPages(0,0);
 }
 
-void Process::Release() {
+void SchedulableProcess::Release() {
   setStatus(RELEASED);
 }
 
-void Process::FXSave() {
+void SchedulableProcess::FXSave() {
 //  uint32_t cr0;
 //  __asm__ __volatile__("mov %%cr0, %0" :  "=r"(cr0) : );
 //  printf("\n CR0: %x, %x", cr0, _sseRegs);
@@ -143,25 +144,25 @@ void Process::FXSave() {
   __asm__ __volatile__("fxsave (%0)" : : "r"(_sseRegs));
 }
 
-void Process::FXRestore() {
+void SchedulableProcess::FXRestore() {
   __asm__ __volatile__("clts");
   __asm__ __volatile__("fxrstor (%0)" : : "r"(_sseRegs));
 }
 
-void Process::Load() {
+void SchedulableProcess::Load() {
   onLoad();
   FXRestore();
   MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&_processLDT, SYS_LINEAR_SELECTOR_DEFINED, MEM_LDT_START, sizeof(ProcessLDT)) ;
   MemUtil_CopyMemory(MemUtil_GetDS(), (unsigned)&_taskState, SYS_LINEAR_SELECTOR_DEFINED, MEM_USER_TSS_START, sizeof(TaskState)) ;
 }
 
-void Process::Store() {
+void SchedulableProcess::Store() {
   FXSave();
   MemUtil_CopyMemory(SYS_LINEAR_SELECTOR_DEFINED, MEM_LDT_START, MemUtil_GetDS(), (unsigned)&_processLDT, sizeof(ProcessLDT)) ;
   MemUtil_CopyMemory(SYS_LINEAR_SELECTOR_DEFINED, MEM_USER_TSS_START, MemUtil_GetDS(), (unsigned)&_taskState, sizeof(TaskState)) ;
 }
 
-FILE_USER_TYPE Process::FileUserType(const FileSystem::Node &node) const
+FILE_USER_TYPE SchedulableProcess::fileUserType(const FileSystem::Node &node) const
 {
   if(isKernelProcess() || _userID == ROOT_USER_ID || node.UserID() == _userID)
     return USER_OWNER ;
@@ -169,13 +170,13 @@ FILE_USER_TYPE Process::FileUserType(const FileSystem::Node &node) const
   return USER_OTHERS ;
 }
 
-bool Process::HasFilePermission(const FileSystem::Node& node, byte mode) const
+bool SchedulableProcess::hasFilePermission(const FileSystem::Node& node, byte mode) const
 {
   unsigned short usMode = FILE_PERM(node.Attribute());
 
   bool bHasRead, bHasWrite;
 
-  switch(FileUserType(node))
+  switch(fileUserType(node))
   {
     case FILE_USER_TYPE::USER_OWNER:
       bHasRead = HAS_READ_PERM(G_OWNER(usMode));
@@ -202,7 +203,7 @@ bool Process::HasFilePermission(const FileSystem::Node& node, byte mode) const
   return false;
 }
 
-uint32_t Process::Common::AllocatePDE() {
+uint32_t SchedulableProcess::Common::AllocatePDE() {
   unsigned uiFreePageNo = MemManager::Instance().AllocatePhysicalPage();
   unsigned uiPDEAddress = uiFreePageNo * PAGE_SIZE;
 
@@ -212,11 +213,11 @@ uint32_t Process::Common::AllocatePDE() {
   return uiPDEAddress;
 }
 
-void Process::Common::UpdatePDEWithStackPTE(uint32_t pdeAddress, uint32_t stackPTEAddress) {
+void SchedulableProcess::Common::UpdatePDEWithStackPTE(uint32_t pdeAddress, uint32_t stackPTEAddress) {
   ((unsigned *) (pdeAddress - GLOBAL_DATA_SEGMENT_BASE))[PROCESS_STACK_PDE_ID] = (stackPTEAddress & 0xFFFFF000) | 0x7;
 }
 
-uint32_t Process::Common::AllocatePTEForStack() {
+uint32_t SchedulableProcess::Common::AllocatePTEForStack() {
   auto stackPTEAddress = MemManager::Instance().AllocatePhysicalPage() * PAGE_SIZE;
   for (uint32_t j = 0; j < PAGE_TABLE_ENTRIES; j++) {
     ((unsigned *) (stackPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[j] = 0x2;
@@ -224,7 +225,7 @@ uint32_t Process::Common::AllocatePTEForStack() {
   return stackPTEAddress;
 }
 
-void Process::Common::AllocateStackSpace(uint32_t pteAddress) {
+void SchedulableProcess::Common::AllocateStackSpace(uint32_t pteAddress) {
   //pre-allocate process stack - user (NO_OF_PAGES_FOR_STARTUP_ARGS) + call-gate
   //further expansion of user stack beyond NO_OF_PAGES_FOR_STARTUP_ARGS will happen as part of regular page fault handling flow
   for (int i = 0; i < PROCESS_CG_STACK_PAGES + NO_OF_PAGES_FOR_STARTUP_ARGS; ++i) {
@@ -235,7 +236,7 @@ void Process::Common::AllocateStackSpace(uint32_t pteAddress) {
   }
 }
 
-void Process::Common::DeAllocateStackSpace(uint32_t stackPTEAddress) {
+void SchedulableProcess::Common::DeAllocateStackSpace(uint32_t stackPTEAddress) {
   //Deallocate process stack
   for (uint32_t i = 0; i < PAGE_TABLE_ENTRIES; ++i) {
     const unsigned pageEntry = (((unsigned *) (stackPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[i]);

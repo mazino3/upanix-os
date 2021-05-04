@@ -44,16 +44,15 @@
 #define DIR_SPECIAL_PARENT		".."
 
 void Directory_Create(Process* processAddressSpace, int iDriveID, byte* bParentDirectoryBuffer, const FileSystem::CWD* pCWD,
-		char* szDirName, unsigned short usDirAttribute) ;
+                      char* szDirName, unsigned short usDirAttribute) ;
 void Directory_Delete(Process* processAddressSpace, int iDriveID, byte* bParentDirectoryBuffer, const FileSystem::CWD* pCWD,
-				const char* szDirName) ;
+                      const char* szDirName) ;
 void Directory_GetDirEntryForCreateDelete(const Process*, int iDriveID, const char* szDirPath, char* szDirName, unsigned& uiSectorNo, byte& bSectorPos, byte* bDirectoryBuffer) ;
 bool Directory_FindDirectory(DiskDrive&, const FileSystem::CWD& cwd, const char* szDirName, unsigned& uiSectorNo, byte& bSectorPos, byte* bDestSectorBuffer);
 void Directory_GetDirectoryContent(const char* szFileName, Process* processAddressSpace, int iDriveID, FileSystem::Node** pDirList, int* iListSize) ;
-void Directory_FileWrite(DiskDrive* pDiskDrive, FileSystem::CWD* pCWD, ProcFileDescriptor* pFDEntry, byte* bDataBuffer, unsigned uiDataSize) ;
-void Directory_ActualFileWrite(DiskDrive* pDiskDrive, byte* bDataBuffer, ProcFileDescriptor* pFDEntry,
-								unsigned uiDataSize, FileSystem::Node* dirFile) ;
-int Directory_FileRead(DiskDrive* pDiskDrive, FileSystem::CWD* pCWD, ProcFileDescriptor* pFDEntry, byte* bDataBuffer, unsigned uiDataSize);
+void Directory_FileWrite(DiskDrive* pDiskDrive, FileSystem::CWD* pCWD, FileDescriptor& fdEntry, byte* bDataBuffer, unsigned uiDataSize) ;
+void Directory_ActualFileWrite(DiskDrive* pDiskDrive, byte* bDataBuffer, FileDescriptor& fdEntry, unsigned uiDataSize, FileSystem::Node* dirFile) ;
+int Directory_FileRead(DiskDrive* pDiskDrive, FileSystem::CWD* pCWD, FileDescriptor& fdEntry, byte* bDataBuffer, unsigned uiDataSize);
 void Directory_ReadDirEntryInfo(DiskDrive&, const FileSystem::CWD&, const char* szFileName, unsigned& uiSectorNo, byte& bSectorPos, byte* bDirectoryBuffer) ;
 void Directory_Change(const char* szFileName, int iDriveID, Process* processAddressSpace) ;
 void Directory_PresentWorkingDirectory(Process* processAddressSpace, char** uiReturnDirPathAddress) ;

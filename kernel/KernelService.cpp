@@ -30,7 +30,7 @@ KernelService::DLLAllocCopy::DLLAllocCopy(unsigned uiNoOfPages, const upan::stri
 
 void KernelService::DLLAllocCopy::Execute() {
   try {
-    Process &pas = ProcessManager::Instance().GetAddressSpace(GetRequestProcessID()).value();
+    SchedulableProcess &pas = ProcessManager::Instance().GetAddressSpace(GetRequestProcessID()).value();
     pas.MapDLLPagesToProcess(_noOfPagesForDLL, _dllName);
   } catch(upan::exception& e) {
     e.Print();

@@ -35,7 +35,7 @@ typedef unsigned			DWORD ;
 
 #define IS_KERNEL_PROCESS(pid) (SPECIAL_TASK || ProcessManager::Instance().IsKernelProcess(pid))
 
-#define IS_FG_PROCESS_GROUP() (ProcessManager::Instance().GetCurrentPAS().processGroup()->IsFGProcessGroup())
+#define IS_FG_PROCESS_GROUP() (ProcessManager::Instance().GetCurrentPAS().isFGProcessGroup())
 
 #define KERNEL_REAL_ADDRESS(ADDR) ((unsigned)ADDR + GLOBAL_DATA_SEGMENT_BASE)
 #define KERNEL_VIRTUAL_ADDRESS(ADDR) ((unsigned)ADDR - GLOBAL_DATA_SEGMENT_BASE) 

@@ -97,7 +97,7 @@ int FileOperations_Open(const char* szFileName, const byte mode)
   if(!dirEntry.IsFile())
     throw upan::exception(XLOC, "%s file doesn't exist", szFileName);
 
-  if(!pPAS->HasFilePermission(dirEntry, mode))
+  if(!pPAS->hasFilePermission(dirEntry, mode))
     throw upan::exception(XLOC, "insufficient permission to open file %s", szFileName);
 
 	if( (mode & O_TRUNC) )
@@ -107,12 +107,16 @@ int FileOperations_Open(const char* szFileName, const byte mode)
     dirEntry = Directory_GetDirEntry(szFile, pPAS, iDriveID);
 	}
 
-  return ProcFileManager_AllocateFD(dirEntry.FullPath(*pDiskDrive).c_str(), mode, iDriveID, dirEntry.Size(), dirEntry.StartSectorID());
+  return pPAS->fdTable().allocate(dirEntry.FullPath(*pDiskDrive), mode, iDriveID, dirEntry.Size(), dirEntry.StartSectorID());
 }
 
-byte FileOperations_Close(int fd)
-{
-	RETURN_X_IF_NOT(ProcFileManager_FreeFD(fd), ProcFileManager_SUCCESS, FileOperations_FAILURE) ;
+byte FileOperations_Close(int fd) {
+  try {
+    ProcessManager::Instance().GetCurrentPAS().fdTable().free(fd);
+  } catch(upan::exception& e) {
+    e.Print();
+    return FileOperations_FAILURE;
+  }
 	return FileOperations_SUCCESS ;
 }
 
@@ -157,13 +161,10 @@ bool FileOperations_ReadLine(int fd, upan::string& line)
 
 int FileOperations_Read(int fd, char* buffer, int len)
 {
-  fd = ProcFileManager_GetRealNonDuppedFD(fd);
-
 	Process* pPAS = &ProcessManager::Instance().GetCurrentPAS() ;
+  auto& fdEntry = pPAS->fdTable().getRealNonDupped(fd);
 
-  ProcFileDescriptor* pFDEntry = ProcFileManager_GetFDEntry(fd);
-
-	int iDriveID = pFDEntry->iDriveID ;
+	int iDriveID = fdEntry.getDriveId();
 
   DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByID(iDriveID, true).goodValueOrThrow(XLOC);
   FileSystem::CWD CWD ;
@@ -180,36 +181,32 @@ int FileOperations_Read(int fd, char* buffer, int len)
 		CWD.bSectorEntryPosition = pDiskDrive->_fileSystem.FSpwd.bSectorEntryPosition ;
 	}
 
-  int readLen = Directory_FileRead(pDiskDrive, &CWD, pFDEntry, (byte*)buffer, len);
+  int readLen = Directory_FileRead(pDiskDrive, &CWD, fdEntry, (byte*)buffer, len);
 
-  FileOperations_UpdateTime(pFDEntry->szFileName, iDriveID, DIR_ACCESS_TIME);
+  FileOperations_UpdateTime(fdEntry.getFileName().c_str(), iDriveID, DIR_ACCESS_TIME);
 
-  pFDEntry->uiOffset += readLen;
+  fdEntry.addOffset(readLen);
 
   return readLen;
 }
 
 void FileOperations_Write(int fd, const char* buffer, int len, int* pWriteLen)
 {
-  fd = ProcFileManager_GetRealNonDuppedFD(fd);
+  Process* pPAS = &ProcessManager::Instance().GetCurrentPAS();
+  auto& f = pPAS->fdTable().getRealNonDupped(fd);
 
 	*pWriteLen = -1 ;
 
-	if(ProcFileManager_IsSTDOUT(fd) == ProcessManager_SUCCESS)
-	{
+	if(f.isStdOut()) {
 		KC::MDisplay().nMessage(buffer, len, Display::WHITE_ON_BLACK()) ;
 		*pWriteLen = len ;
     return;
 	}
 
-  ProcFileDescriptor* pFDEntry = ProcFileManager_GetFDEntry(fd);
-
-	Process* pPAS = &ProcessManager::Instance().GetCurrentPAS() ;
-
-	if( !(pFDEntry->mode & O_WRONLY || pFDEntry->mode & O_RDWR || pFDEntry->mode & O_APPEND) )
+	if( !(f.getMode() & O_WRONLY || f.getMode() & O_RDWR || f.getMode() & O_APPEND) )
     throw upan::exception(XLOC, "insufficient permission to write file fd: %d", fd);
 
-	int iDriveID = pFDEntry->iDriveID ;
+	int iDriveID = f.getDriveId();
 
   DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByID(iDriveID, true).goodValueOrThrow(XLOC);
 
@@ -235,9 +232,9 @@ void FileOperations_Write(int fd, const char* buffer, int len, int* pWriteLen)
 	{
 		n = (uiIncLen > uiLimit) ? uiLimit : uiIncLen ;
 		
-    Directory_FileWrite(pDiskDrive, &CWD, pFDEntry, (byte*)buffer, n);
+    Directory_FileWrite(pDiskDrive, &CWD, f, (byte*)buffer, n);
 
-		pFDEntry->uiOffset += n ;
+    f.addOffset(n);
 
 		uiIncLen -= n ;
 
@@ -245,7 +242,7 @@ void FileOperations_Write(int fd, const char* buffer, int len, int* pWriteLen)
 			break ;
 	}
 
-  FileOperations_UpdateTime(pFDEntry->szFileName, iDriveID, DIR_ACCESS_TIME | DIR_MODIFIED_TIME);
+  FileOperations_UpdateTime(f.getFileName().c_str(), iDriveID, DIR_ACCESS_TIME | DIR_MODIFIED_TIME);
 	
 	*pWriteLen = len ;
 }
@@ -272,7 +269,7 @@ void FileOperations_Create(const char* szFilePath, unsigned short usFileType, un
 	CWD.uiSectorNo = uiParentSectorNo ;
 	CWD.bSectorEntryPosition = bParentSectorPos ;
 
-  if(!pPAS->HasFilePermission(*CWD.pDirEntry, O_RDWR))
+  if(!pPAS->hasFilePermission(*CWD.pDirEntry, O_RDWR))
     throw upan::exception(XLOC, "insufficient permission to create file: %s", szFilePath);
 
   Directory_Create(pPAS, iDriveID, bParentDirectoryBuffer, &CWD, szDirName, usFileAttr);
@@ -298,12 +295,12 @@ void FileOperations_Delete(const char* szFilePath)
 	CWD.uiSectorNo = uiParentSectorNo ;
 	CWD.bSectorEntryPosition = bParentSectorPos ;
 
-  if(!pPAS->HasFilePermission(*CWD.pDirEntry, O_RDWR))
+  if(!pPAS->hasFilePermission(*CWD.pDirEntry, O_RDWR))
     throw upan::exception(XLOC, "insufficient permission to delete file: %s", szFilePath);
 
   const FileSystem::Node& fileDirEntry = FileOperations_GetDirEntry(szFilePath);
 
-  if(pPAS->FileUserType(fileDirEntry) != USER_OWNER)
+  if(pPAS->fileUserType(fileDirEntry) != USER_OWNER)
     throw upan::exception(XLOC, "insufficient permission to delete file: %s", szFilePath);
 
   Directory_Delete(pPAS, iDriveID, bParentDirectoryBuffer, &CWD, szDirName);
@@ -331,18 +328,15 @@ bool FileOperations_Exists(const char* szFileName, unsigned short usFileType)
   return true;
 }
 
-void FileOperations_Seek(int fd, int iOffset, int seekType)
-{
-  ProcFileManager_UpdateOffset(fd, seekType, iOffset);
+void FileOperations_Seek(int fd, int iOffset, int seekType) {
+  ProcessManager::Instance().GetCurrentPAS().fdTable().updateOffset(fd, seekType, iOffset);
 }
 
-uint32_t FileOperations_GetOffset(int fd)
-{
-  return ProcFileManager_GetOffset(fd);
+uint32_t FileOperations_GetOffset(int fd) {
+  return ProcessManager::Instance().GetCurrentPAS().fdTable().getOffset(fd);
 }
 
-void FileOperations_GetCWD(char* szPathBuf, int iBufSize)
-{
+void FileOperations_GetCWD(char* szPathBuf, int iBufSize) {
   FileSystem::PresentWorkingDirectory& pwd = ProcessManager::Instance().GetCurrentPAS().processPWD();
 	int iDriveID = ProcessManager::Instance().GetCurrentPAS().driveID() ;
 
@@ -448,11 +442,9 @@ const FileSystem_FileStat FileOperations_GetStat(const char* szFileName, int iDr
   return fileStat;
 }
 
-const FileSystem_FileStat FileOperations_GetStatFD(int iFD)
-{
-  iFD = ProcFileManager_GetRealNonDuppedFD(iFD);
-  const ProcFileDescriptor* pFDEntry = ProcFileManager_GetFDEntry(iFD);
-  return FileOperations_GetStat(pFDEntry->szFileName, pFDEntry->iDriveID);
+const FileSystem_FileStat FileOperations_GetStatFD(int iFD) {
+  const auto& fdEntry = ProcessManager::Instance().GetCurrentPAS().fdTable().getRealNonDupped(iFD);
+  return FileOperations_GetStat(fdEntry.getFileName().c_str(), fdEntry.getDriveId());
 }
 
 void FileOperations_UpdateTime(const char* szFileName, int iDriveID, byte bTimeType)
@@ -493,9 +485,8 @@ void FileOperations_UpdateTime(const char* szFileName, int iDriveID, byte bTimeT
   pDiskDrive->xWrite(bDirectoryBuffer, uiSectorNo, 1);
 }
 
-byte FileOperations_GetFileOpenMode(int fd)
-{
-  return ProcFileManager_GetMode(ProcFileManager_GetRealNonDuppedFD(fd));
+byte FileOperations_GetFileOpenMode(int fd) {
+  return ProcessManager::Instance().GetCurrentPAS().fdTable().getRealNonDupped(fd).getMode();
 }
 
 void FileOperations_SyncPWD()
@@ -546,7 +537,7 @@ bool FileOperations_FileAccess(const char* szFileName, int iDriveID, int mode)
     if(!dirEntry.IsFile())
       return false;
 
-    if(!pPAS->HasFilePermission(dirEntry, mode))
+    if(!pPAS->hasFilePermission(dirEntry, mode))
       return false;
   }
   catch(const upan::exception& ex)
@@ -558,15 +549,11 @@ bool FileOperations_FileAccess(const char* szFileName, int iDriveID, int mode)
   return true;
 }
 
-byte FileOperations_Dup2(int oldFD, int newFD)
-{
-	RETURN_X_IF_NOT(ProcFileManager_Dup2(oldFD, newFD), ProcFileManager_SUCCESS, FileOperations_FAILURE) ;
-	return FileOperations_SUCCESS ;
+void FileOperations_Dup2(int oldFD, int newFD) {
+  ProcessManager::Instance().GetCurrentPAS().fdTable().dup2(oldFD, newFD);
 }
 
-byte FileOperations_ReInitStdFd(int StdFD)
-{
-	RETURN_X_IF_NOT(ProcFileManager_InitSTDFile(StdFD), ProcFileManager_SUCCESS, FileOperations_FAILURE) ;
-	return FileOperations_SUCCESS ;
+void FileOperations_ReInitStdFd(int stdFD) {
+  ProcessManager::Instance().GetCurrentPAS().fdTable().initStdFile(stdFD);
 }
 

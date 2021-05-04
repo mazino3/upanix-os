@@ -21,13 +21,13 @@
 
 //thread must have a parent
 UserThread::UserThread(UserProcess& parent, uint32_t threadCaller, uint32_t entryAddress, void* arg)
-    : Process("", parent.processID(), false), _parent(parent) {
+    : SchedulableProcess("", parent.processID(), false), _parent(parent) {
   _name = _parent.name() + "_T" + upan::string::to_string(_processID);
   _mainThreadID = parent.processID();
   _processBase = _parent.getProcessBase();
 
-  _stackPTEAddress = Process::Common::AllocatePTEForStack();
-  Process::Common::AllocateStackSpace(_stackPTEAddress);
+  _stackPTEAddress = SchedulableProcess::Common::AllocatePTEForStack();
+  SchedulableProcess::Common::AllocateStackSpace(_stackPTEAddress);
   const auto stackArgSize = PushProgramInitStackData(entryAddress, arg);
   const uint32_t stackTopAddress = PROCESS_STACK_TOP_ADDRESS - PROCESS_BASE;
   _taskState.BuildForUser(stackTopAddress, _parent.taskState().CR3_PDBR, threadCaller, stackArgSize);
@@ -38,7 +38,7 @@ UserThread::UserThread(UserProcess& parent, uint32_t threadCaller, uint32_t entr
 }
 
 void UserThread::DeAllocateResources() {
-  Process::Common::DeAllocateStackSpace(_stackPTEAddress);
+  SchedulableProcess::Common::DeAllocateStackSpace(_stackPTEAddress);
   MemManager::Instance().DeAllocatePhysicalPage(_stackPTEAddress / PAGE_SIZE);
 }
 
@@ -59,5 +59,5 @@ uint32_t UserThread::PushProgramInitStackData(uint32_t entryAddress, void* arg) 
 }
 
 void UserThread::onLoad() {
-  Process::Common::UpdatePDEWithStackPTE(_taskState.CR3_PDBR, _stackPTEAddress);
+  SchedulableProcess::Common::UpdatePDEWithStackPTE(_taskState.CR3_PDBR, _stackPTEAddress);
 }

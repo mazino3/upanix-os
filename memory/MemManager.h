@@ -43,6 +43,7 @@ class MemManager
 			static MemManager instance;
 			return instance;
 		}
+    void PrintInitStatus() const;
 		ReturnCode MarkPageAsAllocated(unsigned uiPageNumber, ReturnCode prevRetCode) ;
 		unsigned AllocatePhysicalPage();
 		void DeAllocatePhysicalPage(const unsigned uiPageNumber) ;

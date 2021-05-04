@@ -74,16 +74,14 @@ static void Directory_BufferedWrite(DiskDrive& diskDrive, unsigned uiSectorID, b
 	}
 }
 
-void Directory_GetLastReadSectorDetails(const ProcFileDescriptor* pFDEntry, int* iSectorIndex, unsigned* uiSectorID)
-{
-	*iSectorIndex = pFDEntry->iLastReadSectorIndex ;
-	*uiSectorID = pFDEntry->uiLastReadSectorNumber ;
+void Directory_GetLastReadSectorDetails(const FileDescriptor& fd, int& sectorIndex, unsigned& sectorID) {
+	sectorIndex = fd.getLastReadSectorIndex();
+	sectorID = fd.getLastReadSectorNo();
 }
 
-void Directory_SetLastReadSectorDetails(ProcFileDescriptor* pFDEntry, int iSectorIndex, unsigned uiSectorID)
-{
-	pFDEntry->iLastReadSectorIndex = iSectorIndex ;
-	pFDEntry->uiLastReadSectorNumber = uiSectorID ;
+void Directory_SetLastReadSectorDetails(FileDescriptor& fd, int sectorIndex, unsigned sectorID) {
+	fd.setLastReadSectorIndex(sectorIndex);
+	fd.setLastReadSectorNo(sectorID);
 }
 
 /**********************************************************************************************/
@@ -462,7 +460,7 @@ bool Directory_FindDirectory(DiskDrive& diskDrive, const FileSystem::CWD& cwd, c
   return false;
 }
 
-void Directory_FileWrite(DiskDrive* pDiskDrive, FileSystem::CWD* pCWD, ProcFileDescriptor* pFDEntry, byte* bDataBuffer, unsigned uiDataSize)
+void Directory_FileWrite(DiskDrive* pDiskDrive, FileSystem::CWD* pCWD, FileDescriptor& fdEntry, byte* bDataBuffer, unsigned uiDataSize)
 {
 	if(uiDataSize == 0)
     return throw upan::exception(XLOC, "zero byte file write");
@@ -470,8 +468,8 @@ void Directory_FileWrite(DiskDrive* pDiskDrive, FileSystem::CWD* pCWD, ProcFileD
 	unsigned uiSectorNo ;
 	byte bSectorPos ;
 	byte bDirectoryBuffer[512] ;
-	const char* szFileName = pFDEntry->szFileName ;
-	unsigned uiOffset = pFDEntry->uiOffset ;
+	const char* szFileName = fdEntry.getFileName().c_str();
+	unsigned uiOffset = fdEntry.getOffset();
 
   Directory_ReadDirEntryInfo(*pDiskDrive, *pCWD, szFileName, uiSectorNo, bSectorPos, bDirectoryBuffer);
 
@@ -480,7 +478,7 @@ void Directory_FileWrite(DiskDrive* pDiskDrive, FileSystem::CWD* pCWD, ProcFileD
   if(dirFile->IsDirectory())
     throw upan::exception(XLOC, "%s is a directory - can't do file-write", szFileName);
 
-  Directory_ActualFileWrite(pDiskDrive, bDataBuffer, pFDEntry, uiDataSize, dirFile);
+  Directory_ActualFileWrite(pDiskDrive, bDataBuffer, fdEntry, uiDataSize, dirFile);
 
   if(dirFile->Size() < (uiOffset + uiDataSize))
 	{
@@ -489,15 +487,14 @@ void Directory_FileWrite(DiskDrive* pDiskDrive, FileSystem::CWD* pCWD, ProcFileD
 	}
 }
 
-void Directory_ActualFileWrite(DiskDrive* pDiskDrive, byte* bDataBuffer, ProcFileDescriptor* pFDEntry,
-                               unsigned uiDataSize, FileSystem::Node* dirFile)
+void Directory_ActualFileWrite(DiskDrive* pDiskDrive, byte* bDataBuffer, FileDescriptor& fdEntry, unsigned uiDataSize, FileSystem::Node* dirFile)
 {
 	unsigned uiCurrentSectorID, uiNextSectorID, uiPrevSectorID = EOC ;
 	int iStartWriteSectorNo, iStartWriteSectorPos ;
 	int iSectorIndex ;
 	unsigned uiWriteRemainingCount, uiWrittenCount ;
 	unsigned uiCurrentFileSize ;
-	unsigned uiOffset = pFDEntry->uiOffset ;
+	unsigned uiOffset = fdEntry.getOffset();
 
 	byte bStartAllocation ;
 	byte bSectorBuffer[512] ;
@@ -507,7 +504,7 @@ void Directory_ActualFileWrite(DiskDrive* pDiskDrive, byte* bDataBuffer, ProcFil
 
   uiCurrentFileSize = dirFile->Size();
 
-	Directory_GetLastReadSectorDetails(pFDEntry, &iSectorIndex, &uiCurrentSectorID) ;
+	Directory_GetLastReadSectorDetails(fdEntry, iSectorIndex, uiCurrentSectorID) ;
 
 	if(iSectorIndex < 0 || iSectorIndex > iStartWriteSectorNo)
 	{
@@ -545,7 +542,7 @@ void Directory_ActualFileWrite(DiskDrive* pDiskDrive, byte* bDataBuffer, ProcFil
 
       pDiskDrive->xWrite(bSectorBuffer, uiCurrentSectorID, 1);
 			
-			Directory_SetLastReadSectorDetails(pFDEntry, iSectorIndex, uiCurrentSectorID) ;
+			Directory_SetLastReadSectorDetails(fdEntry, iSectorIndex, uiCurrentSectorID) ;
 
 			iSectorIndex++ ;
 
@@ -553,7 +550,7 @@ void Directory_ActualFileWrite(DiskDrive* pDiskDrive, byte* bDataBuffer, ProcFil
 	}
 	else
 	{
-		Directory_SetLastReadSectorDetails(pFDEntry, iSectorIndex, uiCurrentSectorID) ;
+		Directory_SetLastReadSectorDetails(fdEntry, iSectorIndex, uiCurrentSectorID) ;
 	}
 
 	uiWrittenCount = 0 ;
@@ -635,10 +632,10 @@ void Directory_ActualFileWrite(DiskDrive* pDiskDrive, byte* bDataBuffer, ProcFil
   throw upan::exception(XLOC, "fs table is corrupted for drive:%s", pDiskDrive->DriveName().c_str());
 }
 
-int Directory_FileRead(DiskDrive* pDiskDrive, FileSystem::CWD* pCWD, ProcFileDescriptor* pFDEntry, byte* bDataBuffer, unsigned uiDataSize)
+int Directory_FileRead(DiskDrive* pDiskDrive, FileSystem::CWD* pCWD, FileDescriptor& fdEntry, byte* bDataBuffer, unsigned uiDataSize)
 {
-	const char* szFileName = pFDEntry->szFileName ;
-	unsigned uiOffset = pFDEntry->uiOffset ;
+	const char* szFileName = fdEntry.getFileName().c_str();
+	unsigned uiOffset = fdEntry.getOffset();
 
   FileSystem::Node* pDirFile ;
 	byte bDirectoryBuffer[512] ;
@@ -673,7 +670,7 @@ int Directory_FileRead(DiskDrive* pDiskDrive, FileSystem::CWD* pCWD, ProcFileDes
 
   uiCurrentFileSize = pDirFile->Size() ;
 
-	Directory_GetLastReadSectorDetails(pFDEntry, &iSectorIndex, &uiCurrentSectorID) ;
+	Directory_GetLastReadSectorDetails(fdEntry, iSectorIndex, uiCurrentSectorID) ;
 
 	if(iSectorIndex < 0 || iSectorIndex > iStartReadSectorNo)
 	{
@@ -688,7 +685,7 @@ int Directory_FileRead(DiskDrive* pDiskDrive, FileSystem::CWD* pCWD, ProcFileDes
 		uiCurrentSectorID = uiNextSectorID ;
 	}
 
-	Directory_SetLastReadSectorDetails(pFDEntry, iSectorIndex, uiCurrentSectorID) ;
+	Directory_SetLastReadSectorDetails(fdEntry, iSectorIndex, uiCurrentSectorID) ;
 	unsigned uiLastReadSectorNumber = uiCurrentSectorID ;
 	int iLastReadSectorIndex = iSectorIndex ;
 
@@ -701,7 +698,7 @@ int Directory_FileRead(DiskDrive* pDiskDrive, FileSystem::CWD* pCWD, ProcFileDes
 	{
 		if(uiCurrentSectorID == EOC)
 		{
-			Directory_SetLastReadSectorDetails(pFDEntry, iLastReadSectorIndex, uiLastReadSectorNumber) ;
+			Directory_SetLastReadSectorDetails(fdEntry, iLastReadSectorIndex, uiLastReadSectorNumber) ;
       return iReadCount;
 		}
 		
@@ -762,7 +759,7 @@ int Directory_FileRead(DiskDrive* pDiskDrive, FileSystem::CWD* pCWD, ProcFileDes
 
 		if(iReadRemainingCount <= 0)
 		{
-			Directory_SetLastReadSectorDetails(pFDEntry, iLastReadSectorIndex, uiLastReadSectorNumber) ;
+			Directory_SetLastReadSectorDetails(fdEntry, iLastReadSectorIndex, uiLastReadSectorNumber) ;
       return iReadCount ;
 		}
 	}

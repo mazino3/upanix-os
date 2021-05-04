@@ -40,7 +40,7 @@
 
 UserProcess::UserProcess(const upan::string &name, int parentID, int userID,
                          bool isFGProcess, int noOfParams, char** args)
-    : Process(name, parentID, isFGProcess), _nextThreadIt(_threadSchedulerList.begin()) {
+    : SchedulableProcess(name, parentID, isFGProcess), _nextThreadIt(_threadSchedulerList.begin()) {
   _mainThreadID = _processID;
   _uiAUTAddress = NULL;
 
@@ -51,7 +51,7 @@ UserProcess::UserProcess(const upan::string &name, int parentID, int userID,
   _processLDT.BuildForUser();
 
   auto parentProcess = ProcessManager::Instance().GetAddressSpace(parentID);
-  parentProcess.ifPresent([this](Process& p) { p.addChildProcessID(_processID); });
+  parentProcess.ifPresent([this](SchedulableProcess& p) { p.addChildProcessID(_processID); });
   _userID = userID == DERIVE_FROM_PARENT && !parentProcess.isEmpty() ? parentProcess.value().userID() : _userID;
 }
 
@@ -162,7 +162,6 @@ void UserProcess::Load(int iNumberOfParameters, char** szArgumentList)
   const uint32_t uiEntryAdddress = mELFParser.GetProgramStartAddress();// uiMinMemAddr + uiProcessImageSize ;
 
   ProcessEnv_Initialize(uiPDEAddress, _parentProcessID);
-  ProcFileManager_Initialize(uiPDEAddress, _parentProcessID);
 
   const uint32_t stackTopAddress = PROCESS_STACK_TOP_ADDRESS - PROCESS_BASE;
   _taskState.BuildForUser(stackTopAddress, uiPDEAddress, uiEntryAdddress, uiProcessEntryStackSize);
@@ -313,7 +312,7 @@ void UserProcess::LoadELFDLL(const upan::string& szDLLName, const upan::string& 
 }
 
 uint32_t UserProcess::AllocateAddressSpace() {
-  const uint32_t uiPDEAddress = Process::Common::AllocatePDE();
+  const uint32_t uiPDEAddress = SchedulableProcess::Common::AllocatePDE();
   AllocatePTE(uiPDEAddress);
   InitializeProcessSpaceForOS(uiPDEAddress);
   InitializeProcessSpaceForProcess(uiPDEAddress);
@@ -344,7 +343,7 @@ void UserProcess::AllocatePTE(const unsigned uiPDEAddress)
   }
 
   _startPDEForDLL = ++uiPDEIndex;
-  _stackPTEAddress = Process::Common::AllocatePTEForStack();
+  _stackPTEAddress = SchedulableProcess::Common::AllocatePTEForStack();
 }
 
 void UserProcess::InitializeProcessSpaceForOS(const unsigned uiPDEAddress)
@@ -378,7 +377,7 @@ void UserProcess::InitializeProcessSpaceForProcess(const unsigned uiPDEAddress)
     ((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPTEIndex] = ((uiFreePageNo * PAGE_SIZE) & 0xFFFFF000) | 0x7;
   }
 
-  Process::Common::AllocateStackSpace(_stackPTEAddress);
+  SchedulableProcess::Common::AllocateStackSpace(_stackPTEAddress);
 }
 
 void UserProcess::DestroyThreads() {
@@ -403,7 +402,6 @@ void UserProcess::DeAllocateResources() {
   DMM_DeAllocatePhysicalPages(this) ;
 
   ProcessEnv_UnInitialize(*this) ;
-  ProcFileManager_UnInitialize(this);
 
   DeAllocateAddressSpace();
 }
@@ -453,7 +451,7 @@ void UserProcess::DeAllocateProcessSpace()
         (((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPTEIndex] & 0xFFFFF000) / PAGE_SIZE) ;
   }
 
-  Process::Common::DeAllocateStackSpace(_stackPTEAddress);
+  SchedulableProcess::Common::DeAllocateStackSpace(_stackPTEAddress);
 }
 
 void UserProcess::DeAllocatePTE() {
@@ -517,10 +515,10 @@ upan::option<const ProcessDLLInfo&> UserProcess::getDLLInfo(int id) const {
 }
 
 void UserProcess::onLoad() {
-  Process::Common::UpdatePDEWithStackPTE(_taskState.CR3_PDBR, _stackPTEAddress);
+  SchedulableProcess::Common::UpdatePDEWithStackPTE(_taskState.CR3_PDBR, _stackPTEAddress);
 }
 
-Process& UserProcess::forSchedule() {
+SchedulableProcess& UserProcess::forSchedule() {
   if (_status == TERMINATED || _status == RELEASED) {
     return *this;
   }

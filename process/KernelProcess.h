@@ -21,7 +21,7 @@
 
 //A KernelProcess is similar to a Thread in that they all share same address space (page tables), heap but different stack
 //But it is a process in that if the parent process dies before child, then child kernel process will continue to execute under the root kernel process
-class KernelProcess : public Process {
+class KernelProcess : public SchedulableProcess {
 public:
   KernelProcess(const upan::string& name, uint32_t taskAddress, int parentID, bool isFGProcess, uint32_t param1, uint32_t param2);
 
@@ -34,11 +34,12 @@ public:
   upan::option<Mutex&> envMutex() override {
     return upan::option<Mutex&>(_envMutex);
   }
-  upan::option<Mutex&> fdMutex() override {
-    return upan::option<Mutex&>(_fdMutex);
+
+  FileDescriptorTable& fdTable() override {
+    return _fdTable;
   }
 
-  Process& forSchedule() override {
+  SchedulableProcess& forSchedule() override {
     return *this;
   }
 
@@ -48,8 +49,8 @@ private:
 
 private:
   int kernelStackBlockId;
+  FileDescriptorTable _fdTable;
 
   //common mutex for all kernel processes
   static Mutex _envMutex;
-  static Mutex _fdMutex;
 };

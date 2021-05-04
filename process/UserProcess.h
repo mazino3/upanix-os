@@ -22,7 +22,7 @@
 
 class UserThread;
 
-class UserProcess : public Process {
+class UserProcess : public SchedulableProcess {
 public:
   typedef upan::map<upan::string, ProcessDLLInfo> DLLInfoMap;
 
@@ -50,6 +50,11 @@ public:
   void setAUTAddress(uint32_t addr) {
     _uiAUTAddress = addr;
   }
+
+  FileDescriptorTable& fdTable() override {
+    return _fdTable;
+  }
+
   upan::option<Mutex&> heapMutex() override {
     return upan::option<Mutex&>(_heapMutex);
   }
@@ -59,11 +64,8 @@ public:
   upan::option<Mutex&> envMutex() override {
     return upan::option<Mutex&>(_envMutex);
   }
-  upan::option<Mutex&> fdMutex() override {
-    return upan::option<Mutex&>(_fdMutex);
-  }
 
-  Process& forSchedule() override;
+  SchedulableProcess& forSchedule() override;
   void addToThreadScheduler(UserThread& thread);
 
 private:
@@ -95,7 +97,7 @@ private:
   Mutex _heapMutex;
   Mutex _pageFaultMutex;
   Mutex _envMutex;
-  Mutex _fdMutex;
+  FileDescriptorTable _fdTable;
 
   typedef upan::list<UserThread*> ThreadSchedulerList;
   ThreadSchedulerList _threadSchedulerList;

@@ -21,128 +21,51 @@
 #include <set.h>
 #include <map.h>
 #include <option.h>
+#include <uniq_ptr.h>
 #include <Atomic.h>
 #include <TaskStructures.h>
 #include <FileOperations.h>
 #include <ProcessConstants.h>
+#include <ProcFileManager.h>
+#include <ProcessGroup.h>
+#include <IProcess.h>
 
-class ProcessGroup;
-class IRQ;
-
-class ProcessDLLInfo {
-public:
-  ProcessDLLInfo(int id, uint32_t loadAddress, uint32_t noOfPages) : _id(id), _loadAddress(loadAddress), _noOfPages(noOfPages) {
-  }
-
-  int id() const { return _id; }
-  uint32_t rawLoadAddress() const {
-    return _loadAddress;
-  }
-  uint32_t loadAddressForKernel() const {
-    return _loadAddress - GLOBAL_DATA_SEGMENT_BASE;
-  }
-  uint32_t loadAddressForProcess() const {
-    return _loadAddress - PROCESS_BASE;
-  }
-  uint32_t elfSectionHeaderAddress() const {
-    // Last Page is for Elf Section Header
-    return loadAddressForKernel() + (_noOfPages - 1) * PAGE_SIZE;
-  }
-  uint32_t noOfPages() const { return _noOfPages; }
-
-private:
-  int _id;
-  uint32_t _loadAddress;
-  uint32_t _noOfPages;
-};
-
-class ProcessStateInfo
-{
-public:
-  ProcessStateInfo();
-
-  uint32_t SleepTime() const { return _sleepTime; }
-  void SleepTime(const uint32_t s) { _sleepTime = s; }
-
-  int WaitChildProcId() const { return _waitChildProcId; }
-  void WaitChildProcId(const int id) { _waitChildProcId = id; }
-
-  RESOURCE_KEYS WaitResourceId() const { return _waitResourceId; }
-  void WaitResourceId(const RESOURCE_KEYS id) { _waitResourceId = id; }
-
-  bool IsKernelServiceComplete() const { return _kernelServiceComplete; }
-  void KernelServiceComplete(const bool v) { _kernelServiceComplete = v; }
-
-  const IRQ* Irq() const { return _irq; }
-  void Irq(const IRQ* irq) { _irq = irq; }
-
-  bool IsEventCompleted();
-  void EventCompleted();
-
-private:
-  unsigned      _sleepTime ;
-  const IRQ*    _irq;
-  int           _waitChildProcId ;
-  RESOURCE_KEYS _waitResourceId;
-  uint32_t      _eventCompleted;
-  bool          _kernelServiceComplete ;
-};
-
-class Process
+class SchedulableProcess : public Process
 {
 public:
   typedef upan::set<int> ProcessIDs;
 
 public:
-  Process(const upan::string& name, int parentID, bool isFGProcess);
-  virtual ~Process() = 0;
+  SchedulableProcess(const upan::string& name, int parentID, bool isFGProcess);
+  virtual ~SchedulableProcess() = 0;
 
   bool isChildThread() {
     return _processID != _mainThreadID;
   }
 
-  virtual bool isKernelProcess() const = 0;
   virtual void onLoad() = 0;
 
-  virtual uint32_t startPDEForDLL() const {
-    throw upan::exception(XLOC, "startPDEForDLL unsupported");
-  }
-  virtual void LoadELFDLL(const upan::string& szDLLName, const upan::string& szJustDLLName) {
-    throw upan::exception(XLOC, "LoadELFDLL unsupported");
-  }
-  virtual void MapDLLPagesToProcess(uint32_t noOfPagesForDLL, const upan::string& dllName) {
-    throw upan::exception(XLOC, "MapDLLPagesToProcess unsupported");
-  }
-  virtual upan::option<const ProcessDLLInfo&> getDLLInfo(const upan::string& dllName) const {
-    throw upan::exception(XLOC, "getDLLInfo unsupported");
-  }
-  virtual upan::option<const ProcessDLLInfo&> getDLLInfo(int id) const {
-    throw upan::exception(XLOC, "getDLLInfo unsupported");
-  }
-
-  virtual uint32_t getAUTAddress() const {
-    throw upan::exception(XLOC, "getAUTAddress unsupported");
-  }
-  virtual void setAUTAddress(uint32_t addr) {
-    throw upan::exception(XLOC, "setAUTAddress unsupported");
-  }
-
   //thread synchronization mutex
-  virtual upan::option<Mutex&> heapMutex() {
+  upan::option<Mutex&> heapMutex() override {
     return upan::option<Mutex&>::empty();
   }
   virtual upan::option<Mutex&> pageAllocMutex() {
     return upan::option<Mutex&>::empty();
   }
-  virtual upan::option<Mutex&> envMutex() {
-    return upan::option<Mutex&>::empty();
-  }
-  virtual upan::option<Mutex&> fdMutex() {
+  upan::option<Mutex&> envMutex() override {
     return upan::option<Mutex&>::empty();
   }
 
-  virtual Process& forSchedule() {
+  virtual SchedulableProcess& forSchedule() {
     throw upan::exception(XLOC, "forSchedule unsupported");
+  }
+
+  bool isFGProcessGroup() const override {
+    return _processGroup->IsFGProcessGroup();
+  }
+
+  uint32_t pdbr() const override {
+    return _taskState.CR3_PDBR;
   }
 
   void Load();
@@ -150,10 +73,10 @@ public:
   void Destroy();
   void Release();
 
-  FILE_USER_TYPE FileUserType(const FileSystem::Node&) const;
-  bool HasFilePermission(const FileSystem::Node&, byte mode) const;
+  FILE_USER_TYPE fileUserType(const FileSystem::Node&) const override;
+  bool hasFilePermission(const FileSystem::Node&, byte mode) const override;
 
-  uint32_t getProcessBase() { return _processBase; }
+  uint32_t getProcessBase() const override { return _processBase; }
   upan::string name() const { return _name; }
   int processID() const { return _processID; }
   int mainThreadID() const { return _mainThreadID; }
@@ -165,23 +88,23 @@ public:
   void setDmmFlag(bool dmmFlag) { _dmmFlag = dmmFlag; }
 
   PROCESS_STATUS status() const { return _status; }
-  PROCESS_STATUS setStatus(PROCESS_STATUS status) {
+  PROCESS_STATUS setStatus(PROCESS_STATUS status) override {
     return (PROCESS_STATUS) Atomic::Swap((__volatile__ uint32_t &) (_status), static_cast<int>(status));
   }
 
-  int driveID() const { return _driveID; }
-  void setDriveID(int driveID) { _driveID = driveID; }
+  int driveID() const override { return _driveID; }
+  void setDriveID(int driveID) override { _driveID = driveID; }
 
-  int userID() const { return _userID; }
+  int userID() const override { return _userID; }
 
-  ProcessGroup* processGroup() { return _processGroup; }
-  void setProcessGroup(ProcessGroup* processGroup) { _processGroup = processGroup; }
+  ProcessGroup* processGroup() override { return _processGroup; }
+  void setProcessGroup(ProcessGroup* processGroup) override { _processGroup = processGroup; }
 
-  ProcessStateInfo& stateInfo() { return _stateInfo; }
+  ProcessStateInfo& stateInfo() override { return _stateInfo; }
   TaskState& taskState() { return _taskState; }
   ProcessLDT& processLDT() { return _processLDT; }
-  FileSystem::PresentWorkingDirectory& processPWD() { return _processPWD; }
-  const FileSystem::PresentWorkingDirectory& processPWD() const { return _processPWD; }
+  FileSystem::PresentWorkingDirectory& processPWD() override { return _processPWD; }
+  const FileSystem::PresentWorkingDirectory& processPWD() const override { return _processPWD; }
 
   const ProcessIDs& childProcessIDs() const { return _childProcessIDs; }
   void addChildProcessID(int pid) { _childProcessIDs.insert(pid); }

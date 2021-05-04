@@ -43,6 +43,7 @@
 #include <syscalldefs.h>
 #include <KernelProcess.h>
 #include <UserThread.h>
+#include "KernelRootProcess.h"
 
 int ProcessManager::_currentProcessID = NO_PROCESS_ID;
 int ProcessManager::_upanixKernelProcessID = NO_PROCESS_ID;
@@ -91,17 +92,20 @@ UserProcess& ProcessManager::GetThreadParentProcess(int pid) {
   throw upan::exception(XLOC, "parent of a thread can be either a UserProcess or a UserThread");
 }
 
-upan::option<Process&> ProcessManager::GetAddressSpace(int pid) {
+upan::option<SchedulableProcess&> ProcessManager::GetAddressSpace(int pid) {
   ProcessSwitchLock switchLock;
   auto it = _processMap.find(pid);
   if (it == _processMap.end()) {
-    return upan::option<Process&>::empty();
+    return upan::option<SchedulableProcess&>::empty();
   }
-  return upan::option<Process&>(*it->second);
+  return upan::option<SchedulableProcess&>(*it->second);
 }
 
 Process& ProcessManager::GetCurrentPAS() {
   ProcessSwitchLock switchLock;
+  if (IS_KERNEL()) {
+    return KernelRootProcess::Instance();
+  }
   //This function is a utility that assumes that a ProcessAddressSpace entry always exists for current (active) process
   //Caller should take care of cases when ProcessID = NO_PROCESS_ID - which is usually the case before kernel scheduler is initialized
   return GetAddressSpace(_currentProcessID).value();
@@ -163,26 +167,26 @@ void ProcessManager::BuildIntTaskState(const unsigned uiTaskAddress, const unsig
 	taskState->IO_MAP_BASE = 103 ; // > TSS Limit => No I/O Permission Bit Map present
 }
 
-void ProcessManager::AddToSchedulerList(Process& process) {
+void ProcessManager::AddToSchedulerList(SchedulableProcess& process) {
   ProcessSwitchLock switchLock;
   AddToProcessMap(process);
   process.setStatus(RUN);
   _processSchedulerList.push_back(&process);
 }
 
-void ProcessManager::AddToProcessMap(Process& process) {
+void ProcessManager::AddToProcessMap(SchedulableProcess& process) {
   ProcessSwitchLock switchLock;
   if(_processMap.size() + 1 > MAX_NO_PROCESS)
     throw upan::exception(XLOC, "Max process limit reached!");
   _processMap.insert(ProcessMap::value_type(process.processID(), &process));
 }
 
-void ProcessManager::RemoveFromProcessMap(Process& process) {
+void ProcessManager::RemoveFromProcessMap(SchedulableProcess& process) {
   ProcessSwitchLock switchLock;
   _processMap.erase(process.processID());
 }
 
-void ProcessManager::DoContextSwitch(Process& process) {
+void ProcessManager::DoContextSwitch(SchedulableProcess& process) {
   _currentProcessID = process.processID();
   ProcessStateInfo& stateInfo = process.stateInfo();
 
@@ -321,7 +325,7 @@ void ProcessManager::StartScheduler() {
 	  if (it == _processSchedulerList.end()) {
 	    it = _processSchedulerList.begin();
 	  }
-    Process& process = (*it)->forSchedule();
+    SchedulableProcess& process = (*it)->forSchedule();
 		DoContextSwitch(process);
 
     auto oldIt = it++;
@@ -351,8 +355,9 @@ void ProcessManager::Sleep(__volatile__ unsigned uiSleepTime) // in Mili Seconds
 
 	ProcessManager::DisableTaskSwitch() ;
 
-  GetCurrentPAS().stateInfo().SleepTime(PIT_GetClockCount() + PIT_RoundSleepTime(uiSleepTime));
-	GetCurrentPAS().setStatus(WAIT_SLEEP);
+	auto& p = GetCurrentPAS();
+  p.stateInfo().SleepTime(PIT_GetClockCount() + PIT_RoundSleepTime(uiSleepTime));
+	p.setStatus(WAIT_SLEEP);
 
 	ProcessManager_Yield() ;
 }
@@ -431,7 +436,7 @@ bool ProcessManager::IsChildAlive(int iChildProcessID) {
 int ProcessManager::CreateKernelProcess(const upan::string& name, const unsigned uiTaskAddress, int iParentProcessID,
                                         byte bIsFGProcess, unsigned uiParam1, unsigned uiParam2) {
   try {
-    upan::uniq_ptr<Process> newPAS(new KernelProcess(name, uiTaskAddress, iParentProcessID, bIsFGProcess, uiParam1, uiParam2));
+    upan::uniq_ptr<SchedulableProcess> newPAS(new KernelProcess(name, uiTaskAddress, iParentProcessID, bIsFGProcess, uiParam1, uiParam2));
     int pid = newPAS->processID();
     AddToSchedulerList(*newPAS.release());
     return pid;
@@ -443,7 +448,7 @@ int ProcessManager::CreateKernelProcess(const upan::string& name, const unsigned
 
 int ProcessManager::Create(const upan::string& name, int iParentProcessID, byte bIsFGProcess, int iUserID, int iNumberOfParameters, char** szArgumentList) {
   try {
-    upan::uniq_ptr<Process> newPAS(new UserProcess(name, iParentProcessID, iUserID, bIsFGProcess, iNumberOfParameters, szArgumentList));
+    upan::uniq_ptr<SchedulableProcess> newPAS(new UserProcess(name, iParentProcessID, iUserID, bIsFGProcess, iNumberOfParameters, szArgumentList));
     int pid = newPAS->processID();
     AddToSchedulerList(*newPAS.release());
     //MemManager::Instance().DisplayNoOfFreePages() ;
@@ -463,7 +468,7 @@ int ProcessManager::Create(const upan::string& name, int iParentProcessID, byte 
 int ProcessManager::CreateThreadTask(int parentID, uint32_t threadCaller, uint32_t threadEntryAddress, void* arg) {
   try {
     UserProcess& parent = ProcessManager::Instance().GetThreadParentProcess(parentID);
-    upan::uniq_ptr<Process> threadPAS(new UserThread(parent, threadCaller, threadEntryAddress, arg));
+    upan::uniq_ptr<SchedulableProcess> threadPAS(new UserThread(parent, threadCaller, threadEntryAddress, arg));
     int threadID = threadPAS->processID();
     AddToProcessMap(*threadPAS.release());
     //MemManager::Instance().DisplayNoOfFreePages() ;
@@ -496,7 +501,7 @@ PS* ProcessManager::GetProcList(unsigned& uiListSize)
   auto it = _processMap.begin();
   for(int i = 0; it != _processMap.end(); ++i, ++it)
   {
-    Process& p = *it->second;
+    SchedulableProcess& p = *it->second;
 
     pPS[i].pid = p.processID();
     pPS[i].status = p.status() ;
@@ -550,7 +555,6 @@ bool ProcessManager::IsKernelProcess(int iProcessID) {
 	return GetAddressSpace(iProcessID).value().isKernelProcess();
 }
 
-
 void ProcessManager_Exit()
 {
   ProcessManager::DisableTaskSwitch();
@@ -574,14 +578,14 @@ int ProcessManager::GetCurProcId()
 }
 
 void ProcessManager::Kill(int iProcessID) {
-  GetAddressSpace(iProcessID).ifPresent([](Process& process) {
+  GetAddressSpace(iProcessID).ifPresent([](SchedulableProcess& process) {
     process.setStatus(TERMINATED);
     ProcessManager_Yield();
   });
 }
 
 void ProcessManager::WakeUpFromKSWait(int iProcessID) {
-  GetAddressSpace(iProcessID).ifPresent([](Process& process) {
+  GetAddressSpace(iProcessID).ifPresent([](SchedulableProcess& process) {
     process.stateInfo().KernelServiceComplete(true);
   });
 }
@@ -602,7 +606,7 @@ bool ProcessManager::CopyDiskDrive(int iProcessID, int& iOldDriveId, FileSystem:
 	if(GetCurProcId() < 0)
 		return false;
 
-  Process* pSrcPAS = &GetAddressSpace( iProcessID ).value();
+  SchedulableProcess* pSrcPAS = &GetAddressSpace(iProcessID ).value();
   Process* pDestPAS = &GetCurrentPAS();
 
 	iOldDriveId = pDestPAS->driveID() ;
@@ -618,7 +622,7 @@ bool ProcessManager::CopyDiskDrive(int iProcessID, int& iOldDriveId, FileSystem:
 	return true;
 }
 
-bool ProcessManager::WakeupProcessOnInterrupt(Process& p)
+bool ProcessManager::WakeupProcessOnInterrupt(SchedulableProcess& p)
 {
   const IRQ& irq = *p.stateInfo().Irq();
 
@@ -673,6 +677,6 @@ void ProcessManager::EventCompleted(int pid) {
 
 ProcessStateInfo& ProcessManager::GetProcessStateInfo(int pid) {
   return GetAddressSpace(pid).map<ProcessStateInfo&>(
-      [](Process& p) -> ProcessStateInfo& { return p.stateInfo(); })
+      [](SchedulableProcess& p) -> ProcessStateInfo& { return p.stateInfo(); })
       .valueOrElse(_kernelModeStateInfo);
 }

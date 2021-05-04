@@ -241,7 +241,7 @@ byte DMM_DeAllocate(Process* processAddressSpace, unsigned uiAddress)
   return DMM_SUCCESS;
 }
 
-byte DMM_GetAllocSize(Process* processAddressSpace, unsigned uiAddress, int* iSize) {
+byte DMM_GetAllocSize(unsigned uiAddress, int* iSize) {
   uiAddress = REAL_ALLOCATED_ADDRESS(uiAddress);
   unsigned uiHeapStartAddress = PROCESS_HEAP_START_ADDRESS - GLOBAL_DATA_SEGMENT_BASE ;
 
@@ -294,7 +294,7 @@ byte DMM_DeAllocateForKernel(unsigned uiAddress)
 	
 void DMM_DeAllocatePhysicalPages(Process* processAddressSpace)
 {
-	unsigned uiPDEAddress = processAddressSpace->taskState().CR3_PDBR ;
+	unsigned uiPDEAddress = processAddressSpace->pdbr();
 	unsigned uiPDEIndex = ((PROCESS_HEAP_START_ADDRESS >> 22) & 0x3FF) ;
 	unsigned uiPTEIndex = ((PROCESS_HEAP_START_ADDRESS >> 12) & 0x3FF) ;
 

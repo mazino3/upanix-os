@@ -19,7 +19,7 @@
 
 #include <UserProcess.h>
 
-class UserThread : public Process {
+class UserThread : public SchedulableProcess {
 public:
   UserThread(UserProcess& parent, uint32_t threadCaller, uint32_t entryAddress, void* arg);
 
@@ -65,8 +65,9 @@ public:
   upan::option<Mutex&> envMutex() override {
     return _parent.envMutex();
   }
-  upan::option<Mutex&> fdMutex() override {
-    return _parent.fdMutex();
+
+  FileDescriptorTable& fdTable() override {
+    return _parent.fdTable();
   }
 
   UserProcess& threadParent() {

@@ -108,9 +108,6 @@ MemManager::MemManager() :
           Mem_EnablePaging() ;
 
           KC::MDisplay().LoadMessage("Memory Manager Initialization", Success) ;
-          printf("\n\tRAM SIZE = %d", RAM_SIZE) ;
-          printf("\n\tNo. of Pages = %d", m_uiNoOfPages) ;
-          printf("\n\tNo. of Resv Pages = %d", m_uiNoOfResvPages) ;
           return;
         }
     }
@@ -118,6 +115,12 @@ MemManager::MemManager() :
 
   KC::MDisplay().Message("\n *********** KERNEL PANIC ************ \n", '$') ;
   while(1) ;
+}
+
+void MemManager::PrintInitStatus() const {
+  printf("\n\tRAM SIZE = %d", RAM_SIZE) ;
+  printf("\n\tNo. of Pages = %d", m_uiNoOfPages) ;
+  printf("\n\tNo. of Resv Pages = %d", m_uiNoOfResvPages) ;
 }
 
 void MemManager::MemMapGraphicsLFB(uint32_t memTypeFlag)
@@ -585,7 +588,7 @@ void MemManager::DisplayNoOfFreePages()
 
 unsigned MemManager::GetFlatAddress(unsigned uiVirtualAddress)
 {
-	unsigned uiPDEAddress = ProcessManager::Instance().GetCurrentPAS().taskState().CR3_PDBR ;
+	unsigned uiPDEAddress = ProcessManager::Instance().GetCurrentPAS().pdbr();
 
 	unsigned uiPTEAddress = (((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[((uiVirtualAddress >> 22) & 0x3FF)]) ;
 

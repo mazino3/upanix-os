@@ -339,9 +339,11 @@ __volatile__ unsigned uiP9)
 			// P2 => New FD
 			{
 				*piRetVal = 0 ;
-				if(FileOperations_Dup2(uiP1, uiP2) != FileOperations_SUCCESS)
-				{
-					*piRetVal = -1 ;
+				try {
+          FileOperations_Dup2(uiP1, uiP2);
+				} catch(upan::exception& e) {
+				  e.Print();
+          *piRetVal = -1 ;
 				}
 			}
 			break ;
@@ -349,11 +351,13 @@ __volatile__ unsigned uiP9)
 		case SYS_CALL_FILE_RESET_STD:
 			// P1 => Std FD
 			{
-				*piRetVal = 0 ;
-				if(FileOperations_ReInitStdFd(uiP1) != FileOperations_SUCCESS)
-				{
-					*piRetVal = -1 ;
-				}
+        *piRetVal = 0 ;
+        try {
+          FileOperations_ReInitStdFd(uiP1);
+        } catch(upan::exception& e) {
+          e.Print();
+          *piRetVal = -1 ;
+        }
 			}
 			break ;
 	}
