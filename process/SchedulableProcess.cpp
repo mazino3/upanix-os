@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
 
-#include <Process.h>
+#include <SchedulableProcess.h>
 #include <MountManager.h>
 #include <UserManager.h>
 #include <ProcessGroup.h>

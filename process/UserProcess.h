@@ -18,7 +18,7 @@
 #pragma once
 
 #include <list.h>
-#include <Process.h>
+#include <SchedulableProcess.h>
 
 class UserThread;
 

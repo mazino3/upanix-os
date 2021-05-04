@@ -17,138 +17,62 @@
  */
 #pragma once
 
-#include <mosstd.h>
-#include <set.h>
-#include <map.h>
 #include <option.h>
-#include <uniq_ptr.h>
-#include <Atomic.h>
-#include <TaskStructures.h>
-#include <FileOperations.h>
-#include <ProcessConstants.h>
-#include <ProcFileManager.h>
-#include <ProcessGroup.h>
-#include <IProcess.h>
+#include <FileSystem.h>
+#include <ProcessStateInfo.h>
+#include <ProcessDLLInfo.h>
 
-class SchedulableProcess : public Process
-{
+class Process {
 public:
-  typedef upan::set<int> ProcessIDs;
+  virtual bool isKernelProcess() const = 0;
+  virtual bool isFGProcessGroup() const = 0;
+  virtual int driveID() const = 0;
+  virtual uint32_t getProcessBase() const = 0;
+  virtual int userID() const = 0;
 
-public:
-  SchedulableProcess(const upan::string& name, int parentID, bool isFGProcess);
-  virtual ~SchedulableProcess() = 0;
+  virtual FILE_USER_TYPE fileUserType(const FileSystem::Node&) const = 0;
+  virtual bool hasFilePermission(const FileSystem::Node&, byte mode) const = 0;
+  virtual uint32_t pdbr() const = 0;
 
-  bool isChildThread() {
-    return _processID != _mainThreadID;
-  }
+  virtual void setDriveID(int driveID) = 0;
+  virtual FileSystem::PresentWorkingDirectory& processPWD() = 0;
+  virtual const FileSystem::PresentWorkingDirectory& processPWD() const = 0;
+  virtual ProcessStateInfo& stateInfo() = 0;
+  virtual PROCESS_STATUS setStatus(PROCESS_STATUS status) = 0;
+  virtual ProcessGroup* processGroup() = 0;
+  virtual void setProcessGroup(ProcessGroup* processGroup) = 0;
 
-  virtual void onLoad() = 0;
-
-  //thread synchronization mutex
-  upan::option<Mutex&> heapMutex() override {
+  virtual FileDescriptorTable& fdTable() = 0;
+  virtual upan::option<Mutex&> envMutex() = 0;
+  virtual upan::option<Mutex&> heapMutex() {
     return upan::option<Mutex&>::empty();
   }
-  virtual upan::option<Mutex&> pageAllocMutex() {
-    return upan::option<Mutex&>::empty();
-  }
-  upan::option<Mutex&> envMutex() override {
-    return upan::option<Mutex&>::empty();
+
+  virtual uint32_t startPDEForDLL() const {
+    throw upan::exception(XLOC, "startPDEForDLL unsupported");
   }
 
-  virtual SchedulableProcess& forSchedule() {
-    throw upan::exception(XLOC, "forSchedule unsupported");
+  virtual void LoadELFDLL(const upan::string& szDLLName, const upan::string& szJustDLLName) {
+    throw upan::exception(XLOC, "LoadELFDLL unsupported");
   }
 
-  bool isFGProcessGroup() const override {
-    return _processGroup->IsFGProcessGroup();
+  virtual void MapDLLPagesToProcess(uint32_t noOfPagesForDLL, const upan::string& dllName) {
+    throw upan::exception(XLOC, "MapDLLPagesToProcess unsupported");
   }
 
-  uint32_t pdbr() const override {
-    return _taskState.CR3_PDBR;
+  virtual upan::option<const ProcessDLLInfo&> getDLLInfo(const upan::string& dllName) const {
+    throw upan::exception(XLOC, "getDLLInfo unsupported");
   }
 
-  void Load();
-  void Store();
-  void Destroy();
-  void Release();
-
-  FILE_USER_TYPE fileUserType(const FileSystem::Node&) const override;
-  bool hasFilePermission(const FileSystem::Node&, byte mode) const override;
-
-  uint32_t getProcessBase() const override { return _processBase; }
-  upan::string name() const { return _name; }
-  int processID() const { return _processID; }
-  int mainThreadID() const { return _mainThreadID; }
-
-  int parentProcessID() const { return _parentProcessID; }
-  void setParentProcessID(int parentProcessID) { _parentProcessID = parentProcessID; }
-
-  bool isDmmFlag() const { return _dmmFlag; }
-  void setDmmFlag(bool dmmFlag) { _dmmFlag = dmmFlag; }
-
-  PROCESS_STATUS status() const { return _status; }
-  PROCESS_STATUS setStatus(PROCESS_STATUS status) override {
-    return (PROCESS_STATUS) Atomic::Swap((__volatile__ uint32_t &) (_status), static_cast<int>(status));
+  virtual upan::option<const ProcessDLLInfo&> getDLLInfo(int id) const {
+    throw upan::exception(XLOC, "getDLLInfo unsupported");
   }
 
-  int driveID() const override { return _driveID; }
-  void setDriveID(int driveID) override { _driveID = driveID; }
-
-  int userID() const override { return _userID; }
-
-  ProcessGroup* processGroup() override { return _processGroup; }
-  void setProcessGroup(ProcessGroup* processGroup) override { _processGroup = processGroup; }
-
-  ProcessStateInfo& stateInfo() override { return _stateInfo; }
-  TaskState& taskState() { return _taskState; }
-  ProcessLDT& processLDT() { return _processLDT; }
-  FileSystem::PresentWorkingDirectory& processPWD() override { return _processPWD; }
-  const FileSystem::PresentWorkingDirectory& processPWD() const override { return _processPWD; }
-
-  const ProcessIDs& childProcessIDs() const { return _childProcessIDs; }
-  void addChildProcessID(int pid) { _childProcessIDs.insert(pid); }
-  void removeChildProcessID(int pid) { _childProcessIDs.erase(pid); }
-
-private:
-  static int _nextPid;
-
-  __inline__ void FXSave();
-  __inline__ void FXRestore();
-
-protected:
-  virtual void DeAllocateResources() = 0;
-  virtual void DestroyThreads() {
+  virtual uint32_t getAUTAddress() const {
+    throw upan::exception(XLOC, "getAUTAddress unsupported");
   }
 
-  class Common {
-  public:
-    static uint32_t AllocatePDE();
-    static void UpdatePDEWithStackPTE(uint32_t pdeAddress, uint32_t stackPTEAddress);
-    static uint32_t AllocatePTEForStack();
-    static void AllocateStackSpace(uint32_t pteAddress);
-    static void DeAllocateStackSpace(uint32_t stackPTEAddress);
-  };
-
-protected:
-  upan::string _name;
-  int _processID;
-  int _mainThreadID;
-  int _parentProcessID;
-  bool _dmmFlag;
-  uint32_t _processBase;
-  PROCESS_STATUS _status;
-  int _driveID;
-  int _userID;
-  ProcessStateInfo& _stateInfo;
-  TaskState _taskState;
-  ProcessLDT _processLDT;
-  FileSystem::PresentWorkingDirectory _processPWD;
-  //this is managed like a shared_ptr
-  ProcessGroup* _processGroup;
-
-  ProcessIDs _childProcessIDs;
-  //C++11 -> alignas() or __attribute__((aligned(16)) doesn't work on member attributes of class (in this case Process) that is allocated by new
-  //alignas(16) uint8_t _sseRegs[512];// __attribute__((aligned(16)));
-  uint8_t* _sseRegs;
+  virtual void setAUTAddress(uint32_t addr) {
+    throw upan::exception(XLOC, "setAUTAddress unsupported");
+  }
 };

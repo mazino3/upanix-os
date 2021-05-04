@@ -17,7 +17,7 @@
  */
 #pragma once
 
-#include <IProcess.h>
+#include <Process.h>
 
 class KernelRootProcess : public Process {
 private:

@@ -17,7 +17,7 @@
  */
 #pragma once
 
-#include <Process.h>
+#include <SchedulableProcess.h>
 
 //A KernelProcess is similar to a Thread in that they all share same address space (page tables), heap but different stack
 //But it is a process in that if the parent process dies before child, then child kernel process will continue to execute under the root kernel process
