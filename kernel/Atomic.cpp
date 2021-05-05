@@ -75,15 +75,18 @@ bool Mutex::Lock(bool bBlock)
 
 		val = ProcessManager::Instance().GetCurProcId() ;
 
-		if(_processID != FREE_MUTEX && _processID != val)
-		{
-			Release() ;
+		if(_processID != FREE_MUTEX && _processID != val) {
+		  if (ProcessManager::Instance().IsAlive(_processID)) {
+        Release();
 
-			if(!bBlock)
-				return false ;
+        if (!bBlock)
+          return false;
 
-			ProcessManager::Instance().Sleep(10) ;
-			continue ;
+        ProcessManager::Instance().Sleep(10);
+        continue;
+      } else {
+        _processID = FREE_MUTEX;
+		  }
 		}
 
 		if(_processID == FREE_MUTEX)

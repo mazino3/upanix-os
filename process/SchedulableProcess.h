@@ -39,7 +39,7 @@ public:
   SchedulableProcess(const upan::string& name, int parentID, bool isFGProcess);
   virtual ~SchedulableProcess() = 0;
 
-  bool isChildThread() {
+  bool isChildThread() const override {
     return _processID != _mainThreadID;
   }
 

@@ -50,6 +50,10 @@ public:
     return ROOT_USER_ID;
   }
 
+  bool isChildThread() const override {
+    return false;
+  }
+
   upan::option<Mutex&> envMutex() override {
     return upan::option<Mutex&>(_envMutex);
   }

@@ -29,6 +29,7 @@ public:
   virtual int driveID() const = 0;
   virtual uint32_t getProcessBase() const = 0;
   virtual int userID() const = 0;
+  virtual bool isChildThread() const = 0;
 
   virtual FILE_USER_TYPE fileUserType(const FileSystem::Node&) const = 0;
   virtual bool hasFilePermission(const FileSystem::Node&, byte mode) const = 0;

@@ -426,6 +426,11 @@ void ProcessManager::WaitOnResource(RESOURCE_KEYS resourceKey)
 	ProcessManager_Yield() ;
 }
 
+bool ProcessManager::IsAlive(int pid) {
+  auto process = GetAddressSpace(pid);
+  return !process.isEmpty() && process.value().status() != PROCESS_STATUS::TERMINATED && process.value().status() != PROCESS_STATUS::RELEASED;
+}
+
 bool ProcessManager::IsChildAlive(int iChildProcessID) {
 	if(iChildProcessID < 0 || iChildProcessID >= MAX_NO_PROCESS)
     return false;
