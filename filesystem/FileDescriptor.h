@@ -18,6 +18,13 @@
 
 #pragma once
 
+typedef enum {
+  PROC_FREE_FD = 1100,
+  PROC_STDIN,
+  PROC_STDOUT,
+  PROC_STDERR,
+} SPECIAL_FILES;
+
 class FileDescriptor {
 public:
   FileDescriptor(const upan::string& fileName, byte mode, int driveID, uint32_t fileSize, uint32_t startSectorID) :

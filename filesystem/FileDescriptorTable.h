@@ -25,18 +25,6 @@
 #include <Atomic.h>
 #include <FileDescriptor.h>
 
-typedef enum {
-	PROC_FREE_FD = 1100,
-	PROC_STDIN,
-	PROC_STDOUT,
-	PROC_STDERR,
-
-} SPECIAL_FILES;
-
-#define	SEEK_SET 0
-#define	SEEK_CUR 1
-#define	SEEK_END 2
-
 class FileDescriptorTable {
 public:
   typedef upan::map<int, FileDescriptor*> FDTable;
