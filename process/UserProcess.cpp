@@ -29,7 +29,7 @@
 #include <ElfRelocationSection.h>
 #include <ElfSymbolTable.h>
 #include <ElfDynamicSection.h>
-#include <ProcFileManager.h>
+#include <FileDescriptorTable.h>
 #include <ProcessEnv.h>
 #include <ProcessGroup.h>
 #include <DMM.h>

@@ -17,6 +17,7 @@
  */
 # include <SysCall.h>
 # include <SysCallDisplay.h>
+# include <MultiBoot.h>
 
 byte SysCallDisplay_IsPresent(unsigned uiSysCallID)
 {
@@ -115,15 +116,27 @@ __volatile__ unsigned uiP9)
       }
       break;
 
-    case SYS_CALL_DISPLAY_SIZE:
+    case SYS_CALL_DISPLAY_CONSOLE_SIZE:
       // P1 => Row size (return)
       // P2 => Column size (return)
       {
-        unsigned* maxRows = KERNEL_ADDR(bDoAddrTranslation, unsigned*, uiP1);
-        unsigned* maxCols = KERNEL_ADDR(bDoAddrTranslation, unsigned*, uiP2);
+        auto maxRows = KERNEL_ADDR(bDoAddrTranslation, unsigned*, uiP1);
+        auto maxCols = KERNEL_ADDR(bDoAddrTranslation, unsigned*, uiP2);
         *maxRows = KC::MDisplay().MaxRows();
         *maxCols = KC::MDisplay().MaxColumns();
       }
       break;
+
+	  case SYS_CALL_DISPLAY_FRAMEBUFFER_INFO:
+	    // P1 => Return address of FramebufferInfo
+    {
+      auto framebufferInfo = KERNEL_ADDR(bDoAddrTranslation, FramebufferInfo*, uiP1);
+      const auto f = MultiBoot::Instance().VideoFrameBufferInfo();
+      framebufferInfo->_pitch = f->framebuffer_pitch;
+      framebufferInfo->_width = f->framebuffer_width;
+      framebufferInfo->_height = f->framebuffer_height;
+      framebufferInfo->_bpp = f->framebuffer_bpp;
+    }
+    break;
 	}
 }

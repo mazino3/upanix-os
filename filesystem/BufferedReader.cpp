@@ -18,7 +18,7 @@
 # include <BufferedReader.h>
 # include <DMM.h>
 # include <FileOperations.h>
-# include <ProcFileManager.h>
+# include <FileDescriptorTable.h>
 # include <MemUtil.h>
 # include <Display.h>
 # include <uniq_ptr.h>

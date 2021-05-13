@@ -31,7 +31,7 @@
 #include <ATADrive.h>
 #include <ATADeviceController.h>
 #include <PartitionManager.h>
-#include <ProcFileManager.h>
+#include <FileDescriptorTable.h>
 #include <FileOperations.h>
 #include <UserManager.h>
 #include <GenericUtil.h>

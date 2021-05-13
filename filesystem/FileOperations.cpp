@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
 # include <FileOperations.h>
-# include <ProcFileManager.h>
+# include <FileDescriptorTable.h>
 # include <Directory.h>
 # include <FileSystem.h>
 # include <ProcessManager.h>

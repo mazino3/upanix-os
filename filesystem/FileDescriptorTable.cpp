@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
 
-# include <ProcFileManager.h>
+# include <FileDescriptorTable.h>
 # include <Atomic.h>
 # include <ProcessManager.h>
 

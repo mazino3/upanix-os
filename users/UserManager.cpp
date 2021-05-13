@@ -20,7 +20,7 @@
 # include <MountManager.h>
 # include <MemConstants.h>
 # include <Display.h>
-# include <ProcFileManager.h>
+# include <FileDescriptorTable.h>
 # include <Directory.h>
 # include <StringUtil.h>
 # include <DMM.h>

@@ -28,7 +28,7 @@
 #include <MemUtil.h>
 #include <DynamicLinkLoader.h>
 #include <StringUtil.h>
-#include <ProcFileManager.h>
+#include <FileDescriptorTable.h>
 #include <FileOperations.h>
 #include <ElfRelocationSection.h>
 #include <ElfSymbolTable.h>

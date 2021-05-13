@@ -78,3 +78,8 @@ void SysDisplay_RawCharacterArea(const MChar* src, uint32_t rows, uint32_t cols,
   int iRetStatus ;
   SysCallDisplay_Handle(&iRetStatus, SYS_CALL_DISPLAY_RAW_CHAR_AREA, false, (uint32_t)src, rows, cols, curPos, 5, 6, 7, 8, 9);
 }
+
+void SysDisplay_GetFramebufferInfo(FramebufferInfo* framebufferInfo) {
+  int iRetStatus;
+  SysCallDisplay_Handle(&iRetStatus, SYS_CALL_DISPLAY_FRAMEBUFFER_INFO, false, (uint32_t)framebufferInfo, 2, 3, 4, 5, 6, 7, 8, 9);
+}

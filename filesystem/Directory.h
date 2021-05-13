@@ -20,7 +20,7 @@
 
 #include <ProcessManager.h>
 #include <FileSystem.h>
-#include <ProcFileManager.h>
+#include <FileDescriptorTable.h>
 #include <DeviceDrive.h>
 
 #define Directory_SUCCESS					0

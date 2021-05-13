@@ -26,7 +26,7 @@
 #include <TaskStructures.h>
 #include <FileOperations.h>
 #include <ProcessConstants.h>
-#include <ProcFileManager.h>
+#include <FileDescriptorTable.h>
 #include <ProcessGroup.h>
 #include <Process.h>
 
