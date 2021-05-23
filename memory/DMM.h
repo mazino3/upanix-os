@@ -29,6 +29,9 @@
 #define DMM_BAD_ALIGN			2
 #define DMM_FAILURE				3
 
+#define PROCESS_VIRTUAL_ALLOCATED_ADDRESS(RealAddress) (((uint32_t)(RealAddress) + GLOBAL_DATA_SEGMENT_BASE) - PROCESS_BASE)
+#define PROCESS_REAL_ALLOCATED_ADDRESS(VirtualAddress) (((uint32_t)(VirtualAddress) + PROCESS_BASE) - GLOBAL_DATA_SEGMENT_BASE)
+
 typedef struct
 {
 	unsigned uiAllocatedAddress ;

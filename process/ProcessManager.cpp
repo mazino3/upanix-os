@@ -541,11 +541,11 @@ void ProcessManager::FreeProcListMem(PS* pProcList, unsigned uiListSize)
 		else
 			DMM_DeAllocate(&pAddrSpc, (unsigned)pProcList[i].pname) ;
 	}
-	
+
 	if(pAddrSpc.isKernelProcess())
 		DMM_DeAllocateForKernel((unsigned)pProcList) ;
 	else
-		DMM_DeAllocate(&pAddrSpc, (unsigned)pProcList) ;
+		DMM_DeAllocate(&pAddrSpc, PROCESS_VIRTUAL_ALLOCATED_ADDRESS(pProcList));
 }
 
 void ProcessManager::SetDMMFlag(int iProcessID, bool flag) {

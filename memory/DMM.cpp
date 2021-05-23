@@ -25,11 +25,6 @@
 #include <Bit.h>
 
 unsigned DMM_uiTotalKernelAllocation = 0 ;
-unsigned new_allocation_algo = 1;
-
-#define VIRTUAL_ALLOCATED_ADDRESS(RealAddress) ((RealAddress + GLOBAL_DATA_SEGMENT_BASE) - PROCESS_BASE)
-
-#define REAL_ALLOCATED_ADDRESS(VirtualAddress) ((VirtualAddress + PROCESS_BASE) - GLOBAL_DATA_SEGMENT_BASE)
 
 /*************** static (private) functions ********************/
 
@@ -140,7 +135,7 @@ unsigned DMM_Allocate(Process* processAddressSpace, unsigned uiSizeInBytes, unsi
 
       ProcessManager::Instance().SetDMMFlag(ProcessManager::GetCurrentProcessID(), false) ;
 
-      return VIRTUAL_ALLOCATED_ADDRESS(aut->uiReturnAddress) ;
+      return PROCESS_VIRTUAL_ALLOCATED_ADDRESS(aut->uiReturnAddress) ;
     }
 
     prevAut = aut;
@@ -218,7 +213,7 @@ unsigned DMM_AllocateForKernel(unsigned uiSizeInBytes, unsigned uiAlignNumber)
 byte DMM_DeAllocate(Process* processAddressSpace, unsigned uiAddress)
 {
   upan::mutex_guard g(processAddressSpace->heapMutex().value());
-  uiAddress = REAL_ALLOCATED_ADDRESS(uiAddress) ;
+  uiAddress = PROCESS_REAL_ALLOCATED_ADDRESS(uiAddress) ;
   unsigned uiHeapStartAddress = PROCESS_HEAP_START_ADDRESS - GLOBAL_DATA_SEGMENT_BASE ;
 
   if(uiAddress == NULL)
@@ -240,7 +235,7 @@ byte DMM_DeAllocate(Process* processAddressSpace, unsigned uiAddress)
 }
 
 byte DMM_GetAllocSize(unsigned uiAddress, int* iSize) {
-  uiAddress = REAL_ALLOCATED_ADDRESS(uiAddress);
+  uiAddress = PROCESS_REAL_ALLOCATED_ADDRESS(uiAddress);
   unsigned uiHeapStartAddress = PROCESS_HEAP_START_ADDRESS - GLOBAL_DATA_SEGMENT_BASE ;
 
   if (uiAddress == NULL || uiAddress < sizeof(AllocationUnitTracker) || uiAddress == uiHeapStartAddress) {

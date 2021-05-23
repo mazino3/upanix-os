@@ -41,7 +41,7 @@
 #include <syscalldefs.h>
 
 #define IKP ( ProcessManager::Instance().IsKernelProcess(ProcessManager::GetCurrentProcessID()) )
-#define KERNEL_ADDR(DO, TYPE, ADDR) (TYPE)( (DO) ? (IKP ? ADDR : (PROCESS_BASE + ADDR - GLOBAL_DATA_SEGMENT_BASE)) : ADDR )
+#define KERNEL_ADDR(DO, TYPE, ADDR) (TYPE)( (DO) ? (IKP ? (uint32_t)(ADDR) : PROCESS_REAL_ALLOCATED_ADDRESS(ADDR)) : (uint32_t)(ADDR) )
 
 void SysCall_Initialize() ;
 void SysCall_Entry(__volatile__ unsigned uiCSCorrection,
