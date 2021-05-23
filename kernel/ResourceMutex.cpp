@@ -15,28 +15,30 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
-#ifndef _TESTSUITE_H_
-#define _TESTSUITE_H_
+#include <Global.h>
+#include <Display.h>
+#include <mutex.h>
+#include <ProcessManager.h>
 
-#include <map.h>
-
-class TestSuite
+bool ResourceMutex::Lock(bool blocking)
 {
-	public:
-		TestSuite() ;
-		void Run() ;
+	ProcessManager::DisableTaskSwitch();
 
-	private:
-		void Assert(bool b) ;
-		bool TestAtomicSwap() ;
-		bool TestListDS() ;
-		bool TestListDSPtr() ;
-		bool TestBTree1() ;
-		bool TestBTree2() ;
-		bool TestBTree3() ;
-    bool TestMapFwdRwd();
-    bool TestMap();
-    bool TestMapReverseEntry();
-} ;
+	if(!ProcessManager::Instance().IsResourceBusy(_resourceKey))
+		ProcessManager::Instance().SetResourceBusy(_resourceKey, true);
+	else
+	{
+    if(!blocking)
+      return false;  
+    ProcessManager::Instance().WaitOnResource(_resourceKey);
+	}
 
-#endif
+	ProcessManager::EnableTaskSwitch();
+	return true;
+}
+
+void ResourceMutex::UnLock()
+{
+  ProcessSwitchLock pLock;
+	ProcessManager::Instance().SetResourceBusy(_resourceKey, false);
+}

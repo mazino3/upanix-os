@@ -22,7 +22,7 @@
 #include <map.h>
 #include <uniq_ptr.h>
 #include <fs.h>
-#include <Atomic.h>
+#include <mutex.h>
 #include <FileDescriptor.h>
 
 class FileDescriptorTable {
@@ -45,6 +45,6 @@ private:
   FileDescriptor& get(int fd);
 
   int _fdIdCounter;
-  Mutex _fdMutex;
+  upan::mutex _fdMutex;
   FDTable _fdTable;
 };

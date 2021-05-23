@@ -17,6 +17,8 @@
  */
 #pragma once
 
+#include <ResourceMutex.h>
+
 class IRQ;
 
 class ProcessStateInfo

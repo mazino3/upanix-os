@@ -20,7 +20,8 @@
 
 #include <Display.h>
 #include <KernelUtil.h>
-#include <Atomic.h>
+#include <mutex.h>
+#include <mutex.h>
 
 class GraphicsConsole : public Display, KernelUtil::TimerTask
 {
@@ -48,5 +49,5 @@ private:
   friend class Display;
   int _cursorPos;
   bool _cursorEnabled;
-  Mutex _cursorMutex;
+  upan::mutex _cursorMutex;
 };

@@ -85,8 +85,6 @@ include_directories(${PROJECT_SOURCE_DIR}/exeparser)
 include_directories(${PROJECT_SOURCE_DIR}/syscall)
 include_directories(${PROJECT_SOURCE_DIR}/resource)
 
-include_directories(${PROJECT_SOURCE_DIR}/testsuite)
-
 include_directories(${UPANLIB_SOURCE_DIR}/libc/include)
 include_directories(${UPANLIB_SOURCE_DIR}/libc/stdio)
 include_directories(${UPANLIB_SOURCE_DIR}/libc/sysdeps/mos/common/)
@@ -98,6 +96,8 @@ include_directories(${UPANLIB_SOURCE_DIR}/libustdcpp/infra)
 include_directories(${UPANLIB_SOURCE_DIR}/libustdcpp/algo)
 include_directories(${UPANLIB_SOURCE_DIR}/libustdcpp/ds)
 include_directories(${UPANLIB_SOURCE_DIR}/libustdcpp/mem)
+include_directories(${UPANLIB_SOURCE_DIR}/libustdcpp/mthread)
+
 include_directories(${PROJECT_SOURCE_DIR}/libmcpp/cal)
 
 include_directories(${UPANLIB_SOURCE_DIR}/libcxxrt)
@@ -153,11 +153,11 @@ add_dependencies(${TARGET_BIN} images)
 target_link_libraries(${TARGET_BIN} ${UPANLIB_OUT_DIR}/libcxxrt.a)
 target_link_libraries(${TARGET_BIN} mcpp)
 target_link_libraries(${TARGET_BIN} ${UPANLIB_OUT_DIR}/libusfn.a)
-target_link_libraries(${TARGET_BIN} ${UPANLIB_OUT_DIR}/libc.a)
 target_link_libraries(${TARGET_BIN} ${UPANLIB_OUT_DIR}/libm.a)
 target_link_libraries(${TARGET_BIN} ${UPANLIB_OUT_DIR}/libgcceh.a)
 target_link_libraries(${TARGET_BIN} ${UPANLIB_OUT_DIR}/libustdcpp.a)
 target_link_libraries(${TARGET_BIN} ${UPANLIB_OUT_DIR}/libupanui.a)
+target_link_libraries(${TARGET_BIN} ${UPANLIB_OUT_DIR}/libc.a)
 
 set_source_files_properties(${OTHER_OBJS} PROPERTIES EXTERNAL_OBJECT true GENERATED true)
 

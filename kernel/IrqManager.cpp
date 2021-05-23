@@ -20,22 +20,23 @@
 #include <IrqManager.h>
 #include <PIC.h>
 #include <Apic.h>
-#include <Atomic.h>
+#include <mutex.h>
 #include <IDT.h>
+#include <atomicop.h>
 
 IrqManager* IrqManager::_instance = nullptr;
 
 void IRQ::Signal() const
 {
-  Atomic::Swap(_interruptCount, _interruptCount + 1);
+  upan::atomic::swap(_interruptCount, _interruptCount + 1);
 }
 
 bool IRQ::Consume() const
 {
-  MutexGuard mg(_consumeMutex);
+  upan::mutex_guard mg(_consumeMutex);
   if(_interruptCount > 0)
   {
-    Atomic::Swap(_interruptCount, _interruptCount - 1);
+    upan::atomic::swap(_interruptCount, _interruptCount - 1);
     return true;
   }
   return false;

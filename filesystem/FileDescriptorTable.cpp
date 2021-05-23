@@ -17,7 +17,7 @@
  */
 
 # include <FileDescriptorTable.h>
-# include <Atomic.h>
+# include <mutex.h>
 # include <ProcessManager.h>
 
 #define DUPPED (100)
@@ -37,7 +37,7 @@ FileDescriptorTable::~FileDescriptorTable() noexcept {
 }
 
 int FileDescriptorTable::allocate(const upan::string &fileName, byte mode, int driveID, uint32_t fileSize, uint32_t startSectorID) {
-  MutexGuard g(_fdMutex);
+  upan::mutex_guard g(_fdMutex);
 
   if(_fdTable.size() >= PROC_SYS_MAX_OPEN_FILES) {
     throw upan::exception(XLOC, "can't open new file - max open files limit %d reached", PROC_SYS_MAX_OPEN_FILES);
@@ -75,7 +75,7 @@ FileDescriptor& FileDescriptorTable::getRealNonDupped(int fd) {
 }
 
 void FileDescriptorTable::free(int fd) {
-  MutexGuard g(_fdMutex);
+  upan::mutex_guard g(_fdMutex);
   auto e = getItr(fd);
 
   if (e->second->getRefCount() > 1) {

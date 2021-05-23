@@ -56,13 +56,13 @@ public:
     _parent.setAUTAddress(addr);
   }
 
-  upan::option<Mutex&> heapMutex() override {
+  upan::option<upan::mutex&> heapMutex() override {
     return _parent.heapMutex();
   }
-  upan::option<Mutex&> pageAllocMutex() override {
+  upan::option<upan::mutex&> pageAllocMutex() override {
     return _parent.pageAllocMutex();
   }
-  upan::option<Mutex&> envMutex() override {
+  upan::option<upan::mutex&> envMutex() override {
     return _parent.envMutex();
   }
 

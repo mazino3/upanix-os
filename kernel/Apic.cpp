@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
 
-#include <Atomic.h>
+#include <mutex.h>
 #include <Apic.h>
 #include <Cpu.h>
 #include <Acpi.h>
@@ -27,6 +27,7 @@
 #include <PCIBusHandler.h>
 #include <PortCom.h>
 #include <PIT.h>
+#include <atomicop.h>
 
 #define IA32_APIC_BASE_MSR          0x1B
 #define IA32_APIC_BASE_BSP          0x100
@@ -258,7 +259,7 @@ uint8_t Apic::GetIOApicID()
 void Apic::SendEOI(const IRQ&)
 {
 //  _apicBase[APIC_EOI] = 0;
-	Atomic::Swap(_apicBase[APIC_EOI], 0);
+  upan::atomic::swap(_apicBase[APIC_EOI], 0);
 }
 
 void Apic::EnableIRQ(const IRQ& irq)

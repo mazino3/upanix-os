@@ -20,7 +20,7 @@
 #include <GraphicsVideo.h>
 #include <GraphicsFont.h>
 #include <ProcessManager.h>
-#include <Atomic.h>
+#include <mutex.h>
 #include <DMM.h>
 
 #include <usfncontext.h>
@@ -150,14 +150,14 @@ bool GraphicsVideo::TimerTrigger() {
     optimized_memcpy(_mappedLFBAddress, _zBuffer, _lfbSize);
     //memcpy((void *) _mappedLFBAddress, (void *) _zBuffer, _lfbSize);
     DrawMouseCursor();
-    Atomic::Swap(_needRefresh, 0);
+    upan::atomic::swap(_needRefresh, 0);
   }
   return true;
 }
 
 void GraphicsVideo::NeedRefresh()
 {
-  Atomic::Swap(_needRefresh, 1);
+  upan::atomic::swap(_needRefresh, 1);
 }
 
 void GraphicsVideo::SetPixel(unsigned x, unsigned y, unsigned color)

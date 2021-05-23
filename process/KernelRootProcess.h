@@ -54,8 +54,8 @@ public:
     return false;
   }
 
-  upan::option<Mutex&> envMutex() override {
-    return upan::option<Mutex&>(_envMutex);
+  upan::option<upan::mutex&> envMutex() override {
+    return upan::option<upan::mutex&>(_envMutex);
   }
 
   FileDescriptorTable& fdTable() override {
@@ -103,7 +103,7 @@ public:
   }
 
 private:
-  Mutex _envMutex;
-  Mutex _fdMutex;
+  upan::mutex _envMutex;
+  upan::mutex _fdMutex;
   FileDescriptorTable _fdTable;
 };

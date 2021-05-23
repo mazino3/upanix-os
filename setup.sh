@@ -50,8 +50,6 @@ export INCLUDE="-I./ \
 -I${UPANIX_HOME}/syscall \
 -I${UPANIX_HOME}/resource \
 \
--I${UPANIX_HOME}/testsuite \
-\
 -I${UPANIX_HOME}/libc/include \
 -I${UPANIX_HOME}/libc/sysdeps/mos/common/ \
 -I${UPANIX_HOME}/libc/sysdeps/mos/common/bits \

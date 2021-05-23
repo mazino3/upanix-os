@@ -19,7 +19,7 @@
 #define _PROCESS_GROUP_H_
 
 #include <Global.h>
-#include <Atomic.h>
+#include <mutex.h>
 #include <list.h>
 
 class DisplayBuffer;

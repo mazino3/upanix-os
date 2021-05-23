@@ -159,24 +159,19 @@ __volatile__ unsigned uiP9)
 			}
 			break ;
 
-		case SYS_CALL_DISABLE_TASK_SWITCH:
-			{
-				ProcessManager::DisableTaskSwitch() ;
-			}
-			break ;
-
-		case SYS_CALL_ENABLE_TASK_SWITCH:
-			{
-				ProcessManager::EnableTaskSwitch() ;
-			}
-			break ;
-
 		case SYS_CALL_PROCESS_CHILD_ALIVE :
 			// P1 => PID	
 			{
 				*piRetVal = ProcessManager::Instance().IsChildAlive((int)uiP1) ;
 			}
 			break ;
-	}
+
+    case SYS_CALL_PROCESS_ALIVE :
+      // P1 => PID
+      {
+        *piRetVal = ProcessManager::Instance().IsAlive((int)uiP1) ;
+      }
+      break ;
+  }
 }
 

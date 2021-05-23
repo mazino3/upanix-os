@@ -146,8 +146,6 @@ UPANIX_OBJS = \
 	./drivers/net/NetworkDevice.o \
 	./drivers/net/NetworkManager.o \
 \
-	./testsuite/TestSuite.o \
-\
 	${UPANIX_LIBCXXRT_A} \
 	${UPANIX_LIBMCPP_A} \
 	${UPANIX_LIBC_A} \

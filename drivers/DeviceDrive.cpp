@@ -97,7 +97,7 @@ DiskDrive::DiskDrive(int id,
     _mounted(false),
     _fileSystem(*this)
 {
-	StartReleaseCacheTask();
+  StartReleaseCacheTask();
 }
 
 void DiskDrive::Mount()
@@ -140,8 +140,8 @@ void DiskDrive::ReadRootDirectory()
 
 void DiskDrive::Read(unsigned uiStartSector, unsigned uiNoOfSectors, byte* bDataBuffer)
 {
-  MutexGuard g(_driveMutex);
-	uiStartSector += LBAStartSector();
+  upan::mutex_guard g(_driveMutex);
+  uiStartSector += LBAStartSector();
 
 	if(!_bEnableDiskCache)
   {
@@ -385,7 +385,7 @@ byte DiskDrive::FlushDirtyCacheSectors(int iCount)
 	if(!_bEnableDiskCache)
 		return DiskCache_SUCCESS ;
 
-  MutexGuard g(_driveMutex);
+  upan::mutex_guard g(_driveMutex);
 
   while(iCount != 0)
   {
@@ -464,7 +464,7 @@ void DiskDriveManager::Create(const upan::string& driveName,
   void* device, RawDiskDrive* rawDisk,
   unsigned uiMaxSectorsInFreePoolCache)
 {
-  MutexGuard g(_driveListMutex);
+  upan::mutex_guard g(_driveListMutex);
   DiskDrive* pDiskDrive = new DiskDrive(_idSequence++, driveName,
     deviceType, driveNumber,
     uiLBAStartSector, uiSizeInSectors,
@@ -509,7 +509,7 @@ RawDiskDrive* DiskDriveManager::GetRawDiskByName(const upan::string& name)
 
 void DiskDriveManager::RemoveEntryByCondition(const DriveRemoveClause& removeClause)
 {
-  MutexGuard g(_driveListMutex);
+  upan::mutex_guard g(_driveListMutex);
 
   for(auto it = _driveList.begin(); it != _driveList.end();)
   {
@@ -527,7 +527,7 @@ void DiskDriveManager::RemoveEntryByCondition(const DriveRemoveClause& removeCla
 
 upan::result<DiskDrive*> DiskDriveManager::GetByDriveName(const upan::string& driveName, bool bCheckMount)
 {
-  MutexGuard g(_driveListMutex);
+  upan::mutex_guard g(_driveListMutex);
   auto it = upan::find_if(_driveList.begin(), _driveList.end(), [&driveName, bCheckMount](const DiskDrive* d)
     {
       if(d->DriveName() == driveName)
@@ -541,7 +541,7 @@ upan::result<DiskDrive*> DiskDriveManager::GetByDriveName(const upan::string& dr
 
 upan::result<DiskDrive*> DiskDriveManager::GetByID(int iID, bool bCheckMount)
 {	
-  MutexGuard g(_driveListMutex);
+  upan::mutex_guard g(_driveListMutex);
 	if(iID == ROOT_DRIVE)
 		iID = ROOT_DRIVE_ID;
 	else if(iID == CURRENT_DRIVE)
@@ -585,7 +585,7 @@ byte DiskDriveManager::Change(const upan::string& szDriveName)
 
 byte DiskDriveManager::GetList(DriveStat** pDriveList, int* iListSize)
 {	
-  MutexGuard g(_driveListMutex);
+  upan::mutex_guard g(_driveListMutex);
 
 	*pDriveList = NULL ;
 	*iListSize = _driveList.size();
@@ -701,7 +701,7 @@ RESOURCE_KEYS DiskDriveManager::GetResourceType(RAW_DISK_TYPES diskType)
 
 void RawDiskDrive::Read(unsigned uiStartSector, unsigned uiNoOfSectors, byte* pDataBuffer)
 {
-  MutexGuard g(_diskMutex);
+  upan::mutex_guard g(_diskMutex);
 	switch(_type)
 	{
 		case ATA_HARD_DISK:
@@ -717,7 +717,7 @@ void RawDiskDrive::Read(unsigned uiStartSector, unsigned uiNoOfSectors, byte* pD
 
 void RawDiskDrive::Write(unsigned uiStartSector, unsigned uiNoOfSectors, byte* pDataBuffer)
 {
-	MutexGuard g(_diskMutex);
+	upan::mutex_guard g(_diskMutex);
 	switch(_type)
 	{
 		case ATA_HARD_DISK:

@@ -124,6 +124,9 @@ unsigned KernelService::RequestFlatAddress(unsigned uiVirtualAddress)
 //So, this function is called from an interrupt handler - and hence, there won't be any other interrupts while
 //this interrupt is active ==> No PIT interrupts ==> No task switch
 bool KernelService::RequestPageFault(unsigned uiFaultyAddress) {
+  if (uiFaultyAddress < PAGE_SIZE) {
+    printf("\nPageFault at lower address: %x!!\n", uiFaultyAddress);
+  }
 	KernelService::PageFault* pRequest = new KernelService::PageFault(uiFaultyAddress) ;
 
 	AddRequest(pRequest) ;
@@ -179,13 +182,13 @@ int KernelService::RequestThreadExec(uint32_t threadCaller, uint32_t entryAddres
 
 void KernelService::AddRequest(Request* pRequest)
 {
-  MutexGuard g(m_mutexQRequest);
+  upan::mutex_guard g(m_mutexQRequest);
 	m_qRequest.push_back(pRequest) ;
 }
 
 KernelService::Request* KernelService::GetRequest()
 {
-  MutexGuard g(m_mutexQRequest);
+  upan::mutex_guard g(m_mutexQRequest);
 
 	Request* pRequest = NULL;
   if(!m_qRequest.empty())
@@ -220,7 +223,7 @@ void KernelService::Server(KernelService* pService)
 
 int KernelService::Spawn()
 {
-  MutexGuard g(m_mutexServer);
+  upan::mutex_guard g(m_mutexServer);
 
 	static const char* szKS = "kers-" ;
 	static int iID = 0 ;
@@ -242,7 +245,7 @@ int KernelService::Spawn()
 
 bool KernelService::Stop(int iServerProcessID)
 {
-  MutexGuard g(m_mutexServer);
+  upan::mutex_guard g(m_mutexServer);
 
 	if(!m_lServerList.erase(iServerProcessID))
 	{

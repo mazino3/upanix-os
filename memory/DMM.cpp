@@ -62,7 +62,7 @@ void DMM_CheckAlignNumber(unsigned uiAlignNumber)
 // than the current algorithm which maintains a list of free chunks
 unsigned DMM_Allocate(Process* processAddressSpace, unsigned uiSizeInBytes, unsigned uiAlignNumber)
 {
-  MutexGuard g(processAddressSpace->heapMutex().value());
+  upan::mutex_guard g(processAddressSpace->heapMutex().value());
 
   DMM_CheckAlignNumber(uiAlignNumber);
 
@@ -157,11 +157,10 @@ unsigned DMM_AllocateForKernel(unsigned uiSizeInBytes, unsigned uiAlignNumber)
 	unsigned& uiAUTAddress = MemManager::Instance().GetKernelAUTAddress();
 
 	// Dedicated Head Node. This will avoid Back Loop at Head
-	if(uiAUTAddress == NULL)
-	{
+	if(uiAUTAddress == NULL) {
 	  unsigned uiHeapStartAddress = MemManager::Instance().GetKernelHeapStartAddr();
 		aut = (AllocationUnitTracker*)(uiHeapStartAddress);
-		aut->uiAllocatedAddress = uiHeapStartAddress;
+    aut->uiAllocatedAddress = uiHeapStartAddress;
 		aut->uiSize = MEM_KERNEL_HEAP_SIZE;
     aut->uiReturnAddress = NULL;
 		aut->uiNextAUTAddress = NULL;
@@ -170,8 +169,7 @@ unsigned DMM_AllocateForKernel(unsigned uiSizeInBytes, unsigned uiAlignNumber)
 
 	aut = (AllocationUnitTracker*)(uiAUTAddress);
   prevAut = NULL;
-  while(aut != NULL)
-  {
+  while(aut != NULL) {
     unsigned uiAddress = aut->uiAllocatedAddress;
     unsigned uiMaxSize = aut->uiSize;
     unsigned uiNextAUTAddress = aut->uiNextAUTAddress;
@@ -219,7 +217,7 @@ unsigned DMM_AllocateForKernel(unsigned uiSizeInBytes, unsigned uiAlignNumber)
 
 byte DMM_DeAllocate(Process* processAddressSpace, unsigned uiAddress)
 {
-  MutexGuard g(processAddressSpace->heapMutex().value());
+  upan::mutex_guard g(processAddressSpace->heapMutex().value());
   uiAddress = REAL_ALLOCATED_ADDRESS(uiAddress) ;
   unsigned uiHeapStartAddress = PROCESS_HEAP_START_ADDRESS - GLOBAL_DATA_SEGMENT_BASE ;
 

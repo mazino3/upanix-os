@@ -26,7 +26,8 @@
 #include <FileSystem.h>
 #include <ElfSectionHeader.h>
 #include <PIC.h>
-#include <Atomic.h>
+#include <mutex.h>
+#include <ResourceMutex.h>
 #include <UserProcess.h>
 
 #include <PIT.h>

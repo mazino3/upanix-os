@@ -32,7 +32,7 @@ void GraphicsConsole::StartCursorBlink() {
 
 void GraphicsConsole::GotoCursor() {
   if (_cursorEnabled) {
-    MutexGuard g(_cursorMutex);
+    upan::mutex_guard g(_cursorMutex);
     int newCurPos = GetCurrentCursorPosition();
     if (newCurPos != _cursorPos) {
       //erase old cursor
@@ -59,7 +59,7 @@ void GraphicsConsole::PutCursor(int pos, bool show) {
 }
 
 bool GraphicsConsole::TimerTrigger() {
-  MutexGuard g(_cursorMutex);
+  upan::mutex_guard g(_cursorMutex);
   static bool showCursor = false;
   PutCursor(_cursorPos, showCursor);
   showCursor = !showCursor;

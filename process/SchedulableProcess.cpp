@@ -110,9 +110,9 @@ void SchedulableProcess::Destroy() {
   if(_processGroup->Size() == 0)
     delete _processGroup;
 
-  heapMutex().ifPresent([this](Mutex& m) { m.UnLock(_processID); });
-  pageAllocMutex().ifPresent([this](Mutex& m) { m.UnLock(_processID); });
-  envMutex().ifPresent([this](Mutex& m) { m.UnLock(_processID); });
+  heapMutex().ifPresent([this](upan::mutex& m) { m.unlock(_processID); });
+  pageAllocMutex().ifPresent([this](upan::mutex& m) { m.unlock(_processID); });
+  envMutex().ifPresent([this](upan::mutex& m) { m.unlock(_processID); });
 
   //TODO: release all the mutex held by the process or an individual thread
 
@@ -262,7 +262,7 @@ bool ProcessStateInfo::IsEventCompleted()
 {
   if(_eventCompleted)
   {
-    Atomic::Swap(_eventCompleted, 0);
+    upan::atomic::swap(_eventCompleted, 0);
     return true;
   }
   return false;
@@ -270,5 +270,5 @@ bool ProcessStateInfo::IsEventCompleted()
 
 void ProcessStateInfo::EventCompleted()
 {
-  Atomic::Swap(_eventCompleted, 1);
+  upan::atomic::swap(_eventCompleted, 1);
 }

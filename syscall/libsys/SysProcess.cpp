@@ -111,14 +111,20 @@ void SysProcess_FreeProcListMem(PS* pProcList, unsigned uiListSize)
 	SysCallProc_Handle(&iRetStatus, SYS_CALL_PROCESS_FREE_PS_LIST, false, (unsigned)pProcList, uiListSize, 3, 4, 5, 6, 7, 8, 9);
 }
 
-void SysProcess_DisableTaskSwitch()
-{
-	__volatile__ int iRetStatus ;
-	SysCallProc_Handle(&iRetStatus, SYS_CALL_DISABLE_TASK_SWITCH, false, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+int SysProcess_IsProcessAlive(int pid) {
+  __volatile__ int iRetStatus ;
+  SysCallProc_Handle(&iRetStatus, SYS_CALL_PROCESS_ALIVE, false, (unsigned)pid, 2, 3, 4, 5, 6, 7, 8, 9);
+  return iRetStatus ;
 }
 
-void SysProcess_EnableTaskSwitch()
-{
-	__volatile__ int iRetStatus ;
-	SysCallProc_Handle(&iRetStatus, SYS_CALL_ENABLE_TASK_SWITCH, false, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+int SysProcess_ThreadExec(uint32_t threadCaller, uint32_t entryAddress, void* arg) {
+  __volatile__ int iRetStatus ;
+  SysCallProc_Handle(&iRetStatus, SYS_CALL_THREAD_EXEC, false, threadCaller, entryAddress, (uint32_t)arg, 4, 5, 6, 7, 8, 9);
+  return iRetStatus ;
+}
+
+int SysProcess_IsChildAlive(int iProcessID) {
+  __volatile__ int iRetStatus ;
+  SysCallProc_Handle(&iRetStatus, SYS_CALL_PROCESS_CHILD_ALIVE, false, iProcessID, 2, 3, 4, 5, 6, 7, 8, 9);
+  return iRetStatus ;
 }

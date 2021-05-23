@@ -44,9 +44,9 @@ public:
   virtual void setProcessGroup(ProcessGroup* processGroup) = 0;
 
   virtual FileDescriptorTable& fdTable() = 0;
-  virtual upan::option<Mutex&> envMutex() = 0;
-  virtual upan::option<Mutex&> heapMutex() {
-    return upan::option<Mutex&>::empty();
+  virtual upan::option<upan::mutex&> envMutex() = 0;
+  virtual upan::option<upan::mutex&> heapMutex() {
+    return upan::option<upan::mutex&>::empty();
   }
 
   virtual uint32_t startPDEForDLL() const {

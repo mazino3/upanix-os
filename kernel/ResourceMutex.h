@@ -19,52 +19,7 @@
 #define _ATOMIC_H_
 
 #include <Global.h>
-
-class Mutex
-{
-	private:
-		__volatile__ uint32_t _lock ;
-		__volatile__ int _processID ;
-		
-		static const int FREE_MUTEX = -999 ;
-
-	public:
-		Mutex() ;
-		~Mutex() ;
-
-		bool Lock(bool bBlock = true) ;
-		bool UnLock();
-    bool UnLock(int pid);
-
-	private:
-
-		void Acquire() ;
-		void Release() ;
-
-	friend class TestSuite ;
-} ;
-
-class Atomic
-{
-	public:
-    static uint32_t Swap(__volatile__ uint32_t& iLock, uint32_t val);
-    static void Add(__volatile__ uint32_t& var, uint32_t val);
-} ;
-
-class MutexGuard
-{
-  public:
-    MutexGuard(Mutex& m) : _m(m)
-    {
-      _m.Lock();
-    }
-    ~MutexGuard()
-    {
-      _m.UnLock();
-    }
-  private:
-    Mutex& _m;
-};
+#include <atomic.h>
 
 enum RESOURCE_KEYS
 {

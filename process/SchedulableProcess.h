@@ -22,7 +22,7 @@
 #include <map.h>
 #include <option.h>
 #include <uniq_ptr.h>
-#include <Atomic.h>
+#include <atomicop.h>
 #include <TaskStructures.h>
 #include <FileOperations.h>
 #include <ProcessConstants.h>
@@ -46,14 +46,14 @@ public:
   virtual void onLoad() = 0;
 
   //thread synchronization mutex
-  upan::option<Mutex&> heapMutex() override {
-    return upan::option<Mutex&>::empty();
+  upan::option<upan::mutex&> heapMutex() override {
+    return upan::option<upan::mutex&>::empty();
   }
-  virtual upan::option<Mutex&> pageAllocMutex() {
-    return upan::option<Mutex&>::empty();
+  virtual upan::option<upan::mutex&> pageAllocMutex() {
+    return upan::option<upan::mutex&>::empty();
   }
-  upan::option<Mutex&> envMutex() override {
-    return upan::option<Mutex&>::empty();
+  upan::option<upan::mutex&> envMutex() override {
+    return upan::option<upan::mutex&>::empty();
   }
 
   virtual SchedulableProcess& forSchedule() {
@@ -89,7 +89,7 @@ public:
 
   PROCESS_STATUS status() const { return _status; }
   PROCESS_STATUS setStatus(PROCESS_STATUS status) override {
-    return (PROCESS_STATUS) Atomic::Swap((__volatile__ uint32_t &) (_status), static_cast<int>(status));
+    return (PROCESS_STATUS) upan::atomic::swap((__volatile__ uint32_t &) (_status), static_cast<int>(status));
   }
 
   int driveID() const override { return _driveID; }

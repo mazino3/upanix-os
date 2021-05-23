@@ -25,7 +25,6 @@ SRC_DIRS="
   memory
   process
   syscall
-  testsuite
   users
   util"
 

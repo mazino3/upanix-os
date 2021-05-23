@@ -19,7 +19,7 @@
 #define _KERNEL_SERVICE_H_
 
 #include <Global.h>
-#include <Atomic.h>
+#include <mutex.h>
 #include <string.h>
 #include <StringUtil.h>
 #include <ProcessManager.h>
@@ -43,10 +43,10 @@ class KernelService
 
 	private:
 		upan::list<Request*> m_qRequest ;
-		Mutex m_mutexQRequest ;
+		upan::mutex m_mutexQRequest ;
 
 		upan::list<int> m_lServerList ;
-		Mutex m_mutexServer ;
+		upan::mutex m_mutexServer ;
 
 
 	public:

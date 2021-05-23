@@ -46,7 +46,6 @@
 #include <EHCIManager.h>
 #include <XHCIManager.h>
 #include <BTree.h>
-#include <TestSuite.h>
 #include <video.h>
 #include <PS2MouseDriver.h>
 #include <exception.h>
@@ -116,7 +115,6 @@ static void ConsoleCommands_ShowRawDiskList() ;
 static void ConsoleCommands_InitFloppyController() ;
 static void ConsoleCommands_InitATAController() ;
 static void ConsoleCommands_InitMountManager() ;
-static void ConsoleCommands_Test() ;
 static void ConsoleCommands_Testv() ;
 static void ConsoleCommands_TestNet() ;
 static void ConsoleCommands_TestCPP() ;
@@ -187,7 +185,6 @@ static const ConsoleCommand ConsoleCommands_CommandList[] = {
 	{ "initfdc",	&ConsoleCommands_InitFloppyController },
 	{ "initata",	&ConsoleCommands_InitATAController },
 	{ "initmntmgr",	&ConsoleCommands_InitMountManager },
-	{ "test",		&ConsoleCommands_Test },
 	{ "testg",		&ConsoleCommands_TestGraphics },
 	{ "testv",		&ConsoleCommands_Testv },
 	{ "testn",		&ConsoleCommands_TestNet },
@@ -888,12 +885,6 @@ void ConsoleCommands_InitMountManager()
 		MountManager_Initialize() ;
 	else
 		printf("\n MountManager already initialized") ;
-}
-
-void ConsoleCommands_Test()
-{
-	TestSuite t ;
-  t.Run() ;
 }
 
 void ConsoleCommands_TestGraphics() {

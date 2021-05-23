@@ -26,8 +26,9 @@
 #include <Display.h>
 #include <MemConstants.h>
 #include <MemUtil.h>
-#include <Atomic.h>
+#include <mutex.h>
 #include <Apic.h>
+#include <atomicop.h>
 
 static __volatile__ unsigned PIT_ClockCountForSleep ;
 static __volatile__ unsigned char Process_bContextSwitch ;
@@ -67,12 +68,12 @@ bool PIT_IsTaskSwitch() {
 
 //return true if it was previously disabled and now enabled
 bool PIT_EnableTaskSwitch() {
-  return Atomic::Swap(Process_iTaskSwitch, 1) == 0;
+  return upan::atomic::swap(Process_iTaskSwitch, 1) == 0;
 }
 
 //return true if it was previously enabled and now disabled
 bool PIT_DisableTaskSwitch() {
-  return Atomic::Swap(Process_iTaskSwitch, 0) == 1;
+  return upan::atomic::swap(Process_iTaskSwitch, 0) == 1;
 }
 
 void PIT_Handler()

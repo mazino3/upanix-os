@@ -265,7 +265,7 @@ bool UHCIController::GetNextFrameToClean(unsigned& uiFrameNumber)
 
 bool UHCIController::CleanFrame(unsigned uiFrameNumber)
 {
-  MutexGuard g(_m);
+  upan::mutex_guard g(_m);
 
   if(_frameQueue.full())
 		return false;

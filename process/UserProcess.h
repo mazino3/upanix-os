@@ -55,14 +55,14 @@ public:
     return _fdTable;
   }
 
-  upan::option<Mutex&> heapMutex() override {
-    return upan::option<Mutex&>(_heapMutex);
+  upan::option<upan::mutex&> heapMutex() override {
+    return upan::option<upan::mutex&>(_heapMutex);
   }
-  upan::option<Mutex&> pageAllocMutex() override {
-    return upan::option<Mutex&>(_pageFaultMutex);
+  upan::option<upan::mutex&> pageAllocMutex() override {
+    return upan::option<upan::mutex&>(_pageFaultMutex);
   }
-  upan::option<Mutex&> envMutex() override {
-    return upan::option<Mutex&>(_envMutex);
+  upan::option<upan::mutex&> envMutex() override {
+    return upan::option<upan::mutex&>(_envMutex);
   }
 
   SchedulableProcess& forSchedule() override;
@@ -94,9 +94,9 @@ private:
   uint32_t _stackPTEAddress;
   upan::vector<upan::string> _loadedDLLs;
   DLLInfoMap _dllInfoMap;
-  Mutex _heapMutex;
-  Mutex _pageFaultMutex;
-  Mutex _envMutex;
+  upan::mutex _heapMutex;
+  upan::mutex _pageFaultMutex;
+  upan::mutex _envMutex;
   FileDescriptorTable _fdTable;
 
   typedef upan::list<UserThread*> ThreadSchedulerList;

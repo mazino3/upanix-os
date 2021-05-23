@@ -20,7 +20,7 @@
 
 #include <Global.h>
 #include <list.h>
-#include <Atomic.h>
+#include <mutex.h>
 
 class IrqManager;
 
@@ -39,7 +39,7 @@ class IRQ
     static const int MAX_PROC_ON_INT_QUEUE = 8 * 1024;
 		const int m_iIRQNo;
     mutable uint32_t _interruptCount;
-    mutable Mutex _consumeMutex;
+    mutable upan::mutex _consumeMutex;
 
 	friend class IrqManager;
   friend class StdIRQ;

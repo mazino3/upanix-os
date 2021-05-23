@@ -31,8 +31,8 @@ public:
 
   void onLoad() override {}
 
-  upan::option<Mutex&> envMutex() override {
-    return upan::option<Mutex&>(_envMutex);
+  upan::option<upan::mutex&> envMutex() override {
+    return upan::option<upan::mutex&>(_envMutex);
   }
 
   FileDescriptorTable& fdTable() override {
@@ -52,5 +52,5 @@ private:
   FileDescriptorTable _fdTable;
 
   //common mutex for all kernel processes
-  static Mutex _envMutex;
+  static upan::mutex _envMutex;
 };

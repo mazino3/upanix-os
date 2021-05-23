@@ -20,7 +20,7 @@
 
 #include <Global.h>
 #include <MemConstants.h>
-#include <Atomic.h>
+#include <mutex.h>
 
 #define NULL 0x0
 

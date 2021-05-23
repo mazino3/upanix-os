@@ -38,7 +38,7 @@
 #include <ProcessConstants.h>
 #include <KernelUtil.h>
 #include <exception.h>
-#include <Atomic.h>
+#include <mutex.h>
 #include <uniq_ptr.h>
 #include <syscalldefs.h>
 #include <KernelProcess.h>

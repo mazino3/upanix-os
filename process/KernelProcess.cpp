@@ -20,7 +20,7 @@
 #include <UserManager.h>
 #include <ProcessManager.h>
 
-Mutex KernelProcess::_envMutex;
+upan::mutex KernelProcess::_envMutex;
 
 KernelProcess::KernelProcess(const upan::string& name, uint32_t taskAddress, int parentID, bool isFGProcess, uint32_t param1, uint32_t param2)
     : SchedulableProcess(name, parentID, isFGProcess) {

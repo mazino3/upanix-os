@@ -19,7 +19,8 @@
 #include <TRB.h>
 #include <newalloc.h>
 #include <DMM.h>
-#include <Atomic.h>
+#include <mutex.h>
+#include <atomicop.h>
 
 #define INTERRUPT_ON_COMPLETE (1 << 5)
 
@@ -47,7 +48,7 @@ void TransferRing::UpdateDeEnQPtr(uint32_t dnqPtr)
   else
     freeSlots = (curdqIndex - _dqIndex + 1);
 
-  Atomic::Add(_freeSlots, freeSlots);
+  upan::atomic::add(_freeSlots, freeSlots);
   _dqIndex = (curdqIndex + 1) % (_size - 1);
 }
 
@@ -59,7 +60,7 @@ TRB& TransferRing::NextTRB()
     _nextTRBIndex = 0;
     _cycleState = !_cycleState;
   }
-  Atomic::Add(_freeSlots, -1);
+  upan::atomic::add(_freeSlots, -1);
   return _trbs[_nextTRBIndex++];
 }
 

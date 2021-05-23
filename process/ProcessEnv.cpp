@@ -78,12 +78,12 @@ void ProcessEnv_UnInitialize(SchedulableProcess& pas)
 	MemManager::Instance().DeAllocatePhysicalPage(ProcessEnv_GetProcessEnvPageNumber(pas)) ;
 }
 
-static Mutex& getEnvMutex() {
+static upan::mutex& getEnvMutex() {
   return ProcessManager::Instance().GetCurrentPAS().envMutex().value();
 }
 
 char* ProcessEnv_Get(const char* szEnvVar) {
-  MutexGuard g(getEnvMutex());
+  upan::mutex_guard g(getEnvMutex());
 
 	for(uint32_t i = 0; i < NO_OF_ENVS; i++)
 	{
@@ -97,7 +97,7 @@ char* ProcessEnv_Get(const char* szEnvVar) {
 }
 
 byte ProcessEnv_Set(const char* szEnvVar, const char* szEnvValue) {
-  MutexGuard g(getEnvMutex());
+  upan::mutex_guard g(getEnvMutex());
 
 	for(uint32_t i = 0; i < NO_OF_ENVS; i++)
 	{

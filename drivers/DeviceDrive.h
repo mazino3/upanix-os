@@ -19,8 +19,9 @@
 #define _DEVICE_DRIVE_H_
 
 #include <Global.h>
+#include <mutex.h>
 #include <FileSystem.h>
-#include <Atomic.h>
+#include <ResourceMutex.h>
 #include <DiskCache.h>
 #include <ustring.h>
 #include <drive.h>
@@ -113,7 +114,7 @@ class DiskDrive
 
     FS_TYPE       _fsType;
     bool          _mounted;
-    Mutex			    _driveMutex;
+    upan::mutex			    _driveMutex;
     DiskCache		  _mCache;
 		bool          _bStopReleaseCacheTask;
 
@@ -151,7 +152,7 @@ class RawDiskDrive
     unsigned _sectorSize;
     unsigned _sizeInSectors;
     void* _device;
-    Mutex _diskMutex;
+    upan::mutex _diskMutex;
 
     friend class DiskDriveManager;
 };
@@ -201,7 +202,7 @@ class DiskDriveManager
     const upan::list<DiskDrive*>& DiskDriveList() const { return _driveList; }
     const upan::list<RawDiskDrive*>& RawDiskDriveList() const { return _rawDiskList; }
   private:
-    Mutex _driveListMutex;
+    upan::mutex _driveListMutex;
     upan::list<DiskDrive*> _driveList;
     upan::list<RawDiskDrive*> _rawDiskList;
     int _idSequence;

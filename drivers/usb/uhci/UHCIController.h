@@ -21,7 +21,7 @@
 
 #include <Global.h>
 #include <queue.h>
-#include <Atomic.h>
+#include <mutex.h>
 #include <UHCIStructures.h>
 #include <USBController.h>
 #include <USBMassBulkStorageDisk.h>
@@ -68,7 +68,7 @@ class UHCIController : public KernelUtil::TimerTask
     upan::queue<unsigned> _frameQueue;
     unsigned* _pFrameList;
     upan::list<unsigned>* _pLocalFrameList;
-	  Mutex _m;
+	  upan::mutex _m;
 
     friend class UHCIDevice;
 };
