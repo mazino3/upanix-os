@@ -18,6 +18,7 @@
 
 #include <Cpu.h>
 #include <stdio.h>
+#include <Display.h>
 
 Cpu::Cpu()
 {
@@ -105,7 +106,7 @@ void Cpu::EnableSSE() {
                          "or $0x2, %%ax;" // set coprocessor monitoring CR0.MP
                          "mov %%eax, %%cr0;"
                          "mov %%cr4, %%eax;"
-                         "or 3 << 9, %%ax;" // set CR4.OSFXSR and CR4.OSXMMEXCPT
+                         "or $0x600, %%ax;" // set CR4.OSFXSR and CR4.OSXMMEXCPT
                          "mov %%eax, %%cr4;" : : : );
     printf("\n SSE/SSE2 enabled");
   } else {
