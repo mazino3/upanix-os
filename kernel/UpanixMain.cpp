@@ -151,20 +151,21 @@ void Initialize()
 
 	MemManager::Instance();
   ProcessManager::Instance();
+
   //KernelRootProcess must be initialized to setup kernel FD table with stdin/out/err before using stdio functions like printf.
   KernelRootProcess::Instance();
   MemManager::Instance().PrintInitStatus();
 	//defined in osutils/crti.s - this is C++ init to call global objects' constructor
 	_cxx_global_init();
 
-//	TestException(); while(1);
+	//	TestException(); while(1);
   try
   {
+    IDT::Instance();
     Cpu::Instance();
     Acpi::Instance();
     Pat::Instance();
     Mtrr::Instance();
-    IDT::Instance();
     DMA_Initialize();
     StdIRQ::Instance();
 
@@ -226,9 +227,9 @@ void Initialize()
   }
 }
 
-Mutex& UpanixMain_GetDMMMutex()
+upan::mutex& UpanixMain_GetDMMMutex()
 {
-	static Mutex mDMMMutex ;
+	static upan::mutex mDMMMutex ;
 	return mDMMMutex ;
 }
 

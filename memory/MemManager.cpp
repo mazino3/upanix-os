@@ -24,7 +24,7 @@
 #include <MemUtil.h>
 #include <AsmUtil.h>
 #include <IDT.h>
-#include <Atomic.h>
+#include <mutex.h>
 #include <exception.h>
 #include <GraphicsVideo.h>
 
@@ -58,8 +58,10 @@ void MemManager::PageFaultHandlerTaskGate()
 	__volatile__ unsigned uiFaultyAddress ;
 	__asm__ __volatile__("mov %%cr2, %0" : "=r"(uiFaultyAddress) : ) ;
 
-//	KC::MDisplay().Address("\n P F A = ", uiFaultyAddress) ;
-
+	if (IS_KERNEL()) {
+    KC::MDisplay().Address("\n Page Fault in Kernel! FIX THIS !!! @ ", uiFaultyAddress);
+    while(1);
+  }
 	if(!KC::MKernelService().RequestPageFault(uiFaultyAddress))
 	{
 //	__asm__ __volatile__("leave") ;
@@ -241,8 +243,9 @@ bool MemManager::BuildPageTable()
 		uiPageTableAddress += PAGE_TABLE_SIZE ;
 	}
 
-	uiPageAddress = 0 ;
-	for(uint32_t uiPTE = 0; uiPTE < m_uiNoOfPages; uiPTE++)
+  m_uiPTEBase[0] = 0;
+	uiPageAddress = PAGE_SIZE;
+	for(uint32_t uiPTE = 1; uiPTE < m_uiNoOfPages; uiPTE++)
 	{
 		m_uiPTEBase[uiPTE] = (uiPageAddress & 0xFFFFF000) | 0x3 ;
 		uiPageAddress += PAGE_SIZE ;
@@ -438,7 +441,7 @@ extern __volatile__ int SYS_CALL_ID;
 extern __volatile__ int KERNEL_DMM_ON;
 
 ReturnCode MemManager::AllocatePage(int iProcessID, unsigned uiFaultyAddress) {
-  MutexGuard g(ProcessManager::Instance().GetAddressSpace(iProcessID).value().pageAllocMutex().value());
+  upan::mutex_guard g(ProcessManager::Instance().GetAddressSpace(iProcessID).value().pageAllocMutex().value());
 
   unsigned uiFreePageNo, uiVirtualPageNo ;
 	unsigned uiPDEAddress, uiPTEAddress, uiPTEFreePage ;
@@ -451,6 +454,7 @@ ReturnCode MemManager::AllocatePage(int iProcessID, unsigned uiFaultyAddress) {
 	{
 		printf("\n Page Fault in Kernel! FIX THIS !!!") ;
 		printf("\n Page Fault Address/Page: %x / %u", uiFaultyAddress, uiVirtualPageNo);
+		__asm__ __volatile__ ("HLT");
 		while(1);
 		m_uiPTEBase[uiVirtualPageNo] = ((uiFreePageNo * PAGE_SIZE) & 0xFFFFF000) | 0x3 ;
 	}
