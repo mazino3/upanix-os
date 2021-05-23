@@ -42,7 +42,8 @@ bool LFUSectorManager::IsCacheFull()
 
 void LFUSectorManager::Run()
 {
-	// this is accessing the tree after cache is full there is no need to lock/unlock the drive mutex
+  upan::mutex_guard g(lruMutex);
+  // this is accessing the tree after cache is full there is no need to lock/unlock the drive mutex
 	// because the tree is not altered. And this can be altered only when release cache list is built
 	// but if release cache list is built it will not access the tree till release cache list is empty
 	if(!IsCacheFull())
@@ -56,18 +57,20 @@ void LFUSectorManager::Run()
 
 	_mCache._tree.InOrderTraverse(*this) ;
 
-	if(m_bAbort)
+  if(m_bAbort)
 		return ;
 
 	if(m_mReleaseList.size() == m_uiMaxRelListSize)
 		m_bReleaseListBuilt = true ;
 
-	if(m_bReleaseListBuilt)
-		printf("\n Release List is Built") ;
+	//debug log
+//	if(m_bReleaseListBuilt)
+//		printf("\n Release List is Built") ;
 }
 
 bool LFUSectorManager::ReplaceCache(unsigned uiSectorID, byte* bDataBuffer)
 {
+  upan::mutex_guard g(lruMutex);
 	if(!m_bReleaseListBuilt)
 	{
 		//printf("\n Release List is not built yet!") ;
@@ -83,9 +86,8 @@ bool LFUSectorManager::ReplaceCache(unsigned uiSectorID, byte* bDataBuffer)
 
 	bool bFound = false ;
 	CacheRankNode node ;
-	while(!m_mReleaseList.empty())
-	{
-    const CacheRankNode& node = m_mReleaseList.front();
+	while(!m_mReleaseList.empty()) {
+    node = m_mReleaseList.front();
     m_mReleaseList.pop_front();
 		// Skip dirty sectors from replacing
     DiskCache::SecKeyCacheValue skey(node.m_uiSectorID, NULL);
@@ -102,7 +104,7 @@ bool LFUSectorManager::ReplaceCache(unsigned uiSectorID, byte* bDataBuffer)
 		return true ;
 	}
 
-	if(!(_mCache._tree.Delete(DiskCacheKey(node.m_uiSectorID))))
+  if(!(_mCache._tree.Delete(DiskCacheKey(node.m_uiSectorID))))
 	{
 		printf("\n Failed to delete ranked sector: %u from the Cache BTree", node.m_uiSectorID) ;
 		ProcessManager::Instance().Sleep(10000); 
@@ -150,8 +152,8 @@ void LFUSectorManager::operator()(const BTreeKey& rKey, BTreeValue* pValue)
 }
 
 DiskCache::DiskCache() :
-	_cacheKeyMemPool(MemPool<DiskCacheKey>::CreateMemPool(MAX_CACHE_SECTORS)),
-	_cacheValueMemPool(MemPool<DiskCacheValue>::CreateMemPool(MAX_CACHE_SECTORS)),
+	_cacheKeyMemPool(MemPool<DiskCacheKey>::CreateMemPool(MAX_CACHE_SECTORS, 32)),
+	_cacheValueMemPool(MemPool<DiskCacheValue>::CreateMemPool(MAX_CACHE_SECTORS, 32)),
   _tree(MAX_CACHE_SECTORS),
   _LFUSectorManager(*this)
 {

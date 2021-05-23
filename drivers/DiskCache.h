@@ -23,6 +23,7 @@
 #include <PIT.h>
 #include <StringUtil.h>
 #include <MemPool.h>
+#include <mutex.h>
 
 #define DiskCache_SUCCESS 0
 #define DiskCache_FAILURE 1
@@ -110,6 +111,8 @@ class LFUSectorManager : public BTree::InOrderVisitor
 		unsigned m_uiCurrent ;
 		unsigned m_uiBuildCount ;
 
+		upan::mutex lruMutex;
+
 	private:
 		inline bool IsCacheFull() ;
 
@@ -182,7 +185,9 @@ class DiskCache
     DiskCacheKey* CreateKey(unsigned uiSectorID);
     DiskCacheValue* CreateValue(const byte* pSrc);
 
-		static const int MAX_CACHE_SECTORS = 16384;
+		//static const int MAX_CACHE_SECTORS = 16384;
+		//has to be a multiple of 1024
+    static const int MAX_CACHE_SECTORS = 32;
 		DestroyDiskCacheKeyValue* _destroyKeyValue;
 		MemPool<DiskCacheKey>& _cacheKeyMemPool;
 		MemPool<DiskCacheValue>& _cacheValueMemPool;
