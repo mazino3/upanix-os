@@ -17,11 +17,12 @@
  */
 #pragma once
 
-#include <UserProcess.h>
+#include <Thread.h>
+#include <AutonomousProcess.h>
 
-class UserThread : public SchedulableProcess {
+class UserThread : public Thread {
 public:
-  UserThread(UserProcess& parent, uint32_t threadCaller, uint32_t entryAddress, void* arg);
+  UserThread(AutonomousProcess& parent, uint32_t threadCaller, uint32_t entryAddress, void* arg);
 
   bool isKernelProcess() const override {
     return false;
@@ -62,23 +63,11 @@ public:
   upan::option<upan::mutex&> pageAllocMutex() override {
     return _parent.pageAllocMutex();
   }
-  upan::option<upan::mutex&> envMutex() override {
-    return _parent.envMutex();
-  }
-
-  FileDescriptorTable& fdTable() override {
-    return _parent.fdTable();
-  }
-
-  UserProcess& threadParent() {
-    return _parent;
-  }
 
 private:
   uint32_t PushProgramInitStackData(uint32_t entryAddress, void* arg);
   void DeAllocateResources() override;
 
 private:
-  UserProcess& _parent;
   uint32_t _stackPTEAddress;
 };

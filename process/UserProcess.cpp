@@ -40,7 +40,7 @@
 
 UserProcess::UserProcess(const upan::string &name, int parentID, int userID,
                          bool isFGProcess, int noOfParams, char** args)
-    : SchedulableProcess(name, parentID, isFGProcess), _nextThreadIt(_threadSchedulerList.begin()) {
+    : AutonomousProcess(name, parentID, isFGProcess) {
   _mainThreadID = _processID;
   _uiAUTAddress = NULL;
 
@@ -53,6 +53,10 @@ UserProcess::UserProcess(const upan::string &name, int parentID, int userID,
   auto parentProcess = ProcessManager::Instance().GetAddressSpace(parentID);
   parentProcess.ifPresent([this](SchedulableProcess& p) { p.addChildProcessID(_processID); });
   _userID = userID == DERIVE_FROM_PARENT && !parentProcess.isEmpty() ? parentProcess.value().userID() : _userID;
+}
+
+UserThread& UserProcess::CreateThread(uint32_t threadCaller, uint32_t entryAddress, void* arg) {
+  return *new UserThread(*this, threadCaller, entryAddress, arg);
 }
 
 void UserProcess::Load(int iNumberOfParameters, char** szArgumentList)
@@ -380,21 +384,6 @@ void UserProcess::InitializeProcessSpaceForProcess(const unsigned uiPDEAddress)
   SchedulableProcess::Common::AllocateStackSpace(_stackPTEAddress);
 }
 
-void UserProcess::DestroyThreads() {
-  // child threads should be destroyed
-  // threads must be destroyed before dealing with child processes because
-  // child processes if any of a thread will be redirected to current process (main thread)
-  for(auto t : _threadSchedulerList) {
-    if (t->status() != TERMINATED && t->status() != RELEASED) {
-      t->Destroy();
-    }
-    t->Release();
-    ProcessManager::Instance().RemoveFromProcessMap(*t);
-    delete t;
-  }
-  _threadSchedulerList.clear();
-}
-
 void UserProcess::DeAllocateResources() {
   DeAllocateDLLPages() ;
   DynamicLinkLoader_UnInitialize(this) ;
@@ -516,41 +505,4 @@ upan::option<const ProcessDLLInfo&> UserProcess::getDLLInfo(int id) const {
 
 void UserProcess::onLoad() {
   SchedulableProcess::Common::UpdatePDEWithStackPTE(_taskState.CR3_PDBR, _stackPTEAddress);
-}
-
-SchedulableProcess& UserProcess::forSchedule() {
-  if (_status == TERMINATED || _status == RELEASED) {
-    return *this;
-  }
-
-  if (_nextThreadIt == _threadSchedulerList.end()) {
-    _nextThreadIt = _threadSchedulerList.begin();
-    return *this;
-  }
-
-  while(!_threadSchedulerList.empty()) {
-    if (_nextThreadIt == _threadSchedulerList.end()) {
-      _nextThreadIt = _threadSchedulerList.begin();
-    }
-
-    auto curThreadIt = _nextThreadIt++;
-    UserThread &thread = **curThreadIt;
-
-    if (thread.status() == RELEASED) {
-      _threadSchedulerList.erase(curThreadIt);
-      ProcessManager::Instance().RemoveFromProcessMap(thread);
-      delete &thread;
-    } else {
-      return thread;
-    }
-  }
-
-  return *this;
-}
-
-//TODO: use a process level lock instead of global process switch lock
-void UserProcess::addToThreadScheduler(UserThread& thread) {
-  ProcessSwitchLock lock;
-  _threadSchedulerList.push_back(&thread);
-  thread.setStatus(RUN);
 }

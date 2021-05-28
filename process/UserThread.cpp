@@ -20,19 +20,14 @@
 #include <ProcessManager.h>
 
 //thread must have a parent
-UserThread::UserThread(UserProcess& parent, uint32_t threadCaller, uint32_t entryAddress, void* arg)
-    : SchedulableProcess("", parent.processID(), false), _parent(parent) {
-  _name = _parent.name() + "_T" + upan::string::to_string(_processID);
-  _mainThreadID = parent.processID();
-  _processBase = _parent.getProcessBase();
-
+UserThread::UserThread(AutonomousProcess& parent, uint32_t threadCaller, uint32_t entryAddress, void* arg)
+  : Thread(parent) {
   _stackPTEAddress = SchedulableProcess::Common::AllocatePTEForStack();
   SchedulableProcess::Common::AllocateStackSpace(_stackPTEAddress);
   const auto stackArgSize = PushProgramInitStackData(entryAddress, arg);
   const uint32_t stackTopAddress = PROCESS_STACK_TOP_ADDRESS - PROCESS_BASE;
   _taskState.BuildForUser(stackTopAddress, _parent.taskState().CR3_PDBR, threadCaller, stackArgSize);
   _processLDT.BuildForUser();
-  _userID = _parent.userID();
 
   _parent.addToThreadScheduler(*this);
 }

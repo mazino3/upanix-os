@@ -18,11 +18,10 @@
 #pragma once
 
 #include <list.h>
-#include <SchedulableProcess.h>
+#include <AutonomousProcess.h>
+#include <UserThread.h>
 
-class UserThread;
-
-class UserProcess : public SchedulableProcess {
+class UserProcess : public AutonomousProcess {
 public:
   typedef upan::map<upan::string, ProcessDLLInfo> DLLInfoMap;
 
@@ -34,6 +33,7 @@ public:
   }
 
   void onLoad() override;
+  UserThread& CreateThread(uint32_t threadCaller, uint32_t entryAddress, void* arg) override;
 
   uint32_t startPDEForDLL() const override {
     return _startPDEForDLL;
@@ -65,9 +65,6 @@ public:
     return upan::option<upan::mutex&>(_envMutex);
   }
 
-  SchedulableProcess& forSchedule() override;
-  void addToThreadScheduler(UserThread& thread);
-
 private:
   void Load(int noOfParams, char** szArgumentList);
   uint32_t AllocateAddressSpace();
@@ -77,7 +74,6 @@ private:
   void InitializeProcessSpaceForOS(const unsigned uiPDEAddress);
   void InitializeProcessSpaceForProcess(const unsigned uiPDEAddress);
 
-  void DestroyThreads() override;
   void DeAllocateResources() override;
   void DeAllocateDLLPages();
   void DeAllocateAddressSpace();
@@ -98,8 +94,4 @@ private:
   upan::mutex _pageFaultMutex;
   upan::mutex _envMutex;
   FileDescriptorTable _fdTable;
-
-  typedef upan::list<UserThread*> ThreadSchedulerList;
-  ThreadSchedulerList _threadSchedulerList;
-  ThreadSchedulerList::iterator _nextThreadIt;
 };

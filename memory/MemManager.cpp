@@ -261,13 +261,10 @@ bool MemManager::BuildPageTable()
 	return true ;
 }
 
-int MemManager::GetFreeKernelProcessStackBlockID()
-{
+int MemManager::GetFreeKernelProcessStackBlockID() {
   ProcessSwitchLock pLock;
-	for(int i = 0; i < m_iNoOfKernelProcessStackBlocks; i++)
-	{
-		if(m_bAllocationMapForKernelProcessStackBlock[i] == false)
-		{
+	for(int i = 0; i < m_iNoOfKernelProcessStackBlocks; i++) {
+		if(!m_bAllocationMapForKernelProcessStackBlock[i]) {
 			m_bAllocationMapForKernelProcessStackBlock[i] = true ;
 			return i;
 		}
@@ -275,12 +272,34 @@ int MemManager::GetFreeKernelProcessStackBlockID()
 	return -1 ;
 }
 
-void MemManager::FreeKernelProcessStackBlock(int id)
-{
+int MemManager::AllocateKernelStack() {
   ProcessSwitchLock pLock;
-	if(id < 0 || id >= m_iNoOfKernelProcessStackBlocks)
-		return ;
-	m_bAllocationMapForKernelProcessStackBlock[id] = false ;
+  const int iStackBlockID = MemManager::Instance().GetFreeKernelProcessStackBlockID();
+
+  if(iStackBlockID < 0)
+    throw upan::exception(XLOC, "No free stack blocks available for kernel process");
+
+  for(int i = 0; i < PROCESS_KERNEL_STACK_PAGES; i++) {
+    uint32_t uiFreePageNo = MemManager::Instance().AllocatePhysicalPage();
+    m_uipKernelProcessStackPTEBase[iStackBlockID * PROCESS_KERNEL_STACK_PAGES + i] = ((uiFreePageNo * PAGE_SIZE) & 0xFFFFF000) | 0x3 ;
+  }
+  Mem_FlushTLB();
+
+  return iStackBlockID;
+}
+
+void MemManager::DeAllocateKernelStack(int stackBlockId) {
+  ProcessSwitchLock pLock;
+
+  if(stackBlockId < 0 || stackBlockId >= m_iNoOfKernelProcessStackBlocks)
+    return ;
+
+  for(int i = 0; i < PROCESS_KERNEL_STACK_PAGES; i++) {
+    DeAllocatePhysicalPage((m_uipKernelProcessStackPTEBase[stackBlockId * PROCESS_KERNEL_STACK_PAGES + i] & 0xFFFFF000) / PAGE_SIZE);
+  }
+  Mem_FlushTLB();
+
+  m_bAllocationMapForKernelProcessStackBlock[stackBlockId] = false ;
 }
 
 ReturnCode MemManager::MarkPageAsAllocated(unsigned uiPageNumber, ReturnCode prevRetCode) {

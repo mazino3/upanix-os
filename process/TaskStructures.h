@@ -17,12 +17,13 @@
  */
 #pragma once
 #include <Global.h>
+#include <vector.h>
 
 class TaskState
 {
 public:
   void BuildForUser(uint32_t stackStartAddress, unsigned uiPDEAddress, unsigned uiEntryAdddress, unsigned uiProcessEntryStackSize);
-  void BuildForKernel(const unsigned uiTaskAddress, const unsigned uiStackTop, unsigned uiParam1, unsigned uiParam2);
+  void BuildForKernel(const unsigned uiTaskAddress, unsigned uiStackTop, const upan::vector<uint32_t>& params);
 
   unsigned short	backlink ;
   unsigned short	FILLER1 ;

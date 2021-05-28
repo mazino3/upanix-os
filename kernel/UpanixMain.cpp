@@ -87,8 +87,7 @@ void UpanixMain_KernelProcess()
 
 	while(true) {
     const int pid = ProcessManager::Instance().CreateKernelProcess("console", (unsigned) &Console_StartUpanixConsole,
-                                                                   ProcessManager::GetCurrentProcessID(), true, NULL,
-                                                                   NULL);
+                                                                   ProcessManager::GetCurrentProcessID(), true, upan::vector<uint32_t>());
 //	ProcessManager_CreateKernelImage((unsigned)&FloatProcess, ProcessManager::GetCurrentProcessID(), false, NULL, NULL, &pid, "float") ;
 //	ProcessManager_CreateKernelImage((unsigned)&FloatProcess, ProcessManager::GetCurrentProcessID(), false, NULL, NULL, &pid, "float1") ;
 //	ProcessManager_CreateKernelImage((unsigned)&SessionManager_StartSession, NO_PROCESS_ID, true, NULL, NULL, &pid, "sesman") ;
@@ -248,7 +247,7 @@ void UpanixMain()
 
 	Initialize() ;
 
-	ProcessManager::Instance().CreateKernelProcess("kerparent", (unsigned) &UpanixMain_KernelProcess, NO_PROCESS_ID, true, NULL, NULL);
+	ProcessManager::Instance().CreateKernelProcess("kerparent", (unsigned) &UpanixMain_KernelProcess, NO_PROCESS_ID, true, upan::vector<uint32_t>());
 //	ProcessManager_CreateKernelImage((unsigned)&Console_StartMOSConsole, NO_PROCESS_ID, true, NULL, NULL, &pid) ;
 	ProcessManager::Instance().StartScheduler();
 	while(1) ;

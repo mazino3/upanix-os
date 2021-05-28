@@ -72,24 +72,24 @@ ProcessManager::ProcessManager() {
 	KC::MDisplay().LoadMessage("Process Manager Initialization", Success);
 }
 
-UserProcess& ProcessManager::GetThreadParentProcess(int pid) {
+AutonomousProcess& ProcessManager::GetThreadParentProcess(int pid) {
   ProcessSwitchLock switchLock;
   auto parent = GetAddressSpace(pid);
   if (parent.isEmpty()) {
     throw upan::exception(XLOC, "No parent process found for pid: %d", pid);
   }
 
-  UserProcess* userProcess = dynamic_cast<UserProcess*>(&parent.value());
-  if (userProcess) {
-    return *userProcess;
+  auto autonomousProcess = dynamic_cast<AutonomousProcess*>(&parent.value());
+  if (autonomousProcess) {
+    return *autonomousProcess;
   }
 
-  UserThread* userThread = dynamic_cast<UserThread*>(&parent.value());
-  if (userThread) {
-    return userThread->threadParent();
+  auto thread = dynamic_cast<Thread*>(&parent.value());
+  if (thread) {
+    return thread->threadParent();
   }
 
-  throw upan::exception(XLOC, "parent of a thread can be either a UserProcess or a UserThread");
+  throw upan::exception(XLOC, "parent of a thread can be either a AutonomousProcess or another Thread");
 }
 
 upan::option<SchedulableProcess&> ProcessManager::GetAddressSpace(int pid) {
@@ -439,9 +439,9 @@ bool ProcessManager::IsChildAlive(int iChildProcessID) {
 }
 
 int ProcessManager::CreateKernelProcess(const upan::string& name, const unsigned uiTaskAddress, int iParentProcessID,
-                                        byte bIsFGProcess, unsigned uiParam1, unsigned uiParam2) {
+                                        byte bIsFGProcess, const upan::vector<uint32_t>& params) {
   try {
-    upan::uniq_ptr<SchedulableProcess> newPAS(new KernelProcess(name, uiTaskAddress, iParentProcessID, bIsFGProcess, uiParam1, uiParam2));
+    upan::uniq_ptr<SchedulableProcess> newPAS(new KernelProcess(name, uiTaskAddress, iParentProcessID, bIsFGProcess, params));
     int pid = newPAS->processID();
     AddToSchedulerList(*newPAS.release());
     return pid;
@@ -472,8 +472,8 @@ int ProcessManager::Create(const upan::string& name, int iParentProcessID, byte 
 //4: DLL service
 int ProcessManager::CreateThreadTask(int parentID, uint32_t threadCaller, uint32_t threadEntryAddress, void* arg) {
   try {
-    UserProcess& parent = ProcessManager::Instance().GetThreadParentProcess(parentID);
-    upan::uniq_ptr<SchedulableProcess> threadPAS(new UserThread(parent, threadCaller, threadEntryAddress, arg));
+    AutonomousProcess& parent = ProcessManager::Instance().GetThreadParentProcess(parentID);
+    upan::uniq_ptr<SchedulableProcess> threadPAS(&parent.CreateThread(threadCaller, threadEntryAddress, arg));
     int threadID = threadPAS->processID();
     AddToProcessMap(*threadPAS.release());
     //MemManager::Instance().DisplayNoOfFreePages() ;

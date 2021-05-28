@@ -17,15 +17,12 @@
  */
 #pragma once
 
-#include <AutonomousProcess.h>
-#include <KernelThread.h>
-#include <vector.h>
+#include <Thread.h>
+class KernelProcess;
 
-//A KernelProcess is similar to a Thread in that they all share same address space (page tables), heap but different stack
-//But it is a process in that if the parent process dies before child, then child kernel process will continue to execute under the root kernel process
-class KernelProcess : public AutonomousProcess {
+class KernelThread : public Thread {
 public:
-  KernelProcess(const upan::string& name, uint32_t taskAddress, int parentID, bool isFGProcess, const upan::vector<uint32_t>& params);
+  KernelThread(KernelProcess& parent, uint32_t threadCaller, uint32_t entryAddress, void* arg);
 
   bool isKernelProcess() const override {
     return true;
@@ -33,24 +30,10 @@ public:
 
   void onLoad() override {}
 
-  KernelThread& CreateThread(uint32_t threadCaller, uint32_t entryAddress, void* arg) override;
-
-  upan::option<upan::mutex&> envMutex() override {
-    return upan::option<upan::mutex&>(_envMutex);
-  }
-
-  FileDescriptorTable& fdTable() override {
-    return _fdTable;
-  }
-
 private:
   void DeAllocateResources() override;
   uint32_t AllocateAddressSpace();
 
 private:
   int kernelStackBlockId;
-  FileDescriptorTable _fdTable;
-
-  //common mutex for all kernel processes
-  static upan::mutex _envMutex;
 };

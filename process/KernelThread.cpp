@@ -15,38 +15,29 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
-#include <KernelProcess.h>
-#include <ProcessEnv.h>
-#include <UserManager.h>
-#include <ProcessManager.h>
+
 #include <KernelThread.h>
+#include <KernelProcess.h>
+#include <MemManager.h>
 
-upan::mutex KernelProcess::_envMutex;
-
-KernelProcess::KernelProcess(const upan::string& name, uint32_t taskAddress, int parentID, bool isFGProcess, const upan::vector<uint32_t>& params)
-    : AutonomousProcess(name, parentID, isFGProcess) {
-  _mainThreadID = _processID;
-  ProcessEnv_InitializeForKernelProcess() ;
-  _processBase = GLOBAL_DATA_SEGMENT_BASE;
+KernelThread::KernelThread(KernelProcess& parent, uint32_t threadCaller, uint32_t entryAddress, void* arg)
+  : Thread(parent) {
   const uint32_t uiStackAddress = AllocateAddressSpace();
   const uint32_t uiStackTop = uiStackAddress - GLOBAL_DATA_SEGMENT_BASE + (PROCESS_KERNEL_STACK_PAGES * PAGE_SIZE) - 1;
-  _taskState.BuildForKernel(taskAddress, uiStackTop, params);
+  upan::vector<uint32_t> params;
+  params.push_back(entryAddress);
+  params.push_back((uint32_t)arg);
+  _taskState.BuildForKernel(threadCaller, uiStackTop, params);
   _processLDT.BuildForKernel();
-  _userID = ROOT_USER_ID ;
 
-  auto parentProcess = ProcessManager::Instance().GetAddressSpace(parentID);
-  parentProcess.ifPresent([this](SchedulableProcess& p) { p.addChildProcessID(_processID); });
+  _parent.addToThreadScheduler(*this);
 }
 
-KernelThread& KernelProcess::CreateThread(uint32_t threadCaller, uint32_t entryAddress, void* arg) {
-  return *new KernelThread(*this, threadCaller, entryAddress, arg);
-}
-
-uint32_t KernelProcess::AllocateAddressSpace() {
+uint32_t KernelThread::AllocateAddressSpace() {
   kernelStackBlockId = MemManager::Instance().AllocateKernelStack();
   return MemManager::Instance().GetKernelStackAddress(kernelStackBlockId);
 }
 
-void KernelProcess::DeAllocateResources() {
+void KernelThread::DeAllocateResources() {
   MemManager::Instance().DeAllocateKernelStack(kernelStackBlockId);
 }

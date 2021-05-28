@@ -66,13 +66,13 @@ SchedulableProcess::~SchedulableProcess() {
   delete &_stateInfo;
 }
 
-// 1. KernelProcess can have child processes of type either KernelProcess or UserProcess
-// 2. KernelProcess cannot have threads
+// 1. KernelProcess can have child processes of type either KernelProcess or KernelThread or UserProcess
+// 2. KernelThread can have a child KernelProcess or KernelThread or UserProcess
 // 3. UserProcess can have a child UserProcess or UserThread
 // 4. UserThread can have a child UserProcess or UserThread
-// 5. a UserThread created by another UserThread will have its parent set to the parent of the creator UserThread (which will be a UserProcess - main thread)
+// 5. Thread created by another Thread will have its parent set to the parent of the creator Thread (which will be an AutonomousProcess - main thread)
 // 6. If a parent process (Kernel or User) is terminated then
-//   a. all terminated child processes are released and all non-terminated child processes are redirected the parent of the current process
+//   a. all terminated child processes are released and all non-terminated child processes are redirected to the parent of the current process
 //   b. all child threads are destroyed and released
 // 7. If a child thread terminates then
 //   a. all terminated child processes are released and all non-terminated child processes are redirected to main thread process

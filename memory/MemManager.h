@@ -56,16 +56,19 @@ class MemManager
 		ReturnCode DeAllocatePage(const unsigned uiAddress) ;
 		void DisplayNoOfFreePages() ;
 		unsigned GetFlatAddress(unsigned uiVirtualAddress) ;
-		int GetFreeKernelProcessStackBlockID() ;
-		void FreeKernelProcessStackBlock(int id) ;
 		void DisplayNoOfAllocPages() ;
 
 		static void InitPage(unsigned uiPage) ;
 		static void PageFaultHandlerTaskGate() ;
 
 		inline unsigned GetKernelHeapStartAddr() { return m_uiKernelHeapStartAddress ; }
-		inline unsigned* GetKernelProcessStackPTEBase() { return m_uipKernelProcessStackPTEBase ; }
 		inline unsigned GetRamSize() { return RAM_SIZE; }
+
+		int AllocateKernelStack();
+		void DeAllocateKernelStack(int stackBlockId);
+    inline uint32_t GetKernelStackAddress(int stackBlockId) {
+      return KERNEL_PROCESS_PDE_ID * PAGE_TABLE_ENTRIES * PAGE_SIZE + stackBlockId * PROCESS_KERNEL_STACK_PAGES * PAGE_SIZE;
+		}
 
 		static inline unsigned GetProcessSizeInPages(unsigned uiSizeInBytes)
 		{
@@ -87,6 +90,7 @@ class MemManager
 		bool BuildRawPageMap() ;
 		bool BuildPagePoolMap();
 		bool BuildPageTable() ;
+    int GetFreeKernelProcessStackBlockID() ;
 
 	private:
 		unsigned m_uiNoOfPages ;

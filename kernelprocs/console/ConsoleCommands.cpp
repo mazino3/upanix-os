@@ -437,7 +437,7 @@ void ConsoleCommands_DeleteUser()
 }
 
 void ConsoleCommands_OpenSession() {
-	const int pid = ProcessManager::Instance().CreateKernelProcess("session", (unsigned) &SessionManager_StartSession, NO_PROCESS_ID, true, NULL, NULL);
+	const int pid = ProcessManager::Instance().CreateKernelProcess("session", (unsigned) &SessionManager_StartSession, NO_PROCESS_ID, true, upan::vector<uint32_t>());
 	ProcessManager::Instance().WaitOnChild(pid) ;
 }
 
@@ -646,7 +646,7 @@ void ConsoleCommands_Clone()
 {
 	extern void Console_StartUpanixConsole() ;
   const int pid = ProcessManager::Instance().CreateKernelProcess("console_1", (unsigned) &Console_StartUpanixConsole,
-                                                 ProcessManager::GetCurrentProcessID(), true, NULL, NULL) ;
+                                                 ProcessManager::GetCurrentProcessID(), true, upan::vector<uint32_t>()) ;
 	ProcessManager::Instance().WaitOnChild(pid) ;
 }
 
@@ -690,8 +690,8 @@ void ConsoleCommands_ListProcess()
 	unsigned i ;
 	for(i = 0; i < uiSize; i++)
 	{
-		printf("\n %-7d%-5d%-5d%-5d%-5d%-10s", pPS[i].pid, pPS[i].iParentProcessID, pPS[i].iProcessGroupID, pPS[i].status, pPS[i].iUserID,
-					pPS[i].pname) ;
+		printf("\n %-7d%-5d%-5d%-18s%-5d%-10s", pPS[i].pid, pPS[i].iParentProcessID, pPS[i].iProcessGroupID,
+           get_proc_status_desc(pPS[i].status), pPS[i].iUserID, pPS[i].pname) ;
 	}
 	KC::MDisplay().NextLine() ;
 
@@ -1027,13 +1027,27 @@ void _DisplayReadStat()
 	}
 }
 
+void aThread(void* x) {
+  uint32_t n = (uint32_t)x;
+  printf("\n Running thread: %u", n);
+  for(int i = 0; i < n; ++i) {
+    printf("\nCounter: %d", i);
+    sleepms(500);
+  }
+}
+
+int thread_id = 0;
 void ConsoleCommands_Testv()
 {
+  if (thread_id != 0) {
+    waitpid(thread_id);
+  }
 	//_DisplayReadStat() ;
 	//printf("\n RAM SIZE: %u", MemManager::Instance().GetRamSize()) ;
 	//VM86_Test() ;
 	//KC::MDisplay().SetMouseCursorPos(KC::MDisplay().GetMouseCursorPos() + 70) ;
-	GraphicsVideo::Instance()->ExperimentWithMouseCursor(atoi(CommandLineParser::Instance().GetParameterAt(0)));
+	//GraphicsVideo::Instance()->ExperimentWithMouseCursor(atoi(CommandLineParser::Instance().GetParameterAt(0)));
+  thread_id = exect(aThread, 10);
 }
 
 void ConsoleCommands_TestNet()
