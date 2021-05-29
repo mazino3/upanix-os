@@ -92,11 +92,11 @@ include_directories(${UPANLIB_SOURCE_DIR}/libc/sysdeps/mos/common/bits)
 
 include_directories(${UPANLIB_SOURCE_DIR}/libusfn)
 
-include_directories(${UPANLIB_SOURCE_DIR}/libustdcpp/infra)
-include_directories(${UPANLIB_SOURCE_DIR}/libustdcpp/algo)
-include_directories(${UPANLIB_SOURCE_DIR}/libustdcpp/ds)
-include_directories(${UPANLIB_SOURCE_DIR}/libustdcpp/mem)
-include_directories(${UPANLIB_SOURCE_DIR}/libustdcpp/mthread)
+include_directories(${UPANLIB_SOURCE_DIR}/libustd/infra)
+include_directories(${UPANLIB_SOURCE_DIR}/libustd/algo)
+include_directories(${UPANLIB_SOURCE_DIR}/libustd/ds)
+include_directories(${UPANLIB_SOURCE_DIR}/libustd/mem)
+include_directories(${UPANLIB_SOURCE_DIR}/libustd/mthread)
 
 include_directories(${PROJECT_SOURCE_DIR}/libmcpp/cal)
 
@@ -155,7 +155,7 @@ target_link_libraries(${TARGET_BIN} mcpp)
 target_link_libraries(${TARGET_BIN} ${UPANLIB_OUT_DIR}/libusfn.a)
 target_link_libraries(${TARGET_BIN} ${UPANLIB_OUT_DIR}/libm.a)
 target_link_libraries(${TARGET_BIN} ${UPANLIB_OUT_DIR}/libgcceh.a)
-target_link_libraries(${TARGET_BIN} ${UPANLIB_OUT_DIR}/libustdcpp.a)
+target_link_libraries(${TARGET_BIN} ${UPANLIB_OUT_DIR}/libustd.a)
 target_link_libraries(${TARGET_BIN} ${UPANLIB_OUT_DIR}/libupanui.a)
 target_link_libraries(${TARGET_BIN} ${UPANLIB_OUT_DIR}/libc.a)
 
