@@ -23,6 +23,7 @@
 #include <exception.h>
 #include <result.h>
 #include <Bit.h>
+#include <atomicop.h>
 
 enum TransferType { NO_DATA_STAGE, RESERVED, OUT_DATA_STAGE, IN_DATA_STAGE };
 enum DataDirection { OUT, IN };
@@ -259,7 +260,7 @@ class TransferRing
     bool      _cycleState;
     uint32_t  _nextTRBIndex;
     TRB*      _trbs;
-    __volatile__ uint32_t _freeSlots;
+    upan::atomic::integral<uint32_t> _freeSlots;
     __volatile__ uint32_t _dqIndex;
 };
 

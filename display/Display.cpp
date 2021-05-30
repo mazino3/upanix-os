@@ -26,6 +26,7 @@
 #include <VGAConsole.h>
 #include <GraphicsConsole.h>
 #include <cdisplay.h>
+#include <DefaultConsole.h>
 
 DisplayBuffer::DisplayBuffer(byte* buffer, unsigned rows, unsigned columns, bool isKernel)
   : _cursor(0),
@@ -101,22 +102,17 @@ void Display::Attribute::UpdateAttrVal()
 	m_Attr = m_blink | m_fgColor | m_bgColor;
 }
 
-void Display::Create()
-{
-	static bool bDone = false;
-  if(bDone)
-  {
+void Display::CreateDefault() {
+  static bool bDone = false;
+  if(bDone) {
     KC::MDisplay().Message("\n Display is already initialized!", Display::WHITE_ON_BLACK());
     return;
   }
   auto f = MultiBoot::Instance().VideoFrameBufferInfo();
-  if(f)
-  {
-    static GraphicsConsole gc(f->framebuffer_height / 16, f->framebuffer_width / 8);
+  if(f) {
+    static DefaultConsole gc(f->framebuffer_height / 16, f->framebuffer_width / 8);
     KC::SetDisplay(gc);
-  }
-  else
-  {
+  } else {
     static VGAConsole vc;
     KC::SetDisplay(vc);
   }
@@ -125,10 +121,24 @@ void Display::Create()
   bDone = true;
 }
 
+void Display::CreateGraphicsConsole() {
+	static bool bDone = false;
+  if(bDone) {
+    KC::MDisplay().Message("\n Graphics Console is already initialized!", Display::WHITE_ON_BLACK());
+    return;
+  }
+  auto f = MultiBoot::Instance().VideoFrameBufferInfo();
+  if(f) {
+    static GraphicsConsole gc(f->framebuffer_height / 16, f->framebuffer_width / 8);
+    KC::SetDisplay(gc);
+    KC::MDisplay().UpdateCursorPosition(0, true);
+  }
+  bDone = true;
+}
+
 Display::Display(unsigned rows, unsigned height) 
   : _maxRows(rows), _maxColumns(height), 
-    _kernelBuffer((byte*)(MEM_GRAPHICS_TEXT_BUFFER_START - GLOBAL_DATA_SEGMENT_BASE), rows, height, true)
-{
+    _kernelBuffer((byte*)(MEM_GRAPHICS_TEXT_BUFFER_START - GLOBAL_DATA_SEGMENT_BASE), rows, height, true) {
 }
 
 void Display::ClearScreen()

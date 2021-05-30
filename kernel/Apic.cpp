@@ -259,7 +259,7 @@ uint8_t Apic::GetIOApicID()
 void Apic::SendEOI(const IRQ&)
 {
 //  _apicBase[APIC_EOI] = 0;
-  upan::atomic::swap(_apicBase[APIC_EOI], 0);
+  upan::atomic::op::swap(_apicBase[APIC_EOI], 0);
 }
 
 void Apic::EnableIRQ(const IRQ& irq)

@@ -20,7 +20,6 @@
 #include <newalloc.h>
 #include <DMM.h>
 #include <mutex.h>
-#include <atomicop.h>
 
 #define INTERRUPT_ON_COMPLETE (1 << 5)
 
@@ -48,7 +47,7 @@ void TransferRing::UpdateDeEnQPtr(uint32_t dnqPtr)
   else
     freeSlots = (curdqIndex - _dqIndex + 1);
 
-  upan::atomic::add(_freeSlots, freeSlots);
+  _freeSlots.add(freeSlots);
   _dqIndex = (curdqIndex + 1) % (_size - 1);
 }
 
@@ -60,7 +59,7 @@ TRB& TransferRing::NextTRB()
     _nextTRBIndex = 0;
     _cycleState = !_cycleState;
   }
-  upan::atomic::add(_freeSlots, -1);
+  _freeSlots.dec();
   return _trbs[_nextTRBIndex++];
 }
 
@@ -151,7 +150,7 @@ TRB::Result TransferRing::AddDataTRB(uint32_t dataBufferAddr, uint32_t len, Data
   else if(!endAlign)
     ++requiredSlots;
 
-  if(requiredSlots > _freeSlots)
+  if(requiredSlots > _freeSlots.get())
     return TRB::Result::bad("Transfer Ring is Full!");
 
   while(remainingBytesToTransfer > 0)

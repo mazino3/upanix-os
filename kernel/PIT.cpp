@@ -68,12 +68,12 @@ bool PIT_IsTaskSwitch() {
 
 //return true if it was previously disabled and now enabled
 bool PIT_EnableTaskSwitch() {
-  return upan::atomic::swap(Process_iTaskSwitch, 1) == 0;
+  return upan::atomic::op::swap(Process_iTaskSwitch, 1) == 0;
 }
 
 //return true if it was previously enabled and now disabled
 bool PIT_DisableTaskSwitch() {
-  return upan::atomic::swap(Process_iTaskSwitch, 0) == 1;
+  return upan::atomic::op::swap(Process_iTaskSwitch, 0) == 1;
 }
 
 void PIT_Handler()

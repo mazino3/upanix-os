@@ -19,23 +19,12 @@
 #pragma once
 
 #include <Display.h>
-#include <KernelUtil.h>
-#include <mutex.h>
-#include <timer_thread.h>
 
-class GraphicsConsole : public Display, upan::timer_thread
-{
+class DefaultConsole : public Display {
 private:
-  GraphicsConsole(unsigned rows, unsigned columns);
-  void GotoCursor() override;
-  void DirectPutChar(int iPos, byte ch, byte attr) override;
+  DefaultConsole(unsigned rows, unsigned columns);
+  void GotoCursor() override {}
   void DoScrollDown() override;
-  void PutCursor(int pos, bool show);
-  void on_timer_trigger() override;
-  void StartCursorBlink() override;
-
+  void DirectPutChar(int iPos, byte ch, byte attr) override;
   friend class Display;
-  int _cursorPos;
-  bool _cursorEnabled;
-  upan::mutex _cursorMutex;
 };

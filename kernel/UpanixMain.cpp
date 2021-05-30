@@ -83,6 +83,7 @@ void UpanixMain_KernelProcess()
 	KC::MKernelService().Spawn() ;
 
   GraphicsVideo::Instance()->CreateRefreshTask();
+  Display::CreateGraphicsConsole();
   KC::MDisplay().StartCursorBlink();
 
 	while(true) {
@@ -145,7 +146,7 @@ void Initialize()
 	SPECIAL_TASK = false ;
 
 	MultiBoot::Instance();
-	Display::Create();
+	Display::CreateDefault();
 	KC::MDisplay().Message("\n****    Welcome To Upanix   ****\n", Display::Attribute(' ')) ;
 
 	MemManager::Instance();
@@ -158,8 +159,7 @@ void Initialize()
 	_cxx_global_init();
 
 	//	TestException(); while(1);
-  try
-  {
+  try {
     IDT::Instance();
     Cpu::Instance();
     Acpi::Instance();
@@ -173,6 +173,7 @@ void Initialize()
     KC::MKernelService() ;
 
     GraphicsVideo::Instance()->Initialize();
+
   /* Start - Peripheral Device Initialization */
   //TODO: An Abstract Bus Handler which should internally take care of different
   //types of bus like ISA, PCI etc... 

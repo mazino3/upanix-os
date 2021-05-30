@@ -388,7 +388,7 @@ void XHCIController::RingDoorBell(unsigned index, unsigned value)
 //  __volatile__ uint32_t temp = _doorBellRegs[index];
 //  _doorBellRegs[index] = value;
 //  temp = _doorBellRegs[index];
-  upan::atomic::swap(_doorBellRegs[index], value);
+  upan::atomic::op::swap(_doorBellRegs[index], value);
 }
 
 EventTRB XHCIController::InitiateCommand()

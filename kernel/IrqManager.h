@@ -38,7 +38,7 @@ class IRQ
 	private:
     static const int MAX_PROC_ON_INT_QUEUE = 8 * 1024;
 		const int m_iIRQNo;
-    mutable uint32_t _interruptCount;
+    mutable upan::atomic::integral<uint32_t> _interruptCount;
     mutable upan::mutex _consumeMutex;
 
 	friend class IrqManager;

@@ -71,10 +71,16 @@ void SysProcess_Exit(int iExitStatus)
 	SysCallProc_Handle(&iRetStatus, SYS_CALL_PROCESS_EXIT, false, (unsigned)iExitStatus, 2, 3, 4, 5, 6, 7, 8, 9);
 }
 
-void SysProcess_Sleep(unsigned milisec)
+void SysProcess_Yield()
+{
+  int iRetStatus ;
+  SysCallProc_Handle(&iRetStatus, SYS_CALL_PROCESS_YIELD, false, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+}
+
+void SysProcess_Sleep(unsigned millisec)
 {
 	int iRetStatus ;
-	SysCallProc_Handle(&iRetStatus, SYS_CALL_PROCESS_SLEEP, false, milisec, 2, 3, 4, 5, 6, 7, 8, 9);
+	SysCallProc_Handle(&iRetStatus, SYS_CALL_PROCESS_SLEEP, false, millisec, 2, 3, 4, 5, 6, 7, 8, 9);
 }
 
 int SysProcess_GetPID()

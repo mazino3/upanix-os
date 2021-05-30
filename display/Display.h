@@ -102,7 +102,9 @@ class Display
 				void UpdateAttrVal();
 		};
 
-    static void Create();
+    static void CreateDefault();
+    static void CreateGraphicsConsole();
+
     DisplayBuffer& CreateDisplayBuffer();
     unsigned TextBufferSize() const { return _maxRows * _maxColumns * DisplayConstants::NO_BYTES_PER_CHARACTER; }
     unsigned MaxRows() const { return _maxRows; }

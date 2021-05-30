@@ -26,17 +26,15 @@
 
 IrqManager* IrqManager::_instance = nullptr;
 
-void IRQ::Signal() const
-{
-  upan::atomic::swap(_interruptCount, _interruptCount + 1);
+void IRQ::Signal() const {
+  _interruptCount.inc();
 }
 
 bool IRQ::Consume() const
 {
   upan::mutex_guard mg(_consumeMutex);
-  if(_interruptCount > 0)
-  {
-    upan::atomic::swap(_interruptCount, _interruptCount - 1);
+  if(_interruptCount.get() > 0) {
+    _interruptCount.dec();
     return true;
   }
   return false;

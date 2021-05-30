@@ -55,7 +55,8 @@
 	__asm__ __volatile__("leave") ; \
 	__asm__ __volatile__("ret") ;
 
-void ProcessManager_Exit() ;
+void ProcessManager_Exit();
+void ProcessManager_Yield();
 
 class AutonomousProcess;
 

@@ -95,6 +95,12 @@ __volatile__ unsigned uiP9)
 			}
 			break ;
 
+	  case SYS_CALL_PROCESS_YIELD:
+      {
+        ProcessManager_Yield();
+      }
+      break;
+
 		case SYS_CALL_PROCESS_SLEEP :
 			// P1 => Exit Status
 			{

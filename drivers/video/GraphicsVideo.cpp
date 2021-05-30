@@ -57,7 +57,7 @@ void GraphicsVideo::Create()
   }
 }
 
-GraphicsVideo::GraphicsVideo(const framebuffer_info_t& fbinfo) : _needRefresh(0), _mouseCursorImg(nullptr)
+GraphicsVideo::GraphicsVideo(const framebuffer_info_t& fbinfo) : _needRefresh(false), _mouseCursorImg(nullptr)
 {
   _flatLFBAddress = fbinfo.framebuffer_addr;
   _mappedLFBAddress = fbinfo.framebuffer_addr;
@@ -145,19 +145,18 @@ static void optimized_memcpy(uint32_t dest, uint32_t src, int len) {
 }
 
 bool GraphicsVideo::TimerTrigger() {
-  if(_needRefresh) {
+  if(_needRefresh.get()) {
     ProcessSwitchLock p;
     optimized_memcpy(_mappedLFBAddress, _zBuffer, _lfbSize);
     //memcpy((void *) _mappedLFBAddress, (void *) _zBuffer, _lfbSize);
     DrawMouseCursor();
-    upan::atomic::swap(_needRefresh, 0);
+    _needRefresh.set(false);
   }
   return true;
 }
 
-void GraphicsVideo::NeedRefresh()
-{
-  upan::atomic::swap(_needRefresh, 1);
+void GraphicsVideo::NeedRefresh() {
+  _needRefresh.set(true);
 }
 
 void GraphicsVideo::SetPixel(unsigned x, unsigned y, unsigned color)

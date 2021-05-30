@@ -49,6 +49,6 @@ private:
   const IRQ*    _irq;
   int           _waitChildProcId ;
   RESOURCE_KEYS _waitResourceId;
-  uint32_t      _eventCompleted;
+  upan::atomic::integral<bool> _eventCompleted;
   bool          _kernelServiceComplete ;
 };

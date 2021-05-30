@@ -20,13 +20,12 @@
 #include <GraphicsVideo.h>
 #include <ColorPalettes.h>
 
-GraphicsConsole::GraphicsConsole(unsigned rows, unsigned columns) : Display(rows, columns),
-  _cursorPos(0), _cursorEnabled(false) {
-  GraphicsVideo::Create();
+GraphicsConsole::GraphicsConsole(unsigned rows, unsigned columns)
+  : Display(rows, columns), upan::timer_thread(500), _cursorPos(0), _cursorEnabled(false) {
 }
 
 void GraphicsConsole::StartCursorBlink() {
-  KernelUtil::ScheduleTimedTask("xcursorblink", 500, *this);
+  run();
   _cursorEnabled = true;
 }
 
@@ -58,12 +57,11 @@ void GraphicsConsole::PutCursor(int pos, bool show) {
   GraphicsVideo::Instance()->DrawCursor(x, y, color);
 }
 
-bool GraphicsConsole::TimerTrigger() {
+void GraphicsConsole::on_timer_trigger() {
   upan::mutex_guard g(_cursorMutex);
   static bool showCursor = false;
   PutCursor(_cursorPos, showCursor);
   showCursor = !showCursor;
-  return true;
 }
 
 void GraphicsConsole::DirectPutChar(int iPos, byte ch, byte attr)

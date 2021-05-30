@@ -21,6 +21,7 @@
 #include <KernelUtil.h>
 #include <usfncontext.h>
 #include <BmpImage.h>
+#include <atomicop.h>
 
 class GraphicsVideo : protected KernelUtil::TimerTask
 {
@@ -71,7 +72,7 @@ class GraphicsVideo : protected KernelUtil::TimerTask
     unsigned _width;
     unsigned _height;
     unsigned _lfbSize;
-    uint32_t _needRefresh;
+    upan::atomic::integral<bool> _needRefresh;
     byte     _bpp;
     byte     _bytesPerPixel;
 

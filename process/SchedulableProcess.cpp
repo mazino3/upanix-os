@@ -253,22 +253,20 @@ ProcessStateInfo::ProcessStateInfo() :
   _irq(&StdIRQ::Instance().NO_IRQ),
   _waitChildProcId(NO_PROCESS_ID),
   _waitResourceId(RESOURCE_NIL),
-  _eventCompleted(0),
+  _eventCompleted(false),
   _kernelServiceComplete(false)
 {
 }
 
 bool ProcessStateInfo::IsEventCompleted()
 {
-  if(_eventCompleted)
-  {
-    upan::atomic::swap(_eventCompleted, 0);
+  if(_eventCompleted.get()) {
+    _eventCompleted.set(false);
     return true;
   }
   return false;
 }
 
-void ProcessStateInfo::EventCompleted()
-{
-  upan::atomic::swap(_eventCompleted, 1);
+void ProcessStateInfo::EventCompleted() {
+  _eventCompleted.set(true);
 }

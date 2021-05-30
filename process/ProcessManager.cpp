@@ -48,13 +48,6 @@
 int ProcessManager::_currentProcessID = NO_PROCESS_ID;
 int ProcessManager::_upanixKernelProcessID = NO_PROCESS_ID;
 
-static void ProcessManager_Yield()
-{
-	PIT_SetContextSwitch(true) ;
-	ProcessManager_EXIT() ;
-	ProcessManager_RESTORE() ;	
-}
-
 ProcessManager::ProcessManager() {
   for(int i = 0; i < MAX_RESOURCE; i++)
     _resourceList[i] = false ;
@@ -560,11 +553,17 @@ bool ProcessManager::IsKernelProcess(int iProcessID) {
 	return GetAddressSpace(iProcessID).value().isKernelProcess();
 }
 
-void ProcessManager_Exit()
-{
+void ProcessManager_Exit() {
   ProcessManager::DisableTaskSwitch();
 	PIT_SetContextSwitch(false);
 	ProcessManager_EXIT();
+}
+
+void ProcessManager_Yield() {
+  ProcessManager::DisableTaskSwitch();
+  PIT_SetContextSwitch(true);
+  ProcessManager_EXIT();
+  ProcessManager_RESTORE();
 }
 
 bool ProcessManager::IsResourceBusy(__volatile__ RESOURCE_KEYS uiType)

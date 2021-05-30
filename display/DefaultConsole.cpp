@@ -16,26 +16,26 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
 
-#pragma once
+#include <DefaultConsole.h>
+#include <GraphicsVideo.h>
+#include <ColorPalettes.h>
 
-#include <Display.h>
-#include <KernelUtil.h>
-#include <mutex.h>
-#include <timer_thread.h>
+DefaultConsole::DefaultConsole(unsigned rows, unsigned columns) : Display(rows, columns) {
+  GraphicsVideo::Create();
+}
 
-class GraphicsConsole : public Display, upan::timer_thread
+void DefaultConsole::DirectPutChar(int iPos, byte ch, byte attr)
 {
-private:
-  GraphicsConsole(unsigned rows, unsigned columns);
-  void GotoCursor() override;
-  void DirectPutChar(int iPos, byte ch, byte attr) override;
-  void DoScrollDown() override;
-  void PutCursor(int pos, bool show);
-  void on_timer_trigger() override;
-  void StartCursorBlink() override;
+  const int curPos = iPos / DisplayConstants::NO_BYTES_PER_CHARACTER;
+  const unsigned x = (curPos % _maxColumns);
+  const unsigned y = (curPos / _maxColumns);
 
-  friend class Display;
-  int _cursorPos;
-  bool _cursorEnabled;
-  upan::mutex _cursorMutex;
-};
+  GraphicsVideo::Instance()->DrawChar(ch, x, y,
+                                      ColorPalettes::CP16::Get(attr & ColorPalettes::CP16::FG_WHITE),
+                                      ColorPalettes::CP16::Get((attr & ColorPalettes::CP16::BG_WHITE) >> 4));
+}
+
+void DefaultConsole::DoScrollDown()
+{
+  GraphicsVideo::Instance()->ScrollDown();
+}
