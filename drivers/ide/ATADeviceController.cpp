@@ -306,19 +306,10 @@ static void ATADeviceController_CheckControllerMode(const PCIEntry* pPCIEntry,
 		}
 	}
 
-	KC::MDisplay().Message("\n\tChannel 0: ", Display::WHITE_ON_BLACK()) ;
-	KC::MDisplay().Message((bMMIO) ? "MMIO " : "PIO ", Display::WHITE_ON_BLACK()) ;
-	KC::MDisplay().Address(" Cmd - ", uiPrimaryCommand) ;
-	KC::MDisplay().Address(" Ctrl - ", uiPrimaryControl) ;
-	KC::MDisplay().Address(" DMA - ", uiPrimaryDMA) ;
-	KC::MDisplay().Address(" IRQ - ", bPrimaryIRQ) ;
-
-	KC::MDisplay().Message("\n\tChannel 1: ", Display::WHITE_ON_BLACK()) ;
-	KC::MDisplay().Message((bMMIO) ? "MMIO " : "PIO ", Display::WHITE_ON_BLACK()) ;
-	KC::MDisplay().Address(" Cmd - ", uiSecondaryCommand) ;
-	KC::MDisplay().Address(" Ctrl - ", uiSecondaryControl) ;
-	KC::MDisplay().Address(" DMA - ", uiSecondaryDMA) ;
-	KC::MDisplay().Address(" IRQ - ", bSecondaryIRQ) ;
+  printf("\n\tChannel 0: %s, Cmd: %u, Ctrl: %u, DMA: %u, IRQ: %u",
+         (bMMIO) ? "MMIO " : "PIO ", uiPrimaryCommand, uiPrimaryControl, uiPrimaryDMA, bPrimaryIRQ);
+  printf("\n\tChannel 1: %s, Cmd: %u, Ctrl: %u, DMA: %u, IRQ: %u",
+         (bMMIO) ? "MMIO " : "PIO ", uiSecondaryCommand, uiSecondaryControl, uiSecondaryDMA, bSecondaryIRQ);
 
 	*pController = ATADeviceController_AllocateController(2, 2) ;
 	strcpy((*pController)->szName, "PCI ATA Controller") ;
@@ -506,15 +497,10 @@ static void ATADeviceController_Add(ATAController* pController)
 
 static byte ATADeviceController_InitController(const PCIEntry* pPCIEntry, VendorSpecificATAController_Initialize* pInitFunc)
 {
-	KC::MDisplay().Message("\n\nATA PCI Controller found on", Display::WHITE_ON_BLACK()) ;
-	KC::MDisplay().Address(" Bus: ", pPCIEntry->uiBusNumber) ;
-	KC::MDisplay().Address(" Device: ", pPCIEntry->uiDeviceNumber) ;
-	KC::MDisplay().Address(" Function: ", pPCIEntry->uiFunction) ;
-	KC::MDisplay().Address(" VendorID: ", pPCIEntry->usVendorID) ;
-	KC::MDisplay().Address(" DeviceID: ", pPCIEntry->usDeviceID) ;
+	printf("\n\tATA PCI Controller found on Bus: %u, Device: %u, Function: %u, VendorID: %u, DeviceID: %u",
+        pPCIEntry->uiBusNumber,	pPCIEntry->uiDeviceNumber, pPCIEntry->uiFunction, pPCIEntry->usVendorID, pPCIEntry->usDeviceID);
 
 	ATAController* pController ;
-
   try
   {
     ATADeviceController_EnableDisabledController(pPCIEntry);

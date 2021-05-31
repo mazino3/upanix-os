@@ -115,17 +115,13 @@ class Display
     void Message(const __volatile__ char* message, const Attribute& attr);
     void Message(const __volatile__ char* message, const byte& rawAttr);
     void nMessage(const __volatile__ char* message, int len, const Attribute& attr);
-		void Address(const char* message, unsigned int address);
-		void Number(const char *message, DWORD dwNumber);
-		void DDNumberInHex(const char *message, DDWORD ddNumber);
-		void DDNumberInDec(const char *message, DDWORD ddNumber);
     void Character(char ch, const Attribute& attr);
     void RawCharacter(byte ch, const Attribute& attr, bool bUpdateCursorOnScreen);
     void RawCharacterArea(const MChar* src, uint32_t rows, uint32_t cols, int curPos);
     void MoveCursor(int iOffSet);
     void SetCursor(int iCurPos, bool bUpdateCursorOnScreen);
 		void LoadMessage(const char* loadMessage, ReturnCode result);
-		void ShowProgress(const char* msg, int startCur, unsigned progNum);
+		void ShowProgress(const char* msg, int startCur, unsigned progressPercent);
     void ClearLine(int iStartPos);
 		void RefreshScreen();
 		int GetCurrentCursorPosition();

@@ -156,116 +156,6 @@ void Display::UpdateCursorPosition(int iCursorPos, bool bUpdateCursorOnScreen) {
 	}
 }
 
-void Display::Address(const char *message, unsigned int address)
-{
-	__volatile__ char addressDigit[9];
-	__volatile__ byte i;
-
-	for(i = 0; i < 8; i++)
-	{
-		addressDigit[7 - i] = (char)((address >> 4*i) & 0x0F);
-
-		if(addressDigit[7 - i] < 10)
-			addressDigit[7 - i] += 0x30;
-		else
-			addressDigit[7 - i] += (0x41 - 0x0A);
-	}
-
-	addressDigit[8] = '\0';
-
-	for(i = 0; i < 7; i++)
-		if(addressDigit[i] != '0')
-			break;
-
-	unsigned j;
-	for(j = 0; i < 9; i++, j++)
-		addressDigit[j] = addressDigit[i];
-
-	Message(message, WHITE_ON_BLACK());
-	Message(addressDigit, WHITE_ON_BLACK());
-}
-
-void Display::Number(const char *message, DWORD dwNumber)
-{
-	__volatile__ char szNumber[21];
-	__volatile__ byte i;
-
-	for(i = 0; i < 20; i++)
-	{
-		szNumber[i] = (dwNumber % 10) + 0x30;
-		dwNumber = dwNumber / 10;
-		if(!dwNumber)
-			break;
-	}
-
-	i++;
-
-	szNumber[i] = '\0';
-
-	strreverse((char*)szNumber);
-
-	Message(message, WHITE_ON_BLACK());
-	Message(szNumber, WHITE_ON_BLACK());
-}
-
-void Display::DDNumberInHex(const char *message, DDWORD ddNumber)
-{
-	__volatile__ char addressDigit[17];
-	__volatile__ byte i;
-
-	for(i = 0; i < 16; i++)
-	{
-		addressDigit[15 - i] = (char)((ddNumber >> 4*i) & 0x0F);
-
-		if(addressDigit[15 - i] < 10)
-			addressDigit[15 - i] += 0x30;
-		else
-			addressDigit[15 - i] += (0x41 - 0x0A);
-	}
-
-	addressDigit[16] = '\0';
-
-	for(i = 0; i < 15; i++)
-		if(addressDigit[i] != '0')
-			break;
-
-	unsigned j;
-	for(j = 0; i < 17; i++, j++)
-		addressDigit[j] = addressDigit[i];
-
-	Message(message, WHITE_ON_BLACK());
-	Message(addressDigit, WHITE_ON_BLACK());
-}
-
-void Display::DDNumberInDec(const char *message, DDWORD ddNumber)
-{
-	__volatile__ char addressDigit[17];
-	__volatile__ byte i;
-
-	for(i = 0; i < 16; i++)
-	{
-		addressDigit[15 - i] = (char)((ddNumber >> 4*i) & 0x0F);
-
-		if(addressDigit[15 - i] < 10)
-			addressDigit[15 - i] += 0x30;
-		else
-			addressDigit[15 - i] += (0x41 - 0x0A);
-	}
-
-	addressDigit[16] = '\0';
-
-	for(i = 0; i < 15; i++)
-		if(addressDigit[i] != '0')
-			break;
-
-	unsigned j;
-	for(j = 0; i < 17; i++, j++)
-		addressDigit[j] = addressDigit[i];
-
-	Message(message, WHITE_ON_BLACK());
-	Message(addressDigit, WHITE_ON_BLACK());
-}
-
 DisplayBuffer& Display::GetDisplayBuffer(int pid)
 {
 	if(IS_KERNEL())
@@ -403,12 +293,12 @@ void Display::LoadMessage(const char* loadMessage, ReturnCode result)
 		Message("[ FAILED ]", Attribute(ColorPalettes::CP16::FG_RED, ColorPalettes::CP16::BG_WHITE));
 }
 
-void Display::ShowProgress(const char* msg, int startCur, unsigned progNum)
+void Display::ShowProgress(const char* msg, int startCur, unsigned progressPercent)
 {
   for(int c = GetCurrentCursorPosition(); c > startCur; --c)
 		MoveCursor(-1);
 	ClearLine(START_CURSOR_POS);
-	Number(msg, progNum);
+	printf("%s %u", msg, progressPercent);
 }
 
 byte Display::GetChar(int iPos)

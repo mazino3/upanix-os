@@ -59,7 +59,7 @@ void MemManager::PageFaultHandlerTaskGate()
 	__asm__ __volatile__("mov %%cr2, %0" : "=r"(uiFaultyAddress) : ) ;
 
 	if (IS_KERNEL()) {
-    KC::MDisplay().Address("\n Page Fault in Kernel! FIX THIS !!! @ ", uiFaultyAddress);
+    printf("\n Page Fault in Kernel! FIX THIS !!! @ %u", uiFaultyAddress);
     while(1);
   }
 	if(!KC::MKernelService().RequestPageFault(uiFaultyAddress))
@@ -648,14 +648,13 @@ void MemManager::DisplayNoOfAllocPages()
 				if((uiPageMapEntry & 0x1) == 0x1)
 				{
 					uiAllocPageCount++ ;
-					KC::MDisplay().Number(",", (uiPageMapPosition * 4 * 8) + uiPageOffset);
+					printf(",%u", (uiPageMapPosition * 4 * 8) + uiPageOffset);
 				}
 				uiPageMapEntry >>= 1 ;
 			}
 		}
 	}
 	
-	KC::MDisplay().Number("\n Alloc Page Count = ", uiAllocPageCount) ;
-	KC::MDisplay().Message("\n", Display::WHITE_ON_BLACK());
+	printf("\n Alloc Page Count = %u\n", uiAllocPageCount) ;
 }
 

@@ -77,15 +77,6 @@ __volatile__ unsigned uiP9)
 			}
 			break ;
 
-		case SYS_CALL_DISPLAY_ADDRESS :
-			// P1 => Address of DisplayString relative to processBase 
-			// P2 => Number to be Displayed
-			{
-				char* szMessageAddress = KERNEL_ADDR(bDoAddrTranslation, char*, uiP1);
-				KC::MDisplay().Address(szMessageAddress, uiP2) ; 
-			}
-			break ;
-
 		case SYS_CALL_DISPLAY_SET_CURSOR :
 			// P1 => Cursor Position
 			// P2 => Update Cursor On Screen

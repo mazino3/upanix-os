@@ -159,7 +159,7 @@ bool UHCIController::Probe()
 	unsigned short usWord = 0;
 	if((usWord = PortCom_ReceiveWord(_uiIOBase + USBSTS_REG)) != 0x0)
 	{
-		KC::MDisplay().Address("\n Error. UHCI Host Controller Status = ", usWord) ;
+		printf("\n Error. UHCI Host Controller Status = %u", usWord) ;
 		usWord = PortCom_ReceiveWord(_uiIOBase + USBCMD_REG) ;
 		printf("\n CMD: %x", usWord) ;
 

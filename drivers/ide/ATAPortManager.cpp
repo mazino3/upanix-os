@@ -94,13 +94,9 @@ void ATAPortManager_Probe(ATAPort* pPort)
 	bStatus = pPort->portOperation.Reset(pPort) ;
 	if(bStatus != ATAPortOperation_SUCCESS)
 	{
-		KC::MDisplay().Address("\n\tNo Device connected on ", pPort->uiChannel) ;
-		KC::MDisplay().Address(":", pPort->uiPort) ;
-		KC::MDisplay().Address(" E = ", bStatus) ;
-
+		printf("\n\tNo Device connected on %u:%u, E = ", pPort->uiChannel, pPort->uiPort, bStatus);
 		pPort->uiDevice = ATA_DEV_NONE ;
 		pPort->uiCable = ATA_CABLE_NONE ;
-
 		return ;
 	}
 
@@ -127,10 +123,8 @@ void ATAPortManager_Probe(ATAPort* pPort)
 	{
 		pPort->uiDevice = ATA_DEV_NONE ;
 		pPort->uiCable = ATA_CABLE_NONE ;
+		printf("\n\tNo Device connected on %u:%u", pPort->uiChannel, pPort->uiPort);
 
-		KC::MDisplay().Address("\n\tNo Device connected on ", pPort->uiChannel) ;
-		KC::MDisplay().Address(":", pPort->uiPort) ;
-		
 		return ;
 	}
 
@@ -200,14 +194,10 @@ void ATAPortManager_Probe(ATAPort* pPort)
 	// Check 48 bit Addressing
 	if(pATAIdentifyInfo->usCommandSet2 & 0x400)
 	{
-		KC::MDisplay().Message("\n\tDrive uses 48 bit Addressing", Display::WHITE_ON_BLACK()) ;
-		KC::MDisplay().Address("\n\tCapacity: ", (pATAIdentifyInfo->uiLBACapacity48 / 1000 * 512 / 1000)) ;
-		
-		pPort->bLBA48Bit = true ;
-
-		KC::MDisplay().Number("\n\tCHS = ", pATAIdentifyInfo->usCylinders) ;
-		KC::MDisplay().Number(" ", pATAIdentifyInfo->usHead) ;
-		KC::MDisplay().Number(" ", pATAIdentifyInfo->usSectors) ;
+    pPort->bLBA48Bit = true;
+		printf("\n\tDrive uses 48 bit Addressing\n\tCapacity: %u\n\tCHS = %u %u %u",
+         (pATAIdentifyInfo->uiLBACapacity48 / 1000 * 512 / 1000),
+         pATAIdentifyInfo->usCylinders, pATAIdentifyInfo->usHead, pATAIdentifyInfo->usSectors);
 
 		if(!1) //TODO: Why  enable 48 bit check
 		{
@@ -217,11 +207,10 @@ void ATAPortManager_Probe(ATAPort* pPort)
 	}
 	else if(pATAIdentifyInfo->uiLBASectors)
 	{
-		KC::MDisplay().Address("\n\tLBA Sectors = ", pATAIdentifyInfo->uiLBASectors) ;
-		KC::MDisplay().Address("\n\tCHS = ", pATAIdentifyInfo->usCylinders) ;
-		KC::MDisplay().Address(" ", pATAIdentifyInfo->usHead) ;
-		KC::MDisplay().Address(" ", pATAIdentifyInfo->usSectors) ;
-		KC::MDisplay().Address("\n\tCapacity: ", (pATAIdentifyInfo->uiLBASectors / 1000 * 512 / 1000)) ;
+		printf("\n\tLBA Sectors = %u\n\tCHS = %u %u %u\n\tCapacity: %u",
+         pATAIdentifyInfo->uiLBASectors,
+         pATAIdentifyInfo->usCylinders, pATAIdentifyInfo->usHead, pATAIdentifyInfo->usSectors,
+         (pATAIdentifyInfo->uiLBASectors / 1000 * 512 / 1000));
 	}
 
 	pPort->bPIO32Bit = true ; // TODO: Read as kernel param
