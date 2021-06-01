@@ -54,7 +54,7 @@ void ATACommandManager_ExecuteATACommand(ATACommand* pCommand)
 		if(ATAPortManager_IOWait(pPort, ATA_STATUS_BUSY, 0) != ATAPortManager_SUCCESS)
 		{
 			ATA_READ_REG(pPort, ATA_REG_ERROR, pCommand->iError) ;
-			KC::MDisplay().Address("\n\tFailed to Execute Command ", pCommand->bCommand[ATA_REG_COMMAND]) ;
+			printf("\n\tFailed to Execute Command %u", pCommand->bCommand[ATA_REG_COMMAND]);
 			return ;
 		}
 
@@ -92,7 +92,7 @@ void ATACommandManager_ExecuteATACommand(ATACommand* pCommand)
 		if(ATAPortManager_IOWait(pPort, ATA_STATUS_BUSY, 0) != ATAPortManager_SUCCESS)
 		{
 			ATA_READ_REG(pPort, ATA_REG_ERROR, pCommand->iError) ;
-			KC::MDisplay().Address("\n\tFailed to Execute Command ", pCommand->bCommand[ATA_REG_COMMAND]) ;
+			printf("\n\tFailed to Execute Command %u", pCommand->bCommand[ATA_REG_COMMAND]);
 			return ;
 		}
 
@@ -196,7 +196,7 @@ void ATACommandManager_ExecuteATACommand(ATACommand* pCommand)
 
 				if(iRetry == 3)
 				{
-					KC::MDisplay().Address("\n\t Failed to execute Command ", pCommand->bCommand[ATA_REG_COMMAND]) ;
+					printf("\n\t Failed to execute Command %u", pCommand->bCommand[ATA_REG_COMMAND]) ;
 					return ;
 				}
 
@@ -364,7 +364,7 @@ void ATACommandManager_ExecuteATAPICommand(ATACommand* pCommand)
 				if(bTimedOut)
 				{
 					if(uiLength > 0)
-						KC::MDisplay().Address("\n\tData Transfer Request Timed Out. Err Status = ", bStatus) ;
+						printf("\n\tData Transfer Request Timed Out. Err Status = %u", bStatus) ;
 					return ;
 				}
 
@@ -429,7 +429,7 @@ void ATACommandManager_ExecuteATAPICommand(ATACommand* pCommand)
 						// Wait
 						if(ATAPortManager_IOWait(pPort, ATA_STATUS_DRQ, ATA_STATUS_DRQ) != ATAPortManager_SUCCESS)
 						{
-							KC::MDisplay().Address("\n\tPartial Transfer. DRQ is Low, Bytes Left = ", uiLength - uiTransfered) ;
+              printf("\n\tPartial Transfer. DRQ is Low, Bytes Left = %u", uiLength - uiTransfered) ;
 							break ;	
 						}
 					}
@@ -470,7 +470,7 @@ void ATACommandManager_ExecuteATAPICommand(ATACommand* pCommand)
 				pCommand->atapiSense.bSenseKey = pCommand->iError >> 4 ;
 				pCommand->iStatus = ATACommandManager_SUCCESS ;
 
-				KC::MDisplay().Address("\n\tNo Data to Transfer. Sense Key = ", pCommand->atapiSense.bSenseKey) ;
+        printf("\n\tNo Data to Transfer. Sense Key = %u", pCommand->atapiSense.bSenseKey) ;
 			}
 		}
 	}
