@@ -27,6 +27,10 @@
 #define PROCESS_SPACE_FOR_OS (MEM_KERNEL_RESV_SIZE / 4 / 1024 / 1024)
 #define PROCESS_BASE (PROCESS_SPACE_FOR_OS * PAGE_TABLE_ENTRIES * PAGE_SIZE)
 
+//Each process gets a max of 4MB (i.e. one PDE entry a.k.a one whole PTE) for graphics UI framebuffer
+#define PROCESS_GUI_FRAMEBUFFER_PDE_ID 1021u
+#define PROCESS_GUI_FRAMEBUFFER_ADDRESS (PROCESS_GUI_FRAMEBUFFER_PDE_ID * PAGE_TABLE_ENTRIES * PAGE_SIZE)
+
 //Each process gets 4MB (i.e. one PDE entry a.k.a one whole PTE) of stack that includes PROCESS_CG_STACK_PAGES
 #define PROCESS_STACK_PDE_ID 1022u
 #define PROCESS_STACK_TOP_ADDRESS ((PROCESS_STACK_PDE_ID + 1) * PAGE_SIZE * PAGE_TABLE_ENTRIES)

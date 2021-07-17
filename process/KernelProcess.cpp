@@ -20,6 +20,8 @@
 #include <UserManager.h>
 #include <ProcessManager.h>
 #include <KernelThread.h>
+#include <GraphicsVideo.h>
+#include <DMM.h>
 
 upan::mutex KernelProcess::_envMutex;
 
@@ -49,4 +51,29 @@ uint32_t KernelProcess::AllocateAddressSpace() {
 
 void KernelProcess::DeAllocateResources() {
   MemManager::Instance().DeAllocateKernelStack(kernelStackBlockId);
+  DeAllocateGUIFramebuffer();
+}
+
+uint32_t KernelProcess::getGUIFramebufferAddress() {
+  if (_frameBuffer == 0) {
+    if (_processID == ProcessManager::UpanixKernelProcessID()) {
+      _frameBuffer = MEM_GRAPHICS_Z_BUFFER_START;
+    } else {
+      const auto lfbPageCount = GraphicsVideo::Instance().LFBPageCount();
+      if (lfbPageCount > PAGE_TABLE_ENTRIES) {
+        throw upan::exception(XLOC, "Max pages available for user process GUI framebuffer is %u, requested: %u", PAGE_TABLE_ENTRIES, lfbPageCount);
+      }
+      _frameBuffer = DMM_AllocateForKernel(lfbPageCount * PAGE_SIZE, PAGE_SIZE);
+      GraphicsVideo::Instance().addGUIProcess(processID(), _frameBuffer);
+    }
+  }
+  return _frameBuffer;
+}
+
+void KernelProcess::DeAllocateGUIFramebuffer() {
+  if (_frameBuffer == 0) {
+    return;
+  }
+  DMM_DeAllocateForKernel(_frameBuffer);
+  GraphicsVideo::Instance().removeGUIProcess(processID());
 }

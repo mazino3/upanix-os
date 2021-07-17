@@ -92,6 +92,10 @@ void KernelService::ThreadExec::Execute() {
   _threadID = ProcessManager::Instance().CreateThreadTask(GetRequestProcessID(), _threadCaller, _entryAddress, _arg);
 }
 
+void KernelService::ProcessGUIFramebufferAllocate::Execute() {
+  _userProcess.allocateGUIFramebuffer();
+}
+
 bool KernelService::RequestDLLAlloCopy(unsigned uiNoOfPages, const upan::string& dllName)
 {
 	KernelService::DLLAllocCopy* pRequest = new KernelService::DLLAllocCopy(uiNoOfPages, dllName) ;
@@ -157,7 +161,7 @@ int KernelService::RequestProcessExec(const char* szFile, int iNoOfArgs, const c
 		strcpy(szFullProcPath, szFile) ;
 	}
 	
-	KernelService::ProcessExec* pRequest = new KernelService::ProcessExec(iNoOfArgs, szFullProcPath, szArgs) ;
+	auto pRequest = new KernelService::ProcessExec(iNoOfArgs, szFullProcPath, szArgs) ;
 
 	AddRequest(pRequest) ;
 	ProcessManager::Instance().WaitOnKernelService() ;
@@ -170,7 +174,7 @@ int KernelService::RequestProcessExec(const char* szFile, int iNoOfArgs, const c
 }
 
 int KernelService::RequestThreadExec(uint32_t threadCaller, uint32_t entryAddresss, void* arg) {
-  KernelService::ThreadExec* pRequest = new KernelService::ThreadExec(threadCaller, entryAddresss, arg);
+  auto pRequest = new KernelService::ThreadExec(threadCaller, entryAddresss, arg);
 
   AddRequest(pRequest) ;
   ProcessManager::Instance().WaitOnKernelService() ;
@@ -178,6 +182,13 @@ int KernelService::RequestThreadExec(uint32_t threadCaller, uint32_t entryAddres
   int threadID = pRequest->GetThreadID();
   delete pRequest;
   return threadID;
+}
+
+void KernelService::RequestProcessGUIFramebufferAllocate(UserProcess& userProcess) {
+  auto request = new KernelService::ProcessGUIFramebufferAllocate(userProcess);
+  AddRequest(request);
+  ProcessManager::Instance().WaitOnKernelService();
+  delete request;
 }
 
 void KernelService::AddRequest(Request* pRequest)

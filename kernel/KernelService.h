@@ -62,6 +62,7 @@ class KernelService
 		bool RequestPageFault(unsigned uiFaultyAddress) ;
 		int RequestProcessExec(const char* szFile, int iNoOfArgs, const char** szArgs) ;
 		int RequestThreadExec(uint32_t threadCaller, uint32_t entryAddresss, void* arg);
+    void RequestProcessGUIFramebufferAllocate(UserProcess& userProcess);
 
 	private:
 		static void Server(KernelService* pService) ;
@@ -136,6 +137,14 @@ class KernelService
 		  int GetThreadID() const {
 		    return _threadID;
 		  }
+		};
+
+		class ProcessGUIFramebufferAllocate : public Request {
+		private:
+		  UserProcess& _userProcess;
+		public:
+		  ProcessGUIFramebufferAllocate(UserProcess& userProcess) : _userProcess(userProcess) {}
+		  void Execute() override;
 		};
 } ;
 

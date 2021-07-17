@@ -31,6 +31,9 @@ public:
   void DestroyThreads() override;
   void addToThreadScheduler(Thread& thread);
 
+protected:
+  uint32_t _frameBuffer;
+
 private:
   typedef upan::list<Thread*> ThreadSchedulerList;
   ThreadSchedulerList _threadSchedulerList;

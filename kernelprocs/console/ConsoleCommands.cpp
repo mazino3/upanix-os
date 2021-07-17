@@ -888,7 +888,7 @@ void ConsoleCommands_InitMountManager()
 }
 
 void ConsoleCommands_TestGraphics() {
-  //GraphicsVideo::Instance()->InitSFN();
+  //GraphicsVideo::Instance().InitSFN();
 }
 
 extern void TestMTerm() ;
@@ -1046,7 +1046,7 @@ void ConsoleCommands_Testv()
 	//printf("\n RAM SIZE: %u", MemManager::Instance().GetRamSize()) ;
 	//VM86_Test() ;
 	//KC::MDisplay().SetMouseCursorPos(KC::MDisplay().GetMouseCursorPos() + 70) ;
-	//GraphicsVideo::Instance()->ExperimentWithMouseCursor(atoi(CommandLineParser::Instance().GetParameterAt(0)));
+	//GraphicsVideo::Instance().ExperimentWithMouseCursor(atoi(CommandLineParser::Instance().GetParameterAt(0)));
   thread_id = exect(aThread, 10);
 }
 

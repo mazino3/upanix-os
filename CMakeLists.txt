@@ -104,6 +104,8 @@ include_directories(${UPANLIB_SOURCE_DIR}/libcxxrt)
 
 include_directories(${UPANLIB_SOURCE_DIR}/libupanui)
 include_directories(${UPANLIB_SOURCE_DIR}/libupanui/image)
+include_directories(${UPANLIB_SOURCE_DIR}/libupanui/text/default)
+include_directories(${UPANLIB_SOURCE_DIR}/libupanui/text/usfn)
 
 add_custom_target(osutils COMMAND make WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/osutils)
 add_custom_target(boot COMMAND make boot_elf WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/boot)

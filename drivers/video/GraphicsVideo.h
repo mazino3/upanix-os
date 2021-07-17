@@ -30,7 +30,7 @@ class GraphicsVideo : protected KernelUtil::TimerTask
 
   public:
     static void Create();
-    static GraphicsVideo* Instance() { return _instance; }
+    static GraphicsVideo& Instance();
     unsigned FlatLFBAddress() const { return _flatLFBAddress; }
     void MappedLFBAddress(unsigned a)
     {
@@ -38,6 +38,9 @@ class GraphicsVideo : protected KernelUtil::TimerTask
       _zBuffer = a;
     }
     unsigned LFBSize() const { return _lfbSize; }
+    unsigned LFBPageCount() const {
+      return ((_lfbSize - 1) / PAGE_SIZE) + 1;
+    }
     void SetPixel(unsigned x, unsigned y, unsigned color);
     void FillRect(unsigned sx, unsigned sy, unsigned width, unsigned height, unsigned color);
     void DrawChar(byte ch, unsigned x, unsigned y, unsigned fg, unsigned bg);
@@ -55,6 +58,9 @@ class GraphicsVideo : protected KernelUtil::TimerTask
     }
     void SetMouseCursorPos(int x, int y);
     void ExperimentWithMouseCursor(int i);
+
+    void addGUIProcess(int pid, uint32_t framebuffer);
+    void removeGUIProcess(int pid);
 
   private:
     void InitializeUSFN();
@@ -76,7 +82,7 @@ class GraphicsVideo : protected KernelUtil::TimerTask
     byte     _bpp;
     byte     _bytesPerPixel;
 
-    usfn::Context* _ssfnContext;
+    upanui::usfn::Context* _ssfnContext;
     bool     _usfnInitialized;
     uint32_t _xCharScale;
     uint32_t _yCharScale;

@@ -127,6 +127,7 @@ __volatile__ unsigned uiP9)
       framebufferInfo->_width = f->framebuffer_width;
       framebufferInfo->_height = f->framebuffer_height;
       framebufferInfo->_bpp = f->framebuffer_bpp;
+      framebufferInfo->_frameBuffer = (uint32_t*)ProcessManager::Instance().GetCurrentPAS().getGUIFramebufferAddress();
     }
     break;
 	}

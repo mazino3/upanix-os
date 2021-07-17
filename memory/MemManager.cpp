@@ -127,31 +127,27 @@ void MemManager::PrintInitStatus() const {
 
 void MemManager::MemMapGraphicsLFB(uint32_t memTypeFlag)
 {
-  if(!GraphicsVideo::Instance())
-    return;
-  unsigned noOfPages = (GraphicsVideo::Instance()->LFBSize() / PAGE_SIZE) + 1;
+  unsigned noOfPages = (GraphicsVideo::Instance().LFBSize() / PAGE_SIZE) + 1;
   unsigned availablePages = MEM_GRAPHICS_VIDEO_MAP_SIZE / PAGE_SIZE;
   if(noOfPages > availablePages)
   {
     printf("\n Insufficient graphics video buffer. Required pages: %u", noOfPages);
     while(1);
   }
-  unsigned lfbaddress = GraphicsVideo::Instance()->FlatLFBAddress();
+  unsigned lfbaddress = GraphicsVideo::Instance().FlatLFBAddress();
   unsigned mapAddress = MEM_GRAPHICS_VIDEO_MAP_START;
   ReturnCode markPageRetCode = Success;
-  for(unsigned i = 0; i < noOfPages; ++i)
-  {
+  for(unsigned i = 0; i < noOfPages; ++i) {
     unsigned addr = lfbaddress + PAGE_SIZE * i;
     unsigned uiPDEIndex = ((mapAddress >> 22) & 0x3FF);
     unsigned uiPTEAddress = (((unsigned*)(MEM_PDBR - GLOBAL_DATA_SEGMENT_BASE))[uiPDEIndex]) & 0xFFFFF000;
     unsigned uiPTEIndex = ((mapAddress >> 12) & 0x3FF);
     // This page is a Read Only area for user process. 0x5 => 101 => User Domain, Read Only, Present Bit
     ((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[uiPTEIndex] = (addr & 0xFFFFF000) | 0x5 | (memTypeFlag & 0xFF);
-    //No need to mark page as allocated as that would be already done while building PTE for reserved area
     markPageRetCode = MarkPageAsAllocated(addr / PAGE_SIZE, markPageRetCode);
     mapAddress += PAGE_SIZE;
   }
-  GraphicsVideo::Instance()->MappedLFBAddress(MEM_GRAPHICS_VIDEO_MAP_START);
+  GraphicsVideo::Instance().MappedLFBAddress(MEM_GRAPHICS_VIDEO_MAP_START);
 }
 
 void MemManager::InitPage(unsigned uiPage)
@@ -484,11 +480,13 @@ ReturnCode MemManager::AllocatePage(int iProcessID, unsigned uiFaultyAddress) {
 		
 		/* Not accessing Heap and Not the startUp Address access (20MB) in proc_init */
 		const uint32_t pdeIndex = ((uiFaultyAddress >> 22) & 0x3FF);
-		if (pdeIndex != PROCESS_STACK_PDE_ID || ProcessManager::Instance().IsDMMOn(iProcessID)) {
+		if (pdeIndex != PROCESS_STACK_PDE_ID || pdeIndex != PROCESS_GUI_FRAMEBUFFER_PDE_ID || ProcessManager::Instance().IsDMMOn(iProcessID)) {
       if ((uiFaultyAddress < PROCESS_HEAP_START_ADDRESS)
           || (uiFaultyAddress >= PROCESS_HEAP_START_ADDRESS && !ProcessManager::Instance().IsDMMOn(iProcessID))
           //This space is for process Stack - page fault here should be only while expanding stack and not for Heap
-          || (pdeIndex == PROCESS_STACK_PDE_ID && ProcessManager::Instance().IsDMMOn(iProcessID))) {
+          || (pdeIndex == PROCESS_STACK_PDE_ID && ProcessManager::Instance().IsDMMOn(iProcessID))
+          //This space is for process gui framebuffer - this space must be pre-allocated
+          || (pdeIndex == PROCESS_GUI_FRAMEBUFFER_PDE_ID)) {
         printf("\n Segmentation Fault @ Address: 0x%x", uiFaultyAddress);
         printf("\n Sys Call Id: %d", SYS_CALL_ID);
         printf("\n PID: %d, DMM Flag: %d, PDE Index: %d", iProcessID, ProcessManager::Instance().IsDMMOn(iProcessID),
@@ -501,8 +499,7 @@ ReturnCode MemManager::AllocatePage(int iProcessID, unsigned uiFaultyAddress) {
 
 		uiPTEAddress = (((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[ ((uiFaultyAddress >> 22) & 0x3FF) ]) ;
 
-		if((uiPTEAddress & 0x1) == 0x0)
-		{
+		if((uiPTEAddress & 0x1) == 0x0) {
 			uiPTEFreePage = AllocatePhysicalPage();
 
 			((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[ ((uiFaultyAddress >> 22) & 0x3FF)] = 
@@ -510,26 +507,26 @@ ReturnCode MemManager::AllocatePage(int iProcessID, unsigned uiFaultyAddress) {
 
 			uiPTEAddress = uiPTEFreePage * PAGE_SIZE ;
 			InitPage(uiPTEFreePage) ;
-		}
-		else
-		{
-			uiPTEAddress = uiPTEAddress & 0xFFFFF000 ;
-		}
+		} else if((uiPTEAddress & 0x7) == 0x7) {
+			uiPTEAddress = uiPTEAddress & 0xFFFFF000;
+		} else {
+      /* Crash the Process..... With SegFault Or OutOfMemeory Error*/
+      printf("\n Segmentation/Permission Fault @ Address: %x, PDE Index: %u", uiFaultyAddress, pdeIndex);
+      return Failure;
+    }
 
 		unsigned uiPageAdress = ((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[((uiFaultyAddress >> 12) & 0x3FF)];
 
-		// TODO: Fix This Properly
-		if((uiPageAdress & 0x01) == 0x00)
-		{
+		if((uiPageAdress & 0x01) == 0x00)	{
 			uiFreePageNo = AllocatePhysicalPage();
 
 			((unsigned*)(uiPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[ ((uiFaultyAddress >> 12) & 0x3FF) ] = 
 					((uiFreePageNo * PAGE_SIZE) & 0xFFFFF000) | 0x7 ;
 
 			InitPage(uiFreePageNo) ;
-		}
-		else
-		{
+		} else if ((uiPageAdress & 0x7) == 0x7) {
+      // we are good - page is already allocated - possibly because of a page fault on same address/page area from another thread.
+		} else {
 			/* Crash the Process..... With SegFault Or OutOfMemeory Error*/
 			printf("\n Segmentation/Permission Fault @ Address: %x, PDE Index: %u", uiFaultyAddress, pdeIndex);
 			return Failure;

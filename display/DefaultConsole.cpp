@@ -30,12 +30,12 @@ void DefaultConsole::DirectPutChar(int iPos, byte ch, byte attr)
   const unsigned x = (curPos % _maxColumns);
   const unsigned y = (curPos / _maxColumns);
 
-  GraphicsVideo::Instance()->DrawChar(ch, x, y,
+  GraphicsVideo::Instance().DrawChar(ch, x, y,
                                       ColorPalettes::CP16::Get(attr & ColorPalettes::CP16::FG_WHITE),
                                       ColorPalettes::CP16::Get((attr & ColorPalettes::CP16::BG_WHITE) >> 4));
 }
 
 void DefaultConsole::DoScrollDown()
 {
-  GraphicsVideo::Instance()->ScrollDown();
+  GraphicsVideo::Instance().ScrollDown();
 }

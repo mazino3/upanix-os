@@ -74,15 +74,14 @@ void DummyPrint()
   }
 }
 
-void UpanixMain_KernelProcess()
-{
+void UpanixMain_KernelProcess() {
 	//MountManager_MountDrives() ;
 	ProcessManager::setUpanixKernelProcessID(ProcessManager::GetCurrentProcessID());
 
 	KC::MKernelService().Spawn() ;
 	KC::MKernelService().Spawn() ;
 
-  GraphicsVideo::Instance()->CreateRefreshTask();
+  GraphicsVideo::Instance().CreateRefreshTask();
   Display::CreateGraphicsConsole();
   KC::MDisplay().StartCursorBlink();
 
@@ -172,7 +171,7 @@ void Initialize()
 
     KC::MKernelService() ;
 
-    GraphicsVideo::Instance()->Initialize();
+    GraphicsVideo::Instance().Initialize();
 
   /* Start - Peripheral Device Initialization */
   //TODO: An Abstract Bus Handler which should internally take care of different

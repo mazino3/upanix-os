@@ -126,8 +126,10 @@ void DynamicLinkLoader_UnInitialize(Process* processAddressSpace)
 	MemManager::Instance().DeAllocatePhysicalPage(uiPageNumber) ;
 }
 
-void DynamicLinkLoader_DoRelocation(Process* processAddressSpace, int iID, unsigned uiRelocationOffset, __volatile__ int* iDynamicSymAddress)
-{
+void DynamicLinkLoader_DoRelocation(Process* processAddressSpace, int iID, unsigned uiRelocationOffset, __volatile__ int* iDynamicSymAddress) {
+  //multithread syncrhonization
+  upan::mutex_guard g(processAddressSpace->dllMutex().value());
+
 	ELF32Header* pELFHeader ;
 	ELF32SectionHeader* pELFSectionHeader ;
 	char* pSecHeaderStrTable ;

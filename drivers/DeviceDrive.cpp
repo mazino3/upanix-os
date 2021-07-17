@@ -606,7 +606,7 @@ byte DiskDriveManager::GetList(DriveStat** pDriveList, int* iListSize)
 	else
 	{
 		*pDriveList = (DriveStat*)DMM_Allocate(pAddrSpace, sizeof(DriveStat) * _driveList.size());
-		pAddress = (DriveStat*)(((unsigned)*pDriveList + PROCESS_BASE) - GLOBAL_DATA_SEGMENT_BASE) ;
+		pAddress = (DriveStat*)PROCESS_REAL_ALLOCATED_ADDRESS(*pDriveList);
 	}
 
 	if(pAddress == NULL)

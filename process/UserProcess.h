@@ -64,6 +64,12 @@ public:
   upan::option<upan::mutex&> envMutex() override {
     return upan::option<upan::mutex&>(_envMutex);
   }
+  upan::option<upan::mutex&> dllMutex() override {
+    return upan::option<upan::mutex&>(_dllMutex);
+  }
+
+  uint32_t getGUIFramebufferAddress() override;
+  void allocateGUIFramebuffer();
 
 private:
   void Load(int noOfParams, char** szArgumentList);
@@ -79,6 +85,7 @@ private:
   void DeAllocateAddressSpace();
   void DeAllocateProcessSpace();
   void DeAllocatePTE();
+  void DeAllocateGUIFramebuffer();
 
 private:
   uint32_t _uiAUTAddress;
@@ -93,5 +100,7 @@ private:
   upan::mutex _heapMutex;
   upan::mutex _pageFaultMutex;
   upan::mutex _envMutex;
+  upan::mutex _dllMutex;
+  upan::mutex _addressSpaceMutex;
   FileDescriptorTable _fdTable;
 };

@@ -30,6 +30,10 @@ public:
 
   void onLoad() override {}
 
+  uint32_t getGUIFramebufferAddress() override {
+    return _parent.getGUIFramebufferAddress();
+  }
+
 private:
   void DeAllocateResources() override;
   uint32_t AllocateAddressSpace();

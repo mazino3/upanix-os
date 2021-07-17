@@ -493,7 +493,7 @@ PS* ProcessManager::GetProcList(unsigned& uiListSize)
   else
   {
     pProcList = (PS*)DMM_Allocate(&pAddrSpc, sizeof(PS) * uiListSize) ;
-    pPS = (PS*)(((unsigned)pProcList + PROCESS_BASE) - GLOBAL_DATA_SEGMENT_BASE) ;
+    pPS = (PS*)PROCESS_REAL_ALLOCATED_ADDRESS(pProcList);
   }
 
   auto it = _processMap.begin();
@@ -515,7 +515,7 @@ PS* ProcessManager::GetProcList(unsigned& uiListSize)
     else
     {
       pPS[i].pname = (char*)DMM_Allocate(&pAddrSpc, p.name().length() + 1) ;
-      pname = (char*)((unsigned)pPS[i].pname + PROCESS_BASE - GLOBAL_DATA_SEGMENT_BASE) ;
+      pname = (char*)PROCESS_REAL_ALLOCATED_ADDRESS(pPS[i].pname);
     }
     strcpy(pname, p.name().c_str()) ;
   }

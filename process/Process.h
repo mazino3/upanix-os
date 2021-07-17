@@ -48,6 +48,9 @@ public:
   virtual upan::option<upan::mutex&> heapMutex() {
     return upan::option<upan::mutex&>::empty();
   }
+  virtual upan::option<upan::mutex&> dllMutex() {
+    throw upan::exception(XLOC, "dllMutex unsupported");
+  }
 
   virtual uint32_t startPDEForDLL() const {
     throw upan::exception(XLOC, "startPDEForDLL unsupported");
@@ -76,4 +79,6 @@ public:
   virtual void setAUTAddress(uint32_t addr) {
     throw upan::exception(XLOC, "setAUTAddress unsupported");
   }
+
+  virtual uint32_t getGUIFramebufferAddress() = 0;
 };

@@ -102,6 +102,10 @@ public:
     throw upan::exception(XLOC, "setProcessGroup() unsupported");
   }
 
+  uint32_t getGUIFramebufferAddress() override {
+    return MEM_GRAPHICS_Z_BUFFER_START;
+  }
+
 private:
   upan::mutex _envMutex;
   upan::mutex _fdMutex;

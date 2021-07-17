@@ -33,6 +33,7 @@
 #include <ProcessEnv.h>
 #include <ProcessGroup.h>
 #include <DMM.h>
+#include <GraphicsVideo.h>
 
 #define REL_DYN_SUB_NAME	".dyn"
 #define BSS_SEC_NAME		".bss"
@@ -48,6 +49,7 @@ UserProcess::UserProcess(const upan::string &name, int parentID, int userID,
 
   _noOfPagesForDLLPTE = 0;
   _totalNoOfPagesForDLL = 0;
+  _frameBuffer = 0;
   _processLDT.BuildForUser();
 
   auto parentProcess = ProcessManager::Instance().GetAddressSpace(parentID);
@@ -385,6 +387,8 @@ void UserProcess::InitializeProcessSpaceForProcess(const unsigned uiPDEAddress)
 }
 
 void UserProcess::DeAllocateResources() {
+  DeAllocateGUIFramebuffer();
+
   DeAllocateDLLPages() ;
   DynamicLinkLoader_UnInitialize(this) ;
 
@@ -505,4 +509,37 @@ upan::option<const ProcessDLLInfo&> UserProcess::getDLLInfo(int id) const {
 
 void UserProcess::onLoad() {
   SchedulableProcess::Common::UpdatePDEWithStackPTE(_taskState.CR3_PDBR, _stackPTEAddress);
+}
+
+uint32_t UserProcess::getGUIFramebufferAddress() {
+  upan::mutex_guard g(_addressSpaceMutex);
+  if (_frameBuffer == 0) {
+    KC::MKernelService().RequestProcessGUIFramebufferAllocate(*this);
+  }
+  return PROCESS_VIRTUAL_ALLOCATED_ADDRESS(PROCESS_GUI_FRAMEBUFFER_ADDRESS);
+}
+
+void UserProcess::allocateGUIFramebuffer() {
+  const auto lfbPageCount = GraphicsVideo::Instance().LFBPageCount();
+  if (lfbPageCount > PAGE_TABLE_ENTRIES) {
+    throw upan::exception(XLOC, "Max pages available for user process GUI framebuffer is %u, requested: %u", PAGE_TABLE_ENTRIES, lfbPageCount);
+  }
+  _frameBuffer = DMM_AllocateForKernel(lfbPageCount * PAGE_SIZE, PAGE_SIZE);
+  const auto guiFramebufferPTEAddress = MemManager::Instance().AllocatePhysicalPage() * PAGE_SIZE;
+  for (uint32_t i = 0; i < lfbPageCount; ++i) {
+    ((unsigned *) (guiFramebufferPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[i] = ((_frameBuffer + (i * PAGE_SIZE)) & 0xFFFFF000) | 0x7;
+  }
+  ((unsigned *) (_taskState.CR3_PDBR - GLOBAL_DATA_SEGMENT_BASE))[PROCESS_GUI_FRAMEBUFFER_PDE_ID] = (guiFramebufferPTEAddress & 0xFFFFF000) | 0x7;
+
+  GraphicsVideo::Instance().addGUIProcess(processID(), _frameBuffer);
+}
+
+void UserProcess::DeAllocateGUIFramebuffer() {
+  if (_frameBuffer == 0) {
+    return;
+  }
+  DMM_DeAllocateForKernel(_frameBuffer);
+  const auto guiFramebufferPTEAddress = ((unsigned *) (_taskState.CR3_PDBR - GLOBAL_DATA_SEGMENT_BASE))[PROCESS_GUI_FRAMEBUFFER_PDE_ID] & 0xFFFFF000;
+  MemManager::Instance().DeAllocatePhysicalPage(guiFramebufferPTEAddress / PAGE_SIZE);
+  GraphicsVideo::Instance().removeGUIProcess(processID());
 }

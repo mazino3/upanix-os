@@ -109,11 +109,11 @@ void PS2MouseDriver::Process()
           ;
         */
 
-        int iX = GraphicsVideo::Instance()->GetMouseX() + xMov;
-        int iY = GraphicsVideo::Instance()->GetMouseY() - yMov;
+        int iX = GraphicsVideo::Instance().GetMouseX() + xMov;
+        int iY = GraphicsVideo::Instance().GetMouseY() - yMov;
 
-        GraphicsVideo::Instance()->SetMouseCursorPos(iX, iY);
-        //printf("\n (%d, %d, %d, %d)", GraphicsVideo::Instance()->GetMouseX(), GraphicsVideo::Instance()->GetMouseY(), xMov, yMov);
+        GraphicsVideo::Instance().SetMouseCursorPos(iX, iY);
+        //printf("\n (%d, %d, %d, %d)", GraphicsVideo::Instance().GetMouseX(), GraphicsVideo::Instance().GetMouseY(), xMov, yMov);
       }
     });
   } catch(const upan::exception& e) {

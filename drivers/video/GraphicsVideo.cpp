@@ -57,6 +57,13 @@ void GraphicsVideo::Create()
   }
 }
 
+GraphicsVideo& GraphicsVideo::Instance() {
+  if (_instance == nullptr) {
+    throw upan::exception(XLOC, "GraphicsVideo driver is not created yet");
+  }
+  return *_instance;
+}
+
 GraphicsVideo::GraphicsVideo(const framebuffer_info_t& fbinfo) : _needRefresh(false), _mouseCursorImg(nullptr)
 {
   _flatLFBAddress = fbinfo.framebuffer_addr;
@@ -97,9 +104,9 @@ void GraphicsVideo::InitializeUSFN() {
   // In here, the .sfn file was included as part of the kernel binary
   _usfnInitialized = false;
   try {
-    _ssfnContext = new usfn::Context();
+    _ssfnContext = new upanui::usfn::Context();
     _ssfnContext->Load((uint8_t *) &_binary_u_vga16_sfn_start);
-    _ssfnContext->Select(usfn::FAMILY_MONOSPACE, NULL, usfn::STYLE_REGULAR, 16);
+    _ssfnContext->Select(upanui::usfn::FAMILY_MONOSPACE, NULL, upanui::usfn::STYLE_REGULAR, 16);
     _usfnInitialized = true;
   } catch(upan::exception& e) {
     printf("\n Failed to load USFN font: %s", e.ErrorMsg().c_str());
@@ -208,7 +215,7 @@ void GraphicsVideo::DrawChar(byte ch, unsigned x, unsigned y, unsigned fg, unsig
     return;
   fg |= 0xFF000000;
   bg |= 0xFF000000;
-  const byte* font_data = GraphicsFont::Get(ch);
+  const byte* font_data = upanui::GraphicsFont::Get(ch);
   bool yr = false;
   for(unsigned f = 0; f < 8; ++y)
   {
@@ -233,7 +240,7 @@ void GraphicsVideo::DrawUSFNChar(byte ch, unsigned x, unsigned y, unsigned fg, u
   if(y >= _height || (x + _xCharScale) >= _width)
     return;
 
-  usfn::FrameBuffer buf = {                                  /* the destination pixel buffer */
+  upanui::usfn::FrameBuffer buf = {                                  /* the destination pixel buffer */
       .ptr = (uint8_t*)_zBuffer,                      /* address of the buffer */
       .w = (int16_t)_width,                             /* width */
       .h = (int16_t)_height,                             /* height */
@@ -343,4 +350,10 @@ void GraphicsVideo::CopyArea(unsigned sx, unsigned sy, uint32_t width, uint32_t 
   }
 
   NeedRefresh();
+}
+
+void GraphicsVideo::addGUIProcess(int pid, uint32_t framebuffer) {
+}
+
+void GraphicsVideo::removeGUIProcess(int pid) {
 }

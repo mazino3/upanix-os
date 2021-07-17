@@ -292,7 +292,7 @@ void Directory_GetDirectoryContent(const char* szFileName, Process* processAddre
 			else
 			{
         *pDirList = (FileSystem::Node*)DMM_Allocate(processAddressSpace, sizeof(FileSystem::Node)) ;
-        pAddress = (FileSystem::Node*)(((unsigned)*pDirList + PROCESS_BASE) - GLOBAL_DATA_SEGMENT_BASE) ;
+        pAddress = (FileSystem::Node*)PROCESS_REAL_ALLOCATED_ADDRESS(*pDirList);
 			}
 
       *pAddress = *dirFile;
@@ -318,7 +318,7 @@ void Directory_GetDirectoryContent(const char* szFileName, Process* processAddre
 	else
 	{
     *pDirList = (FileSystem::Node*)DMM_Allocate(processAddressSpace, sizeof(FileSystem::Node) * (*iListSize)) ;
-    pAddress = (FileSystem::Node*)(((unsigned)*pDirList + PROCESS_BASE) - GLOBAL_DATA_SEGMENT_BASE) ;
+    pAddress = (FileSystem::Node*)PROCESS_REAL_ALLOCATED_ADDRESS(*pDirList);
 	}
 
 	while(uiCurrentSectorID != EOC)
@@ -908,7 +908,7 @@ void Directory_PresentWorkingDirectory(Process* processAddressSpace, char** uiRe
 	else
 	{
 		*uiReturnDirPathAddress = (char*)DMM_Allocate(processAddressSpace, strlen(szPWD) + 1) ;
-		pAddress = (char*)(((unsigned)*uiReturnDirPathAddress + PROCESS_BASE) - GLOBAL_DATA_SEGMENT_BASE) ;
+		pAddress = (char*)PROCESS_REAL_ALLOCATED_ADDRESS(*uiReturnDirPathAddress);
 	}
 
 	strcpy(pAddress, szPWD) ;

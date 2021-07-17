@@ -54,7 +54,7 @@ void GraphicsConsole::PutCursor(int pos, bool show) {
   const auto x = (pos % _maxColumns);
   const auto y = (pos / _maxColumns);
 
-  GraphicsVideo::Instance()->DrawCursor(x, y, color);
+  GraphicsVideo::Instance().DrawCursor(x, y, color);
 }
 
 void GraphicsConsole::on_timer_trigger() {
@@ -70,12 +70,12 @@ void GraphicsConsole::DirectPutChar(int iPos, byte ch, byte attr)
   const unsigned x = (curPos % _maxColumns);
   const unsigned y = (curPos / _maxColumns);
 
-  GraphicsVideo::Instance()->DrawChar(ch, x, y,
+  GraphicsVideo::Instance().DrawChar(ch, x, y,
                                       ColorPalettes::CP16::Get(attr & ColorPalettes::CP16::FG_WHITE),
                                       ColorPalettes::CP16::Get((attr & ColorPalettes::CP16::BG_WHITE) >> 4));
 }
 
 void GraphicsConsole::DoScrollDown()
 {
-  GraphicsVideo::Instance()->ScrollDown();
+  GraphicsVideo::Instance().ScrollDown();
 }
