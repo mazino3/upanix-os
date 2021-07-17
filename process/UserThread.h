@@ -60,8 +60,17 @@ public:
   upan::option<upan::mutex&> heapMutex() override {
     return _parent.heapMutex();
   }
+
   upan::option<upan::mutex&> pageAllocMutex() override {
     return _parent.pageAllocMutex();
+  }
+
+  upan::option<upan::mutex&> dllMutex() override {
+    return _parent.dllMutex();
+  }
+
+  uint32_t getGUIFramebufferAddress() override {
+    return _parent.getGUIFramebufferAddress();
   }
 
 private:
