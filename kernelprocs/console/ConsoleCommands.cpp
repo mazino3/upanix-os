@@ -31,7 +31,7 @@
 #include <ATADrive.h>
 #include <ATADeviceController.h>
 #include <PartitionManager.h>
-#include <FileDescriptorTable.h>
+#include <IODescriptorTable.h>
 #include <FileOperations.h>
 #include <UserManager.h>
 #include <GenericUtil.h>
@@ -297,12 +297,12 @@ void ConsoleCommands_ReadFileContent()
 	
   const char* szFileName = CommandLineParser::Instance().GetParameterAt(0) ;
 
-  const int fd = FileOperations_Open(szFileName, O_RDONLY);
+  auto& file = FileOperations_Open(szFileName, O_RDONLY);
 
 	KC::MDisplay().Character('\n', ' ') ;
 	while(true)
 	{
-    int n = FileOperations_Read(fd, bDataBuffer, 512);
+    int n = file.read(bDataBuffer, 512);
 
 		bDataBuffer[n] = '\0' ;
 
@@ -315,7 +315,7 @@ void ConsoleCommands_ReadFileContent()
 		KC::MDisplay().Message(bDataBuffer, Display::WHITE_ON_BLACK()) ;
 	}
 
-	if(FileOperations_Close(fd) != FileOperations_SUCCESS)
+	if(FileOperations_Close(file.id()) != FileOperations_SUCCESS)
 	{	
 		KC::MDisplay().Message("\n File Close Failed", Display::WHITE_ON_BLACK()) ;
 		return ;
@@ -342,18 +342,18 @@ void ConsoleCommands_CopyFile()
 	char bDataBuffer[iBufSize] ;
 
   const char* szFileName = CommandLineParser::Instance().GetParameterAt(0) ;
-  const int fd = FileOperations_Open(szFileName, O_RDONLY);
+  auto& file = FileOperations_Open(szFileName, O_RDONLY);
 
   const char* szDestFile = CommandLineParser::Instance().GetParameterAt(1) ;
 
   FileOperations_Create(szDestFile, ATTR_TYPE_FILE, ATTR_FILE_DEFAULT);
 
-  const int fd1 = FileOperations_Open(szDestFile, O_RDWR);
+  auto& file1 = FileOperations_Open(szDestFile, O_RDWR);
 
   printf("\n Progress = ");
 	int cr = KC::MDisplay().GetCurrentCursorPosition();
 	int i = 0 ;
-  const FileSystem_FileStat& fStat = FileOperations_GetStatFD(fd);
+  const FileSystem_FileStat& fStat = FileOperations_GetStatFD(file.id());
 	unsigned fsize = fStat.st_size ;
 	if(fsize == 0)
 	{
@@ -364,30 +364,29 @@ void ConsoleCommands_CopyFile()
 
 	while(true)
 	{
-    int n = FileOperations_Read(fd, bDataBuffer, iBufSize);
-		int w ;
+    int n = file.read(bDataBuffer, iBufSize);
 
     if(n < 512)
 		{
 			if(n > 0)
-        FileOperations_Write(fd1, bDataBuffer, n, &w);
+			  file1.write(bDataBuffer, n);
 			KC::MDisplay().ShowProgress("", cr, 100) ;
 			break ;
 		}
 		
-    FileOperations_Write(fd1, bDataBuffer, 512, &w);
+    file1.write(bDataBuffer, 512);
 
 		i++ ;
 		KC::MDisplay().ShowProgress("", cr, (i * iBufSize * 100) / fsize) ;
 	}
 
-	if(FileOperations_Close(fd) != FileOperations_SUCCESS)
+	if(FileOperations_Close(file.id()) != FileOperations_SUCCESS)
 	{	
 		KC::MDisplay().Message("\n File Close Failed", Display::WHITE_ON_BLACK()) ;
 		return ;
 	}
 
-	if(FileOperations_Close(fd1) != FileOperations_SUCCESS)
+	if(FileOperations_Close(file1.id()) != FileOperations_SUCCESS)
 	{	
 		KC::MDisplay().Message("\n File1 Close Failed", Display::WHITE_ON_BLACK()) ;
 		return ;

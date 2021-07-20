@@ -23,26 +23,30 @@
 #include <uniq_ptr.h>
 #include <fs.h>
 #include <mutex.h>
-#include <FileDescriptor.h>
+#include <IODescriptor.h>
+#include <function.h>
 
-class FileDescriptorTable {
+class IODescriptorTable {
 public:
-  typedef upan::map<int, FileDescriptor*> FDTable;
+  typedef enum {
+    STDIN = 0,
+    STDOUT = 1,
+    STDERR = 2
+  } STD_DESCRIPTORS;
 
-  FileDescriptorTable();
-  ~FileDescriptorTable() noexcept;
+  typedef upan::map<int, IODescriptor*> FDTable;
 
-  int allocate(const upan::string& fileName, byte mode, int driveID, unsigned fileSize, unsigned startSectorID);
+  IODescriptorTable();
+  ~IODescriptorTable() noexcept;
+
+  IODescriptor& allocate(const upan::function<IODescriptor*, int>& descriptorBuilder);
   void free(int fd);
-  void updateOffset(int fd, int seekType, int offset);
-  uint32_t getOffset(int fd);
   void dup2(int oldFD, int newFD);
-  void initStdFile(int stdFD);
-  FileDescriptor& getRealNonDupped(int fd);
+  IODescriptor& getRealNonDupped(int fd);
 
 private:
   FDTable::iterator getItr(int fd);
-  FileDescriptor& get(int fd);
+  IODescriptor& get(int fd);
 
   int _fdIdCounter;
   upan::mutex _fdMutex;

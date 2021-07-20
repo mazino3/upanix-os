@@ -26,7 +26,7 @@
 #include <StringUtil.h>
 #include <Display.h>
 #include <DynamicLinkLoader.h>
-#include <FileDescriptorTable.h>
+#include <IODescriptorTable.h>
 #include <FileOperations.h>
 #include <BufferedReader.h>
 #include <uniq_ptr.h>

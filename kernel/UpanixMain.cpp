@@ -31,7 +31,7 @@
 # include <StringUtil.h>
 # include <KernelService.h>
 # include <ATADeviceController.h>
-# include <FileDescriptorTable.h>
+# include <IODescriptorTable.h>
 # include <SessionManager.h>
 # include <UserManager.h>
 # include <PartitionManager.h>

@@ -28,7 +28,7 @@
 #include <MemUtil.h>
 #include <DynamicLinkLoader.h>
 #include <StringUtil.h>
-#include <FileDescriptorTable.h>
+#include <IODescriptorTable.h>
 #include <FileOperations.h>
 #include <ElfRelocationSection.h>
 #include <ElfSymbolTable.h>
@@ -52,11 +52,11 @@ byte* ProcessLoader::LoadInitSection(unsigned& uiSectionSize, const upan::string
   uiSectionSize = DirEntry.Size();
   upan::uniq_ptr<byte[]> bSectionImage(new byte[sizeof(char) * uiSectionSize]);
 
-  const int fd = FileOperations_Open(szSectionName.c_str(), O_RDONLY);
+  auto& file = FileOperations_Open(szSectionName.c_str(), O_RDONLY);
 
-  const int n = FileOperations_Read(fd, (char*)bSectionImage.get(), 0);
+  const int n = file.read((char*)bSectionImage.get(), 0);
 
-  if(FileOperations_Close(fd) != FileOperations_SUCCESS)
+  if(FileOperations_Close(file.id()) != FileOperations_SUCCESS)
     throw upan::exception(XLOC, "error closing file: %s", szSectionName.c_str());
 
   if((uint32_t)n != uiSectionSize)

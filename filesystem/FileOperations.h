@@ -19,10 +19,6 @@
 #define _FILE_OPERATIONS_H_
 
 #define FileOperations_SUCCESS					0
-#define FileOperations_ERR_NO_WRITE_PERM		1
-#define FileOperations_ERR_NOT_EXISTS			2
-#define FileOperations_ERR_NO_PERM				3
-#define FileOperations_ERR_INVALID_FILE_ATTR	4
 #define FileOperations_FAILURE					5
 
 # include <Global.h>
@@ -69,15 +65,14 @@ typedef enum
 	USER_OTHERS
 } FILE_USER_TYPE ;
 
-int FileOperations_Open(const char* szFileName, const byte mode) ;
+class IODescriptor;
+
+IODescriptor& FileOperations_Open(const char* szFileName, const byte mode) ;
 byte FileOperations_Close(int fd) ;
 bool FileOperations_ReadLine(int fd, upan::string& line);
-int FileOperations_Read(int fd, char* buffer, int len) ;
-void FileOperations_Write(int fd, const char* buffer, int len, int* pWriteLen) ;
 void FileOperations_Create(const char* szFilePath, unsigned short usFileType, unsigned short usMode) ;
 void FileOperations_Delete(const char* szFilePath) ;
 bool FileOperations_Exists(const char* szFileName, unsigned short usFileType) ;
-void FileOperations_Seek(int fd, int iOffset, int seekType) ;
 void FileOperations_UpdateTime(const char* szFileName, int iDriveID, byte bTimeType) ;
 uint32_t FileOperations_GetOffset(int fd) ;
 const FileSystem::Node FileOperations_GetDirEntry(const char* szFileName);
@@ -89,7 +84,6 @@ void FileOperations_ChangeDir(const char* szFileName) ;
 void FileOperations_GetDirectoryContent(const char* szPathAddress, FileSystem::Node** pDirList, int* iListSize) ;
 bool FileOperations_FileAccess(const char* szFileName, int iDriveID, int mode) ;
 void FileOperations_Dup2(int oldFD, int newFD) ;
-void FileOperations_ReInitStdFd(int StdFD) ;
 void FileOperations_GetCWD(char* szPathBuf, int iBufSize) ;
 
 #endif

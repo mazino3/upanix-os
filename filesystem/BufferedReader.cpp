@@ -18,7 +18,7 @@
 # include <BufferedReader.h>
 # include <DMM.h>
 # include <FileOperations.h>
-# include <FileDescriptorTable.h>
+# include <IODescriptorTable.h>
 # include <MemUtil.h>
 # include <Display.h>
 # include <uniq_ptr.h>
@@ -29,20 +29,19 @@ is not completely beyond file size. So, to avoid this, request to file op is sen
 to ensure some non zero byte request is there within file size limit*/
 #define OVERFLOW_ADJUST 2
 
-BufferedReader::BufferedReader(const upan::string& szFileName, unsigned uiOffSet, unsigned uiBufferSize) : m_uiOffSet(uiOffSet), m_szBuffer(nullptr)
-{
-  m_iFD = FileOperations_Open(szFileName.c_str(), O_RDONLY);
+BufferedReader::BufferedReader(const upan::string& szFileName, unsigned uiOffSet, unsigned uiBufferSize) : m_uiOffSet(uiOffSet), m_szBuffer(nullptr) {
+  _file = &FileOperations_Open(szFileName.c_str(), O_RDONLY);
 
   try
   {
-    FileOperations_Seek(m_iFD, uiOffSet, SEEK_SET);
+    _file->seek(SEEK_SET, uiOffSet);
     upan::uniq_ptr<char[]> buffer(new char[uiBufferSize]);
-    m_uiBufferSize = FileOperations_Read(m_iFD, buffer.get(), uiBufferSize);
+    m_uiBufferSize = _file->read(buffer.get(), uiBufferSize);
     m_szBuffer = buffer.release();
   }
   catch(...)
 	{
-    FileOperations_Close(m_iFD);
+    FileOperations_Close(_file->id());
     throw;
 	}
 }
@@ -50,12 +49,11 @@ BufferedReader::BufferedReader(const upan::string& szFileName, unsigned uiOffSet
 BufferedReader::~BufferedReader()
 {
   delete[] m_szBuffer;
-	FileOperations_Close(m_iFD) ;
+	FileOperations_Close(_file->id()) ;
 }
 
-void BufferedReader::Seek(unsigned uiOffSet)
-{
-  FileOperations_Seek(m_iFD, uiOffSet, SEEK_SET);
+void BufferedReader::Seek(unsigned uiOffSet) {
+  _file->seek(SEEK_SET, uiOffSet);
 }
 
 int BufferedReader::Read(char* szBuffer, int iLen)
@@ -65,7 +63,7 @@ int BufferedReader::Read(char* szBuffer, int iLen)
 
 int BufferedReader::DoRead(char* szBuffer, int iLen)
 {
-  unsigned uiCurrentOffset = FileOperations_GetOffset(m_iFD);
+  unsigned uiCurrentOffset = FileOperations_GetOffset(_file->id());
 
 	if(uiCurrentOffset >= m_uiOffSet && (uiCurrentOffset + iLen) <= (m_uiOffSet + m_uiBufferSize))
 	{
@@ -83,7 +81,7 @@ int BufferedReader::DoRead(char* szBuffer, int iLen)
 		// Request:-	<--------->
 		// Request:-												<--------->
 
-    return FileOperations_Read(m_iFD, szBuffer, iLen);
+    return _file->read(szBuffer, iLen);
 	}
 	else
 	{
@@ -102,8 +100,8 @@ int BufferedReader::DoRead(char* szBuffer, int iLen)
 
 			memcpy(szBuffer, m_szBuffer + (uiCurrentOffset - m_uiOffSet), uiBufLen) ;
 
-      FileOperations_Seek(m_iFD, uiCurrentOffset + uiBufLen, SEEK_SET);
-      return FileOperations_Read(m_iFD, szBuffer + uiBufLen, iLen - uiBufLen) + uiBufLen;
+      _file->seek(SEEK_SET, uiCurrentOffset + uiBufLen);
+      return _file->read(szBuffer + uiBufLen, iLen - uiBufLen) + uiBufLen;
 		}
 		// Case 3b: 
 		// Buffer:-				<----------------------->
@@ -115,7 +113,7 @@ int BufferedReader::DoRead(char* szBuffer, int iLen)
 		)
 		{
 			unsigned uiFileLen = (m_uiOffSet - uiCurrentOffset) ;
-      int readLen = FileOperations_Read(m_iFD, szBuffer, uiFileLen);
+      int readLen = _file->read(szBuffer, uiFileLen);
 
 			memcpy(szBuffer + uiFileLen, m_szBuffer, (iLen - uiFileLen)) ;	
 
@@ -127,7 +125,7 @@ int BufferedReader::DoRead(char* szBuffer, int iLen)
 		else if(((uiCurrentOffset + iLen) > (m_uiOffSet + m_uiBufferSize) && uiCurrentOffset < m_uiOffSet))
 		{
       unsigned uiFileLenLeft = (m_uiOffSet - uiCurrentOffset) ;
-      int readLen = FileOperations_Read(m_iFD, szBuffer, uiFileLenLeft);
+      int readLen = _file->read(szBuffer, uiFileLenLeft);
 
 			unsigned uiBufLen = m_uiBufferSize - OVERFLOW_ADJUST ;
 			memcpy(szBuffer + uiFileLenLeft, m_szBuffer, uiBufLen) ;
@@ -135,8 +133,8 @@ int BufferedReader::DoRead(char* szBuffer, int iLen)
 			//unsigned uiFileLenRight = (m_uiOffSet + m_uiBufferSize) - (uiCurrentOffset + iLen) + OVERFLOW_ADJUST ;
       readLen += uiBufLen ;
       unsigned uiFileLenRight = iLen - readLen ;
-      FileOperations_Seek(m_iFD, uiCurrentOffset + readLen, SEEK_SET);
-      return FileOperations_Read(m_iFD, szBuffer + readLen, uiFileLenRight) + readLen;
+      _file->seek(SEEK_SET, uiCurrentOffset + readLen);
+      return _file->read(szBuffer + readLen, uiFileLenRight) + readLen;
 		}
 		else
 		{

@@ -29,7 +29,7 @@
 #include <DMM.h>
 #include <ProcessEnv.h>
 #include <KernelService.h>
-#include <FileDescriptorTable.h>
+#include <IODescriptorTable.h>
 #include <UserManager.h>
 #include <ProcessGroup.h>
 #include <MountManager.h>

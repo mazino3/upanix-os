@@ -24,6 +24,7 @@
 #include <ProcessEnv.h>
 #include <SystemUtil.h>
 #include <FileOperations.h>
+#include <FileDescriptor.h>
 
 #define MAX_SECTORS_PER_RW 8
 

@@ -16,7 +16,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
 # include <FileOperations.h>
-# include <FileDescriptorTable.h>
+# include <IODescriptorTable.h>
+# include <FileDescriptor.h>
 # include <Directory.h>
 # include <FileSystem.h>
 # include <ProcessManager.h>
@@ -82,7 +83,7 @@ static void FileOperations_ParseFilePathWithDrive(const char* szFileNameWithDriv
 }
 
 /************************************************************************************************************/
-int FileOperations_Open(const char* szFileName, const byte mode)
+IODescriptor& FileOperations_Open(const char* szFileName, const byte mode)
 {
 	int iDriveID ;
 	char szFile[100] ;
@@ -107,7 +108,9 @@ int FileOperations_Open(const char* szFileName, const byte mode)
     dirEntry = Directory_GetDirEntry(szFile, pPAS, iDriveID);
 	}
 
-  return pPAS->fdTable().allocate(dirEntry.FullPath(*pDiskDrive), mode, iDriveID, dirEntry.Size(), dirEntry.StartSectorID());
+  return pPAS->fdTable().allocate([&](int fd) {
+    return new FileDescriptor(fd, mode, dirEntry.FullPath(*pDiskDrive), iDriveID, dirEntry.Size(), dirEntry.StartSectorID());
+  });
 }
 
 byte FileOperations_Close(int fd) {
@@ -127,9 +130,10 @@ bool FileOperations_ReadLine(int fd, upan::string& line)
   char buffer[CHUNK_SIZE + 1];
   upan::list<upan::string> buffers;
   int line_size = 0;
+  auto& file = ProcessManager::Instance().GetCurrentPAS().fdTable().getRealNonDupped(fd);
   while(true)
   {
-    int readLen = FileOperations_Read(fd, buffer, CHUNK_SIZE);
+    int readLen = file.read(buffer, CHUNK_SIZE);
     
     if(readLen == 0)
       break;
@@ -147,7 +151,7 @@ bool FileOperations_ReadLine(int fd, upan::string& line)
     int offset = i - readLen + 1;
     if(offset < 0)
     {
-      FileOperations_Seek(fd, offset, SEEK_CUR);
+      file.seek(SEEK_CUR, offset);
       break;
     }
   }
@@ -157,94 +161,6 @@ bool FileOperations_ReadLine(int fd, upan::string& line)
   for(auto chunk : buffers)
     line += chunk;
   return true;
-}
-
-int FileOperations_Read(int fd, char* buffer, int len)
-{
-	Process* pPAS = &ProcessManager::Instance().GetCurrentPAS() ;
-  auto& fdEntry = pPAS->fdTable().getRealNonDupped(fd);
-
-	int iDriveID = fdEntry.getDriveId();
-
-  DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByID(iDriveID, true).goodValueOrThrow(XLOC);
-  FileSystem::CWD CWD ;
-	if(pPAS->driveID() == iDriveID)
-	{
-		CWD.pDirEntry = &(pPAS->processPWD().DirEntry) ;
-		CWD.uiSectorNo = pPAS->processPWD().uiSectorNo ;
-		CWD.bSectorEntryPosition = pPAS->processPWD().bSectorEntryPosition ;
-	}
-	else
-	{
-		CWD.pDirEntry = &(pDiskDrive->_fileSystem.FSpwd.DirEntry) ;
-		CWD.uiSectorNo = pDiskDrive->_fileSystem.FSpwd.uiSectorNo ;
-		CWD.bSectorEntryPosition = pDiskDrive->_fileSystem.FSpwd.bSectorEntryPosition ;
-	}
-
-  int readLen = Directory_FileRead(pDiskDrive, &CWD, fdEntry, (byte*)buffer, len);
-
-  FileOperations_UpdateTime(fdEntry.getFileName().c_str(), iDriveID, DIR_ACCESS_TIME);
-
-  fdEntry.addOffset(readLen);
-
-  return readLen;
-}
-
-void FileOperations_Write(int fd, const char* buffer, int len, int* pWriteLen)
-{
-  Process* pPAS = &ProcessManager::Instance().GetCurrentPAS();
-  auto& f = pPAS->fdTable().getRealNonDupped(fd);
-
-	*pWriteLen = -1 ;
-
-	if(f.isStdOut()) {
-		KC::MDisplay().nMessage(buffer, len, Display::WHITE_ON_BLACK()) ;
-		*pWriteLen = len ;
-    return;
-	}
-
-	if( !(f.getMode() & O_WRONLY || f.getMode() & O_RDWR || f.getMode() & O_APPEND) )
-    throw upan::exception(XLOC, "insufficient permission to write file fd: %d", fd);
-
-	int iDriveID = f.getDriveId();
-
-  DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByID(iDriveID, true).goodValueOrThrow(XLOC);
-
-  FileSystem::CWD CWD ;
-	if(pPAS->driveID() == iDriveID)
-	{
-		CWD.pDirEntry = &(pPAS->processPWD().DirEntry) ;
-		CWD.uiSectorNo = pPAS->processPWD().uiSectorNo ;
-		CWD.bSectorEntryPosition = pPAS->processPWD().bSectorEntryPosition ;
-	}
-	else
-	{
-		CWD.pDirEntry = &(pDiskDrive->_fileSystem.FSpwd.DirEntry) ;
-		CWD.uiSectorNo = pDiskDrive->_fileSystem.FSpwd.uiSectorNo ;
-		CWD.bSectorEntryPosition = pDiskDrive->_fileSystem.FSpwd.bSectorEntryPosition ;
-	}
-
-	unsigned uiIncLen = len ;
-	unsigned uiLimit = 1 MB ;
-	unsigned n = 0;
-	
-	while(true)
-	{
-		n = (uiIncLen > uiLimit) ? uiLimit : uiIncLen ;
-		
-    Directory_FileWrite(pDiskDrive, &CWD, f, (byte*)buffer, n);
-
-    f.addOffset(n);
-
-		uiIncLen -= n ;
-
-		if(uiIncLen == 0)
-			break ;
-	}
-
-  FileOperations_UpdateTime(f.getFileName().c_str(), iDriveID, DIR_ACCESS_TIME | DIR_MODIFIED_TIME);
-	
-	*pWriteLen = len ;
 }
 
 void FileOperations_Create(const char* szFilePath, unsigned short usFileType, unsigned short usMode)
@@ -328,12 +244,8 @@ bool FileOperations_Exists(const char* szFileName, unsigned short usFileType)
   return true;
 }
 
-void FileOperations_Seek(int fd, int iOffset, int seekType) {
-  ProcessManager::Instance().GetCurrentPAS().fdTable().updateOffset(fd, seekType, iOffset);
-}
-
 uint32_t FileOperations_GetOffset(int fd) {
-  return ProcessManager::Instance().GetCurrentPAS().fdTable().getOffset(fd);
+  return ProcessManager::Instance().GetCurrentPAS().fdTable().getRealNonDupped(fd).getOffset();
 }
 
 void FileOperations_GetCWD(char* szPathBuf, int iBufSize) {
@@ -443,7 +355,7 @@ const FileSystem_FileStat FileOperations_GetStat(const char* szFileName, int iDr
 }
 
 const FileSystem_FileStat FileOperations_GetStatFD(int iFD) {
-  const auto& fdEntry = ProcessManager::Instance().GetCurrentPAS().fdTable().getRealNonDupped(iFD);
+  const auto& fdEntry = static_cast<FileDescriptor&>(ProcessManager::Instance().GetCurrentPAS().fdTable().getRealNonDupped(iFD));
   return FileOperations_GetStat(fdEntry.getFileName().c_str(), fdEntry.getDriveId());
 }
 
@@ -552,8 +464,3 @@ bool FileOperations_FileAccess(const char* szFileName, int iDriveID, int mode)
 void FileOperations_Dup2(int oldFD, int newFD) {
   ProcessManager::Instance().GetCurrentPAS().fdTable().dup2(oldFD, newFD);
 }
-
-void FileOperations_ReInitStdFd(int stdFD) {
-  ProcessManager::Instance().GetCurrentPAS().fdTable().initStdFile(stdFD);
-}
-

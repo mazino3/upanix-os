@@ -51,7 +51,7 @@ public:
     _uiAUTAddress = addr;
   }
 
-  FileDescriptorTable& fdTable() override {
+  IODescriptorTable& fdTable() override {
     return _fdTable;
   }
 
@@ -102,5 +102,5 @@ private:
   upan::mutex _envMutex;
   upan::mutex _dllMutex;
   upan::mutex _addressSpaceMutex;
-  FileDescriptorTable _fdTable;
+  IODescriptorTable _fdTable;
 };

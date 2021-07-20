@@ -15,27 +15,21 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
-#pragma once
 
-#include <SchedulableProcess.h>
-#include <AutonomousProcess.h>
+#include <StreamBufferDescriptor.h>
+#include <fs.h>
+#include <Display.h>
 
-class Thread : public SchedulableProcess {
-public:
-  Thread(AutonomousProcess& parent);
+StreamBufferDescriptor::StreamBufferDescriptor(int id, uint32_t bufSize)
+  : IODescriptor(id, O_APPEND), _bufSize(bufSize) {
+  _buffer.reset(new byte[bufSize]);
+}
 
-  upan::option<upan::mutex&> envMutex() override {
-    return _parent.envMutex();
-  }
+int StreamBufferDescriptor::read(char* buffer, int len) {
+  return 0;
+}
 
-  IODescriptorTable& fdTable() override {
-    return _parent.fdTable();
-  }
-
-  AutonomousProcess& threadParent() {
-    return _parent;
-  }
-
-protected:
-  AutonomousProcess& _parent;
-};
+int StreamBufferDescriptor::write(const char* buffer, int len) {
+  KC::MDisplay().nMessage(buffer, len, Display::WHITE_ON_BLACK());
+  return len;
+}

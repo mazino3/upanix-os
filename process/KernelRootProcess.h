@@ -58,7 +58,7 @@ public:
     return upan::option<upan::mutex&>(_envMutex);
   }
 
-  FileDescriptorTable& fdTable() override {
+  IODescriptorTable& fdTable() override {
     return _fdTable;
   }
 
@@ -109,5 +109,5 @@ public:
 private:
   upan::mutex _envMutex;
   upan::mutex _fdMutex;
-  FileDescriptorTable _fdTable;
+  IODescriptorTable _fdTable;
 };

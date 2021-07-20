@@ -173,7 +173,7 @@ __volatile__ unsigned uiP9)
         try
         {
           FileOperations_SyncPWD();
-          *piRetVal = FileOperations_Open(szFileNameAddr, mode);
+          *piRetVal = FileOperations_Open(szFileNameAddr, mode).id();
         }
         catch(const upan::exception& ex)
         {
@@ -203,7 +203,8 @@ __volatile__ unsigned uiP9)
 				*piRetVal = 0 ;
         try
         {
-          *piRetVal = FileOperations_Read((int)uiP1, szBufferAddr, (int)uiP3);
+          auto& file = ProcessManager::Instance().GetCurrentPAS().fdTable().getRealNonDupped((int)uiP1);
+          *piRetVal = file.read(szBufferAddr, (int)uiP3);
         }
         catch(...)
         {
@@ -222,7 +223,8 @@ __volatile__ unsigned uiP9)
 				*piRetVal = 0 ;
         try
         {
-          FileOperations_Write((int)uiP1, szBufferAddr, (int)uiP3, (int*)piRetVal);
+          auto& file = ProcessManager::Instance().GetCurrentPAS().fdTable().getRealNonDupped((int)uiP1);
+          *piRetVal =  file.write(szBufferAddr, (int)uiP3);
         }
         catch(const upan::exception& ex)
 				{
@@ -240,7 +242,8 @@ __volatile__ unsigned uiP9)
 				*piRetVal = 0 ;
         try
         {
-          FileOperations_Seek((int)uiP1, (int)uiP2, (int)uiP3);
+          auto& file = ProcessManager::Instance().GetCurrentPAS().fdTable().getRealNonDupped((int)uiP1);
+          file.seek((int)uiP3, (int)uiP2);
         }
         catch(upan::exception& ex)
         {
@@ -345,19 +348,6 @@ __volatile__ unsigned uiP9)
 				  e.Print();
           *piRetVal = -1 ;
 				}
-			}
-			break ;
-
-		case SYS_CALL_FILE_RESET_STD:
-			// P1 => Std FD
-			{
-        *piRetVal = 0 ;
-        try {
-          FileOperations_ReInitStdFd(uiP1);
-        } catch(upan::exception& e) {
-          e.Print();
-          *piRetVal = -1 ;
-        }
 			}
 			break ;
 	}

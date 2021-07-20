@@ -20,7 +20,7 @@
 # include <MemUtil.h>
 # include <StringUtil.h>
 # include <Directory.h>
-# include <FileDescriptorTable.h>
+# include <IODescriptorTable.h>
 # include <FileOperations.h>
 # include <MultiBoot.h>
 # include <MountManager.h>
@@ -62,8 +62,8 @@ static void MountManager_GetBootMountDrive(char* szBootDriveName)
 static bool MountManager_GetHomeMountDrive(char* szHomeDriveName, unsigned uiSize)
 {
   auto result = upan::tryreturn([&]() {
-    const int fd = FileOperations_Open("ROOT@/.mount.lst", O_RDONLY);
-    return FileOperations_Read(fd, szHomeDriveName, uiSize);
+    auto& fd = FileOperations_Open("ROOT@/.mount.lst", O_RDONLY);
+    return fd.read(szHomeDriveName, uiSize);
   });
 
   if(result.isBad())

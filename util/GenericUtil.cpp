@@ -23,7 +23,7 @@
 # include <MemConstants.h>
 # include <ProcessEnv.h>
 # include <StringUtil.h>
-# include <FileDescriptorTable.h>
+# include <IODescriptorTable.h>
 # include <FileOperations.h>
 # include <DMM.h>
 

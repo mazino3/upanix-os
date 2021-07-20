@@ -20,6 +20,7 @@
 
 #include <Global.h>
 #include <ustring.h>
+#include <IODescriptor.h>
 
 class BufferedReader
 {
@@ -29,7 +30,6 @@ class BufferedReader
 		char* m_szBuffer ;
 
 	public:
-		int m_iFD ;
 		BufferedReader(const upan::string& szFileName, unsigned uiOffSet, unsigned uiBufferSize) ;
 		~BufferedReader() ;
 
@@ -37,6 +37,7 @@ class BufferedReader
     int Read(char* szBuffer, int iLen) ;
 
   private:
+    IODescriptor* _file;
     int DoRead(char* szBuffer, int iLen);
 } ;
 

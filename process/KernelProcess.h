@@ -39,7 +39,7 @@ public:
     return upan::option<upan::mutex&>(_envMutex);
   }
 
-  FileDescriptorTable& fdTable() override {
+  IODescriptorTable& fdTable() override {
     return _fdTable;
   }
 
@@ -52,7 +52,7 @@ private:
 
 private:
   int kernelStackBlockId;
-  FileDescriptorTable _fdTable;
+  IODescriptorTable _fdTable;
 
   //common mutex for all kernel processes
   static upan::mutex _envMutex;

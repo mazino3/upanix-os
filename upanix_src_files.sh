@@ -19,6 +19,7 @@ SRC_DIRS="
   display 
   drivers
   exeparser
+  io
   filesystem
   kernel
   kernelprocs

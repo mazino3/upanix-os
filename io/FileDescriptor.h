@@ -18,47 +18,37 @@
 
 #pragma once
 
-typedef enum {
-  PROC_FREE_FD = 1100,
-  PROC_STDIN,
-  PROC_STDOUT,
-  PROC_STDERR,
-} SPECIAL_FILES;
+#include <IODescriptor.h>
 
-class FileDescriptor {
+class FileDescriptor : public IODescriptor {
 public:
-  FileDescriptor(const upan::string& fileName, byte mode, int driveID, uint32_t fileSize, uint32_t startSectorID) :
-      _fileName(fileName), _offset(mode & O_APPEND ? fileSize : 0), _mode(mode),
-      _driveID(driveID), _fileSize(fileSize), _refCount(1), _lastReadSectorIndex(0),
+  FileDescriptor(int fd, byte mode, const upan::string& fileName, int driveID, uint32_t fileSize, uint32_t startSectorID) :
+      IODescriptor(fd, mode),
+      _fileName(fileName),
+      _offset(mode & O_APPEND ? fileSize : 0),
+      _driveID(driveID), _fileSize(fileSize),
+      _lastReadSectorIndex(0),
       _lastReadSectorNo(startSectorID) {
+  }
+
+  int read(char* buffer, int len) override;
+  int write(const char* buffer, int len) override;
+  void seek(int seekType, int offset) override;
+
+  uint32_t getSize() const override {
+    return _fileSize;
   }
 
   const upan::string& getFileName() const {
     return _fileName;
   }
 
-  uint32_t getOffset() const {
+  uint32_t getOffset() const override {
     return _offset;
-  }
-
-  void addOffset(uint32_t val) {
-    _offset += val;
   }
 
   int getDriveId() const {
     return _driveID;
-  }
-
-  byte getMode() const {
-    return _mode;
-  }
-
-  uint32_t getFileSize() const {
-    return _fileSize;
-  }
-
-  int getRefCount() const {
-    return _refCount;
   }
 
   int getLastReadSectorIndex() const {
@@ -77,33 +67,11 @@ public:
     _lastReadSectorNo = v;
   }
 
-  void setOffset(int offset) {
-    _offset = offset;
-  }
-
-  void decrementRefCount() {
-    --_refCount;
-  }
-
-  void incrementRefCount() {
-    ++_refCount;
-  }
-
-  bool isStdOut() const {
-    return _driveID == PROC_STDOUT || _driveID == PROC_STDERR;
-  }
-
-  bool isStdIn() const {
-    return _driveID  == PROC_STDIN;
-  }
-
 private:
   upan::string _fileName;
   uint32_t _offset;
-  byte _mode;
   int _driveID;
   uint32_t _fileSize;
-  int _refCount;
   int _lastReadSectorIndex;
   uint32_t _lastReadSectorNo;
 };

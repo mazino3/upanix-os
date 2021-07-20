@@ -20,7 +20,7 @@
 
 #include <ProcessManager.h>
 #include <FileSystem.h>
-#include <FileDescriptorTable.h>
+#include <IODescriptorTable.h>
 #include <DeviceDrive.h>
 
 #define Directory_SUCCESS					0
@@ -42,6 +42,8 @@
 
 #define DIR_SPECIAL_CURRENT		"."
 #define DIR_SPECIAL_PARENT		".."
+
+class FileDescriptor;
 
 void Directory_Create(Process* processAddressSpace, int iDriveID, byte* bParentDirectoryBuffer, const FileSystem::CWD* pCWD,
                       char* szDirName, unsigned short usDirAttribute) ;

@@ -29,7 +29,7 @@
 #include <ProcessLoader.h>
 #include <StringUtil.h>
 #include <MemUtil.h>
-#include <FileDescriptorTable.h>
+#include <IODescriptorTable.h>
 #include <FileOperations.h>
 #include <BufferedReader.h>
 #include <ProcessEnv.h>

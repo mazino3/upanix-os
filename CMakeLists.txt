@@ -79,6 +79,7 @@ include_directories(${PROJECT_SOURCE_DIR}/drivers/)
 
 include_directories(${PROJECT_SOURCE_DIR}/util)
 include_directories(${PROJECT_SOURCE_DIR}/memory)
+include_directories(${PROJECT_SOURCE_DIR}/io)
 include_directories(${PROJECT_SOURCE_DIR}/filesystem)
 include_directories(${PROJECT_SOURCE_DIR}/users)
 include_directories(${PROJECT_SOURCE_DIR}/exeparser)

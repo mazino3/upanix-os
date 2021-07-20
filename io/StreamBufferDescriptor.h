@@ -15,27 +15,32 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
+
 #pragma once
 
-#include <SchedulableProcess.h>
-#include <AutonomousProcess.h>
+#include <IODescriptor.h>
+#include <uniq_ptr.h>
 
-class Thread : public SchedulableProcess {
+class StreamBufferDescriptor : public IODescriptor {
 public:
-  Thread(AutonomousProcess& parent);
+  StreamBufferDescriptor(int id, uint32_t bufSize);
 
-  upan::option<upan::mutex&> envMutex() override {
-    return _parent.envMutex();
+  int read(char* buffer, int len) override;
+  int write(const char* buffer, int len) override;
+
+  void seek(int seekType, int offset) override {
+    //no-op;
   }
 
-  IODescriptorTable& fdTable() override {
-    return _parent.fdTable();
+  uint32_t getOffset() const override {
+    return 0;
   }
 
-  AutonomousProcess& threadParent() {
-    return _parent;
+  uint32_t getSize() const override {
+    return _bufSize;
   }
 
-protected:
-  AutonomousProcess& _parent;
+private:
+  uint32_t _bufSize;
+  upan::uniq_ptr<byte[]> _buffer;
 };

@@ -20,7 +20,7 @@
 # include <MountManager.h>
 # include <MemConstants.h>
 # include <Display.h>
-# include <FileDescriptorTable.h>
+# include <IODescriptorTable.h>
 # include <Directory.h>
 # include <StringUtil.h>
 # include <DMM.h>
@@ -61,7 +61,7 @@ void UserManager::InitializeDefaultUserList()
 
 void UserManager::WriteUserList()
 {
-  const int fd = FileOperations_Open(_userListFileName.c_str(), O_RDWR | O_TRUNC);
+  auto& file = FileOperations_Open(_userListFileName.c_str(), O_RDWR | O_TRUNC);
 
   for(auto u : _users)
   {
@@ -71,33 +71,32 @@ void UserManager::WriteUserList()
     upan::uniq_ptr<char[]> buffer(new char[buf_size + 1]);
     sprintf(buffer.get(), "%s\n%s\n%s\n%d\n", user.Name().c_str(), user.Password().c_str(), user.HomeDirPath().c_str(), user.Type());
 
-    int n;
     try
     {
-      FileOperations_Write(fd, (const char*)buffer.get(), buf_size, &n);
+      file.write((const char*)buffer.get(), buf_size);
     }
     catch(const upan::exception&)
     {
-      FileOperations_Close(fd);
+      FileOperations_Close(file.id());
       throw;
     }
   }
 
-	if(FileOperations_Close(fd) != FileOperations_SUCCESS)
+	if(FileOperations_Close(file.id()) != FileOperations_SUCCESS)
     throw upan::exception(XLOC, "erroring closing fd for user file list");
 }
 
 bool UserManager::LoadUserList()
 {
-  const int fd = FileOperations_Open(_userListFileName.c_str(), O_RDONLY);
+  auto& file = FileOperations_Open(_userListFileName.c_str(), O_RDONLY);
 
   upan::string name;
-  while(FileOperations_ReadLine(fd, name))
+  while(FileOperations_ReadLine(file.id(), name))
   {
     upan::string password, homeDirPath, szType;
-    if(!FileOperations_ReadLine(fd, password)
-      || !FileOperations_ReadLine(fd, homeDirPath)
-      || !FileOperations_ReadLine(fd, szType))
+    if(!FileOperations_ReadLine(file.id(), password)
+      || !FileOperations_ReadLine(file.id(), homeDirPath)
+      || !FileOperations_ReadLine(file.id(), szType))
       throw upan::exception(XLOC, "user list file is corrupted");
     
     USER_TYPES type = NO_USER;
@@ -110,7 +109,7 @@ bool UserManager::LoadUserList()
     _users.insert(UserMap::value_type(name, new User(name, password, homeDirPath, type)));
   }
 
-	RETURN_X_IF_NOT(FileOperations_Close(fd), FileOperations_SUCCESS, false);
+	RETURN_X_IF_NOT(FileOperations_Close(file.id()), FileOperations_SUCCESS, false);
 
   return true;
 }
