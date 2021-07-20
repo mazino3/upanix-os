@@ -28,8 +28,8 @@ public:
     return _parent.envMutex();
   }
 
-  IODescriptorTable& fdTable() override {
-    return _parent.fdTable();
+  IODescriptorTable& iodTable() override {
+    return _parent.iodTable();
   }
 
   AutonomousProcess& threadParent() {

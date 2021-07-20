@@ -43,7 +43,7 @@ public:
   virtual ProcessGroup* processGroup() = 0;
   virtual void setProcessGroup(ProcessGroup* processGroup) = 0;
 
-  virtual IODescriptorTable& fdTable() = 0;
+  virtual IODescriptorTable& iodTable() = 0;
   virtual upan::option<upan::mutex&> envMutex() = 0;
   virtual upan::option<upan::mutex&> heapMutex() {
     return upan::option<upan::mutex&>::empty();

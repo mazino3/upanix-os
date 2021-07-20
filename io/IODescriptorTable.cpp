@@ -31,7 +31,7 @@ IODescriptorTable::IODescriptorTable() : _fdIdCounter(0) {
 }
 
 IODescriptorTable::~IODescriptorTable() noexcept {
-  for(auto& x : _fdTable) {
+  for(auto& x : _iodMap) {
     delete x.second;
   }
 }
@@ -39,12 +39,12 @@ IODescriptorTable::~IODescriptorTable() noexcept {
 IODescriptor& IODescriptorTable::allocate(const upan::function<IODescriptor*, int>& descriptorBuilder) {
   upan::mutex_guard g(_fdMutex);
 
-  if(_fdTable.size() >= PROC_SYS_MAX_OPEN_FILES) {
+  if(_iodMap.size() >= PROC_SYS_MAX_OPEN_FILES) {
     throw upan::exception(XLOC, "can't open new file - max open files limit %d reached", PROC_SYS_MAX_OPEN_FILES);
   }
 
   const auto fd = _fdIdCounter++;
-  auto i = _fdTable.insert(FDTable::value_type(fd, descriptorBuilder(fd)));
+  auto i = _iodMap.insert(IODMap::value_type(fd, descriptorBuilder(fd)));
 
   if (!i.second) {
     throw upan::exception(XLOC, "failed to create an entry in File IODescriptor table");
@@ -53,9 +53,9 @@ IODescriptor& IODescriptorTable::allocate(const upan::function<IODescriptor*, in
   return *i.first->second;
 }
 
-IODescriptorTable::FDTable::iterator IODescriptorTable::getItr(int fd) {
-  auto i = _fdTable.find(fd);
-  if (i == _fdTable.end()) {
+IODescriptorTable::IODMap::iterator IODescriptorTable::getItr(int fd) {
+  auto i = _iodMap.find(fd);
+  if (i == _iodMap.end()) {
     throw upan::exception(XLOC, "invalid file descriptor: %d", fd);
   }
   return i;
@@ -81,7 +81,7 @@ void IODescriptorTable::free(int fd) {
   e->second->getParentDescriptor().ifPresent([](IODescriptor& p) { p.decrementRefCount(); });
 
   delete e->second;
-  _fdTable.erase(e);
+  _iodMap.erase(e);
 }
 
 void IODescriptorTable::dup2(int oldFD, int newFD) {
@@ -89,6 +89,6 @@ void IODescriptorTable::dup2(int oldFD, int newFD) {
   auto& newF = get(newFD);
   free(newFD);
   oldF.incrementRefCount();
-  _fdTable.insert(FDTable::value_type(newFD, new DupDescriptor(newFD, oldF)));
+  _iodMap.insert(IODMap::value_type(newFD, new DupDescriptor(newFD, oldF)));
 }
 

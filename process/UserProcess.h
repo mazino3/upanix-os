@@ -51,8 +51,8 @@ public:
     _uiAUTAddress = addr;
   }
 
-  IODescriptorTable& fdTable() override {
-    return _fdTable;
+  IODescriptorTable& iodTable() override {
+    return _iodTable;
   }
 
   upan::option<upan::mutex&> heapMutex() override {
@@ -102,5 +102,5 @@ private:
   upan::mutex _envMutex;
   upan::mutex _dllMutex;
   upan::mutex _addressSpaceMutex;
-  IODescriptorTable _fdTable;
+  IODescriptorTable _iodTable;
 };

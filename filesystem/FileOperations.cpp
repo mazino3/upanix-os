@@ -108,14 +108,14 @@ IODescriptor& FileOperations_Open(const char* szFileName, const byte mode)
     dirEntry = Directory_GetDirEntry(szFile, pPAS, iDriveID);
 	}
 
-  return pPAS->fdTable().allocate([&](int fd) {
+  return pPAS->iodTable().allocate([&](int fd) {
     return new FileDescriptor(fd, mode, dirEntry.FullPath(*pDiskDrive), iDriveID, dirEntry.Size(), dirEntry.StartSectorID());
   });
 }
 
 byte FileOperations_Close(int fd) {
   try {
-    ProcessManager::Instance().GetCurrentPAS().fdTable().free(fd);
+    ProcessManager::Instance().GetCurrentPAS().iodTable().free(fd);
   } catch(upan::exception& e) {
     e.Print();
     return FileOperations_FAILURE;
@@ -130,7 +130,7 @@ bool FileOperations_ReadLine(int fd, upan::string& line)
   char buffer[CHUNK_SIZE + 1];
   upan::list<upan::string> buffers;
   int line_size = 0;
-  auto& file = ProcessManager::Instance().GetCurrentPAS().fdTable().getRealNonDupped(fd);
+  auto& file = ProcessManager::Instance().GetCurrentPAS().iodTable().getRealNonDupped(fd);
   while(true)
   {
     int readLen = file.read(buffer, CHUNK_SIZE);
@@ -245,7 +245,7 @@ bool FileOperations_Exists(const char* szFileName, unsigned short usFileType)
 }
 
 uint32_t FileOperations_GetOffset(int fd) {
-  return ProcessManager::Instance().GetCurrentPAS().fdTable().getRealNonDupped(fd).getOffset();
+  return ProcessManager::Instance().GetCurrentPAS().iodTable().getRealNonDupped(fd).getOffset();
 }
 
 void FileOperations_GetCWD(char* szPathBuf, int iBufSize) {
@@ -355,7 +355,7 @@ const FileSystem_FileStat FileOperations_GetStat(const char* szFileName, int iDr
 }
 
 const FileSystem_FileStat FileOperations_GetStatFD(int iFD) {
-  const auto& fdEntry = static_cast<FileDescriptor&>(ProcessManager::Instance().GetCurrentPAS().fdTable().getRealNonDupped(iFD));
+  const auto& fdEntry = static_cast<FileDescriptor&>(ProcessManager::Instance().GetCurrentPAS().iodTable().getRealNonDupped(iFD));
   return FileOperations_GetStat(fdEntry.getFileName().c_str(), fdEntry.getDriveId());
 }
 
@@ -398,7 +398,7 @@ void FileOperations_UpdateTime(const char* szFileName, int iDriveID, byte bTimeT
 }
 
 byte FileOperations_GetFileOpenMode(int fd) {
-  return ProcessManager::Instance().GetCurrentPAS().fdTable().getRealNonDupped(fd).getMode();
+  return ProcessManager::Instance().GetCurrentPAS().iodTable().getRealNonDupped(fd).getMode();
 }
 
 void FileOperations_SyncPWD()
@@ -462,5 +462,5 @@ bool FileOperations_FileAccess(const char* szFileName, int iDriveID, int mode)
 }
 
 void FileOperations_Dup2(int oldFD, int newFD) {
-  ProcessManager::Instance().GetCurrentPAS().fdTable().dup2(oldFD, newFD);
+  ProcessManager::Instance().GetCurrentPAS().iodTable().dup2(oldFD, newFD);
 }

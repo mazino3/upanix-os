@@ -58,8 +58,8 @@ public:
     return upan::option<upan::mutex&>(_envMutex);
   }
 
-  IODescriptorTable& fdTable() override {
-    return _fdTable;
+  IODescriptorTable& iodTable() override {
+    return _iodTable;
   }
 
   FILE_USER_TYPE fileUserType(const FileSystem::Node&) const override {
@@ -109,5 +109,5 @@ public:
 private:
   upan::mutex _envMutex;
   upan::mutex _fdMutex;
-  IODescriptorTable _fdTable;
+  IODescriptorTable _iodTable;
 };

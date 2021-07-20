@@ -203,7 +203,7 @@ __volatile__ unsigned uiP9)
 				*piRetVal = 0 ;
         try
         {
-          auto& file = ProcessManager::Instance().GetCurrentPAS().fdTable().getRealNonDupped((int)uiP1);
+          auto& file = ProcessManager::Instance().GetCurrentPAS().iodTable().getRealNonDupped((int)uiP1);
           *piRetVal = file.read(szBufferAddr, (int)uiP3);
         }
         catch(...)
@@ -223,7 +223,7 @@ __volatile__ unsigned uiP9)
 				*piRetVal = 0 ;
         try
         {
-          auto& file = ProcessManager::Instance().GetCurrentPAS().fdTable().getRealNonDupped((int)uiP1);
+          auto& file = ProcessManager::Instance().GetCurrentPAS().iodTable().getRealNonDupped((int)uiP1);
           *piRetVal =  file.write(szBufferAddr, (int)uiP3);
         }
         catch(const upan::exception& ex)
@@ -242,7 +242,7 @@ __volatile__ unsigned uiP9)
 				*piRetVal = 0 ;
         try
         {
-          auto& file = ProcessManager::Instance().GetCurrentPAS().fdTable().getRealNonDupped((int)uiP1);
+          auto& file = ProcessManager::Instance().GetCurrentPAS().iodTable().getRealNonDupped((int)uiP1);
           file.seek((int)uiP3, (int)uiP2);
         }
         catch(upan::exception& ex)

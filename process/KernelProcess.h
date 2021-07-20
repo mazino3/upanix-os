@@ -39,8 +39,8 @@ public:
     return upan::option<upan::mutex&>(_envMutex);
   }
 
-  IODescriptorTable& fdTable() override {
-    return _fdTable;
+  IODescriptorTable& iodTable() override {
+    return _iodTable;
   }
 
   uint32_t getGUIFramebufferAddress() override;
@@ -52,7 +52,7 @@ private:
 
 private:
   int kernelStackBlockId;
-  IODescriptorTable _fdTable;
+  IODescriptorTable _iodTable;
 
   //common mutex for all kernel processes
   static upan::mutex _envMutex;

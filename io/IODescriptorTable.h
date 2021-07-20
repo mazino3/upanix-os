@@ -34,7 +34,7 @@ public:
     STDERR = 2
   } STD_DESCRIPTORS;
 
-  typedef upan::map<int, IODescriptor*> FDTable;
+  typedef upan::map<int, IODescriptor*> IODMap;
 
   IODescriptorTable();
   ~IODescriptorTable() noexcept;
@@ -45,10 +45,10 @@ public:
   IODescriptor& getRealNonDupped(int fd);
 
 private:
-  FDTable::iterator getItr(int fd);
+  IODMap::iterator getItr(int fd);
   IODescriptor& get(int fd);
 
   int _fdIdCounter;
   upan::mutex _fdMutex;
-  FDTable _fdTable;
+  IODMap _iodMap;
 };
