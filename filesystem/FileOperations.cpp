@@ -129,7 +129,6 @@ bool FileOperations_ReadLine(int fd, upan::string& line)
   const int CHUNK_SIZE = 64;
   char buffer[CHUNK_SIZE + 1];
   upan::list<upan::string> buffers;
-  int line_size = 0;
   auto& file = ProcessManager::Instance().GetCurrentPAS().iodTable().getRealNonDupped(fd);
   while(true)
   {
@@ -145,7 +144,6 @@ bool FileOperations_ReadLine(int fd, upan::string& line)
         break;
     buffer[i] = '\0';
 
-    line_size += i;
     buffers.push_back(buffer);
 
     int offset = i - readLen + 1;

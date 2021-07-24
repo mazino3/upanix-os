@@ -49,7 +49,7 @@ return RetVal ;
 if(Func != CheckVal) \
 return X ;
 
-#define TRACE_LINE KC::MDisplay().Number("\n TRACE: ", __LINE__)
+#define TRACE_LINE printf("\n TRACE: %d", __LINE__)
 
 #define BCD_TO_DECIMAL(no)	((((no & 0xF0) >> 4) * 10) + (no & 0x0F))
 

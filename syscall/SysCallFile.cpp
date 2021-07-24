@@ -236,8 +236,8 @@ __volatile__ unsigned uiP9)
 
 		case SYS_CALL_FILE_SEEK:
 			// P1 => File Desc
-			// P2 => Seek Type
-			// P3 => Offset
+			// P2 => Offset
+			// P3 => Seek Type
 			{
 				*piRetVal = 0 ;
         try

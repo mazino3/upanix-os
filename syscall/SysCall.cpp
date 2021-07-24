@@ -109,7 +109,7 @@ __volatile__ unsigned uiP9)
 
 	__volatile__ int iRetVal = 0;
 
-	//KC::MDisplay().Number(", SC: ", uiSysCallID) ;
+	//printf(", SC: %u", uiSysCallID) ;
 	SYS_CALL_ID = uiSysCallID ;
 	
 	for(unsigned i = 0; i < SysCall_NoOfHandlers; i++)

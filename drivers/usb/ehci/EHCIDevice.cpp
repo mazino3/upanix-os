@@ -39,12 +39,12 @@ EHCIDevice::EHCIDevice(EHCIController& controller)
 	byte bConfigValue = 0;
   if(!GetConfigValue(bConfigValue))
     throw upan::exception(XLOC, "GetConfigVal Failed") ;
-	printf("\n ConfifValue: %d", bConfigValue) ;
+	printf("\n ConfigValue: %d", bConfigValue) ;
+
+	if(!GetConfigDescriptor(&_pArrConfigDesc))
+	  throw upan::exception(XLOC, "GeConfigDesc Failed");
 
   CheckConfiguration(bConfigValue);
-
-  if(!GetConfigDescriptor(&_pArrConfigDesc))
-    throw upan::exception(XLOC, "GeConfigDesc Failed");
 
   if(GetStringDescriptorZero())
 	  SetLangId();
@@ -58,8 +58,7 @@ EHCIDevice::EHCIDevice(EHCIController& controller)
   PrintDeviceStringDetails();
 }
 
-bool EHCIDevice::SetConfiguration(byte bConfigValue)
-{
+bool EHCIDevice::SetConfiguration(byte bConfigValue) {
 	// Setup TDs
 	EHCIQTransferDesc* pTDStart = EHCIDataHandler_CreateAsyncQTransferDesc() ;
 
@@ -95,7 +94,7 @@ bool EHCIDevice::SetConfiguration(byte bConfigValue)
     aTransaction.Clear();
 		return false;
 	}
-	
+
   aTransaction.Clear();
 	return true;
 }
