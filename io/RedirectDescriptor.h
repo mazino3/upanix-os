@@ -20,9 +20,9 @@
 
 #include <IODescriptor.h>
 
-class DupDescriptor : public IODescriptor {
+class RedirectDescriptor : public IODescriptor {
 public:
-  DupDescriptor(int pid, int id, IODescriptor& parentDesc);
+  RedirectDescriptor(int pid, int id, IODescriptor& parentDesc);
 
   upan::option<IODescriptor&> getParentDescriptor() override;
 
@@ -43,11 +43,11 @@ public:
   }
 
   uint32_t getOffset() const override {
-    return const_cast<DupDescriptor&>(*this).getParentDescriptor().value().getOffset();
+    return const_cast<RedirectDescriptor&>(*this).getParentDescriptor().value().getOffset();
   }
 
   uint32_t getSize() const override {
-    return const_cast<DupDescriptor&>(*this).getParentDescriptor().value().getSize();
+    return const_cast<RedirectDescriptor&>(*this).getParentDescriptor().value().getSize();
   }
 private:
   const int _parentPid;

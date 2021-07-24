@@ -19,7 +19,7 @@
 #include <IODescriptorTable.h>
 #include <mutex.h>
 #include <ProcessManager.h>
-#include <DupDescriptor.h>
+#include <RedirectDescriptor.h>
 #include <StreamBufferDescriptor.h>
 
 constexpr int PROC_SYS_MAX_OPEN_FILES = 4096;
@@ -28,12 +28,12 @@ IODescriptorTable::IODescriptorTable(int pid, int parentPid) : _pid(pid), _fdIdC
   if (pid == NO_PROCESS_ID) {
     allocate([pid](int fd) { return new StreamBufferDescriptor(pid, fd, 4096); });
     auto& stdoutFD = allocate([pid](int fd) { return new StreamBufferDescriptor(pid, fd, 4096); });
-    allocate([pid, &stdoutFD](int fd) { return new DupDescriptor(pid, fd, stdoutFD); });
+    allocate([pid, &stdoutFD](int fd) { return new RedirectDescriptor(pid, fd, stdoutFD); });
   } else {
     auto& parentProcess = ProcessManager::Instance().GetProcess(parentPid).value();
-    allocate([&](int fd) { return new DupDescriptor(pid, fd, parentProcess.iodTable().get(STDIN)); });
-    allocate([&](int fd) { return new DupDescriptor(pid, fd, parentProcess.iodTable().get(STDOUT)); });
-    allocate([&](int fd) { return new DupDescriptor(pid, fd, parentProcess.iodTable().get(STDERR)); });
+    allocate([&](int fd) { return new RedirectDescriptor(pid, fd, parentProcess.iodTable().get(STDIN)); });
+    allocate([&](int fd) { return new RedirectDescriptor(pid, fd, parentProcess.iodTable().get(STDOUT)); });
+    allocate([&](int fd) { return new RedirectDescriptor(pid, fd, parentProcess.iodTable().get(STDERR)); });
   }
 }
 
@@ -95,6 +95,6 @@ void IODescriptorTable::dup2(int oldFD, int newFD) {
   auto& oldF = get(oldFD);
   auto& newF = get(newFD);
   free(newFD);
-  _iodMap.insert(IODMap::value_type(newFD, new DupDescriptor(_pid, newFD, oldF)));
+  _iodMap.insert(IODMap::value_type(newFD, new RedirectDescriptor(_pid, newFD, oldF)));
 }
 

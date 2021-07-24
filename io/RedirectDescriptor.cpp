@@ -16,10 +16,10 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
 
-#include <DupDescriptor.h>
+#include <RedirectDescriptor.h>
 #include <ProcessManager.h>
 
-DupDescriptor::DupDescriptor(int pid, int id, IODescriptor& parentDesc)
+RedirectDescriptor::RedirectDescriptor(int pid, int id, IODescriptor& parentDesc)
   : IODescriptor(pid, id, parentDesc.getMode()),
     _parentPid(parentDesc.getPid()),
     _parentDescId(parentDesc.id()) {
@@ -29,7 +29,7 @@ DupDescriptor::DupDescriptor(int pid, int id, IODescriptor& parentDesc)
   parentDesc.incrementRefCount();
 }
 
-upan::option<IODescriptor&> DupDescriptor::getParentDescriptor() {
+upan::option<IODescriptor&> RedirectDescriptor::getParentDescriptor() {
   auto parentProcess = ProcessManager::Instance().GetProcess(_parentPid);
   if (parentProcess.isEmpty()) {
     throw upan::exception(XLOC, "broken redirect descriptor %d from process %d to process: %d, desc: %d",
