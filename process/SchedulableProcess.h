@@ -78,10 +78,11 @@ public:
 
   uint32_t getProcessBase() const override { return _processBase; }
   upan::string name() const { return _name; }
-  int processID() const { return _processID; }
+
+  int processID() const override { return _processID; }
+  int parentProcessID() const override { return _parentProcessID; }
   int mainThreadID() const { return _mainThreadID; }
 
-  int parentProcessID() const { return _parentProcessID; }
   void setParentProcessID(int parentProcessID) { _parentProcessID = parentProcessID; }
 
   bool isDmmFlag() const { return _dmmFlag; }

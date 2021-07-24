@@ -18,45 +18,38 @@
 
 #pragma once
 
-#include <stdlib.h>
 #include <IODescriptor.h>
 
 class DupDescriptor : public IODescriptor {
 public:
-  DupDescriptor(int id, IODescriptor& parentDesc) : IODescriptor(id, parentDesc.getMode()), _parentDesc(parentDesc) {
-    if (parentDesc.id() == id) {
-      throw upan::exception(XLOC, "invalid DupDescriptor - id same as parent id: %d", id);
-    }
-  }
+  DupDescriptor(int pid, int id, IODescriptor& parentDesc);
+
+  upan::option<IODescriptor&> getParentDescriptor() override;
 
   IODescriptor& getRealDescriptor() override {
-    return _parentDesc.getRealDescriptor();
-  }
-
-  upan::option<IODescriptor&> getParentDescriptor() override {
-    return upan::option<IODescriptor&>(_parentDesc);
+    return getParentDescriptor().value().getRealDescriptor();
   }
 
   int read(char* buffer, int len) override {
-    return _parentDesc.read(buffer, len);
+    return getParentDescriptor().value().read(buffer, len);
   }
 
   int write(const char* buffer, int len) override {
-    return _parentDesc.write(buffer, len);
+    return getParentDescriptor().value().write(buffer, len);
   }
 
   void seek(int seekType, int offset) override {
-    _parentDesc.seek(seekType, offset);
+    getParentDescriptor().value().seek(seekType, offset);
   }
 
   uint32_t getOffset() const override {
-    return _parentDesc.getOffset();
+    return const_cast<DupDescriptor&>(*this).getParentDescriptor().value().getOffset();
   }
 
   uint32_t getSize() const override {
-    return _parentDesc.getSize();
+    return const_cast<DupDescriptor&>(*this).getParentDescriptor().value().getSize();
   }
-
 private:
-  IODescriptor& _parentDesc;
+  const int _parentPid;
+  const int _parentDescId;
 };

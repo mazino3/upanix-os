@@ -23,7 +23,7 @@
 
 class StreamBufferDescriptor : public IODescriptor {
 public:
-  StreamBufferDescriptor(int id, uint32_t bufSize);
+  StreamBufferDescriptor(int pid, int id, uint32_t bufSize);
 
   int read(char* buffer, int len) override;
   int write(const char* buffer, int len) override;

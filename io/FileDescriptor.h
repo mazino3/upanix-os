@@ -22,8 +22,8 @@
 
 class FileDescriptor : public IODescriptor {
 public:
-  FileDescriptor(int fd, byte mode, const upan::string& fileName, int driveID, uint32_t fileSize, uint32_t startSectorID) :
-      IODescriptor(fd, mode),
+  FileDescriptor(int pid, int fd, byte mode, const upan::string& fileName, int driveID, uint32_t fileSize, uint32_t startSectorID) :
+      IODescriptor(pid, fd, mode),
       _fileName(fileName),
       _offset(mode & O_APPEND ? fileSize : 0),
       _driveID(driveID), _fileSize(fileSize),

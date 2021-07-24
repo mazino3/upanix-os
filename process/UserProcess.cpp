@@ -41,7 +41,7 @@
 
 UserProcess::UserProcess(const upan::string &name, int parentID, int userID,
                          bool isFGProcess, int noOfParams, char** args)
-    : AutonomousProcess(name, parentID, isFGProcess) {
+    : AutonomousProcess(name, parentID, isFGProcess), _iodTable(_processID, parentID) {
   _mainThreadID = _processID;
   _uiAUTAddress = NULL;
 

@@ -21,7 +21,7 @@
 
 class KernelRootProcess : public Process {
 private:
-  KernelRootProcess() {
+  KernelRootProcess() : _iodTable(NO_PROCESS_ID, NO_PROCESS_ID) {
   }
 
 public:
@@ -36,6 +36,14 @@ public:
 
   bool isFGProcessGroup() const override {
     return true;
+  }
+
+  int processID() const override {
+    return NO_PROCESS_ID;
+  }
+
+  int parentProcessID() const override {
+    return NO_PROCESS_ID;
   }
 
   int driveID() const override {

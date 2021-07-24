@@ -36,7 +36,7 @@ public:
 
   typedef upan::map<int, IODescriptor*> IODMap;
 
-  IODescriptorTable();
+  IODescriptorTable(int pid, int parentPid);
   ~IODescriptorTable() noexcept;
 
   IODescriptor& allocate(const upan::function<IODescriptor*, int>& descriptorBuilder);
@@ -48,6 +48,7 @@ private:
   IODMap::iterator getItr(int fd);
   IODescriptor& get(int fd);
 
+  int _pid;
   int _fdIdCounter;
   upan::mutex _fdMutex;
   IODMap _iodMap;

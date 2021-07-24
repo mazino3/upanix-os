@@ -71,6 +71,7 @@ class ProcessManager
       return instance;
     }
 
+    upan::option<Process&> GetProcess(int pid);
     upan::option<SchedulableProcess&> GetAddressSpace(int pid);
     Process& GetCurrentPAS();
     AutonomousProcess& GetThreadParentProcess(int pid);

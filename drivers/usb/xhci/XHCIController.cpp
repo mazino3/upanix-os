@@ -677,6 +677,4 @@ void InterruptEventResult::Consume(const EventTRB &r)
   {
     e.Print();
   }
-
-
 }

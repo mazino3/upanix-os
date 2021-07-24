@@ -20,8 +20,8 @@
 #include <fs.h>
 #include <Display.h>
 
-StreamBufferDescriptor::StreamBufferDescriptor(int id, uint32_t bufSize)
-  : IODescriptor(id, O_APPEND), _bufSize(bufSize) {
+StreamBufferDescriptor::StreamBufferDescriptor(int pid, int id, uint32_t bufSize)
+  : IODescriptor(pid, id, O_APPEND), _bufSize(bufSize) {
   _buffer.reset(new byte[bufSize]);
 }
 

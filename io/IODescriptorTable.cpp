@@ -24,10 +24,17 @@
 
 constexpr int PROC_SYS_MAX_OPEN_FILES = 4096;
 
-IODescriptorTable::IODescriptorTable() : _fdIdCounter(0) {
-  allocate([](int fd) { return new StreamBufferDescriptor(fd, 4096); });
-  auto& stdoutFD = allocate([](int fd) { return new StreamBufferDescriptor(fd, 4096); });
-  allocate([&stdoutFD](int fd) { return new DupDescriptor(fd, stdoutFD); });
+IODescriptorTable::IODescriptorTable(int pid, int parentPid) : _pid(pid), _fdIdCounter(0) {
+  if (pid == NO_PROCESS_ID) {
+    allocate([pid](int fd) { return new StreamBufferDescriptor(pid, fd, 4096); });
+    auto& stdoutFD = allocate([pid](int fd) { return new StreamBufferDescriptor(pid, fd, 4096); });
+    allocate([pid, &stdoutFD](int fd) { return new DupDescriptor(pid, fd, stdoutFD); });
+  } else {
+    auto& parentProcess = ProcessManager::Instance().GetProcess(parentPid).value();
+    allocate([&](int fd) { return new DupDescriptor(pid, fd, parentProcess.iodTable().get(STDIN)); });
+    allocate([&](int fd) { return new DupDescriptor(pid, fd, parentProcess.iodTable().get(STDOUT)); });
+    allocate([&](int fd) { return new DupDescriptor(pid, fd, parentProcess.iodTable().get(STDERR)); });
+  }
 }
 
 IODescriptorTable::~IODescriptorTable() noexcept {
@@ -88,7 +95,6 @@ void IODescriptorTable::dup2(int oldFD, int newFD) {
   auto& oldF = get(oldFD);
   auto& newF = get(newFD);
   free(newFD);
-  oldF.incrementRefCount();
-  _iodMap.insert(IODMap::value_type(newFD, new DupDescriptor(newFD, oldF)));
+  _iodMap.insert(IODMap::value_type(newFD, new DupDescriptor(_pid, newFD, oldF)));
 }
 

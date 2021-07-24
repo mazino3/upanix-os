@@ -85,6 +85,13 @@ AutonomousProcess& ProcessManager::GetThreadParentProcess(int pid) {
   throw upan::exception(XLOC, "parent of a thread can be either a AutonomousProcess or another Thread");
 }
 
+upan::option<Process&> ProcessManager::GetProcess(int pid) {
+  if (pid == NO_PROCESS_ID) {
+    return upan::option<Process&>(KernelRootProcess::Instance());
+  }
+  return GetAddressSpace(pid).map<Process&>([](SchedulableProcess& p) -> Process& { return p; });
+}
+
 upan::option<SchedulableProcess&> ProcessManager::GetAddressSpace(int pid) {
   ProcessSwitchLock switchLock;
   auto it = _processMap.find(pid);

@@ -23,14 +23,18 @@
 
 class IODescriptor {
 protected:
-  IODescriptor(int id, byte mode) : _id(id), _mode(mode), _refCount(1) {
+  IODescriptor(int pid, int id, byte mode) : _pid(pid), _id(id), _mode(mode), _refCount(1) {
   }
 
 public:
   virtual ~IODescriptor() {}
 
-  int id() {
+  int id() const {
     return _id;
+  }
+
+  int getPid() const {
+    return _pid;
   }
 
   virtual IODescriptor& getRealDescriptor() {
@@ -64,7 +68,8 @@ public:
   virtual uint32_t getSize() const = 0;
 
 private:
-  int _id;
+  const int _pid;
+  const int _id;
   byte _mode;
   int _refCount;
 };

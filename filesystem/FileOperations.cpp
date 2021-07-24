@@ -109,7 +109,7 @@ IODescriptor& FileOperations_Open(const char* szFileName, const byte mode)
 	}
 
   return pPAS->iodTable().allocate([&](int fd) {
-    return new FileDescriptor(fd, mode, dirEntry.FullPath(*pDiskDrive), iDriveID, dirEntry.Size(), dirEntry.StartSectorID());
+    return new FileDescriptor(pPAS->processID(), fd, mode, dirEntry.FullPath(*pDiskDrive), iDriveID, dirEntry.Size(), dirEntry.StartSectorID());
   });
 }
 
