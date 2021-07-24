@@ -36,7 +36,7 @@ SchedulableProcess::SchedulableProcess(const upan::string& name, int parentID, b
   _parentProcessID = parentID;
   _status = NEW;
 
-  auto parentProcess = ProcessManager::Instance().GetAddressSpace(parentID);
+  auto parentProcess = ProcessManager::Instance().GetSchedulableProcess(parentID);
 
   if(parentProcess.isEmpty()) {
     _driveID = ROOT_DRIVE_ID ;
@@ -83,9 +83,9 @@ void SchedulableProcess::Destroy() {
   DestroyThreads();
 
   // child processes of this process (if any) will be redirected to the parent of the current process
-  auto parentProcess = ProcessManager::Instance().GetAddressSpace(_parentProcessID);
+  auto parentProcess = ProcessManager::Instance().GetSchedulableProcess(_parentProcessID);
   for(auto pid : _childProcessIDs) {
-    ProcessManager::Instance().GetAddressSpace(pid).ifPresent([&parentProcess](SchedulableProcess &p) {
+    ProcessManager::Instance().GetSchedulableProcess(pid).ifPresent([&parentProcess](SchedulableProcess &p) {
       if (p.status() == TERMINATED) {
         p.Release();
       } else {

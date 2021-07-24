@@ -67,7 +67,7 @@ ProcessManager::ProcessManager() {
 
 AutonomousProcess& ProcessManager::GetThreadParentProcess(int pid) {
   ProcessSwitchLock switchLock;
-  auto parent = GetAddressSpace(pid);
+  auto parent = GetSchedulableProcess(pid);
   if (parent.isEmpty()) {
     throw upan::exception(XLOC, "No parent process found for pid: %d", pid);
   }
@@ -89,10 +89,10 @@ upan::option<Process&> ProcessManager::GetProcess(int pid) {
   if (pid == NO_PROCESS_ID) {
     return upan::option<Process&>(KernelRootProcess::Instance());
   }
-  return GetAddressSpace(pid).map<Process&>([](SchedulableProcess& p) -> Process& { return p; });
+  return GetSchedulableProcess(pid).map<Process&>([](SchedulableProcess& p) -> Process& { return p; });
 }
 
-upan::option<SchedulableProcess&> ProcessManager::GetAddressSpace(int pid) {
+upan::option<SchedulableProcess&> ProcessManager::GetSchedulableProcess(int pid) {
   ProcessSwitchLock switchLock;
   auto it = _processMap.find(pid);
   if (it == _processMap.end()) {
@@ -108,7 +108,7 @@ Process& ProcessManager::GetCurrentPAS() {
   }
   //This function is a utility that assumes that a ProcessAddressSpace entry always exists for current (active) process
   //Caller should take care of cases when ProcessID = NO_PROCESS_ID - which is usually the case before kernel scheduler is initialized
-  return GetAddressSpace(_currentProcessID).value();
+  return GetSchedulableProcess(_currentProcessID).value();
 }
 
 void ProcessManager::BuildCallGate(unsigned short usGateSelector, unsigned uiOffset, unsigned short usSelector, byte bParameterCount)
@@ -242,7 +242,7 @@ void ProcessManager::DoContextSwitch(SchedulableProcess& process) {
 			}
 			else
 			{
-			  auto childProcess = GetAddressSpace(stateInfo.WaitChildProcId());
+			  auto childProcess = GetSchedulableProcess(stateInfo.WaitChildProcId());
 				if(childProcess.isEmpty() || childProcess.value().parentProcessID() != _currentProcessID)
 				{
           process.removeChildProcessID(stateInfo.WaitChildProcId());
@@ -427,14 +427,14 @@ void ProcessManager::WaitOnResource(RESOURCE_KEYS resourceKey)
 }
 
 bool ProcessManager::IsAlive(int pid) {
-  auto process = GetAddressSpace(pid);
+  auto process = GetSchedulableProcess(pid);
   return !process.isEmpty() && process.value().status() != PROCESS_STATUS::TERMINATED && process.value().status() != PROCESS_STATUS::RELEASED;
 }
 
 bool ProcessManager::IsChildAlive(int iChildProcessID) {
 	if(iChildProcessID < 0 || iChildProcessID >= MAX_NO_PROCESS)
     return false;
-	auto process = GetAddressSpace(iChildProcessID);
+	auto process = GetSchedulableProcess(iChildProcessID);
   return !process.isEmpty() && process.value().parentProcessID() == ProcessManager::GetCurrentProcessID();
 }
 
@@ -549,15 +549,15 @@ void ProcessManager::FreeProcListMem(PS* pProcList, unsigned uiListSize)
 }
 
 void ProcessManager::SetDMMFlag(int iProcessID, bool flag) {
-	GetAddressSpace(iProcessID).value().setDmmFlag(flag);
+  GetSchedulableProcess(iProcessID).value().setDmmFlag(flag);
 }
 
 bool ProcessManager::IsDMMOn(int iProcessID) {
-	return GetAddressSpace(iProcessID).value().isDmmFlag();
+	return GetSchedulableProcess(iProcessID).value().isDmmFlag();
 }
 
 bool ProcessManager::IsKernelProcess(int iProcessID) {
-	return GetAddressSpace(iProcessID).value().isKernelProcess();
+	return GetSchedulableProcess(iProcessID).value().isKernelProcess();
 }
 
 void ProcessManager_Exit() {
@@ -589,14 +589,14 @@ int ProcessManager::GetCurProcId()
 }
 
 void ProcessManager::Kill(int iProcessID) {
-  GetAddressSpace(iProcessID).ifPresent([](SchedulableProcess& process) {
+  GetSchedulableProcess(iProcessID).ifPresent([](SchedulableProcess& process) {
     process.setStatus(TERMINATED);
     ProcessManager_Yield();
   });
 }
 
 void ProcessManager::WakeUpFromKSWait(int iProcessID) {
-  GetAddressSpace(iProcessID).ifPresent([](SchedulableProcess& process) {
+  GetSchedulableProcess(iProcessID).ifPresent([](SchedulableProcess& process) {
     process.stateInfo().KernelServiceComplete(true);
   });
 }
@@ -617,7 +617,7 @@ bool ProcessManager::CopyDiskDrive(int iProcessID, int& iOldDriveId, FileSystem:
 	if(GetCurProcId() < 0)
 		return false;
 
-  SchedulableProcess* pSrcPAS = &GetAddressSpace(iProcessID ).value();
+  SchedulableProcess* pSrcPAS = &GetSchedulableProcess(iProcessID).value();
   Process* pDestPAS = &GetCurrentPAS();
 
 	iOldDriveId = pDestPAS->driveID() ;
@@ -687,7 +687,7 @@ void ProcessManager::EventCompleted(int pid) {
 }
 
 ProcessStateInfo& ProcessManager::GetProcessStateInfo(int pid) {
-  return GetAddressSpace(pid).map<ProcessStateInfo&>(
+  return GetSchedulableProcess(pid).map<ProcessStateInfo&>(
       [](SchedulableProcess& p) -> ProcessStateInfo& { return p.stateInfo(); })
       .valueOrElse(_kernelModeStateInfo);
 }

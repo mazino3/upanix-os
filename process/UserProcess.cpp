@@ -52,7 +52,7 @@ UserProcess::UserProcess(const upan::string &name, int parentID, int userID,
   _frameBuffer = 0;
   _processLDT.BuildForUser();
 
-  auto parentProcess = ProcessManager::Instance().GetAddressSpace(parentID);
+  auto parentProcess = ProcessManager::Instance().GetSchedulableProcess(parentID);
   parentProcess.ifPresent([this](SchedulableProcess& p) { p.addChildProcessID(_processID); });
   _userID = userID == DERIVE_FROM_PARENT && !parentProcess.isEmpty() ? parentProcess.value().userID() : _userID;
 }

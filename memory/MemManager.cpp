@@ -456,7 +456,7 @@ extern __volatile__ int SYS_CALL_ID;
 extern __volatile__ int KERNEL_DMM_ON;
 
 ReturnCode MemManager::AllocatePage(int iProcessID, unsigned uiFaultyAddress) {
-  upan::mutex_guard g(ProcessManager::Instance().GetAddressSpace(iProcessID).value().pageAllocMutex().value());
+  upan::mutex_guard g(ProcessManager::Instance().GetSchedulableProcess(iProcessID).value().pageAllocMutex().value());
 
   unsigned uiFreePageNo, uiVirtualPageNo ;
 	unsigned uiPDEAddress, uiPTEAddress, uiPTEFreePage ;
@@ -495,7 +495,7 @@ ReturnCode MemManager::AllocatePage(int iProcessID, unsigned uiFaultyAddress) {
       }
     }
 
-		uiPDEAddress = ProcessManager::Instance().GetAddressSpace(iProcessID).value().taskState().CR3_PDBR ;
+		uiPDEAddress = ProcessManager::Instance().GetSchedulableProcess(iProcessID).value().taskState().CR3_PDBR ;
 
 		uiPTEAddress = (((unsigned*)(uiPDEAddress - GLOBAL_DATA_SEGMENT_BASE))[ ((uiFaultyAddress >> 22) & 0x3FF) ]) ;
 

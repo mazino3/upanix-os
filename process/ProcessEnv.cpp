@@ -54,7 +54,7 @@ void ProcessEnv_Initialize(__volatile__ unsigned uiPDEAddress, __volatile__ int 
 
 	if(iParentProcessID != NO_PROCESS_ID)
 	{
-		SchedulableProcess& parentProcessAddrSpace = ProcessManager::Instance().GetAddressSpace(iParentProcessID).value();
+		SchedulableProcess& parentProcessAddrSpace = ProcessManager::Instance().GetSchedulableProcess(iParentProcessID).value();
 
 		unsigned uiParentPageNo = ProcessEnv_GetProcessEnvPageNumber(parentProcessAddrSpace) ;
 

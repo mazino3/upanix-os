@@ -30,7 +30,7 @@ KernelService::DLLAllocCopy::DLLAllocCopy(unsigned uiNoOfPages, const upan::stri
 
 void KernelService::DLLAllocCopy::Execute() {
   try {
-    SchedulableProcess &pas = ProcessManager::Instance().GetAddressSpace(GetRequestProcessID()).value();
+    SchedulableProcess &pas = ProcessManager::Instance().GetSchedulableProcess(GetRequestProcessID()).value();
     pas.MapDLLPagesToProcess(_noOfPagesForDLL, _dllName);
   } catch(upan::exception& e) {
     e.Print();
@@ -224,7 +224,7 @@ void KernelService::Server(KernelService* pService)
 
 		Process* pPAS = &ProcessManager::Instance().GetCurrentPAS();
 		auto ksProcessGroupID = pPAS->processGroup();
-		pPAS->setProcessGroup(ProcessManager::Instance().GetAddressSpace( pRequest->GetRequestProcessID() ).value().processGroup());
+		pPAS->setProcessGroup(ProcessManager::Instance().GetSchedulableProcess(pRequest->GetRequestProcessID()).value().processGroup());
     pRequest->Execute() ;
 		pPAS->setProcessGroup(ksProcessGroupID);
     

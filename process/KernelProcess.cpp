@@ -36,7 +36,7 @@ KernelProcess::KernelProcess(const upan::string& name, uint32_t taskAddress, int
   _processLDT.BuildForKernel();
   _userID = ROOT_USER_ID ;
 
-  auto parentProcess = ProcessManager::Instance().GetAddressSpace(parentID);
+  auto parentProcess = ProcessManager::Instance().GetSchedulableProcess(parentID);
   parentProcess.ifPresent([this](SchedulableProcess& p) { p.addChildProcessID(_processID); });
 }
 
