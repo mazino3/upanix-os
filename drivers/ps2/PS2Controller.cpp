@@ -35,10 +35,10 @@ static constexpr int CMD_WRITE_NEXT_PORT2 = 0xD4;
 PS2Controller::PS2Controller() {
   try {
     Initialize();
-    KC::MDisplay().LoadMessage("PS2 Controller Initialization", Success);
+    KC::MConsole().LoadMessage("PS2 Controller Initialization", Success);
   } catch (const upan::exception &e) {
     printf("\n Failed to initialize PS2 controller: %s", e.ErrorMsg().c_str());
-    KC::MDisplay().LoadMessage("PS2 Controller Initialization", Failure);
+    KC::MConsole().LoadMessage("PS2 Controller Initialization", Failure);
   }
 }
 

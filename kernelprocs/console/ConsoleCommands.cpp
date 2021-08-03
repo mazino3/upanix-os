@@ -254,7 +254,7 @@ void ConsoleCommands_FormatDrive()
 
 void ConsoleCommands_ClearScreen()
 {
-	KC::MDisplay().ClearScreen() ;
+  KC::MConsole().ClearScreen() ;
 }
 
 void ConsoleCommands_CreateDirectory()
@@ -284,7 +284,7 @@ void ConsoleCommands_ListDirContent()
 	for(i = 0; i < iListSize; i++)
 	{
 		if(!(i % 3))
-			KC::MDisplay().NextLine() ;
+      printf("\n");
     printf("%-20s", pDirList[i].Name()) ;
 	}
 
@@ -299,7 +299,7 @@ void ConsoleCommands_ReadFileContent()
 
   auto& file = FileOperations_Open(szFileName, O_RDONLY);
 
-	KC::MDisplay().Character('\n', ' ') ;
+  printf("\n");
 	while(true)
 	{
     int n = file.read(bDataBuffer, 512);
@@ -308,16 +308,16 @@ void ConsoleCommands_ReadFileContent()
 
     if(n < 512)
 		{
-			KC::MDisplay().Message(bDataBuffer, Display::WHITE_ON_BLACK()) ;
+      printf("%s", bDataBuffer);
 			break ;
 		}
-		
-		KC::MDisplay().Message(bDataBuffer, Display::WHITE_ON_BLACK()) ;
+
+    printf("%s", bDataBuffer);
 	}
 
 	if(FileOperations_Close(file.id()) != FileOperations_SUCCESS)
-	{	
-		KC::MDisplay().Message("\n File Close Failed", Display::WHITE_ON_BLACK()) ;
+	{
+    printf("\n File Close Failed");
 		return ;
 	}
 }
@@ -331,8 +331,7 @@ void ConsoleCommands_PresentWorkingDir()
 {
 	char* szPWD ;
 	Directory_PresentWorkingDirectory(&ProcessManager::Instance().GetCurrentPAS(), &szPWD) ;
-	KC::MDisplay().Message("\n", ' ') ;
-	KC::MDisplay().Message(szPWD, Display::WHITE_ON_BLACK()) ;
+	printf("\n%s", szPWD);
 	DMM_DeAllocateForKernel((unsigned)szPWD) ;
 }
 
@@ -351,13 +350,13 @@ void ConsoleCommands_CopyFile()
   auto& file1 = FileOperations_Open(szDestFile, O_RDWR);
 
   printf("\n Progress = ");
-	int cr = KC::MDisplay().GetCurrentCursorPosition();
+	int cr = KC::MConsole().GetCurrentCursorPosition();
 	int i = 0 ;
   const FileSystem_FileStat& fStat = FileOperations_GetStatFD(file.id());
 	unsigned fsize = fStat.st_size ;
 	if(fsize == 0)
 	{
-		KC::MDisplay().Message("\n F Size = 0 !!!", ' ') ;
+    printf("\n F Size = 0 !!!") ;
 		fsize = 1 ;
 		//return ;
 	}	
@@ -370,25 +369,25 @@ void ConsoleCommands_CopyFile()
 		{
 			if(n > 0)
 			  file1.write(bDataBuffer, n);
-			KC::MDisplay().ShowProgress("", cr, 100) ;
+      KC::MConsole().ShowProgress("", cr, 100) ;
 			break ;
 		}
 		
     file1.write(bDataBuffer, 512);
 
 		i++ ;
-		KC::MDisplay().ShowProgress("", cr, (i * iBufSize * 100) / fsize) ;
+    KC::MConsole().ShowProgress("", cr, (i * iBufSize * 100) / fsize) ;
 	}
 
 	if(FileOperations_Close(file.id()) != FileOperations_SUCCESS)
-	{	
-		KC::MDisplay().Message("\n File Close Failed", Display::WHITE_ON_BLACK()) ;
+	{
+    printf("\n File Close Failed");
 		return ;
 	}
 
 	if(FileOperations_Close(file1.id()) != FileOperations_SUCCESS)
-	{	
-		KC::MDisplay().Message("\n File1 Close Failed", Display::WHITE_ON_BLACK()) ;
+	{
+	  printf("\n File1 Close Failed");
 		return ;
 	}
 }
@@ -499,7 +498,7 @@ void ConsoleCommands_CreatePrimaryPartition()
 
 	char szSizeInSectors[11] ;
 
-	KC::MDisplay().Message("\n Size in Sector = ", Display::WHITE_ON_BLACK()) ;
+  printf("\n Size in Sector = ") ;
 	GenericUtil_ReadInput(szSizeInSectors, 10, true) ;
 
   int sizeInSectors = atoi(szSizeInSectors);
@@ -529,7 +528,7 @@ void ConsoleCommands_CreateExtendedPartitionEntry()
 
 	char szSizeInSectors[11] ;
 
-	KC::MDisplay().Message("\n Size in Sector = ", Display::WHITE_ON_BLACK()) ;
+  printf("\n Size in Sector = ") ;
 	GenericUtil_ReadInput(szSizeInSectors, 10, true) ;
 
   int sizeInSectors = atoi(szSizeInSectors);
@@ -552,12 +551,12 @@ void ConsoleCommands_CreateExtendedPartition()
 	PartitionTable partitionTable(*pDisk);
 	if(partitionTable.IsEmpty())
 	{
-		KC::MDisplay().Message("\n No Primary Partitions", ' ') ;
+    printf("\n No Primary Partitions") ;
 		return ;
 	}
 
 	char szSizeInSectors[11] ;
-	KC::MDisplay().Message("\n Size in Sector = ", Display::WHITE_ON_BLACK()) ;
+  printf("\n Size in Sector = ") ;
 	GenericUtil_ReadInput(szSizeInSectors, 10, true) ;
 
   int sizeInSectors = atoi(szSizeInSectors);
@@ -581,7 +580,7 @@ void ConsoleCommands_DeletePrimaryPartition()
 	PartitionTable partitionTable(*pDisk);
 	if(partitionTable.IsEmpty())
 	{
-		KC::MDisplay().Message("\n Disk Not Partitioned", ' ') ;
+    printf("\n Disk Not Partitioned") ;
 		return ;
 	}
 
@@ -599,7 +598,7 @@ void ConsoleCommands_DeleteExtendedPartition()
 	PartitionTable partitionTable(*pDisk);
 	if(partitionTable.IsEmpty())
 	{
-		KC::MDisplay().Message("\n Disk Not Partitioned", ' ') ;
+    printf("\n Disk Not Partitioned") ;
 		return ;
 	}
 
@@ -671,13 +670,11 @@ void ConsoleCommands_MultiBootHeader()
     printf("\n Using APIC...");
 }
 
-void ConsoleCommands_ListCommands()
-{
-	for(int i = 0; i < ConsoleCommands_NoOfInterCommands; i++)
-	{
+void ConsoleCommands_ListCommands() {
+	for(int i = 0; i < ConsoleCommands_NoOfInterCommands; i++) {
 		if(!(i % 3))
-			KC::MDisplay().NextLine() ;
-		printf("%-20s", ConsoleCommands_CommandList[i].szCommand) ;
+      printf("\n");
+		printf("%-20s", ConsoleCommands_CommandList[i].szCommand);
 	}
 }
 
@@ -692,7 +689,7 @@ void ConsoleCommands_ListProcess()
 		printf("\n %-7d%-5d%-5d%-18s%-5d%-10s", pPS[i].pid, pPS[i].iParentProcessID, pPS[i].iProcessGroupID,
            get_proc_status_desc(pPS[i].status), pPS[i].iUserID, pPS[i].pname) ;
 	}
-	KC::MDisplay().NextLine() ;
+  printf("\n");
 
 	ProcessManager::Instance().FreeProcListMem(pPS, uiSize) ;
 }

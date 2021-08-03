@@ -16,26 +16,16 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
 
-#include <DefaultConsole.h>
+#include <KernelRootProcess.h>
 #include <GraphicsVideo.h>
-#include <ColorPalettes.h>
 
-DefaultConsole::DefaultConsole(unsigned rows, unsigned columns) : Display(rows, columns) {
-  GraphicsVideo::Create();
-}
+void KernelRootProcess::initGuiFrame() {
+  static bool initialized = false;
+  if (initialized) {
+    return;
+  }
+  initialized = true;
 
-void DefaultConsole::DirectPutChar(int iPos, byte ch, byte attr)
-{
-  const int curPos = iPos / DisplayConstants::NO_BYTES_PER_CHARACTER;
-  const unsigned x = (curPos % _maxColumns);
-  const unsigned y = (curPos / _maxColumns);
-
-  GraphicsVideo::Instance().DrawChar(ch, x, y,
-                                      ColorPalettes::CP16::Get(attr & ColorPalettes::CP16::FG_WHITE),
-                                      ColorPalettes::CP16::Get((attr & ColorPalettes::CP16::BG_WHITE) >> 4));
-}
-
-void DefaultConsole::DoScrollDown()
-{
-  GraphicsVideo::Instance().ScrollDown();
+  RootGUIConsole::Instance().resetFrameBuffer(GraphicsVideo::Instance().allocateFrameBuffer());
+  GraphicsVideo::Instance().addGUIProcess(NO_PROCESS_ID);
 }

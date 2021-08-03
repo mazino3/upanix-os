@@ -520,18 +520,18 @@ uint32_t UserProcess::getGUIFramebufferAddress() {
 }
 
 void UserProcess::allocateGUIFramebuffer() {
-  const auto lfbPageCount = GraphicsVideo::Instance().LFBPageCount();
-  if (lfbPageCount > PAGE_TABLE_ENTRIES) {
-    throw upan::exception(XLOC, "Max pages available for user process GUI framebuffer is %u, requested: %u", PAGE_TABLE_ENTRIES, lfbPageCount);
-  }
-  _frameBuffer = DMM_AllocateForKernel(lfbPageCount * PAGE_SIZE, PAGE_SIZE);
+  _frameBuffer = GraphicsVideo::Instance().allocateFrameBuffer();
   const auto guiFramebufferPTEAddress = MemManager::Instance().AllocatePhysicalPage() * PAGE_SIZE;
-  for (uint32_t i = 0; i < lfbPageCount; ++i) {
+  for (uint32_t i = 0; i < GraphicsVideo::Instance().LFBPageCount(); ++i) {
     ((unsigned *) (guiFramebufferPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[i] = ((_frameBuffer + (i * PAGE_SIZE)) & 0xFFFFF000) | 0x7;
   }
   ((unsigned *) (_taskState.CR3_PDBR - GLOBAL_DATA_SEGMENT_BASE))[PROCESS_GUI_FRAMEBUFFER_PDE_ID] = (guiFramebufferPTEAddress & 0xFFFFF000) | 0x7;
 
-  GraphicsVideo::Instance().addGUIProcess(processID(), _frameBuffer);
+  GraphicsVideo::Instance().addGUIProcess(processID());
+}
+
+void UserProcess::initGuiFrame() {
+
 }
 
 void UserProcess::DeAllocateGUIFramebuffer() {

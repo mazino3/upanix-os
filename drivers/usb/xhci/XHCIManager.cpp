@@ -93,9 +93,9 @@ void XHCIManager::Initialize()
   }
 
 	if(_controllers.size())
-		KC::MDisplay().LoadMessage("USB XHCI Controller Found", Success);
+    KC::MConsole().LoadMessage("USB XHCI Controller Found", Success);
 	else
-		KC::MDisplay().LoadMessage("No USB XHCI Controller Found", Failure);
+    KC::MConsole().LoadMessage("No USB XHCI Controller Found", Failure);
 
   if(_eventMode == EventMode::Interrupt)
     IrqManager::Instance().EnableIRQ(*XHCI_IRQ);

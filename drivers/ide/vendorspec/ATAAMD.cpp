@@ -214,13 +214,13 @@ void ATAAMD_InitController(const PCIEntry* pPCIEntry, ATAController* pController
 
 	if(bIDEFound == false)
 	{
-		KC::MDisplay().Message("\n\tUnknown AMD/nVIDIA ATA Controller Detected", Display::WHITE_ON_BLACK()) ;
+	  printf("\n\tUnknown AMD/nVIDIA ATA Controller Detected");
 		return ;
 	}
 
 	if(pAMDIDE->usFlags & AMD_SATA)
 	{
-		KC::MDisplay().Message("\n\tnVIDIA Serial ATA Controller Detected", Display::WHITE_ON_BLACK()) ;
+	  printf("\n\tnVIDIA Serial ATA Controller Detected");
 		strcpy(pController->szName, "nVIDIA Serial ATA Controller") ;
 
 		DMM_DeAllocateForKernel((unsigned)pController->pPort[1]) ;
@@ -236,9 +236,7 @@ void ATAAMD_InitController(const PCIEntry* pPCIEntry, ATAController* pController
 		return ;
 	}
 
-	KC::MDisplay().Message("\n\tAMD ", Display::WHITE_ON_BLACK()) ;
-	KC::MDisplay().Message(pAMDIDE->szName, Display::WHITE_ON_BLACK()) ;
-	KC::MDisplay().Message(" ATA Controller Detected", Display::WHITE_ON_BLACK()) ;
+	printf("\n\tAMD %s ATA Controller Detected", pAMDIDE->szName) ;
 
 	byte bTemp ;
 	unsigned ui80W = 0, uiUDMATiming, i ;

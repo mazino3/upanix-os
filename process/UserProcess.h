@@ -69,7 +69,12 @@ public:
   }
 
   uint32_t getGUIFramebufferAddress() override;
+  upan::option<upanui::BaseFrame&> getGuiFrame() override {
+    return upan::option<upanui::BaseFrame&>::empty();
+  }
+
   void allocateGUIFramebuffer();
+  void initGuiFrame() override;
 
 private:
   void Load(int noOfParams, char** szArgumentList);

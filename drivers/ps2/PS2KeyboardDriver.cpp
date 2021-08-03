@@ -108,7 +108,7 @@ PS2KeyboardDriver::PS2KeyboardDriver() : _isShiftKey(false), _isCapsLock(false),
 
   PortCom_ReceiveByte(PS2Controller::DATA_PORT);
 
-  KC::MDisplay().LoadMessage("PS2 Keyboard Driver Initialization", Success);
+  KC::MConsole().LoadMessage("PS2 Keyboard Driver Initialization", Success);
 }
 
 void PS2KeyboardDriver::Process(byte rawKey)

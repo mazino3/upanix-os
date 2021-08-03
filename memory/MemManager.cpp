@@ -27,6 +27,7 @@
 #include <mutex.h>
 #include <exception.h>
 #include <GraphicsVideo.h>
+#include <RootGUIConsole.h>
 
 extern "C" { 
 	unsigned MEM_PDBR ;
@@ -109,13 +110,13 @@ MemManager::MemManager() :
           MemMapGraphicsLFB(0x0);
           Mem_EnablePaging() ;
 
-          KC::MDisplay().LoadMessage("Memory Manager Initialization", Success) ;
+          KC::MConsole().LoadMessage("Memory Manager Initialization", Success) ;
           return;
         }
     }
   }
 
-  KC::MDisplay().Message("\n *********** KERNEL PANIC ************ \n", '$') ;
+  KC::MConsole().Message("\n *********** KERNEL PANIC ************ \n", '$') ;
   while(1) ;
 }
 
@@ -148,6 +149,7 @@ void MemManager::MemMapGraphicsLFB(uint32_t memTypeFlag)
     mapAddress += PAGE_SIZE;
   }
   GraphicsVideo::Instance().MappedLFBAddress(MEM_GRAPHICS_VIDEO_MAP_START);
+  RootGUIConsole::Instance().resetFrameBuffer(MEM_GRAPHICS_VIDEO_MAP_START);
 }
 
 void MemManager::InitPage(unsigned uiPage)
@@ -167,7 +169,7 @@ bool MemManager::BuildRawPageMap()
 
   if((m_uiPageMapSize * 4) > (MEM_PAGE_MAP_END - MEM_PAGE_MAP_START))
   {
-    KC::MDisplay().Message("\n Mem Page Map Size InSufficient\n", 'A') ;
+    KC::MConsole().Message("\n Mem Page Map Size InSufficient\n", 'A') ;
     return false ;
   }
 
@@ -188,7 +190,7 @@ bool MemManager::BuildPagePoolMap()
 
   if((m_uiKernelPagePoolMapSize * 4) > (MEM_KERNEL_PAGE_POOL_MAP_END - MEM_KERNEL_PAGE_POOL_MAP_START))
   {
-    KC::MDisplay().Message("\n Mem Page Pool Map Size InSufficient\n", 'A') ;
+    KC::MConsole().Message("\n Mem Page Pool Map Size InSufficient\n", 'A') ;
     return false ;
   }
 
@@ -216,13 +218,13 @@ bool MemManager::BuildPageTable()
 	
 	if((uiNoOfPDEEntries * 4) > (MEM_PDE_END - MEM_PDE_START))
 	{
-		KC::MDisplay().Message("\n PDE Size InSufficient\n", 'A') ;
+    KC::MConsole().Message("\n PDE Size InSufficient\n", 'A') ;
 		return false ;
 	}
 
 	if((m_uiNoOfPages * 4) > (MEM_PTE_END - MEM_PTE_START))
 	{
-		KC::MDisplay().Message("\n PTE Size InSufficient\n", 'A') ;
+    KC::MConsole().Message("\n PTE Size InSufficient\n", 'A') ;
 		return false ;
 	}
 
@@ -633,8 +635,8 @@ void MemManager::DisplayNoOfAllocPages()
 	unsigned uiPageOffset ;
 	unsigned uiPageMapEntry ;
 	unsigned uiAllocPageCount = 0 ;
-	
-	KC::MDisplay().Message("\n\n", ' ');
+
+  KC::MConsole().Message("\n\n", ' ');
 	for(uiPageMapPosition = m_uiResvSize + m_uiKernelHeapSize; uiPageMapPosition < m_uiPageMapSize; uiPageMapPosition++)
 	{
 		//if((m_uiPageMap[uiPageMapPosition] & 0xFFFFFFFF) != 0xFFFFFFFF)

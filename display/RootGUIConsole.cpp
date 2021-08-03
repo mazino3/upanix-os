@@ -1,0 +1,86 @@
+/*
+ *	Upanix - An x86 based Operating System
+ *  Copyright (C) 2011 'Prajwala Prabhakar' 'srinivasa_prajwal@yahoo.co.in'
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/
+ */
+
+#include <RootGUIConsole.h>
+#include <GraphicsVideo.h>
+#include <ColorPalettes.h>
+#include <exception.h>
+#include <Viewport.h>
+
+RootGUIConsole* RootGUIConsole::_instance = nullptr;
+
+void RootGUIConsole::Create() {
+  static bool _done = false;
+  //can be called only once
+  if(_done)
+    throw upan::exception(XLOC, "cannot create RootGUIConsole driver!");
+  _done = true;
+  auto f = MultiBoot::Instance().VideoFrameBufferInfo();
+  if(f) {
+    FrameBufferInfo frameBufferInfo;
+    frameBufferInfo._pitch = f->framebuffer_pitch;
+    frameBufferInfo._width = f->framebuffer_width;
+    frameBufferInfo._height = f->framebuffer_height;
+    frameBufferInfo._bpp = f->framebuffer_bpp;
+    frameBufferInfo._frameBuffer = (uint32_t*)f->framebuffer_addr;
+
+    upanui::FrameBuffer frameBuffer(frameBufferInfo);
+    upanui::Viewport viewport(0, 0, frameBufferInfo._width, frameBufferInfo._height);
+
+    static RootGUIConsole guiConsole(frameBuffer, viewport);
+    _instance = &guiConsole;
+  }
+}
+
+RootGUIConsole& RootGUIConsole::Instance() {
+  if (_instance == nullptr) {
+    throw upan::exception(XLOC, "RootGUIConsole is not created yet");
+  }
+  return *_instance;
+}
+
+RootGUIConsole::RootGUIConsole(const upanui::FrameBuffer& frameBuffer, const upanui::Viewport& viewport)
+  : RootConsole(frameBuffer.height() / 16, frameBuffer.width() / 8),
+    _frame(frameBuffer, viewport) {
+  GraphicsVideo::Create();
+}
+
+void RootGUIConsole::setFontContext(upanui::usfn::Context* context) {
+  _textWriter.setFontContext(context);
+}
+
+void RootGUIConsole::putChar(int iPos, byte ch, const upanui::CharStyle& style) {
+  const int curPos = iPos / upanui::ConsoleBuffer::NO_BYTES_PER_CHARACTER;
+  const unsigned x = (curPos % _consoleBuffer.maxColumns());
+  const unsigned y = (curPos / _consoleBuffer.maxColumns());
+
+  _textWriter.drawChar(_frame.frameBuffer(), ch, x, y,
+                       ColorPalettes::CP16::Get(style.getFGColor()),
+                       ColorPalettes::CP16::Get(style.getBGColor() >> 4));
+  _frame.touch();
+}
+
+void RootGUIConsole::scrollDown() {
+  _textWriter.scrollDown(_frame.frameBuffer());
+  _frame.touch();
+}
+
+void RootGUIConsole::resetFrameBuffer(uint32_t frameBufferAddress) {
+  _frame.frameBuffer().resetFrameBufferAddress((uint32_t*)frameBufferAddress);
+  _frame.touch();
+}

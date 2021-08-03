@@ -40,7 +40,7 @@ Console::Console() : _currentCommandPos(0)
 {
   _commandLine = new char[COMMAND_LINE_SIZE];
 	ConsoleCommands_Init() ;
-	KC::MDisplay().LoadMessage("Console Initialization", Success);
+  KC::MConsole().LoadMessage("Console Initialization", Success);
 }
 
 void Console::ClearCommandLine()
@@ -58,7 +58,7 @@ void Console::DisplayCommandLine()
 
 void Console::Start()
 {
-  KC::MDisplay().RefreshScreen() ;
+  KC::MConsole().RefreshScreen() ;
 	
 //	byte bStatus ;
 //	if((bStatus = FileOperations_ChangeDir(FS_ROOT_DIR)) != FileOperations_SUCCESS)
@@ -104,8 +104,8 @@ void Console::Start()
 				{
           _currentCommandPos-- ;
           int x = _commandLine[_currentCommandPos] == '\t' ? 4 : 1 ;
-					KC::MDisplay().MoveCursor(-x) ;
-					KC::MDisplay().ClearLine(Display::START_CURSOR_POS) ;
+          KC::MConsole().MoveCursor(-x) ;
+          KC::MConsole().ClearLine(Display::START_CURSOR_POS) ;
 				}
 				break ;
 				
@@ -123,9 +123,9 @@ void Console::Start()
 
 			default:
 
-        if(_currentCommandPos != COMMAND_LINE_SIZE)
-				{
-					KC::MDisplay().Character(ch, Display::WHITE_ON_BLACK()) ;
+        if(_currentCommandPos != COMMAND_LINE_SIZE) {
+          //TODO: putchar()
+          printf("%c", ch);
           _commandLine[_currentCommandPos++] = ch ;
 				}
 		}

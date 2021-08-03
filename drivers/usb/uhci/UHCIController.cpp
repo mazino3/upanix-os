@@ -42,7 +42,7 @@ static void UHCIController_IRQHandler()
 	AsmUtil_STORE_GPR() ;
 	AsmUtil_SET_KERNEL_DATA_SEGMENTS
 
-	KC::MDisplay().Message("\n USB IRQ \n", ' ') ;
+  KC::MConsole().Message("\n USB IRQ \n", ' ') ;
 	//ProcessManager_SignalInterruptOccured(HD_PRIMARY_IRQ) ;
 
 	IrqManager::Instance().SendEOI(*UHCI_USB_IRQ) ;

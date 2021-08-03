@@ -262,7 +262,7 @@ void ATAIntel_InitController(const PCIEntry* pPCIEntry, ATAController* pControll
 
 	if(bIDEFound == false)
 	{
-		KC::MDisplay().Message("\n\tUnknown Intel ATA Controller detected", Display::WHITE_ON_BLACK()) ;
+	  printf("\n\tUnknown Intel ATA Controller detected");
 		return ;
 	}
 	

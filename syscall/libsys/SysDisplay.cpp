@@ -23,13 +23,6 @@ void SysDisplay_Message(const char* szMessage, unsigned uiAttr)
 	SysCallDisplay_Handle(&iRetStatus, SYS_CALL_DISPLAY_MESSAGE, false, (unsigned)szMessage, uiAttr, 3, 4, 5, 6, 7, 8, 9) ;
 }
 
-void SysDisplay_Character(const char ch, unsigned uiAttr)
-{
-	__volatile__ unsigned v = ch ;
-	int iRetStatus ;
-	SysCallDisplay_Handle(&iRetStatus, SYS_CALL_DISPLAY_CHARACTER, false, v, uiAttr, 3, 4, 5, 6, 7, 8, 9);
-}
-
 void SysDisplay_ClearScreen()
 {
 	int iRetStatus ;
@@ -73,7 +66,7 @@ void SysDisplay_RawCharacterArea(const MChar* src, uint32_t rows, uint32_t cols,
   SysCallDisplay_Handle(&iRetStatus, SYS_CALL_DISPLAY_RAW_CHAR_AREA, false, (uint32_t)src, rows, cols, curPos, 5, 6, 7, 8, 9);
 }
 
-void SysDisplay_GetFramebufferInfo(FramebufferInfo* framebufferInfo) {
+void SysDisplay_GetFrameBufferInfo(FrameBufferInfo* frameBufferInfo) {
   int iRetStatus;
-  SysCallDisplay_Handle(&iRetStatus, SYS_CALL_DISPLAY_FRAMEBUFFER_INFO, false, (uint32_t)framebufferInfo, 2, 3, 4, 5, 6, 7, 8, 9);
+  SysCallDisplay_Handle(&iRetStatus, SYS_CALL_DISPLAY_FRAMEBUFFER_INFO, false, (uint32_t)frameBufferInfo, 2, 3, 4, 5, 6, 7, 8, 9);
 }

@@ -18,6 +18,7 @@
 #pragma once
 
 #include <ResourceMutex.h>
+#include <atomicop.h>
 
 class IRQ;
 

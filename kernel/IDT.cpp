@@ -35,7 +35,7 @@
 	MemUtil_SetDS(SYS_DATA_SELECTOR_DEFINED) ; \
 	MemUtil_SetES(SYS_DATA_SELECTOR_DEFINED) ; \
 \
-	KC::MDisplay().Message(handler_msg, ' ') ; \
+	KC::MConsole().Message(handler_msg, ' ') ; \
 \
 /*	MemUtil_MoveByte(SYS_LINEAR_SELECTOR_DEFINED, 0xb8000, '0') ; */\
 /*	MemUtil_MoveByte(SYS_LINEAR_SELECTOR_DEFINED, 0xb8001, 14) ; */\
@@ -205,7 +205,7 @@ IDT::IDT()
 	IDTR.base = MEM_IDT_START ;
 
 	__asm__ __volatile__("LIDT (%0)" : : "r"(&IDTR)) ;
-	KC::MDisplay().LoadMessage("IDT Initialization", Success) ;
+  KC::MConsole().LoadMessage("IDT Initialization", Success) ;
 }
 
 void IDT::LoadInterruptTasks()

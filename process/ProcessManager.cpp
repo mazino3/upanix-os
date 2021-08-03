@@ -62,7 +62,7 @@ ProcessManager::ProcessManager() {
 
   ProcessLoader::Instance();
 
-	KC::MDisplay().LoadMessage("Process Manager Initialization", Success);
+  KC::MConsole().LoadMessage("Process Manager Initialization", Success);
 }
 
 AutonomousProcess& ProcessManager::GetThreadParentProcess(int pid) {

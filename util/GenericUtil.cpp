@@ -105,8 +105,8 @@ void GenericUtil_ReadInput(char* szInputBuffer, const int iMaxReadLength, byte b
 				{
 					if(bEcho)
 					{
-						KC::MDisplay().MoveCursor(-1) ;
-						KC::MDisplay().ClearLine(Display::START_CURSOR_POS) ;
+            KC::MConsole().MoveCursor(-1) ;
+            KC::MConsole().ClearLine(Display::START_CURSOR_POS) ;
 					}
 					iCurrentReadPos-- ;
 				}
@@ -129,7 +129,7 @@ void GenericUtil_ReadInput(char* szInputBuffer, const int iMaxReadLength, byte b
 				{
 					szInputBuffer[iCurrentReadPos++] = ch ;
 					if(bEcho)
-						KC::MDisplay().Character(ch, Display::WHITE_ON_BLACK()) ;
+            printf("%c", ch);
 				}
 		}
 	}

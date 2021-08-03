@@ -44,9 +44,9 @@ EHCIManager::EHCIManager()
 	}
 	
 	if(_controllers.size())
-		KC::MDisplay().LoadMessage("USB EHCI Controller Found", Success) ;
+    KC::MConsole().LoadMessage("USB EHCI Controller Found", Success) ;
 	else
-		KC::MDisplay().LoadMessage("No USB EHCI Controller Found", Failure) ;
+    KC::MConsole().LoadMessage("No USB EHCI Controller Found", Failure) ;
 }
 
 void EHCIManager::ProbeDevice()

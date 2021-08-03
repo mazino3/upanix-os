@@ -16,21 +16,15 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
 
-#include <VGAConsole.h>
+#include <RootVGAConsole.h>
 #include <PortCom.h>
 
-#define VIDEO_BUFFER_ADDRESS			0xB8000
+#define VIDEO_BUFFER_ADDRESS 0xB8000
 #define CURSOR_HIEGHT 16
 #define CRT_INDEX_REG 0x03D4
 #define CRT_DATA_REG 0x03D5
 
-VGAConsole::VGAConsole() : Display(25, 80)
-{
-  InitCursor();
-}
-
-void VGAConsole::InitCursor()
-{
+RootVGAConsole::RootVGAConsole() : RootConsole(25, 80) {
   // Get Cursor Size Start
   PortCom_SendByte(CRT_INDEX_REG, 0x0A);
   byte bCurStart = PortCom_ReceiveByte(CRT_DATA_REG);
@@ -49,10 +43,9 @@ void VGAConsole::InitCursor()
   PortCom_SendByte(CRT_DATA_REG, bCurEnd);
 }
 
-void VGAConsole::GotoCursor()
-{
-  int iPos = GetCurrentCursorPosition();
-  if (iPos >= _maxColumns * _maxRows) {
+void RootVGAConsole::gotoCursor() {
+  int iPos = _consoleBuffer.getCurPos();
+  if (iPos >= _consoleBuffer.maxRows() * _consoleBuffer.maxColumns()) {
     return;
   }
 
@@ -63,25 +56,23 @@ void VGAConsole::GotoCursor()
   PortCom_SendByte(CRT_DATA_REG, (iPos >> 8) & 0xFF);
 }
 
-void VGAConsole::DoScrollDown()
-{
-  static const unsigned NO_OF_DISPLAY_BYTES = (_maxRows - 1) * _maxColumns * DisplayConstants::NO_BYTES_PER_CHARACTER;
-  static const unsigned OFFSET = _maxColumns * DisplayConstants::NO_BYTES_PER_CHARACTER;
+void RootVGAConsole::putChar(int iPos, byte ch, const upanui::CharStyle& attr) {
+  static byte* vga_frame_buffer = (byte*)(VIDEO_BUFFER_ADDRESS - GLOBAL_DATA_SEGMENT_BASE);
+  vga_frame_buffer[iPos] = ch;
+  vga_frame_buffer[iPos + 1] = attr.get();
+}
+
+void RootVGAConsole::scrollDown() {
+  static const unsigned NO_OF_DISPLAY_BYTES = (_consoleBuffer.maxRows() - 1) * _consoleBuffer.maxColumns() * upanui::ConsoleBuffer::NO_BYTES_PER_CHARACTER;
+  static const unsigned OFFSET = _consoleBuffer.maxColumns() * upanui::ConsoleBuffer::NO_BYTES_PER_CHARACTER;
 
   static byte* vga_frame_buffer = (byte*)(VIDEO_BUFFER_ADDRESS - GLOBAL_DATA_SEGMENT_BASE);
   memcpy(vga_frame_buffer, vga_frame_buffer + OFFSET, NO_OF_DISPLAY_BYTES);
-  for(unsigned i = NO_OF_DISPLAY_BYTES; i < NO_OF_DISPLAY_BYTES + _maxColumns * DisplayConstants::NO_BYTES_PER_CHARACTER; i += 2)
-  {
+  for(unsigned i = NO_OF_DISPLAY_BYTES;
+    i < NO_OF_DISPLAY_BYTES + _consoleBuffer.maxColumns() * upanui::ConsoleBuffer::NO_BYTES_PER_CHARACTER;
+    i += upanui::ConsoleBuffer::NO_BYTES_PER_CHARACTER) {
     vga_frame_buffer[i] = ' ';
-    vga_frame_buffer[i + 1] = WHITE_ON_BLACK();
+    vga_frame_buffer[i + 1] = upanui::CharStyle::WHITE_ON_BLACK();
   }
 }
-
-void VGAConsole::DirectPutChar(int iPos, byte ch, byte attr)
-{
-  static byte* vga_frame_buffer = (byte*)(VIDEO_BUFFER_ADDRESS - GLOBAL_DATA_SEGMENT_BASE);
-  vga_frame_buffer[iPos] = ch;
-  vga_frame_buffer[iPos + 1] = attr;
-}
-
 

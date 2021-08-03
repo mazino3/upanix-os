@@ -73,7 +73,7 @@ void SysCall_Initialize()
 
 	SysCall_InitializeHandler(&SysCall_Handlers[SysCall_NoOfHandlers++], &SysCallUtil_IsPresent, &SysCallUtil_Handle) ;
 
-	KC::MDisplay().LoadMessage("SysCall Initialization", Success) ;
+  KC::MConsole().LoadMessage("SysCall Initialization", Success) ;
 }
 
 __volatile__ int SYS_CALL_ID ;

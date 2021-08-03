@@ -572,7 +572,7 @@ void ATADeviceController_Initialize()
     e.Print();
   }
 
-	KC::MDisplay().LoadMessage("IDE Initialization", ATADeviceController_bInitStatus ? Success : Failure);
+  KC::MConsole().LoadMessage("IDE Initialization", ATADeviceController_bInitStatus ? Success : Failure);
 }
 
 unsigned ATADeviceController_GetDeviceSectorLimit(ATAPort* pPort)

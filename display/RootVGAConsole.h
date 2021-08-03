@@ -16,21 +16,17 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
 #pragma once
-#include <Display.h>
 
-class VGAConsole : public Display
-{
+#include <stdlib.h>
+#include <RootConsole.h>
+
+class RootVGAConsole : public RootConsole {
 private:
-  VGAConsole();
-  void InitCursor();
-  void GotoCursor() override;
-  void DirectPutChar(int iPos, byte ch, byte attr) override;
-  void DoScrollDown() override;
+  RootVGAConsole();
+  void initCursor();
+  void gotoCursor() override;
+  void putChar(int iPos, byte ch, const upanui::CharStyle& attr) override;
+  void scrollDown() override;
 
-  class VideoBuffer : public DisplayBuffer
-  {
-  public:
-    VideoBuffer(unsigned uiDisplayMemAddr);
-  };
-  friend class Display;
+  friend class RootConsole;
 };

@@ -58,7 +58,7 @@ void PCIBusHandler::Initialize()
     e.Print();
   }
 
-	KC::MDisplay().LoadMessage("PCI Bus Initialization", result) ;
+  KC::MConsole().LoadMessage("PCI Bus Initialization", result) ;
 }
 
 void PCIBusHandler::Find()

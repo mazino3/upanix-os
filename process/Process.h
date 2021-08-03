@@ -18,9 +18,19 @@
 #pragma once
 
 #include <option.h>
+#include <mosstd.h>
+#include <mutex.h>
 #include <FileSystem.h>
+#include <FileOperations.h>
 #include <ProcessStateInfo.h>
 #include <ProcessDLLInfo.h>
+
+namespace upanui {
+  class BaseFrame;
+}
+
+class ProcessGroup;
+class IODescriptorTable;
 
 class Process {
 public:
@@ -84,4 +94,8 @@ public:
   }
 
   virtual uint32_t getGUIFramebufferAddress() = 0;
+
+  virtual void initGuiFrame() = 0;
+
+  virtual upan::option<upanui::BaseFrame&> getGuiFrame() = 0;
 };

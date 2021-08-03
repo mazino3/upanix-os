@@ -27,7 +27,7 @@ ProcessGroup* ProcessGroup::_fgProcessGroup = nullptr;
 
 ProcessGroup::ProcessGroup(bool isFGProcessGroup) 
   : _id(++_idSeq), _iProcessCount(0),
-    _videoBuffer(KC::MDisplay().CreateDisplayBuffer())
+    _videoBuffer(nullptr)//KC::MConsole().CreateDisplayBuffer())
 {
   if(isFGProcessGroup)
     _fgProcessGroup = this;
@@ -35,7 +35,7 @@ ProcessGroup::ProcessGroup(bool isFGProcessGroup)
 
 ProcessGroup::~ProcessGroup()
 {
-  delete &_videoBuffer;
+  delete _videoBuffer;
 }
 
 void ProcessGroup::PutOnFGProcessList(int iProcessID)

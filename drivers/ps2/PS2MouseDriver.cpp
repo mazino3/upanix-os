@@ -43,10 +43,10 @@ PS2MouseDriver::PS2MouseDriver() {
 //		printf("\n Mouse ID: %u ", data) ;
 
     IrqManager::Instance().EnableIRQ(StdIRQ::Instance().MOUSE_IRQ);
-    KC::MDisplay().LoadMessage("PS2 Mouse Driver Initialization", Success);
+    KC::MConsole().LoadMessage("PS2 Mouse Driver Initialization", Success);
   } catch(upan::exception& e) {
 	  printf("\n Failed to initialize mouse driver: %s", e.ErrorMsg().c_str());
-    KC::MDisplay().LoadMessage("Mouse Initialization", Failure);
+    KC::MConsole().LoadMessage("Mouse Initialization", Failure);
 	}
 }
 

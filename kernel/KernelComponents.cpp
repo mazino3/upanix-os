@@ -15,6 +15,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
+
 #include <KernelComponents.h>
 #include <Display.h>
 #include <MemManager.h>
@@ -22,15 +23,13 @@
 #include <PS2MouseDriver.h>
 #include <NetworkManager.h>
 
-Display* KC::_dm = nullptr;
+RootConsole* KC::_rootConsole = nullptr;
 
-Display& KC::MDisplay()
-{
-	return *_dm;
+RootConsole& KC::MConsole() {
+	return *_rootConsole;
 }
 
-KernelService& KC::MKernelService()
-{
+KernelService& KC::MKernelService() {
 	static KernelService kKernelService ;
 	return kKernelService ;
 }

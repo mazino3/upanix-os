@@ -81,9 +81,13 @@ void UpanixMain_KernelProcess() {
 	KC::MKernelService().Spawn() ;
 	KC::MKernelService().Spawn() ;
 
+	KernelRootProcess::Instance().initGuiFrame();
+	RootGUIConsole::Instance().ClearScreen();
   GraphicsVideo::Instance().CreateRefreshTask();
-  Display::CreateGraphicsConsole();
-  KC::MDisplay().StartCursorBlink();
+  //while(1);
+
+  //Display::CreateGraphicsConsole();
+  //KC::MConsole().StartCursorBlink();
 
 	while(true) {
     const int pid = ProcessManager::Instance().CreateKernelProcess("console", (unsigned) &Console_StartUpanixConsole,
@@ -137,16 +141,15 @@ void TestException()
 	catch(...) { printf("\nCaught Rethrown unknown Exception"); }
 }
 
-void Initialize()
-{
+void Initialize() {
 	debug_point = 0 ;
 
 	KERNEL_MODE = true ;
 	SPECIAL_TASK = false ;
 
 	MultiBoot::Instance();
-	Display::CreateDefault();
-	KC::MDisplay().Message("\n****    Welcome To Upanix   ****\n", Display::Attribute(' ')) ;
+	RootConsole::Create();
+  KC::MConsole().Message("\n **** _/\\_ Welcome to Upanix _/\\_ ****\n", upanui::CharStyle::WHITE_ON_BLACK());
 
 	MemManager::Instance();
   ProcessManager::Instance();
@@ -167,9 +170,9 @@ void Initialize()
     DMA_Initialize();
     StdIRQ::Instance();
 
-    SysCall_Initialize() ;
+    SysCall_Initialize();
 
-    KC::MKernelService() ;
+    KC::MKernelService();
 
     GraphicsVideo::Instance().Initialize();
 
@@ -238,8 +241,7 @@ byte* GetArea()
 	return area ;
 }
 
-void UpanixMain()
-{
+void UpanixMain() {
 	byte* bios = (byte*)(0 - GLOBAL_DATA_SEGMENT_BASE) ;
 
 	for(int i = 0; i < 0x500; i++) 

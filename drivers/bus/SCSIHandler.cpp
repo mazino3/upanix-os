@@ -440,7 +440,7 @@ static byte SCSIHandler_ReadCapacity(SCSIDevice* pDevice)
 
 void SCSIHandler_Initialize()
 {
-	KC::MDisplay().LoadMessage("SCSI Driver Initialization", Success) ;
+  KC::MConsole().LoadMessage("SCSI Driver Initialization", Success) ;
 }
 
 byte SCSIHandler_GenericOpen(SCSIDevice* pDevice) 
@@ -1113,7 +1113,7 @@ byte SCSIHandler_RequestSense(SCSIDevice* pDevice, SCSISense* pSense)
 {
 	if(pSense == NULL)
 	{
-		KC::MDisplay().Message("\n pSense param is NULL...!", Display::WHITE_ON_BLACK()) ;
+	  printf("\n pSense param is NULL...!");
 		return SCSIHandler_FAILURE ;
 	}
 

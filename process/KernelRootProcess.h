@@ -18,6 +18,11 @@
 #pragma once
 
 #include <Process.h>
+#include <RootGUIConsole.h>
+#include <IODescriptorTable.h>
+#include <drive.h>
+#include <UserManager.h>
+#include <MemManager.h>
 
 class KernelRootProcess : public Process {
 private:
@@ -113,6 +118,12 @@ public:
   uint32_t getGUIFramebufferAddress() override {
     return MEM_GRAPHICS_Z_BUFFER_START;
   }
+
+  upan::option<upanui::BaseFrame&> getGuiFrame() override {
+    return upan::option<upanui::BaseFrame&>(RootGUIConsole::Instance().frame());
+  }
+
+  void initGuiFrame() override;
 
 private:
   upan::mutex _envMutex;

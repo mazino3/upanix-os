@@ -127,8 +127,8 @@ void ATACommandManager_ExecuteATACommand(ATACommand* pCommand)
 
 			if(iRetry == 3)
 			{
-				KC::MDisplay().Message("\n\t Failed to Prepare the DMA Table", Display::WHITE_ON_BLACK()) ;
-				KC::MDisplay().Message("\n\t Trying to Use PIO Mode", Display::WHITE_ON_BLACK()) ;
+			  printf("\n\t Failed to Prepare the DMA Table");
+			  printf("\n\t Trying to Use PIO Mode");
 
 				pPort->uiCurrentSpeed = ATA_SPEED_PIO ;
 				bDMA = false ;
@@ -159,8 +159,8 @@ void ATACommandManager_ExecuteATACommand(ATACommand* pCommand)
 
 			if(iRetry == 3)
 			{
-				KC::MDisplay().Message("\n\t Failed to Perform DMA Tranfer", Display::WHITE_ON_BLACK()) ;
-				KC::MDisplay().Message("\n\t Trying to Use PIO Mode", Display::WHITE_ON_BLACK()) ;
+			  printf("\n\t Failed to Perform DMA Tranfer");
+			  printf("\n\t Trying to Use PIO Mode");
 
 				pPort->uiCurrentSpeed = ATA_SPEED_PIO ;
 				bDMA = false ;
@@ -270,8 +270,8 @@ void ATACommandManager_ExecuteATAPICommand(ATACommand* pCommand)
 
 			if(iRetry == 3)
 			{
-				KC::MDisplay().Message("\n\t Failed to Prepare the DMA Table", Display::WHITE_ON_BLACK()) ;
-				KC::MDisplay().Message("\n\t Trying to Use PIO Mode", Display::WHITE_ON_BLACK()) ;
+			  printf("\n\t Failed to Prepare the DMA Table");
+			  printf("\n\t Trying to Use PIO Mode");
 
 				pPort->uiCurrentSpeed = ATA_SPEED_PIO ;
 				bDMA = false ;
@@ -331,8 +331,8 @@ void ATACommandManager_ExecuteATAPICommand(ATACommand* pCommand)
 					//Start Transfer
 					if(pPort->portOperation.StartDMA(pPort) != ATAPortManager_SUCCESS)
 					{
-						KC::MDisplay().Message("\n\t Failed to Prepare the DMA Table", Display::WHITE_ON_BLACK()) ;
-						KC::MDisplay().Message("\n\t Trying to Use PIO Mode", Display::WHITE_ON_BLACK()) ;
+					  printf("\n\t Failed to Prepare the DMA Table");
+					  printf("\n\t Trying to Use PIO Mode");
 
 						pPort->uiCurrentSpeed = ATA_SPEED_PIO ;
 						bDMA = false ;
@@ -370,7 +370,7 @@ void ATACommandManager_ExecuteATAPICommand(ATACommand* pCommand)
 
 				if(bStatus & ATA_STATUS_ERROR)
 				{
-					KC::MDisplay().Message("\n\tData Transfer Failed", Display::WHITE_ON_BLACK()) ;
+				  printf("\n\tData Transfer Failed");
 					ATA_READ_REG(pPort, ATA_REG_ERROR, pCommand->iError) ;
 					pCommand->atapiSense.bSenseKey = pCommand->iError >> 4 ;
 					return ;
@@ -394,8 +394,7 @@ void ATACommandManager_ExecuteATAPICommand(ATACommand* pCommand)
 
 					if(uiCurrent == 0)
 					{
-						KC::MDisplay().Message("\n\tDRQ is high but the Drive Reports 0 bytes Available", 
-									Display::WHITE_ON_BLACK()) ;
+					  printf("\n\tDRQ is high but the Drive Reports 0 bytes Available");
 						ATA_READ_REG(pPort, ATA_REG_ERROR, pCommand->iError) ;
 						pCommand->atapiSense.bSenseKey = pCommand->iError >> 4 ;
 						return ;
@@ -456,7 +455,7 @@ void ATACommandManager_ExecuteATAPICommand(ATACommand* pCommand)
 
 				if(bTimedOut)
 				{
-					KC::MDisplay().Message("\n\tTimed out waiting for Command to Complete", Display::WHITE_ON_BLACK()) ;
+				  printf("\n\tTimed out waiting for Command to Complete");
 					return ;
 				}
 			}

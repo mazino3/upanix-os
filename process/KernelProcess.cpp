@@ -59,15 +59,15 @@ uint32_t KernelProcess::getGUIFramebufferAddress() {
     if (_processID == ProcessManager::UpanixKernelProcessID()) {
       _frameBuffer = MEM_GRAPHICS_Z_BUFFER_START;
     } else {
-      const auto lfbPageCount = GraphicsVideo::Instance().LFBPageCount();
-      if (lfbPageCount > PAGE_TABLE_ENTRIES) {
-        throw upan::exception(XLOC, "Max pages available for user process GUI framebuffer is %u, requested: %u", PAGE_TABLE_ENTRIES, lfbPageCount);
-      }
-      _frameBuffer = DMM_AllocateForKernel(lfbPageCount * PAGE_SIZE, PAGE_SIZE);
-      GraphicsVideo::Instance().addGUIProcess(processID(), _frameBuffer);
+      _frameBuffer = GraphicsVideo::Instance().allocateFrameBuffer();
+      GraphicsVideo::Instance().addGUIProcess(processID());
     }
   }
   return _frameBuffer;
+}
+
+void KernelProcess::initGuiFrame() {
+
 }
 
 void KernelProcess::DeAllocateGUIFramebuffer() {

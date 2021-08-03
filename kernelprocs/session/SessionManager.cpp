@@ -42,7 +42,7 @@ static bool SessionManager_ValidateUser(const upan::string& name, const upan::st
 
 static byte SessionManager_LoadShell(int* iShellProcessID)
 {
-	KC::MDisplay().Message("\n Loading Shell...", Display::WHITE_ON_BLACK()) ;
+  printf("\n Loading Shell...");
 
 	char shell[33] ;
 	strcpy(shell, BIN_PATH) ;
@@ -51,11 +51,11 @@ static byte SessionManager_LoadShell(int* iShellProcessID)
 	*iShellProcessID = KC::MKernelService().RequestProcessExec(shell, 0, NULL) ;
 	if(*iShellProcessID < 0)
 	{
-		KC::MDisplay().Message(" Failed !!!", Display::WHITE_ON_BLACK()) ;
+	  printf(" Failed !!!");
 		return false ;
 	}
 
-	KC::MDisplay().Message(" Done.", Display::WHITE_ON_BLACK()) ;
+	printf(" Done.");
 	return true ;
 }	
 
@@ -75,17 +75,17 @@ void SessionManager_StartSession()
 
 	while(true)
 	{
-		KC::MDisplay().ClearScreen() ;
+    KC::MConsole().ClearScreen() ;
 
-		KC::MDisplay().Message("\n  *********************  Welcome to Upanix V.3.0  *********************", Display::WHITE_ON_BLACK()) ;
+    printf("\n  *********************  Welcome to Upanix V.3.0  *********************");
 
 		UserManager::Instance();
 
 __OnlyLogin:
-		KC::MDisplay().Message("\n\n Login: ", Display::WHITE_ON_BLACK()) ;
+    printf("\n\n Login: ") ;
 		GenericUtil_ReadInput(szUserName, MAX_USER_LENGTH, true) ;
 
-		KC::MDisplay().Message("\n Password: ", Display::WHITE_ON_BLACK()) ;
+		printf("\n Password: ") ;
 		GenericUtil_ReadInput(szPassword, MAX_USER_LENGTH, false) ;
 
     const User* sessionUser = UserManager::Instance().GetUserEntryByName(szUserName);
@@ -132,6 +132,6 @@ void SessionManager_SwitchToSession(int key)
 	}
 
   ProcessManager::Instance().GetSchedulableProcess(SessionManager_List[key]).value().processGroup()->SwitchToFG();
-	KC::MDisplay().RefreshScreen() ;
+  KC::MConsole().RefreshScreen() ;
 }
 

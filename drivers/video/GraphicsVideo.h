@@ -22,6 +22,8 @@
 #include <usfncontext.h>
 #include <BmpImage.h>
 #include <atomicop.h>
+#include <vector.h>
+#include <mutex.h>
 
 class GraphicsVideo : protected KernelUtil::TimerTask
 {
@@ -38,9 +40,8 @@ class GraphicsVideo : protected KernelUtil::TimerTask
       _zBuffer = a;
     }
     unsigned LFBSize() const { return _lfbSize; }
-    unsigned LFBPageCount() const {
-      return ((_lfbSize - 1) / PAGE_SIZE) + 1;
-    }
+    uint32_t LFBPageCount() const { return _lfbPageCount; }
+
     void SetPixel(unsigned x, unsigned y, unsigned color);
     void FillRect(unsigned sx, unsigned sy, unsigned width, unsigned height, unsigned color);
     void DrawChar(byte ch, unsigned x, unsigned y, unsigned fg, unsigned bg);
@@ -59,11 +60,13 @@ class GraphicsVideo : protected KernelUtil::TimerTask
     void SetMouseCursorPos(int x, int y);
     void ExperimentWithMouseCursor(int i);
 
-    void addGUIProcess(int pid, uint32_t framebuffer);
+    void addGUIProcess(int pid);
     void removeGUIProcess(int pid);
 
+    uint32_t allocateFrameBuffer();
+
   private:
-    void InitializeUSFN();
+    bool isDirty();
     bool TimerTrigger() override;
     void NeedRefresh();
     void DrawUSFNChar(byte ch, unsigned x, unsigned y, unsigned fg, unsigned bg);
@@ -78,15 +81,18 @@ class GraphicsVideo : protected KernelUtil::TimerTask
     unsigned _width;
     unsigned _height;
     unsigned _lfbSize;
+    uint32_t _lfbPageCount;
     upan::atomic::integral<bool> _needRefresh;
     byte     _bpp;
     byte     _bytesPerPixel;
 
     upanui::usfn::Context* _ssfnContext;
-    bool     _usfnInitialized;
+    bool     _initialized;
     uint32_t _xCharScale;
     uint32_t _yCharScale;
     int _mouseX;
     int _mouseY;
     upan::uniq_ptr<upanui::Image> _mouseCursorImg;
+    upan::vector<int> _processes;
+    upan::mutex _guiMutex;
 };

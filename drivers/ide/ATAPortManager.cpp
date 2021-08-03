@@ -108,16 +108,12 @@ void ATAPortManager_Probe(ATAPort* pPort)
 	if(((bLBAMid == 0x00 && bLBAHigh == 0x00) || (bLBAMid == 0xC3 && bLBAHigh == 0xC3)) && bStatus != 0)
 	{
 		pPort->uiDevice = ATA_DEV_ATA ;
-		KC::MDisplay().Message("\n\tATA Device Connected on ", Display::WHITE_ON_BLACK()) ;
-		KC::MDisplay().Message(ATAPortManager_szCable[pPort->uiCable], Display::WHITE_ON_BLACK()) ;
-		KC::MDisplay().Message(" Cable", Display::WHITE_ON_BLACK()) ;
+		printf("\n\tATA Device Connected on %s Cable", ATAPortManager_szCable[pPort->uiCable]);
 	}
 	else if((bLBAMid == 0x14 && bLBAHigh == 0xEB) || (bLBAMid == 0x69 && bLBAHigh == 0x96))
 	{	
 		pPort->uiDevice = ATA_DEV_ATAPI ;
-		KC::MDisplay().Message("\n\tATAPI Device Connected on ", Display::WHITE_ON_BLACK()) ;
-		KC::MDisplay().Message(ATAPortManager_szCable[pPort->uiCable], Display::WHITE_ON_BLACK()) ;
-		KC::MDisplay().Message(" Cable", Display::WHITE_ON_BLACK()) ;
+		printf("\n\tATAPI Device Connected on %s Cable", ATAPortManager_szCable[pPort->uiCable]);
 	}
 	else
 	{
@@ -136,7 +132,7 @@ void ATAPortManager_Probe(ATAPort* pPort)
 	pPort->portOperation.Select(pPort, 0) ;
 	if(ATAPortManager_IOWait(pPort, ATA_STATUS_BUSY, 0) != ATAPortManager_SUCCESS)
 	{
-		KC::MDisplay().Message("\n\tCould not get Drive Data", Display::WHITE_ON_BLACK()) ;
+    printf("\n\tCould not get Drive Data");
 		pPort->uiDevice = ATA_DEV_UNKNOWN ;
 		return ;
 	}
@@ -152,7 +148,7 @@ void ATAPortManager_Probe(ATAPort* pPort)
 
 	if(ATAPortManager_IORead(pPort, (void*)ID, 512) != ATAPortManager_SUCCESS)
 	{
-		KC::MDisplay().Message("\n\tCould not get Drive Data", Display::WHITE_ON_BLACK()) ;
+    printf("\n\tCould not get Drive Data");
 		pPort->uiDevice = ATA_DEV_UNKNOWN ;
 		return ;
 	}
@@ -160,13 +156,12 @@ void ATAPortManager_Probe(ATAPort* pPort)
 	pATAIdentifyInfo = (ATAIdentifyInfo*)&ID[0] ;
 
 	ATAPortManager_ReadModelID(pPort->szDeviceName, pATAIdentifyInfo->szModelID) ;
-	KC::MDisplay().Message("\n\tName: ", Display::WHITE_ON_BLACK()) ;
-	KC::MDisplay().Message(pPort->szDeviceName, Display::WHITE_ON_BLACK()) ;
+	printf("\n\tName: %s", pPort->szDeviceName);
 
 	// Check for LBA Support
 	if(pPort->uiDevice == ATA_DEV_ATA && !(pATAIdentifyInfo->bCapabilities & 0x02))
 	{
-		KC::MDisplay().Message("\n\tError: Device has no LBA Support", Display::WHITE_ON_BLACK()) ;
+    printf("\n\tError: Device has no LBA Support");
 		pPort->uiDevice = ATA_DEV_UNKNOWN ;
 		return ;
 	}
@@ -245,30 +240,30 @@ byte ATAPortManager_ConfigureDrive(ATAPort* pPort)
 		{
 			if(i == ATA_SPEED_PIO)
 			{
-				KC::MDisplay().Message("\n\tUsing standard PIO mode", Display::WHITE_ON_BLACK()) ;
+        printf("\n\tUsing standard PIO mode");
 				return ATAPortManager_SUCCESS ;
 			}	
 
 			if(i == ATA_SPEED_DMA)
 			{
 				pPort->uiCurrentSpeed = ATA_SPEED_DMA ;
-				KC::MDisplay().Message("\n\tUsing standard DMA mode", Display::WHITE_ON_BLACK()) ;
+				printf("\n\tUsing standard DMA mode");
 				return ATAPortManager_SUCCESS ;
 			}
 
 			if(i >= ATA_SPEED_UDMA_0)
 			{
-				KC::MDisplay().Message("\n\tUsing Ultra DMA mode", Display::WHITE_ON_BLACK()) ;
+			  printf("\n\tUsing Ultra DMA mode");
 				uiSpeed = ATA_XFER_UDMA_0 + ( i - ATA_SPEED_UDMA_0) ;
 			}
 			else if(i >= ATA_SPEED_MWDMA_0)
 			{
-				KC::MDisplay().Message("\n\tUsing Multiword Ultra DMA mode", Display::WHITE_ON_BLACK()) ;
+			  printf("\n\tUsing Multiword Ultra DMA mode");
 				uiSpeed = ATA_XFER_MWDMA_0 + ( i - ATA_SPEED_MWDMA_0) ;
 			}
 			else if(i >= ATA_SPEED_PIO_3)
 			{
-				KC::MDisplay().Message("\n\tUsing PIO mode", Display::WHITE_ON_BLACK()) ;
+			  printf("\n\tUsing PIO mode");
 				uiSpeed = ATA_XFER_PIO_3 + ( i - 1 ) ;
 			}
 			

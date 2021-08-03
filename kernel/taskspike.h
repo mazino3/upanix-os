@@ -22,8 +22,8 @@ void EFlags() ;
 void DoContextSwitch() ;
 void DoContextSwitchTaskGate1() ;
 void DoContextSwitchTaskGate2() ;
-void KC::MDisplay().Task1() ;
-void KC::MDisplay().Task2() ;
+void KC::MConsole().Task1() ;
+void KC::MConsole().Task2() ;
 void TaskSpike() ;
 
 void
@@ -39,7 +39,7 @@ EFlags()
 	KC::MDisplay().Address("\n\nFLAG = ", uiFlag) ;
 }
 
-void KC::MDisplay().Task1()
+void KC::MConsole().Task1()
 {
 	unsigned i, j, k = 0 ;
 	while(k < 20)
@@ -56,7 +56,7 @@ void KC::MDisplay().Task1()
 	asm("IRET") ;
 }
 
-void KC::MDisplay().Task2()
+void KC::MConsole().Task2()
 {
 	unsigned i, j, k = 0 ;
 	while(k < 3)

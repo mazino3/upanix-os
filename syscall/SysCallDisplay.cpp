@@ -45,35 +45,27 @@ __volatile__ unsigned uiP9)
 			// P2 => Color Attr
 			{
 				char* szMessageAddress = KERNEL_ADDR(bDoAddrTranslation, char*, uiP1);
-				KC::MDisplay().Message(szMessageAddress, uiP2) ; 
-			}
-			break ;
-
-		case SYS_CALL_DISPLAY_CHARACTER :
-			// P1 => Character to be displayed
-			// P2 => Color Attr
-			{
-				KC::MDisplay().Character((char)(uiP1), uiP2) ; 
+        KC::MConsole().Message(szMessageAddress, uiP2) ;
 			}
 			break ;
 
 		case SYS_CALL_DISPLAY_CLR_SCR :
 			{
-				KC::MDisplay().ClearScreen() ;
+        KC::MConsole().ClearScreen() ;
 			}
 			break ;
 
 		case SYS_CALL_DISPLAY_MOV_CURSOR :
 			// P1 => No of Positions to Move
 			{
-				KC::MDisplay().MoveCursor((int)uiP1) ;
+        KC::MConsole().MoveCursor((int)uiP1) ;
 			}
 			break ;
 
 		case SYS_CALL_DISPLAY_CLR_LINE :
 			// P1 => Position to Clear From
 			{
-				KC::MDisplay().ClearLine((int)uiP1) ;
+        KC::MConsole().ClearLine((int)uiP1) ;
 			}
 			break ;
 
@@ -81,13 +73,13 @@ __volatile__ unsigned uiP9)
 			// P1 => Cursor Position
 			// P2 => Update Cursor On Screen
 			{
-				KC::MDisplay().SetCursor((int)uiP1, uiP2) ;
+        KC::MConsole().SetCursor((int)uiP1, uiP2) ;
 			}
 			break ;
 
 		case SYS_CALL_DISPLAY_GET_CURSOR :
 			{
-				*piRetVal = KC::MDisplay().GetCurrentCursorPosition();
+				*piRetVal = KC::MConsole().GetCurrentCursorPosition();
 			}
 			break ;
 
@@ -96,14 +88,14 @@ __volatile__ unsigned uiP9)
 			// P2 => Color Attr
 			// P3 => Update Cursor On Screen
 			{
-				KC::MDisplay().RawCharacter((char)(uiP1), uiP2, uiP3) ;
+        KC::MConsole().RawCharacter((char)(uiP1), uiP2, uiP3) ;
 			}
 			break ;
 
     case SYS_CALL_DISPLAY_RAW_CHAR_AREA:
       {
         const MChar* src = KERNEL_ADDR(bDoAddrTranslation, MChar*, uiP1);
-        KC::MDisplay().RawCharacterArea(src, uiP2, uiP3, (int)uiP4);
+        KC::MConsole().RawCharacterArea(src, uiP2, uiP3, (int)uiP4);
       }
       break;
 
@@ -113,21 +105,21 @@ __volatile__ unsigned uiP9)
       {
         auto maxRows = KERNEL_ADDR(bDoAddrTranslation, unsigned*, uiP1);
         auto maxCols = KERNEL_ADDR(bDoAddrTranslation, unsigned*, uiP2);
-        *maxRows = KC::MDisplay().MaxRows();
-        *maxCols = KC::MDisplay().MaxColumns();
+        *maxRows = KC::MConsole().MaxRows();
+        *maxCols = KC::MConsole().MaxColumns();
       }
       break;
 
 	  case SYS_CALL_DISPLAY_FRAMEBUFFER_INFO:
 	    // P1 => Return address of FramebufferInfo
     {
-      auto framebufferInfo = KERNEL_ADDR(bDoAddrTranslation, FramebufferInfo*, uiP1);
+      auto frameBufferInfo = KERNEL_ADDR(bDoAddrTranslation, FrameBufferInfo*, uiP1);
       const auto f = MultiBoot::Instance().VideoFrameBufferInfo();
-      framebufferInfo->_pitch = f->framebuffer_pitch;
-      framebufferInfo->_width = f->framebuffer_width;
-      framebufferInfo->_height = f->framebuffer_height;
-      framebufferInfo->_bpp = f->framebuffer_bpp;
-      framebufferInfo->_frameBuffer = (uint32_t*)ProcessManager::Instance().GetCurrentPAS().getGUIFramebufferAddress();
+      frameBufferInfo->_pitch = f->framebuffer_pitch;
+      frameBufferInfo->_width = f->framebuffer_width;
+      frameBufferInfo->_height = f->framebuffer_height;
+      frameBufferInfo->_bpp = f->framebuffer_bpp;
+      frameBufferInfo->_frameBuffer = (uint32_t*)ProcessManager::Instance().GetCurrentPAS().getGUIFramebufferAddress();
     }
     break;
 	}

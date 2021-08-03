@@ -45,6 +45,12 @@ public:
 
   uint32_t getGUIFramebufferAddress() override;
 
+  upan::option<upanui::BaseFrame&> getGuiFrame() override {
+    return upan::option<upanui::BaseFrame&>::empty();
+  }
+
+  void initGuiFrame() override;
+
 private:
   void DeAllocateResources() override;
   uint32_t AllocateAddressSpace();

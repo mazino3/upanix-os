@@ -18,13 +18,35 @@
 
 #pragma once
 
-#include <Display.h>
+#include <RootConsole.h>
+#include <TextWriter.h>
+#include <FrameBuffer.h>
+#include <Viewport.h>
+#include <BaseFrame.h>
 
-class DefaultConsole : public Display {
+class RootGUIConsole : public RootConsole {
 private:
-  DefaultConsole(unsigned rows, unsigned columns);
-  void GotoCursor() override {}
-  void DoScrollDown() override;
-  void DirectPutChar(int iPos, byte ch, byte attr) override;
-  friend class Display;
+  static RootGUIConsole* _instance;
+  static void Create();
+  RootGUIConsole(const upanui::FrameBuffer& frameBuffer, const upanui::Viewport& viewport);
+
+public:
+  static RootGUIConsole& Instance();
+
+  void gotoCursor() override {}
+  void putChar(int iPos, byte ch, const upanui::CharStyle& attr) override;
+  void scrollDown() override;
+
+  void resetFrameBuffer(uint32_t frameBufferAddress);
+  void setFontContext(upanui::usfn::Context*);
+  upanui::BaseFrame& frame() {
+    return _frame;
+  }
+
+private:
+  upanui::TextWriter _textWriter;
+  upanui::BaseFrame _frame;
+
+  friend class RootConsole;
+  friend class MemManager;
 };

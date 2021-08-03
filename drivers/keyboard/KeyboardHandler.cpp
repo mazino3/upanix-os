@@ -25,7 +25,7 @@
 
 KeyboardHandler::KeyboardHandler() : _qBuffer(1024)
 {
-	KC::MDisplay().LoadMessage("Keyboard Initialization", Success) ;
+  KC::MConsole().LoadMessage("Keyboard Initialization", Success) ;
 }
 
 byte KeyboardHandler::GetCharInBlockMode()

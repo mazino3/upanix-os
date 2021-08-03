@@ -17,6 +17,8 @@
  */
 #pragma once
 
+#include <ProcessConstants.h>
+
 class ProcessDLLInfo {
 public:
   ProcessDLLInfo(int id, uint32_t loadAddress, uint32_t noOfPages) : _id(id), _loadAddress(loadAddress), _noOfPages(noOfPages) {

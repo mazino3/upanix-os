@@ -47,7 +47,7 @@ class DisplayBuffer
     ~DisplayBuffer();
     byte* GetBuffer() { return _buffer; }
 	private:
-		DisplayBuffer(byte* buffer, unsigned rows, unsigned height, bool isKernel);
+		DisplayBuffer(byte* buffer, unsigned rows, unsigned columns, bool isKernel);
 
     bool PutChar(int pos, byte val) {
       bool changed = _buffer[pos] != val;

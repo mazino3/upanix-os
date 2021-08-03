@@ -63,9 +63,9 @@ UHCIManager::UHCIManager()
 	}
 	
 	if(_uhciControllers.size())
-		KC::MDisplay().LoadMessage("USB UHCI Controller Found", Success) ;
+    KC::MConsole().LoadMessage("USB UHCI Controller Found", Success) ;
 	else
-		KC::MDisplay().LoadMessage("No USB UHCI Controller Found", Failure) ;
+    KC::MConsole().LoadMessage("No USB UHCI Controller Found", Failure) ;
 }
 
 void UHCIManager::Probe()

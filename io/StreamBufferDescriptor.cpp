@@ -19,6 +19,7 @@
 #include <StreamBufferDescriptor.h>
 #include <fs.h>
 #include <Display.h>
+#include <ProcessConstants.h>
 
 StreamBufferDescriptor::StreamBufferDescriptor(int pid, int id, uint32_t bufSize)
   : IODescriptor(pid, id, O_APPEND), _bufSize(bufSize) {
@@ -30,6 +31,9 @@ int StreamBufferDescriptor::read(char* buffer, int len) {
 }
 
 int StreamBufferDescriptor::write(const char* buffer, int len) {
-  KC::MDisplay().nMessage(buffer, len, Display::WHITE_ON_BLACK());
-  return len;
+  if (getPid() == NO_PROCESS_ID) {
+    KC::MConsole().nMessage(buffer, len, upanui::CharStyle::WHITE_ON_BLACK());
+    return len;
+  }
+  return 0;
 }

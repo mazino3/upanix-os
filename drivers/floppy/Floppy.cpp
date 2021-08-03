@@ -457,12 +457,12 @@ void Floppy_Initialize()
 	{
     if (upan::trycall([]() {
       if(Floppy_IsEnhancedController())
-        KC::MDisplay().Message("\n\tEnhanced Floppy Controller : 8272A", Display::WHITE_ON_BLACK()) ;
+        printf("\n\tEnhanced Floppy Controller : 8272A");
       else
-        KC::MDisplay().Message("\n\tOlder Floppy Controller : 8272A", Display::WHITE_ON_BLACK()) ;
+        printf("\n\tOlder Floppy Controller : 8272A");
     }).isBad())
     {
-			KC::MDisplay().Message("\n\tFailed To Get Floppy Controller Version", Display::WHITE_ON_BLACK()) ;
+      printf("\n\tFailed To Get Floppy Controller Version");
     }
 	
     DiskDriveManager::Instance().Create("floppya", DEV_FLOPPY, FD_DRIVE1,
@@ -480,7 +480,7 @@ void Floppy_Initialize()
 	}
 
 	Floppy_bInitStatus = bInitStatus ;
-	KC::MDisplay().LoadMessage("Floppy Initialization", bInitStatus ? Success : Failure) ;
+  KC::MConsole().LoadMessage("Floppy Initialization", bInitStatus ? Success : Failure) ;
 }
 
 bool Floppy_GetInitStatus()

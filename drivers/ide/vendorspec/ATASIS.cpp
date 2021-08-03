@@ -188,11 +188,9 @@ void ATASIS_InitController(const PCIEntry* pPCIEntry, ATAController* pController
 
 				// Special case for SIS630 : 630S/ET is ATA_100a
 				if(p->usDeviceID == 0x0630 && p->bRevisionID >= 0x30)
-					uiSpeed = SIS_UDMA_100a ;	
+					uiSpeed = SIS_UDMA_100a ;
 
-				KC::MDisplay().Message("\n\t", Display::WHITE_ON_BLACK()) ;
-				KC::MDisplay().Message(SISIDEList[uiDeviceIndex].szName, Display::WHITE_ON_BLACK()) ;
-				KC::MDisplay().Message(" ATA Controller Detected", Display::WHITE_ON_BLACK()) ;
+				printf("\n\t%s ATA Controller Detected", SISIDEList[uiDeviceIndex].szName);
 				strcpy(pController->szName, SISIDEList[uiDeviceIndex].szName) ;
 				break ;
 			}

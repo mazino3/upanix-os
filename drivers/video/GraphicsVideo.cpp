@@ -29,6 +29,7 @@
 #include <BmpImage.h>
 #include <RawImage.h>
 #include <ColorPalettes.h>
+#include <RootGUIConsole.h>
 
 extern unsigned _binary_fonts_FreeSans_sfn_start;
 extern unsigned _binary_unifont_sfn_start;
@@ -64,8 +65,8 @@ GraphicsVideo& GraphicsVideo::Instance() {
   return *_instance;
 }
 
-GraphicsVideo::GraphicsVideo(const framebuffer_info_t& fbinfo) : _needRefresh(false), _mouseCursorImg(nullptr)
-{
+GraphicsVideo::GraphicsVideo(const framebuffer_info_t& fbinfo)
+  : _needRefresh(false), _initialized(false), _mouseCursorImg(nullptr) {
   _flatLFBAddress = fbinfo.framebuffer_addr;
   _mappedLFBAddress = fbinfo.framebuffer_addr;
   _zBuffer = fbinfo.framebuffer_addr;
@@ -76,6 +77,7 @@ GraphicsVideo::GraphicsVideo(const framebuffer_info_t& fbinfo) : _needRefresh(fa
   _bpp = fbinfo.framebuffer_bpp;
   _bytesPerPixel = _bpp / 8;
   _lfbSize = _height * _width * _bytesPerPixel;
+  _lfbPageCount = ((_lfbSize - 1) / PAGE_SIZE) + 1;
   _xCharScale = 8;
   _yCharScale = 16;
   _mouseX = 0;
@@ -85,6 +87,14 @@ GraphicsVideo::GraphicsVideo(const framebuffer_info_t& fbinfo) : _needRefresh(fa
 }
 
 void GraphicsVideo::Initialize() {
+  if (_initialized) {
+    return;
+  }
+
+  if (_lfbPageCount > PAGE_TABLE_ENTRIES) {
+    throw upan::exception(XLOC, "Max pages available for user process GUI framebuffer is %u, requested: %u", PAGE_TABLE_ENTRIES, _lfbPageCount);
+  }
+
   const auto wc = Pat::Instance().writeCombiningPageTableFlag();
   if (wc >= 0) {
     //remap the video framebuffer address space with write-combining flag
@@ -96,28 +106,24 @@ void GraphicsVideo::Initialize() {
   upanui::BmpImage mouseCursorBmp(&_binary_mouse_cursor_bmp_start, ColorPalettes::CP16::Get(ColorPalettes::CP16::FGColor::FG_RED));
   _mouseCursorImg.reset(new upanui::RawImage(mouseCursorBmp, 16, 16));
 
-  InitializeUSFN();
-}
-
-void GraphicsVideo::InitializeUSFN() {
   // You can as well read a .sfn file in a buffer and call ssfn_load on the same
   // In here, the .sfn file was included as part of the kernel binary
-  _usfnInitialized = false;
   try {
     _ssfnContext = new upanui::usfn::Context();
     _ssfnContext->Load((uint8_t *) &_binary_u_vga16_sfn_start);
     _ssfnContext->Select(upanui::usfn::FAMILY_MONOSPACE, NULL, upanui::usfn::STYLE_REGULAR, 16);
-    _usfnInitialized = true;
+    RootGUIConsole::Instance().setFontContext(_ssfnContext);
   } catch(upan::exception& e) {
     printf("\n Failed to load USFN font: %s", e.ErrorMsg().c_str());
-    while(1);
+    while(true);
   }
+
+  _initialized = true;
 }
 
-void GraphicsVideo::CreateRefreshTask()
-{
+void GraphicsVideo::CreateRefreshTask() {
   _zBuffer = KERNEL_VIRTUAL_ADDRESS(MEM_GRAPHICS_Z_BUFFER_START);
-  FillRect(0, 0, _width, _height, 0x0);
+  memset((void*)_zBuffer, 0, _lfbSize);
   KernelUtil::ScheduleTimedTask("xgrefresh", 50, *this);
 }
 
@@ -152,12 +158,18 @@ static void optimized_memcpy(uint32_t dest, uint32_t src, int len) {
 }
 
 bool GraphicsVideo::TimerTrigger() {
-  if(_needRefresh.get()) {
+  if(isDirty()) {
+    upan::mutex_guard g(_guiMutex);
     ProcessSwitchLock p;
+    for(auto pid : _processes) {
+      auto process = ProcessManager::Instance().GetProcess(pid);
+      process.ifPresent([&](Process& p) {
+        optimized_memcpy(_zBuffer, (uint32_t)p.getGuiFrame().value().frameBuffer().buffer(), _lfbSize);
+      });
+    }
     optimized_memcpy(_mappedLFBAddress, _zBuffer, _lfbSize);
     //memcpy((void *) _mappedLFBAddress, (void *) _zBuffer, _lfbSize);
     DrawMouseCursor();
-    _needRefresh.set(false);
   }
   return true;
 }
@@ -200,15 +212,15 @@ void GraphicsVideo::DrawCursor(uint32_t x, uint32_t y, uint32_t color) {
 }
 
 void GraphicsVideo::DrawChar(byte ch, unsigned x, unsigned y, unsigned fg, unsigned bg) {
-  if (_usfnInitialized) {
-    try {
-      DrawUSFNChar(ch, x, y, fg, bg);
-      return;
-    } catch(upan::exception& e) {
-      _usfnInitialized = false;
-      printf("failed to render character using usfn: %s", e.ErrorMsg().c_str());
-    }
-  }
+//  if (_usfnInitialized) {
+//    try {
+//      DrawUSFNChar(ch, x, y, fg, bg);
+//      return;
+//    } catch(upan::exception& e) {
+//      _usfnInitialized = false;
+//      printf("failed to render character using usfn: %s", e.ErrorMsg().c_str());
+//    }
+//  }
   x *= _xCharScale;
   y *= _yCharScale;
   if((y + _yCharScale) >= _height || (x + _xCharScale) >= _width)
@@ -319,16 +331,16 @@ void GraphicsVideo::ExperimentWithMouseCursor(int i) {
 
   upanui::BmpImage image(img, ColorPalettes::CP16::Get(ColorPalettes::CP16::FGColor::FG_RED));
   image.DebugPrint();
-  CopyArea(10, 160, image.width(), image.height(), image.frameBuffer(), false);
+  CopyArea(10, 160, image.width(), image.height(), image.dataBuffer(), false);
 
   uint32_t s = btime();
   upanui::RawImage rawImage(image, 16, 16);
   printf("\n Time Taken: %u", btime() - s);
-  CopyArea(420, 160, rawImage.width(), rawImage.height(), rawImage.frameBuffer(), false);
+  CopyArea(420, 160, rawImage.width(), rawImage.height(), rawImage.dataBuffer(), false);
 }
 
 void GraphicsVideo::DrawMouseCursor() {
-  CopyArea(_mouseX, _mouseY, _mouseCursorImg->width(), _mouseCursorImg->height(), _mouseCursorImg->frameBuffer(), true);
+  CopyArea(_mouseX, _mouseY, _mouseCursorImg->width(), _mouseCursorImg->height(), _mouseCursorImg->dataBuffer(), true);
 }
 
 void GraphicsVideo::CopyArea(unsigned sx, unsigned sy, uint32_t width, uint32_t height, const uint32_t* src, bool directWrite) {
@@ -352,8 +364,37 @@ void GraphicsVideo::CopyArea(unsigned sx, unsigned sy, uint32_t width, uint32_t 
   NeedRefresh();
 }
 
-void GraphicsVideo::addGUIProcess(int pid, uint32_t framebuffer) {
+bool GraphicsVideo::isDirty() {
+  upan::mutex_guard g(_guiMutex);
+
+  bool dirty = false;
+
+  for(auto pid : _processes) {
+    auto process = ProcessManager::Instance().GetProcess(pid);
+    if (process.isEmpty()) {
+      removeGUIProcess(pid);
+    } else {
+      process.value().getGuiFrame().ifPresent([&dirty](upanui::BaseFrame& f) {
+        dirty |= f.isDirty();
+        f.clean();
+      });
+    }
+  }
+  return dirty;
+}
+
+void GraphicsVideo::addGUIProcess(int pid) {
+  upan::mutex_guard g(_guiMutex);
+  _processes.push_back(pid);
 }
 
 void GraphicsVideo::removeGUIProcess(int pid) {
+  upan::mutex_guard g(_guiMutex);
+  _processes.erase(pid);
+}
+
+uint32_t GraphicsVideo::allocateFrameBuffer() {
+  auto addr = DMM_AllocateForKernel(_lfbPageCount * PAGE_SIZE, PAGE_SIZE);
+  memset((void*)addr, 0, _lfbSize);
+  return addr;
 }

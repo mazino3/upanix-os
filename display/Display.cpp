@@ -23,10 +23,9 @@
 #include <Display.h>
 #include <KernelComponents.h>
 #include <GraphicsVideo.h>
-#include <VGAConsole.h>
 #include <GraphicsConsole.h>
 #include <cdisplay.h>
-#include <DefaultConsole.h>
+#include <RootConsole.h>
 
 DisplayBuffer::DisplayBuffer(byte* buffer, unsigned rows, unsigned columns, bool isKernel)
   : _cursor(0),
@@ -102,43 +101,24 @@ void Display::Attribute::UpdateAttrVal()
 	m_Attr = m_blink | m_fgColor | m_bgColor;
 }
 
-void Display::CreateDefault() {
-  static bool bDone = false;
-  if(bDone) {
-    KC::MDisplay().Message("\n Display is already initialized!", Display::WHITE_ON_BLACK());
-    return;
-  }
-  auto f = MultiBoot::Instance().VideoFrameBufferInfo();
-  if(f) {
-    static DefaultConsole gc(f->framebuffer_height / 16, f->framebuffer_width / 8);
-    KC::SetDisplay(gc);
-  } else {
-    static VGAConsole vc;
-    KC::SetDisplay(vc);
-  }
-  KC::MDisplay().UpdateCursorPosition(0, true);
-  KC::MDisplay().LoadMessage("Video Initialization", Success);
-  bDone = true;
-}
+//void Display::CreateGraphicsConsole() {
+//	static bool bDone = false;
+//  if(bDone) {
+//    KC::MConsole().Message("\n Graphics Console is already initialized!", upanui::CharStyle::WHITE_ON_BLACK());
+//    return;
+//  }
+//  auto f = MultiBoot::Instance().VideoFrameBufferInfo();
+//  if(f) {
+//    static GraphicsConsole gc(f->framebuffer_height / 16, f->framebuffer_width / 8);
+//    KC::SetDisplay(gc);
+//    KC::MConsole().UpdateCursorPosition(0, true);
+//  }
+//  bDone = true;
+//}
 
-void Display::CreateGraphicsConsole() {
-	static bool bDone = false;
-  if(bDone) {
-    KC::MDisplay().Message("\n Graphics Console is already initialized!", Display::WHITE_ON_BLACK());
-    return;
-  }
-  auto f = MultiBoot::Instance().VideoFrameBufferInfo();
-  if(f) {
-    static GraphicsConsole gc(f->framebuffer_height / 16, f->framebuffer_width / 8);
-    KC::SetDisplay(gc);
-    KC::MDisplay().UpdateCursorPosition(0, true);
-  }
-  bDone = true;
-}
-
-Display::Display(unsigned rows, unsigned height) 
-  : _maxRows(rows), _maxColumns(height), 
-    _kernelBuffer((byte*)(MEM_GRAPHICS_TEXT_BUFFER_START - GLOBAL_DATA_SEGMENT_BASE), rows, height, true) {
+Display::Display(unsigned rows, unsigned columns)
+  : _maxRows(rows), _maxColumns(columns),
+    _kernelBuffer((byte*)(MEM_GRAPHICS_TEXT_BUFFER_START - GLOBAL_DATA_SEGMENT_BASE), rows, columns, true) {
 }
 
 void Display::ClearScreen()
@@ -274,18 +254,18 @@ void Display::LoadMessage(const char* loadMessage, ReturnCode result)
 	byte width = 50;
 	unsigned int i;
 	char spaces[50] = "\0";
-	
+
 	for(i = 0; loadMessage[i] != '\0'; i++);
 
 	width = width - i;
-	
+
 	for(i = 0; i < width; i++)
 			spaces[i] = ' ';
 	spaces[i] = '\0';
-	
+
 	Message("\n ", WHITE_ON_BLACK());
 	Message(loadMessage, WHITE_ON_BLACK());
-	Message(spaces, WHITE_ON_BLACK()); 
+	Message(spaces, WHITE_ON_BLACK());
 
 	if(result == Success)
 		Message("[ OK ]", Attribute(ColorPalettes::CP16::FG_BLACK, ColorPalettes::CP16::BG_GREEN));

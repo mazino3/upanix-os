@@ -53,8 +53,8 @@ void PIT_Initialize()
 
 	if(!IrqManager::Instance().RegisterIRQ(StdIRQ::Instance().TIMER_IRQ, (unsigned)&PIT_Handler))
     status = Failure;
-	
-	KC::MDisplay().LoadMessage("Timer Initialization", status);
+
+  KC::MConsole().LoadMessage("Timer Initialization", status);
 }
 
 unsigned PIT_GetClockCount() { return PIT_ClockCountForSleep ; }

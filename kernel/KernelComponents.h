@@ -15,26 +15,25 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
-#ifndef _KERNEL_COMP_H_
-#define _KERNEL_COMP_H_
+
+#pragma once
+
+#include <RootConsole.h>
 
 class MemManager;
 class KernelService;
 class PS2MouseDriver;
 class NetworkManager;
-class Display;
 
 class KC
 {
 	public:
-		static Display& MDisplay(); 
+		static RootConsole& MConsole();
 		static KernelService& MKernelService();
 
   private:
-    static void SetDisplay(Display& dm) { _dm = &dm; }
-    static Display* _dm;
+    static void setConsole(RootConsole& console) { _rootConsole = &console; }
+    static RootConsole* _rootConsole;
 
-    friend class Display;
+  friend class RootConsole;
 };
-
-#endif
