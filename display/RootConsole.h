@@ -43,6 +43,8 @@ public:
   uint32_t MaxRows() const;
   uint32_t MaxColumns() const;
 
+  virtual void StartCursorBlink() = 0;
+
 protected:
   RootConsole(uint32_t rows, uint32_t columns);
 

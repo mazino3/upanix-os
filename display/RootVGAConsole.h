@@ -27,6 +27,7 @@ private:
   void gotoCursor() override;
   void putChar(int iPos, byte ch, const upanui::CharStyle& attr) override;
   void scrollDown() override;
+  void StartCursorBlink() override {}
 
   friend class RootConsole;
 };

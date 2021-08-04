@@ -23,6 +23,7 @@
 #include <FrameBuffer.h>
 #include <Viewport.h>
 #include <BaseFrame.h>
+#include <timer_thread.h>
 
 class RootGUIConsole : public RootConsole {
 private:
@@ -33,10 +34,6 @@ private:
 public:
   static RootGUIConsole& Instance();
 
-  void gotoCursor() override {}
-  void putChar(int iPos, byte ch, const upanui::CharStyle& attr) override;
-  void scrollDown() override;
-
   void resetFrameBuffer(uint32_t frameBufferAddress);
   void setFontContext(upanui::usfn::Context*);
   upanui::BaseFrame& frame() {
@@ -44,8 +41,25 @@ public:
   }
 
 private:
+  void gotoCursor() override;
+  void putChar(int iPos, byte ch, const upanui::CharStyle& attr) override;
+  void scrollDown() override;
+  void putCursor(bool show);
+
+  class CursorBlink : public upan::timer_thread {
+  public:
+    explicit CursorBlink(RootGUIConsole& console);
+    void on_timer_trigger() override;
+    RootGUIConsole& _console;
+  };
+  void StartCursorBlink() override;
+
+private:
   upanui::TextWriter _textWriter;
   upanui::BaseFrame _frame;
+  int _cursorPos;
+  bool _cursorEnabled;
+  upan::mutex _cursorMutex;
 
   friend class RootConsole;
   friend class MemManager;

@@ -56,7 +56,8 @@ RootGUIConsole& RootGUIConsole::Instance() {
 
 RootGUIConsole::RootGUIConsole(const upanui::FrameBuffer& frameBuffer, const upanui::Viewport& viewport)
   : RootConsole(frameBuffer.height() / 16, frameBuffer.width() / 8),
-    _frame(frameBuffer, viewport) {
+    _frame(frameBuffer, viewport),
+    _cursorPos(0), _cursorEnabled(false) {
   GraphicsVideo::Create();
 }
 
@@ -83,4 +84,48 @@ void RootGUIConsole::scrollDown() {
 void RootGUIConsole::resetFrameBuffer(uint32_t frameBufferAddress) {
   _frame.frameBuffer().resetFrameBufferAddress((uint32_t*)frameBufferAddress);
   _frame.touch();
+}
+
+void RootGUIConsole::StartCursorBlink() {
+  static CursorBlink cursorBlink(*this);
+  cursorBlink.run();
+  _cursorEnabled = true;
+}
+
+void RootGUIConsole::gotoCursor() {
+  if (_cursorEnabled) {
+    upan::mutex_guard g(_cursorMutex);
+    int newCurPos = GetCurrentCursorPosition();
+    if (newCurPos != _cursorPos) {
+      //erase old cursor
+      putCursor(false);
+    }
+    //draw new cursor
+    _cursorPos = newCurPos;
+    putCursor(true);
+  }
+}
+
+void RootGUIConsole::putCursor(bool show) {
+  if ((uint32_t)_cursorPos >= _consoleBuffer.maxRows() * _consoleBuffer.maxColumns()) {
+    return;
+  }
+
+  const upanui::CharStyle style = _consoleBuffer.getChar(_cursorPos * upanui::ConsoleBuffer::NO_BYTES_PER_CHARACTER + 1);
+  const auto color = show ? ColorPalettes::CP16::Get(style.getFGColor()) : ColorPalettes::CP16::Get(style.getBGColor() >> 4);
+  const auto x = (_cursorPos % _consoleBuffer.maxColumns());
+  const auto y = (_cursorPos / _consoleBuffer.maxColumns());
+
+  _textWriter.drawCursor(_frame.frameBuffer(), x, y, color);
+  _frame.touch();
+}
+
+RootGUIConsole::CursorBlink::CursorBlink(RootGUIConsole& console) : upan::timer_thread(500), _console(console) {
+}
+
+void RootGUIConsole::CursorBlink::on_timer_trigger() {
+  upan::mutex_guard g(_console._cursorMutex);
+  static bool showCursor = false;
+  _console.putCursor(showCursor);
+  showCursor = !showCursor;
 }

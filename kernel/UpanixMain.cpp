@@ -84,10 +84,9 @@ void UpanixMain_KernelProcess() {
 	KernelRootProcess::Instance().initGuiFrame();
 	RootGUIConsole::Instance().ClearScreen();
   GraphicsVideo::Instance().CreateRefreshTask();
-  //while(1);
 
   //Display::CreateGraphicsConsole();
-  //KC::MConsole().StartCursorBlink();
+  KC::MConsole().StartCursorBlink();
 
 	while(true) {
     const int pid = ProcessManager::Instance().CreateKernelProcess("console", (unsigned) &Console_StartUpanixConsole,
