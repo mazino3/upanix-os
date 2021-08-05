@@ -18,8 +18,8 @@
 
 #include <StreamBufferDescriptor.h>
 #include <fs.h>
-#include <Display.h>
 #include <ProcessConstants.h>
+#include <KernelComponents.h>
 
 StreamBufferDescriptor::StreamBufferDescriptor(int pid, int id, uint32_t bufSize)
   : IODescriptor(pid, id, O_APPEND), _bufSize(bufSize) {

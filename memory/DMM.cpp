@@ -17,7 +17,6 @@
  */
 #include <DMM.h>
 #include <MemManager.h>
-#include <Display.h>
 #include <UpanixMain.h>
 #include <stdio.h>
 #include <exception.h>

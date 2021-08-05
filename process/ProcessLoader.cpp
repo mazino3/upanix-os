@@ -20,7 +20,6 @@
 #include <PIC.h>
 #include <FileSystem.h>
 #include <Directory.h>
-#include <Display.h>
 #include <MemManager.h>
 #include <ElfParser.h>
 #include <ElfProgHeader.h>

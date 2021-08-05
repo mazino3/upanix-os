@@ -18,7 +18,6 @@
 # include <RTC.h>
 # include <PIC.h>
 # include <PortCom.h>
-# include <Display.h>
 # include <AsmUtil.h>
 # include <MemConstants.h>
 # include <MemUtil.h>

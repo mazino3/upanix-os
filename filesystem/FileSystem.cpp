@@ -23,7 +23,6 @@
 #include <FileSystem.h>
 #include <MemConstants.h>
 #include <MemUtil.h>
-#include <Display.h>
 #include <DeviceDrive.h>
 #include <UserManager.h>
 #include <SystemUtil.h>

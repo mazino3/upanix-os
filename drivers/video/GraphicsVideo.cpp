@@ -168,7 +168,6 @@ bool GraphicsVideo::TimerTrigger() {
       });
     }
     optimized_memcpy(_mappedLFBAddress, _zBuffer, _lfbSize);
-    //memcpy((void *) _mappedLFBAddress, (void *) _zBuffer, _lfbSize);
     DrawMouseCursor();
   }
   return true;
@@ -366,6 +365,11 @@ void GraphicsVideo::CopyArea(unsigned sx, unsigned sy, uint32_t width, uint32_t 
 
 bool GraphicsVideo::isDirty() {
   upan::mutex_guard g(_guiMutex);
+
+  if (_needRefresh.get()) {
+    _needRefresh.set(false);
+    return true;
+  }
 
   bool dirty = false;
 

@@ -17,7 +17,6 @@
  */
 
 #include <Floppy.h>
-#include <Display.h>
 #include <IDT.h>
 #include <AsmUtil.h>
 #include <PIC.h>

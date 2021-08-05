@@ -19,7 +19,6 @@
 #include <StringUtil.h>
 #include <MemUtil.h>
 #include <DeviceDrive.h>
-#include <Display.h>
 #include <DMM.h>
 #include <ProcessEnv.h>
 #include <SystemUtil.h>

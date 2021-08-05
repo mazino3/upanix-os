@@ -17,7 +17,6 @@
  */
 #include <USBMassBulkStorageDisk.h>
 #include <PCIBusHandler.h>
-#include <Display.h>
 #include <DMM.h>
 #include <MemManager.h>
 #include <MemUtil.h>

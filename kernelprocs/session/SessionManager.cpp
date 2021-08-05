@@ -16,7 +16,6 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
 # include <SessionManager.h>
-# include <Display.h>
 # include <StringUtil.h>
 # include <FileSystem.h>
 # include <Directory.h>

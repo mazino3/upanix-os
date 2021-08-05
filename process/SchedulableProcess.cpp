@@ -22,7 +22,6 @@
 #include <ProcessGroup.h>
 #include <MemUtil.h>
 #include <ProcessManager.h>
-#include <Display.h>
 #include <DMM.h>
 
 //#define INIT_NAME "_stdio_init-NOTINUSE"

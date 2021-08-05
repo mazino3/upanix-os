@@ -18,7 +18,6 @@
 # include <ATAIntel.h>
 # include <StringUtil.h>
 # include <DMM.h>
-# include <Display.h>
 # include <MemUtil.h>
 
 static IntelIDE IntelIDEList[] = {

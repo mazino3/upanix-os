@@ -16,7 +16,6 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
 */
 
-#include <Display.h>
 #include <ProcessManager.h>
 #include <PCIBusHandler.h>
 #include <UHCIManager.h>

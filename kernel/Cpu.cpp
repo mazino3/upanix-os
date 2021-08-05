@@ -18,7 +18,6 @@
 
 #include <Cpu.h>
 #include <stdio.h>
-#include <Display.h>
 
 Cpu::Cpu()
 {

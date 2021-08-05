@@ -27,7 +27,6 @@
 # include <SystemUtil.h>
 # include <DMM.h>
 # include <StringUtil.h>
-# include <Display.h>
 # include <stdio.h>
 # include <list.h>
 # include <try.h>

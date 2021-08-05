@@ -21,7 +21,6 @@
 # include <PortCom.h>
 # include <KernelUtil.h>
 # include <MemUtil.h>
-# include <Display.h>
 # include <MemConstants.h>
 # include <ProcessManager.h>
 

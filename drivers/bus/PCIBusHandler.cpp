@@ -17,7 +17,6 @@
  */
 #include <PCIBusHandler.h>
 #include <PortCom.h>
-#include <Display.h>
 #include <DMM.h>
 #include <KernelService.h>
 #include <Bit.h>

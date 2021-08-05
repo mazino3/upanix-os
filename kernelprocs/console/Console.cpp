@@ -17,14 +17,10 @@
  */
 #include <Console.h>
 #include <KeyboardHandler.h>
-#include <Display.h>
-#include <StringUtil.h>
 #include <Directory.h>
 #include <CommandLineParser.h>
 #include <DMM.h>
 #include <ConsoleCommands.h>
-#include <FileOperations.h>
-#include <MemUtil.h>
 #include <PIT.h>
 #include <SessionManager.h>
 
@@ -105,7 +101,7 @@ void Console::Start()
           _currentCommandPos-- ;
           int x = _commandLine[_currentCommandPos] == '\t' ? 4 : 1 ;
           KC::MConsole().MoveCursor(-x) ;
-          KC::MConsole().ClearLine(Display::START_CURSOR_POS) ;
+          KC::MConsole().ClearLine(upanui::ConsoleBuffer::START_CURSOR_POS) ;
 				}
 				break ;
 				

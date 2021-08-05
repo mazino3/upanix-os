@@ -16,14 +16,9 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
 # include <GenericUtil.h>
-# include <Display.h>
-# include <PS2KeyboardDriver.h>
 # include <KeyboardHandler.h>
-# include <Display.h>
-# include <MemConstants.h>
 # include <ProcessEnv.h>
 # include <StringUtil.h>
-# include <IODescriptorTable.h>
 # include <FileOperations.h>
 # include <DMM.h>
 
@@ -106,7 +101,7 @@ void GenericUtil_ReadInput(char* szInputBuffer, const int iMaxReadLength, byte b
 					if(bEcho)
 					{
             KC::MConsole().MoveCursor(-1) ;
-            KC::MConsole().ClearLine(Display::START_CURSOR_POS) ;
+            KC::MConsole().ClearLine(upanui::ConsoleBuffer::START_CURSOR_POS) ;
 					}
 					iCurrentReadPos-- ;
 				}

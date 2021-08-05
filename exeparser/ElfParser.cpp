@@ -24,7 +24,6 @@
 #include <MemUtil.h>
 #include <DMM.h>
 #include <StringUtil.h>
-#include <Display.h>
 #include <DynamicLinkLoader.h>
 #include <IODescriptorTable.h>
 #include <FileOperations.h>

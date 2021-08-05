@@ -16,7 +16,6 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
 #include <ProcessManager.h>
-#include <Display.h>
 #include <MemUtil.h>
 #include <MemManager.h>
 #include <FileSystem.h>

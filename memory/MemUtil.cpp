@@ -17,7 +17,6 @@
  */
 
 # include <MemUtil.h>
-# include <Display.h>
 # include <PortCom.h>
 # include <PIC.h>
 # include <AsmUtil.h>

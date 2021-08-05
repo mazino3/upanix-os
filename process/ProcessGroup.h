@@ -22,8 +22,6 @@
 #include <mutex.h>
 #include <list.h>
 
-class DisplayBuffer;
-
 class ProcessGroup
 {
   public:
@@ -34,7 +32,6 @@ class ProcessGroup
     int Size() const { return _iProcessCount; }
     bool IsFGProcess(int iProcessID) const;
     bool IsFGProcessGroup() const;
-    DisplayBuffer& GetDisplayBuffer() { return *_videoBuffer; }
 
     void PutOnFGProcessList(int iProcessID);
     void RemoveFromFGProcessList(int iProcessID);
@@ -48,7 +45,6 @@ class ProcessGroup
     int             _id;
     int	            _iProcessCount;
     upan::list<int> _fgProcessList;
-    DisplayBuffer*	_videoBuffer;
 
     static int _idSeq;
     static ProcessGroup* _fgProcessGroup;

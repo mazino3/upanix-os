@@ -17,7 +17,6 @@
  */
 
 #include <KernelComponents.h>
-#include <Display.h>
 #include <MemManager.h>
 #include <KernelService.h>
 #include <PS2MouseDriver.h>

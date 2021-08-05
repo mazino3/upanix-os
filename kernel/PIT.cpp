@@ -23,7 +23,6 @@
 #include <IDT.h>
 #include <AsmUtil.h>
 #include <PortCom.h>
-#include <Display.h>
 #include <MemConstants.h>
 #include <MemUtil.h>
 #include <mutex.h>

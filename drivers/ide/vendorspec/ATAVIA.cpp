@@ -18,7 +18,6 @@
 # include <ATAVIA.h>
 # include <ATATimingManager.h>
 # include <DMM.h>
-# include <Display.h>
 # include <StringUtil.h>
 # include <MemUtil.h>
 

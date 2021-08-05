@@ -18,7 +18,6 @@
 # include <ConsoleCommands.h>
 # include <CommandLineParser.h>
 
-#include <Display.h>
 #include <PS2KeyboardDriver.h>
 #include <StringUtil.h>
 #include <Floppy.h>

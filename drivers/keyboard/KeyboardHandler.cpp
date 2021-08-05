@@ -16,7 +16,6 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
 #include <KeyboardHandler.h>
-#include <Display.h>
 #include <PIC.h>
 #include <IDT.h>
 #include <ProcessManager.h>

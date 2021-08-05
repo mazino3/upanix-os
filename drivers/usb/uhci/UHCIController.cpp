@@ -22,7 +22,6 @@
 #include <DMM.h>
 #include <PIC.h>
 #include <MemUtil.h>
-#include <Display.h>
 #include <DMM.h>
 #include <StringUtil.h>
 

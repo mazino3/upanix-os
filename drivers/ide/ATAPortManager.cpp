@@ -19,7 +19,6 @@
 # include <ATAPortOperation.h>
 # include <PIT.h>
 # include <DMM.h>
-# include <Display.h>
 # include <StringUtil.h>
 # include <PortCom.h>
 # include <MemUtil.h>

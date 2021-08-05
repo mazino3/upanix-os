@@ -18,7 +18,6 @@
 # include <ATADeviceController.h>
 # include <ATAPortOperation.h>
 # include <ATAPortManager.h>
-# include <Display.h>
 # include <DMM.h>
 # include <StringUtil.h>
 # include <PortCom.h>

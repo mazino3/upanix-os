@@ -38,7 +38,6 @@
 # include <RTC.h>
 # include <MultiBoot.h>
 # include <MountManager.h>
-# include <Display.h>
 # include <USBController.h>
 # include <UHCIManager.h>
 # include <EHCIManager.h>
@@ -85,7 +84,6 @@ void UpanixMain_KernelProcess() {
 	RootGUIConsole::Instance().ClearScreen();
   GraphicsVideo::Instance().CreateRefreshTask();
 
-  //Display::CreateGraphicsConsole();
   KC::MConsole().StartCursorBlink();
 
 	while(true) {

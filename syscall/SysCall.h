@@ -19,8 +19,7 @@
 #define _SYS_CALL_H_
 
 #include <DMM.h>
-# include <Display.h>
-# include <ProcessManager.h>
+#include <ProcessManager.h>
 #include <AsmUtil.h>
 #include <DynamicLinkLoader.h>
 #include <Directory.h>

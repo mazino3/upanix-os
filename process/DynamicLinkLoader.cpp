@@ -24,7 +24,6 @@
 #include <ElfRelocationSection.h>
 #include <ElfSymbolTable.h>
 #include <ElfDynamicSection.h>
-#include <Display.h>
 #include <DMM.h>
 #include <ProcessLoader.h>
 #include <StringUtil.h>

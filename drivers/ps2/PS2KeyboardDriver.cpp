@@ -16,7 +16,6 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
 #include <PS2KeyboardDriver.h>
-#include <Display.h>
 #include <AsmUtil.h>
 #include <PortCom.h>
 #include <IrqManager.h>

@@ -24,7 +24,6 @@
 # include <stdio.h>
 # include <MemUtil.h>
 # include <ProcessManager.h>
-# include <Display.h>
 
 LFUSectorManager::LFUSectorManager(DiskCache& mCache) :
   _mCache(mCache),

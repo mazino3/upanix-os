@@ -20,7 +20,6 @@
 # include <FileOperations.h>
 # include <IODescriptorTable.h>
 # include <MemUtil.h>
-# include <Display.h>
 # include <uniq_ptr.h>
 
 /* This is used in case UnBuffered Data comes after Buffered Data. If the unbuffered data offset is beyond file size

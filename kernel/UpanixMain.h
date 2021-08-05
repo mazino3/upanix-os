@@ -19,7 +19,6 @@
 #define _UPANIXMAIN_H_
 
 #include <Console.h>
-#include <Display.h>
 #include <Global.h>
 #include <PS2KeyboardDriver.h>
 #include <IDT.h>

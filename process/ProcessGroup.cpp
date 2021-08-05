@@ -18,7 +18,6 @@
 #include <ProcessGroup.h>
 #include <ProcessManager.h>
 #include <MemManager.h>
-#include <Display.h>
 #include <DMM.h>
 #include <exception.h>
 
@@ -26,8 +25,7 @@ int ProcessGroup::_idSeq = 0;
 ProcessGroup* ProcessGroup::_fgProcessGroup = nullptr;
 
 ProcessGroup::ProcessGroup(bool isFGProcessGroup) 
-  : _id(++_idSeq), _iProcessCount(0),
-    _videoBuffer(nullptr)//KC::MConsole().CreateDisplayBuffer())
+  : _id(++_idSeq), _iProcessCount(0)
 {
   if(isFGProcessGroup)
     _fgProcessGroup = this;
@@ -35,7 +33,7 @@ ProcessGroup::ProcessGroup(bool isFGProcessGroup)
 
 ProcessGroup::~ProcessGroup()
 {
-  delete _videoBuffer;
+
 }
 
 void ProcessGroup::PutOnFGProcessList(int iProcessID)
