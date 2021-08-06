@@ -44,12 +44,8 @@ class GraphicsVideo : protected KernelUtil::TimerTask
 
     void SetPixel(unsigned x, unsigned y, unsigned color);
     void FillRect(unsigned sx, unsigned sy, unsigned width, unsigned height, unsigned color);
-    void DrawChar(byte ch, unsigned x, unsigned y, unsigned fg, unsigned bg);
-    void ScrollDown();
     void CreateRefreshTask();
     void Initialize();
-    void DrawCursor(uint32_t x, uint32_t y, uint32_t color);
-
 
     int GetMouseX() {
       return _mouseX;
