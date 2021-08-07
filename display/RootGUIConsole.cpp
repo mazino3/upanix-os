@@ -70,20 +70,17 @@ void RootGUIConsole::putChar(int iPos, byte ch, const upanui::CharStyle& style) 
   const unsigned x = (curPos % _consoleBuffer.maxColumns());
   const unsigned y = (curPos / _consoleBuffer.maxColumns());
 
-  _textWriter.drawChar(_frame.frameBuffer(), ch, x, y,
+  _textWriter.drawChar(_frame, ch, x, y,
                        ColorPalettes::CP16::Get(style.getFGColor()),
                        ColorPalettes::CP16::Get(style.getBGColor() >> 4));
-  _frame.touch();
 }
 
 void RootGUIConsole::scrollDown() {
-  _textWriter.scrollDown(_frame.frameBuffer());
-  _frame.touch();
+  _textWriter.scrollDown(_frame);
 }
 
 void RootGUIConsole::resetFrameBuffer(uint32_t frameBufferAddress) {
-  _frame.frameBuffer().resetFrameBufferAddress((uint32_t*)frameBufferAddress);
-  _frame.touch();
+  _frame.resetFrameBufferAddress((uint32_t*)frameBufferAddress);
 }
 
 void RootGUIConsole::StartCursorBlink() {
@@ -116,8 +113,7 @@ void RootGUIConsole::putCursor(bool show) {
   const auto x = (_cursorPos % _consoleBuffer.maxColumns());
   const auto y = (_cursorPos / _consoleBuffer.maxColumns());
 
-  _textWriter.drawCursor(_frame.frameBuffer(), x, y, color);
-  _frame.touch();
+  _textWriter.drawCursor(_frame, x, y, color);
 }
 
 RootGUIConsole::CursorBlink::CursorBlink(RootGUIConsole& console) : upan::timer_thread(500), _console(console) {
