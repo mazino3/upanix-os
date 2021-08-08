@@ -15,33 +15,35 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
+
 #pragma once
 
-#include <Thread.h>
-class KernelProcess;
+#include <BaseFrame.h>
+#include <atomicop.h>
 
-class KernelThread : public Thread {
+class RootFrame : public upanui::BaseFrame {
 public:
-  KernelThread(KernelProcess& parent, uint32_t threadCaller, uint32_t entryAddress, void* arg);
-
-  bool isKernelProcess() const override {
-    return true;
+  RootFrame(const upanui::FrameBuffer& frameBuffer, const upanui::Viewport& viewport) :
+    BaseFrame(frameBuffer, viewport), _isDirty(false) {
   }
 
-  void onLoad() override {}
-
-  upan::option<RootFrame&> getGuiFrame() override {
-    return _parent.getGuiFrame();
+  void resetFrameBufferAddress(uint32_t* frameAddr) {
+    const_cast<upanui::FrameBuffer&>(frameBuffer()).resetFrameBufferAddress(frameAddr);
+    touch();
   }
 
-  void initGuiFrame() override {
-    _parent.initGuiFrame();
+  void touch() override {
+    _isDirty.set(true);
+  }
+
+  bool isDirty() {
+    return _isDirty.get();
+  }
+
+  void clean() {
+    _isDirty.set(false);
   }
 
 private:
-  void DeAllocateResources() override;
-  uint32_t AllocateAddressSpace();
-
-private:
-  int kernelStackBlockId;
+  upan::atomic::integral<bool> _isDirty;
 };

@@ -49,7 +49,6 @@ UserProcess::UserProcess(const upan::string &name, int parentID, int userID,
 
   _noOfPagesForDLLPTE = 0;
   _totalNoOfPagesForDLL = 0;
-  _frameBuffer = 0;
   _processLDT.BuildForUser();
 
   auto parentProcess = ProcessManager::Instance().GetSchedulableProcess(parentID);
@@ -511,35 +510,42 @@ void UserProcess::onLoad() {
   SchedulableProcess::Common::UpdatePDEWithStackPTE(_taskState.CR3_PDBR, _stackPTEAddress);
 }
 
-uint32_t UserProcess::getGUIFramebufferAddress() {
-  upan::mutex_guard g(_addressSpaceMutex);
-  if (_frameBuffer == 0) {
-    KC::MKernelService().RequestProcessGUIFramebufferAllocate(*this);
-  }
-  return PROCESS_VIRTUAL_ALLOCATED_ADDRESS(PROCESS_GUI_FRAMEBUFFER_ADDRESS);
-}
-
 void UserProcess::allocateGUIFramebuffer() {
-  _frameBuffer = GraphicsVideo::Instance().allocateFrameBuffer();
+  auto frameBufferAddress = GraphicsVideo::Instance().allocateFrameBuffer();
   const auto guiFramebufferPTEAddress = MemManager::Instance().AllocatePhysicalPage() * PAGE_SIZE;
   for (uint32_t i = 0; i < GraphicsVideo::Instance().LFBPageCount(); ++i) {
-    ((unsigned *) (guiFramebufferPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[i] = ((_frameBuffer + (i * PAGE_SIZE)) & 0xFFFFF000) | 0x7;
+    ((unsigned *) (guiFramebufferPTEAddress - GLOBAL_DATA_SEGMENT_BASE))[i] = ((frameBufferAddress + (i * PAGE_SIZE)) & 0xFFFFF000) | 0x7;
   }
   ((unsigned *) (_taskState.CR3_PDBR - GLOBAL_DATA_SEGMENT_BASE))[PROCESS_GUI_FRAMEBUFFER_PDE_ID] = (guiFramebufferPTEAddress & 0xFFFFF000) | 0x7;
+
+  FrameBufferInfo frameBufferInfo;
+  const auto f = MultiBoot::Instance().VideoFrameBufferInfo();
+  frameBufferInfo._pitch = f->framebuffer_pitch;
+  frameBufferInfo._width = f->framebuffer_width;
+  frameBufferInfo._height = f->framebuffer_height;
+  frameBufferInfo._bpp = f->framebuffer_bpp;
+  frameBufferInfo._frameBuffer = (uint32_t*)frameBufferAddress;
+  upanui::FrameBuffer frameBuffer(frameBufferInfo);
+  upanui::Viewport viewport(0, 0, frameBufferInfo._width, frameBufferInfo._height);
+  _frame.reset(new RootFrame(frameBuffer, viewport));
+
+  _iodTable.setupStreamedStdOut();
 
   GraphicsVideo::Instance().addGUIProcess(processID());
 }
 
 void UserProcess::initGuiFrame() {
-
+  if (_frame.get() == nullptr) {
+    upan::mutex_guard g(_addressSpaceMutex);
+    KC::MKernelService().RequestProcessGUIFramebufferAllocate(*this);
+  }
 }
 
 void UserProcess::DeAllocateGUIFramebuffer() {
-  if (_frameBuffer == 0) {
-    return;
+  if (_frame.get() != nullptr) {
+    DMM_DeAllocateForKernel((uint32_t)_frame->frameBuffer().buffer());
+    const auto guiFramebufferPTEAddress = ((unsigned *) (_taskState.CR3_PDBR - GLOBAL_DATA_SEGMENT_BASE))[PROCESS_GUI_FRAMEBUFFER_PDE_ID] & 0xFFFFF000;
+    MemManager::Instance().DeAllocatePhysicalPage(guiFramebufferPTEAddress / PAGE_SIZE);
+    GraphicsVideo::Instance().removeGUIProcess(processID());
   }
-  DMM_DeAllocateForKernel(_frameBuffer);
-  const auto guiFramebufferPTEAddress = ((unsigned *) (_taskState.CR3_PDBR - GLOBAL_DATA_SEGMENT_BASE))[PROCESS_GUI_FRAMEBUFFER_PDE_ID] & 0xFFFFF000;
-  MemManager::Instance().DeAllocatePhysicalPage(guiFramebufferPTEAddress / PAGE_SIZE);
-  GraphicsVideo::Instance().removeGUIProcess(processID());
 }

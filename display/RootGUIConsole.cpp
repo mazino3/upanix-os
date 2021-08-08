@@ -116,12 +116,11 @@ void RootGUIConsole::putCursor(bool show) {
   _textWriter.drawCursor(_frame, x, y, color);
 }
 
-RootGUIConsole::CursorBlink::CursorBlink(RootGUIConsole& console) : upan::timer_thread(500), _console(console) {
+RootGUIConsole::CursorBlink::CursorBlink(RootGUIConsole& console) : upan::timer_thread(500), _console(console), _showCursorToggle(false) {
 }
 
 void RootGUIConsole::CursorBlink::on_timer_trigger() {
   upan::mutex_guard g(_console._cursorMutex);
-  static bool showCursor = false;
-  _console.putCursor(showCursor);
-  showCursor = !showCursor;
+  _console.putCursor(_showCursorToggle);
+  _showCursorToggle = !_showCursorToggle;
 }

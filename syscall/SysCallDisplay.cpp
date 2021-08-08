@@ -18,6 +18,7 @@
 # include <SysCall.h>
 # include <SysCallDisplay.h>
 # include <MultiBoot.h>
+#include <BaseFrame.h>
 
 byte SysCallDisplay_IsPresent(unsigned uiSysCallID)
 {
@@ -110,17 +111,29 @@ __volatile__ unsigned uiP9)
       }
       break;
 
-	  case SYS_CALL_DISPLAY_FRAMEBUFFER_INFO:
+	  case SYS_CALL_DISPLAY_INIT_GUI:
 	    // P1 => Return address of FramebufferInfo
     {
+      auto& process = ProcessManager::Instance().GetCurrentPAS();
+      process.initGuiFrame();
+      RootFrame& frame = process.getGuiFrame().value();
       auto frameBufferInfo = KERNEL_ADDR(bDoAddrTranslation, FrameBufferInfo*, uiP1);
-      const auto f = MultiBoot::Instance().VideoFrameBufferInfo();
-      frameBufferInfo->_pitch = f->framebuffer_pitch;
-      frameBufferInfo->_width = f->framebuffer_width;
-      frameBufferInfo->_height = f->framebuffer_height;
-      frameBufferInfo->_bpp = f->framebuffer_bpp;
-      frameBufferInfo->_frameBuffer = (uint32_t*)ProcessManager::Instance().GetCurrentPAS().getGUIFramebufferAddress();
+      frameBufferInfo->_pitch = frame.frameBuffer().pitch();
+      frameBufferInfo->_width = frame.frameBuffer().width();
+      frameBufferInfo->_height = frame.frameBuffer().height();
+      frameBufferInfo->_bpp = frame.frameBuffer().bpp();
+      if (process.isKernelProcess()) {
+        frameBufferInfo->_frameBuffer = frame.frameBuffer().buffer();
+      } else {
+        frameBufferInfo->_frameBuffer = (uint32_t*) PROCESS_VIRTUAL_ALLOCATED_ADDRESS(PROCESS_GUI_FRAMEBUFFER_ADDRESS);
+      }
     }
     break;
+
+	  case SYS_CALL_DISPLAY_FRAME_TOUCH:
+	  {
+	    ProcessManager::Instance().GetCurrentPAS().getGuiFrame().ifPresent([](RootFrame& f) { f.touch(); });
+	  }
+	  break;
 	}
 }

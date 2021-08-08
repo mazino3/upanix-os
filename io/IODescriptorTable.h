@@ -43,6 +43,7 @@ public:
   void free(int fd);
   void dup2(int oldFD, int newFD);
   IODescriptor& getRealNonDupped(int fd);
+  void setupStreamedStdOut();
 
 private:
   IODMap::iterator getItr(int fd);

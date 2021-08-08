@@ -54,26 +54,28 @@ void KernelProcess::DeAllocateResources() {
   DeAllocateGUIFramebuffer();
 }
 
-uint32_t KernelProcess::getGUIFramebufferAddress() {
-  if (_frameBuffer == 0) {
-    if (_processID == ProcessManager::UpanixKernelProcessID()) {
-      _frameBuffer = MEM_GRAPHICS_Z_BUFFER_START;
-    } else {
-      _frameBuffer = GraphicsVideo::Instance().allocateFrameBuffer();
-      GraphicsVideo::Instance().addGUIProcess(processID());
-    }
-  }
-  return _frameBuffer;
-}
-
 void KernelProcess::initGuiFrame() {
+  if (_frame.get() == nullptr) {
+    FrameBufferInfo frameBufferInfo;
+    const auto f = MultiBoot::Instance().VideoFrameBufferInfo();
+    frameBufferInfo._pitch = f->framebuffer_pitch;
+    frameBufferInfo._width = f->framebuffer_width;
+    frameBufferInfo._height = f->framebuffer_height;
+    frameBufferInfo._bpp = f->framebuffer_bpp;
+    frameBufferInfo._frameBuffer = (uint32_t*)GraphicsVideo::Instance().allocateFrameBuffer();
+    upanui::FrameBuffer frameBuffer(frameBufferInfo);
+    upanui::Viewport viewport(0, 0, frameBufferInfo._width, frameBufferInfo._height);
+    _frame.reset(new RootFrame(frameBuffer, viewport));
 
+    _iodTable.setupStreamedStdOut();
+
+    GraphicsVideo::Instance().addGUIProcess(_processID);
+  }
 }
 
 void KernelProcess::DeAllocateGUIFramebuffer() {
-  if (_frameBuffer == 0) {
-    return;
+  if (_frame.get() != nullptr) {
+    DMM_DeAllocateForKernel((uint32_t)_frame->frameBuffer().buffer());
+    GraphicsVideo::Instance().removeGUIProcess(_processID);
   }
-  DMM_DeAllocateForKernel(_frameBuffer);
-  GraphicsVideo::Instance().removeGUIProcess(processID());
 }

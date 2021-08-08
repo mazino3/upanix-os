@@ -69,11 +69,7 @@ public:
     return _parent.dllMutex();
   }
 
-  uint32_t getGUIFramebufferAddress() override {
-    return _parent.getGUIFramebufferAddress();
-  }
-
-  upan::option<upanui::BaseFrame&> getGuiFrame() override {
+  upan::option<RootFrame&> getGuiFrame() override {
     return _parent.getGuiFrame();
   }
 

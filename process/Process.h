@@ -24,10 +24,7 @@
 #include <FileOperations.h>
 #include <ProcessStateInfo.h>
 #include <ProcessDLLInfo.h>
-
-namespace upanui {
-  class BaseFrame;
-}
+#include <RootFrame.h>
 
 class ProcessGroup;
 class IODescriptorTable;
@@ -93,9 +90,7 @@ public:
     throw upan::exception(XLOC, "setAUTAddress unsupported");
   }
 
-  virtual uint32_t getGUIFramebufferAddress() = 0;
-
   virtual void initGuiFrame() = 0;
 
-  virtual upan::option<upanui::BaseFrame&> getGuiFrame() = 0;
+  virtual upan::option<RootFrame&> getGuiFrame() = 0;
 };

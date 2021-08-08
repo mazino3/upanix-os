@@ -18,7 +18,6 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/
  */
 
-#include <RootConsole.h>
 #include <KernelComponents.h>
 #include <RootGUIConsole.h>
 #include <RootVGAConsole.h>

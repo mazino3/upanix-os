@@ -68,13 +68,11 @@ public:
     return upan::option<upan::mutex&>(_dllMutex);
   }
 
-  uint32_t getGUIFramebufferAddress() override;
-  upan::option<upanui::BaseFrame&> getGuiFrame() override {
-    return upan::option<upanui::BaseFrame&>::empty();
+  upan::option<RootFrame&> getGuiFrame() override {
+    return _frame.toOption();
   }
-
-  void allocateGUIFramebuffer();
   void initGuiFrame() override;
+  void allocateGUIFramebuffer();
 
 private:
   void Load(int noOfParams, char** szArgumentList);
@@ -108,4 +106,5 @@ private:
   upan::mutex _dllMutex;
   upan::mutex _addressSpaceMutex;
   IODescriptorTable _iodTable;
+  upan::uniq_ptr<RootFrame> _frame;
 };

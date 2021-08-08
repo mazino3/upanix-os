@@ -161,8 +161,8 @@ bool GraphicsVideo::TimerTrigger() {
   if(isDirty()) {
     upan::mutex_guard g(_guiMutex);
     ProcessSwitchLock p;
-    for(auto pid : _processes) {
-      auto process = ProcessManager::Instance().GetProcess(pid);
+    for(int i = 0; i < _processes.size(); ++i) {
+      auto process = ProcessManager::Instance().GetProcess(_processes[i]);
       process.ifPresent([&](Process& p) {
         optimized_memcpy(_zBuffer, (uint32_t)p.getGuiFrame().value().frameBuffer().buffer(), _lfbSize);
       });
@@ -295,7 +295,7 @@ bool GraphicsVideo::isDirty() {
     if (process.isEmpty()) {
       removeGUIProcess(pid);
     } else {
-      process.value().getGuiFrame().ifPresent([&dirty](upanui::BaseFrame& f) {
+      process.value().getGuiFrame().ifPresent([&dirty](RootFrame& f) {
         dirty |= f.isDirty();
         f.clean();
       });

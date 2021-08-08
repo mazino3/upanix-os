@@ -115,12 +115,8 @@ public:
     throw upan::exception(XLOC, "setProcessGroup() unsupported");
   }
 
-  uint32_t getGUIFramebufferAddress() override {
-    return MEM_GRAPHICS_Z_BUFFER_START;
-  }
-
-  upan::option<upanui::BaseFrame&> getGuiFrame() override {
-    return upan::option<upanui::BaseFrame&>(RootGUIConsole::Instance().frame());
+  upan::option<RootFrame&> getGuiFrame() override {
+    return upan::option<RootFrame&>(RootGUIConsole::Instance().frame());
   }
 
   void initGuiFrame() override;

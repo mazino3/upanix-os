@@ -22,18 +22,20 @@
 #include <KernelComponents.h>
 
 StreamBufferDescriptor::StreamBufferDescriptor(int pid, int id, uint32_t bufSize)
-  : IODescriptor(pid, id, O_APPEND), _bufSize(bufSize) {
-  _buffer.reset(new byte[bufSize]);
+  : IODescriptor(pid, id, O_APPEND), _queue(bufSize) {
 }
 
 int StreamBufferDescriptor::read(char* buffer, int len) {
-  return 0;
+  return _queue.read(buffer, len);
 }
 
 int StreamBufferDescriptor::write(const char* buffer, int len) {
   if (getPid() == NO_PROCESS_ID) {
     KC::MConsole().nMessage(buffer, len, upanui::CharStyle::WHITE_ON_BLACK());
     return len;
+  } else {
+    return _queue.write(buffer, len);
+    //KC::MConsole().nMessage(buffer, len, upanui::CharStyle::WHITE_ON_BLACK());
+    //return len;
   }
-  return 0;
 }

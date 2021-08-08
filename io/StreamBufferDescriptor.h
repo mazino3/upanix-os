@@ -20,6 +20,7 @@
 
 #include <IODescriptor.h>
 #include <uniq_ptr.h>
+#include <queue.h>
 
 class StreamBufferDescriptor : public IODescriptor {
 public:
@@ -37,10 +38,9 @@ public:
   }
 
   uint32_t getSize() const override {
-    return _bufSize;
+    return _queue.size();
   }
 
 private:
-  uint32_t _bufSize;
-  upan::uniq_ptr<byte[]> _buffer;
+  upan::queue<char> _queue;
 };

@@ -20,6 +20,7 @@
 #include <AutonomousProcess.h>
 #include <KernelThread.h>
 #include <vector.h>
+#include <BaseFrame.h>
 
 //A KernelProcess is similar to a Thread in that they all share same address space (page tables), heap but different stack
 //But it is a process in that if the parent process dies before child, then child kernel process will continue to execute under the root kernel process
@@ -43,13 +44,11 @@ public:
     return _iodTable;
   }
 
-  uint32_t getGUIFramebufferAddress() override;
-
-  upan::option<upanui::BaseFrame&> getGuiFrame() override {
-    return upan::option<upanui::BaseFrame&>::empty();
-  }
-
   void initGuiFrame() override;
+
+  upan::option<RootFrame&> getGuiFrame() override {
+    return _frame.toOption();
+  }
 
 private:
   void DeAllocateResources() override;
@@ -59,7 +58,7 @@ private:
 private:
   int kernelStackBlockId;
   IODescriptorTable _iodTable;
-
+  upan::uniq_ptr<RootFrame> _frame;
   //common mutex for all kernel processes
   static upan::mutex _envMutex;
 };

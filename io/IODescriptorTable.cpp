@@ -43,6 +43,12 @@ IODescriptorTable::~IODescriptorTable() noexcept {
   }
 }
 
+void IODescriptorTable::setupStreamedStdOut() {
+  upan::mutex_guard g(_fdMutex);
+  delete _iodMap[STDOUT];
+  _iodMap[STDOUT] = new StreamBufferDescriptor(_pid, STDOUT, 4096);
+}
+
 IODescriptor& IODescriptorTable::allocate(const upan::function<IODescriptor*, int>& descriptorBuilder) {
   upan::mutex_guard g(_fdMutex);
 
