@@ -31,9 +31,6 @@
 #include <ColorPalettes.h>
 #include <RootGUIConsole.h>
 
-extern unsigned _binary_fonts_FreeSans_sfn_start;
-extern unsigned _binary_unifont_sfn_start;
-extern unsigned _binary_u_vga16_sfn_start;
 extern unsigned _binary_mouse_cursor_bmp_start;
 //make below extern as you load bmp files during testing
 unsigned _binary_p16_bmp_start;
@@ -110,7 +107,7 @@ void GraphicsVideo::Initialize() {
   // In here, the .sfn file was included as part of the kernel binary
   try {
     _ssfnContext = new upanui::usfn::Context();
-    _ssfnContext->Load((uint8_t *) &_binary_u_vga16_sfn_start);
+    _ssfnContext->Load(upanui::usfn::Context::GetPreloadedFont(upanui::usfn::PreloadedFonts::VGA16));
     _ssfnContext->Select(upanui::usfn::FAMILY_MONOSPACE, NULL, upanui::usfn::STYLE_REGULAR, 16);
     RootGUIConsole::Instance().setFontContext(_ssfnContext);
   } catch(upan::exception& e) {
