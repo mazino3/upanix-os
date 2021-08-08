@@ -19,12 +19,16 @@
 
 #include <ResourceMutex.h>
 #include <atomicop.h>
+#include <pair.h>
 
 class IRQ;
 
 class ProcessStateInfo
 {
 public:
+  enum IOOpType { Read, Write };
+  typedef upan::pair<int, IOOpType> IODescriptorId;
+
   ProcessStateInfo();
 
   uint32_t SleepTime() const { return _sleepTime; }
@@ -36,6 +40,14 @@ public:
   RESOURCE_KEYS WaitResourceId() const { return _waitResourceId; }
   void WaitResourceId(const RESOURCE_KEYS id) { _waitResourceId = id; }
 
+  const IODescriptorId& WaitIODescriptorId() const {
+    return _waitIODescriptorId;
+  }
+  void WaitIODescriptorId(const int fd, const IOOpType opType) {
+    _waitIODescriptorId.first = fd;
+    _waitIODescriptorId.second = opType;
+  }
+
   bool IsKernelServiceComplete() const { return _kernelServiceComplete; }
   void KernelServiceComplete(const bool v) { _kernelServiceComplete = v; }
 
@@ -46,10 +58,11 @@ public:
   void EventCompleted();
 
 private:
-  unsigned      _sleepTime ;
-  const IRQ*    _irq;
-  int           _waitChildProcId ;
-  RESOURCE_KEYS _waitResourceId;
+  unsigned       _sleepTime ;
+  const IRQ*     _irq;
+  int            _waitChildProcId ;
+  RESOURCE_KEYS  _waitResourceId;
+  IODescriptorId _waitIODescriptorId;
   upan::atomic::integral<bool> _eventCompleted;
-  bool          _kernelServiceComplete ;
+  bool           _kernelServiceComplete ;
 };

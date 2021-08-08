@@ -21,13 +21,16 @@
 #include <IODescriptor.h>
 #include <uniq_ptr.h>
 #include <queue.h>
+#include <mutex.h>
 
 class StreamBufferDescriptor : public IODescriptor {
 public:
   StreamBufferDescriptor(int pid, int id, uint32_t bufSize);
 
   int read(char* buffer, int len) override;
+  bool canRead() override;
   int write(const char* buffer, int len) override;
+  bool canWrite() override;
 
   void seek(int seekType, int offset) override {
     //no-op;
@@ -43,4 +46,5 @@ public:
 
 private:
   upan::queue<char> _queue;
+  upan::mutex _ioSync;
 };

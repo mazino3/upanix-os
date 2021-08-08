@@ -253,8 +253,8 @@ ProcessStateInfo::ProcessStateInfo() :
   _waitChildProcId(NO_PROCESS_ID),
   _waitResourceId(RESOURCE_NIL),
   _eventCompleted(false),
-  _kernelServiceComplete(false)
-{
+  _kernelServiceComplete(false),
+  _waitIODescriptorId(-1, IOOpType::Read) {
 }
 
 bool ProcessStateInfo::IsEventCompleted()

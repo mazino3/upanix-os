@@ -32,7 +32,13 @@ public:
   }
 
   int read(char* buffer, int len) override;
+  bool canRead() override {
+    return true;
+  }
   int write(const char* buffer, int len) override;
+  bool canWrite() override {
+    return true;
+  }
   void seek(int seekType, int offset) override;
 
   uint32_t getSize() const override {

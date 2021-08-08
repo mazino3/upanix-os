@@ -85,7 +85,7 @@ void RootGUIConsole::resetFrameBuffer(uint32_t frameBufferAddress) {
 
 void RootGUIConsole::StartCursorBlink() {
   static CursorBlink cursorBlink(*this);
-  cursorBlink.run();
+  cursorBlink.start();
   _cursorEnabled = true;
 }
 

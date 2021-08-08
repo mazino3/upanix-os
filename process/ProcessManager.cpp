@@ -231,7 +231,21 @@ void ProcessManager::DoContextSwitch(SchedulableProcess& process) {
       process.setStatus(RUN);
     }
     break;
-	
+
+	  case WAIT_IO:
+	  {
+      const auto& ioDescriptorId = process.stateInfo().WaitIODescriptorId();
+      const auto& ioDescriptor = process.iodTable().get(ioDescriptorId.first);
+      if (
+          (ioDescriptorId.second == ProcessStateInfo::Read && ioDescriptor.canRead()) ||
+          (ioDescriptorId.second == ProcessStateInfo::Write && ioDescriptor.canWrite())) {
+        process.setStatus(RUN);
+      } else {
+        return;
+      }
+	  }
+	  break;
+
 	  case WAIT_CHILD:
 		{
       if(stateInfo.WaitChildProcId() < 0)
@@ -423,6 +437,18 @@ void ProcessManager::WaitOnResource(RESOURCE_KEYS resourceKey)
 	GetCurrentPAS().setStatus(WAIT_RESOURCE);
 
 	ProcessManager_Yield() ;
+}
+
+void ProcessManager::WaitOnIODescriptor(const int fd, const ProcessStateInfo::IOOpType opType) {
+  if(GetCurProcId() < 0)
+    return ;
+
+  ProcessManager::DisableTaskSwitch() ;
+
+  GetCurrentPAS().stateInfo().WaitIODescriptorId(fd, opType);
+  GetCurrentPAS().setStatus(WAIT_IO);
+
+  ProcessManager_Yield() ;
 }
 
 bool ProcessManager::IsAlive(int pid) {

@@ -34,8 +34,16 @@ public:
     return getParentDescriptor().value().read(buffer, len);
   }
 
+  bool canRead() override {
+    return getParentDescriptor().value().canRead();
+  }
+
   int write(const char* buffer, int len) override {
     return getParentDescriptor().value().write(buffer, len);
+  }
+
+  bool canWrite() override {
+    return getParentDescriptor().value().canWrite();
   }
 
   void seek(int seekType, int offset) override {
