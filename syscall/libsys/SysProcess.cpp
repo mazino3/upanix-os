@@ -134,3 +134,7 @@ int SysProcess_IsChildAlive(int iProcessID) {
   SysCallProc_Handle(&iRetStatus, SYS_CALL_PROCESS_CHILD_ALIVE, false, iProcessID, 2, 3, 4, 5, 6, 7, 8, 9);
   return iRetStatus ;
 }
+
+int SysProcess_IsKernel() {
+  return IS_KERNEL() ? 1 : 0;
+}
