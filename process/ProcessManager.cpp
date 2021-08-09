@@ -235,7 +235,7 @@ void ProcessManager::DoContextSwitch(SchedulableProcess& process) {
 	  case WAIT_IO:
 	  {
       const auto& ioDescriptorId = process.stateInfo().WaitIODescriptorId();
-      const auto& ioDescriptor = process.iodTable().get(ioDescriptorId.first);
+      auto& ioDescriptor = process.iodTable().get(ioDescriptorId.first);
       if (
           (ioDescriptorId.second == ProcessStateInfo::Read && ioDescriptor.canRead()) ||
           (ioDescriptorId.second == ProcessStateInfo::Write && ioDescriptor.canWrite())) {
