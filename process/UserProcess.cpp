@@ -529,7 +529,7 @@ void UserProcess::allocateGUIFramebuffer() {
   upanui::Viewport viewport(0, 0, frameBufferInfo._width, frameBufferInfo._height);
   _frame.reset(new RootFrame(frameBuffer, viewport));
 
-  _iodTable.setupStreamedStdOut();
+  _iodTable.setupNullStdOut();
 
   GraphicsVideo::Instance().addGUIProcess(processID());
 }

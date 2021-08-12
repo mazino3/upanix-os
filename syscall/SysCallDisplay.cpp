@@ -135,5 +135,11 @@ __volatile__ unsigned uiP9)
 	    ProcessManager::Instance().GetCurrentPAS().getGuiFrame().ifPresent([](RootFrame& f) { f.touch(); });
 	  }
 	  break;
+
+	  case SYS_CALL_DISPLAY_INIT_TERM_CONSOLE:
+	  {
+      ProcessManager::Instance().GetCurrentPAS().iodTable().setupStreamedStdOut();
+	  }
+	  break;
 	}
 }

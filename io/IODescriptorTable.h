@@ -45,6 +45,7 @@ public:
   IODescriptor& getRealNonDupped(int fd);
   IODescriptor& get(int fd);
   void setupStreamedStdOut();
+  void setupNullStdOut();
 
 private:
   IODMap::iterator getItr(int fd);

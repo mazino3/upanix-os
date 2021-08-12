@@ -21,6 +21,7 @@
 #include <ProcessManager.h>
 #include <RedirectDescriptor.h>
 #include <StreamBufferDescriptor.h>
+#include "NullDescriptor.h"
 
 constexpr int PROC_SYS_MAX_OPEN_FILES = 4096;
 
@@ -47,6 +48,12 @@ void IODescriptorTable::setupStreamedStdOut() {
   upan::mutex_guard g(_fdMutex);
   delete _iodMap[STDOUT];
   _iodMap[STDOUT] = new StreamBufferDescriptor(_pid, STDOUT, 4096);
+}
+
+void IODescriptorTable::setupNullStdOut() {
+  upan::mutex_guard g(_fdMutex);
+  delete _iodMap[STDOUT];
+  _iodMap[STDOUT] = new NullDescriptor(_pid, STDOUT);
 }
 
 IODescriptor& IODescriptorTable::allocate(const upan::function<IODescriptor*, int>& descriptorBuilder) {

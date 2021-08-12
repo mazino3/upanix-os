@@ -75,3 +75,8 @@ void SysDisplay_FrameTouch() {
   int iRetStatus;
   SysCallDisplay_Handle(&iRetStatus, SYS_CALL_DISPLAY_FRAME_TOUCH, false, 1, 2, 3, 4, 5, 6, 7, 8, 9);
 }
+
+void SysDisplay_InitTermConsole() {
+  int iRetStatus;
+  SysCallDisplay_Handle(&iRetStatus, SYS_CALL_DISPLAY_INIT_TERM_CONSOLE, false, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+}
