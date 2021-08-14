@@ -67,7 +67,8 @@ void KernelProcess::initGuiFrame() {
     upanui::Viewport viewport(0, 0, frameBufferInfo._width, frameBufferInfo._height);
     _frame.reset(new RootFrame(frameBuffer, viewport));
 
-    _iodTable.setupNullStdOut();
+    //let processes write to stdout of the parent for debugging purpose.
+    //_iodTable.setupNullStdOut();
 
     GraphicsVideo::Instance().addGUIProcess(_processID);
   }
