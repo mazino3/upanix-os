@@ -120,9 +120,9 @@ public:
   }
 
   void initGuiFrame() override;
+  void dispatchKeyboardData(byte data) override;
 
 private:
   upan::mutex _envMutex;
-  upan::mutex _fdMutex;
   IODescriptorTable _iodTable;
 };

@@ -56,8 +56,9 @@ class GraphicsVideo : protected KernelUtil::TimerTask
     void SetMouseCursorPos(int x, int y);
     void ExperimentWithMouseCursor(int i);
 
-    void addGUIProcess(int pid);
-    void removeGUIProcess(int pid);
+    void addFGProcess(int pid);
+    void removeFGProcess(int pid);
+    upan::option<int> getActiveFGProcess();
 
     uint32_t allocateFrameBuffer();
 
@@ -89,6 +90,6 @@ class GraphicsVideo : protected KernelUtil::TimerTask
     int _mouseX;
     int _mouseY;
     upan::uniq_ptr<upanui::Image> _mouseCursorImg;
-    upan::vector<int> _processes;
-    upan::mutex _guiMutex;
+    upan::vector<int> _fgProcesses;
+    upan::mutex _fgProcessMutex;
 };

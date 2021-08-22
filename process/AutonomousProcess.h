@@ -30,6 +30,7 @@ public:
   SchedulableProcess& forSchedule() override;
   void DestroyThreads() override;
   void addToThreadScheduler(Thread& thread);
+  void dispatchKeyboardData(byte data) override;
 
 private:
   typedef upan::list<Thread*> ThreadSchedulerList;

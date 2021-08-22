@@ -138,7 +138,7 @@ __volatile__ unsigned uiP9)
 
 	  case SYS_CALL_DISPLAY_INIT_TERM_CONSOLE:
 	  {
-      ProcessManager::Instance().GetCurrentPAS().iodTable().setupStreamedStdOut();
+      ProcessManager::Instance().GetCurrentPAS().iodTable().setupStreamedStdio();
 	  }
 	  break;
 	}

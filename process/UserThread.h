@@ -69,14 +69,6 @@ public:
     return _parent.dllMutex();
   }
 
-  upan::option<RootFrame&> getGuiFrame() override {
-    return _parent.getGuiFrame();
-  }
-
-  void initGuiFrame() override {
-    _parent.initGuiFrame();
-  }
-
 private:
   uint32_t PushProgramInitStackData(uint32_t entryAddress, void* arg);
   void DeAllocateResources() override;

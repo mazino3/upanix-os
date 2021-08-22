@@ -44,8 +44,9 @@ public:
   void dup2(int oldFD, int newFD);
   IODescriptor& getRealNonDupped(int fd);
   IODescriptor& get(int fd);
-  void setupStreamedStdOut();
-  void setupNullStdOut();
+  bool isStreamedStdio();
+  void setupStreamedStdio();
+  void setupNullStdio();
 
 private:
   IODMap::iterator getItr(int fd);

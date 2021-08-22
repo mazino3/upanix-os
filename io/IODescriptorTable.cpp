@@ -18,17 +18,18 @@
 
 #include <IODescriptorTable.h>
 #include <mutex.h>
+#include <typeinfo.h>
 #include <ProcessManager.h>
 #include <RedirectDescriptor.h>
 #include <StreamBufferDescriptor.h>
-#include "NullDescriptor.h"
+#include <NullDescriptor.h>
 
 constexpr int PROC_SYS_MAX_OPEN_FILES = 4096;
 
 IODescriptorTable::IODescriptorTable(int pid, int parentPid) : _pid(pid), _fdIdCounter(0) {
   if (pid == NO_PROCESS_ID) {
-    allocate([pid](int fd) { return new StreamBufferDescriptor(pid, fd, 4096); });
-    auto& stdoutFD = allocate([pid](int fd) { return new StreamBufferDescriptor(pid, fd, 4096); });
+    allocate([pid](int fd) { return new StreamBufferDescriptor(pid, fd, 4096, O_WR_NONBLOCK); });
+    auto& stdoutFD = allocate([pid](int fd) { return new StreamBufferDescriptor(pid, fd, 4096, O_WR_NONBLOCK); });
     allocate([pid, &stdoutFD](int fd) { return new RedirectDescriptor(pid, fd, stdoutFD); });
   } else {
     auto& parentProcess = ProcessManager::Instance().GetProcess(parentPid).value();
@@ -44,16 +45,27 @@ IODescriptorTable::~IODescriptorTable() noexcept {
   }
 }
 
-void IODescriptorTable::setupStreamedStdOut() {
-  upan::mutex_guard g(_fdMutex);
-  delete _iodMap[STDOUT];
-  _iodMap[STDOUT] = new StreamBufferDescriptor(_pid, STDOUT, 4096);
+bool IODescriptorTable::isStreamedStdio() {
+  return typeid(*_iodMap[STDIN]) == typeid(StreamBufferDescriptor);
 }
 
-void IODescriptorTable::setupNullStdOut() {
+void IODescriptorTable::setupStreamedStdio() {
   upan::mutex_guard g(_fdMutex);
   delete _iodMap[STDOUT];
+  _iodMap[STDOUT] = new StreamBufferDescriptor(_pid, STDOUT, 4096, O_WR_NONBLOCK);
+
+  delete _iodMap[STDIN];
+  _iodMap[STDIN] = new StreamBufferDescriptor(_pid, STDIN, 4096, O_WR_NONBLOCK);
+}
+
+void IODescriptorTable::setupNullStdio() {
+  upan::mutex_guard g(_fdMutex);
+
+  delete _iodMap[STDOUT];
   _iodMap[STDOUT] = new NullDescriptor(_pid, STDOUT);
+
+  delete _iodMap[STDIN];
+  _iodMap[STDIN] = new NullDescriptor(_pid, STDIN);
 }
 
 IODescriptor& IODescriptorTable::allocate(const upan::function<IODescriptor*, int>& descriptorBuilder) {

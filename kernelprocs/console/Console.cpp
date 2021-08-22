@@ -70,9 +70,8 @@ void Console::Start()
 	Console_ProcessCommand("chd usda");
 	Console_ProcessCommand("test");
 */
-	while(true)
-	{
-    int ch = KeyboardHandler::Instance().GetCharInBlockMode();
+	while(true) {
+    int ch = getchar();
 
 		switch(ch)
 		{

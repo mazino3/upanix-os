@@ -36,6 +36,18 @@ public:
     return _parent;
   }
 
+  upan::option<RootFrame&> getGuiFrame() override {
+    return _parent.getGuiFrame();
+  }
+
+  void initGuiFrame() override {
+    _parent.initGuiFrame();
+  }
+
+  void dispatchKeyboardData(byte data) override {
+    _parent.dispatchKeyboardData(data);
+  }
+
 protected:
   AutonomousProcess& _parent;
 };

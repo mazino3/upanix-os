@@ -27,5 +27,11 @@ void KernelRootProcess::initGuiFrame() {
   initialized = true;
 
   RootGUIConsole::Instance().resetFrameBuffer(GraphicsVideo::Instance().allocateFrameBuffer());
-  GraphicsVideo::Instance().addGUIProcess(NO_PROCESS_ID);
+  GraphicsVideo::Instance().addFGProcess(NO_PROCESS_ID);
+}
+
+void KernelRootProcess::dispatchKeyboardData(byte data) {
+  if (iodTable().isStreamedStdio()) {
+    iodTable().get(IODescriptorTable::STDIN).write((char*)&data, 1);
+  }
 }

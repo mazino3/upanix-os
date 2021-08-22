@@ -81,6 +81,8 @@ class KeyboardHandler
     bool PutToQueueBuffer(byte data);
 
     void Getch();
+
+    void StartDispatcher();
   private:
     bool GetFromQueueBuffer(byte& data);
 

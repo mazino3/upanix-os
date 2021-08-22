@@ -22,20 +22,20 @@
 #include <KernelComponents.h>
 #include <ProcessManager.h>
 
-StreamBufferDescriptor::StreamBufferDescriptor(int pid, int id, uint32_t bufSize)
-  : IODescriptor(pid, id, O_APPEND), _queue(bufSize) {
+StreamBufferDescriptor::StreamBufferDescriptor(int pid, int id, uint32_t bufSize, uint32_t mode)
+  : IODescriptor(pid, id, O_APPEND | mode), _queue(bufSize) {
 }
 
 int StreamBufferDescriptor::read(char* buffer, int len) {
-  if (getPid() == NO_PROCESS_ID) {
-    return 0;
-  }
   while(true) {
     {
       upan::mutex_guard g(_ioSync);
       if (!_queue.empty()) {
         return _queue.read(buffer, len);
       }
+    }
+    if (getMode() & O_RD_NONBLOCK) {
+      return 0;
     }
     ProcessManager::Instance().WaitOnIODescriptor(id(), ProcessStateInfo::Read);
   }
@@ -47,7 +47,7 @@ bool StreamBufferDescriptor::canRead() {
 }
 
 int StreamBufferDescriptor::write(const char* buffer, int len) {
-  if (getPid() == NO_PROCESS_ID) {
+  if (getPid() == NO_PROCESS_ID && id() == IODescriptorTable::STDOUT) {
     KC::MConsole().nMessage(buffer, len, upanui::CharStyle::WHITE_ON_BLACK());
     return len;
   } else {
@@ -57,6 +57,9 @@ int StreamBufferDescriptor::write(const char* buffer, int len) {
         if (!_queue.full()) {
           return _queue.write(buffer, len);
         }
+      }
+      if (getMode() & O_WR_NONBLOCK) {
+        return 0;
       }
       ProcessManager::Instance().WaitOnIODescriptor(id(), ProcessStateInfo::Write);
     }

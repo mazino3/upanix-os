@@ -156,10 +156,10 @@ static void optimized_memcpy(uint32_t dest, uint32_t src, int len) {
 
 bool GraphicsVideo::TimerTrigger() {
   if(isDirty()) {
-    upan::mutex_guard g(_guiMutex);
+    upan::mutex_guard g(_fgProcessMutex);
     ProcessSwitchLock p;
-    for(int i = 0; i < _processes.size(); ++i) {
-      auto process = ProcessManager::Instance().GetProcess(_processes[i]);
+    for(int i = 0; i < _fgProcesses.size(); ++i) {
+      auto process = ProcessManager::Instance().GetProcess(_fgProcesses[i]);
       process.ifPresent([&](Process& p) {
         optimized_memcpy(_zBuffer, (uint32_t)p.getGuiFrame().value().frameBuffer().buffer(), _lfbSize);
       });
@@ -278,7 +278,7 @@ void GraphicsVideo::CopyArea(unsigned sx, unsigned sy, uint32_t width, uint32_t 
 }
 
 bool GraphicsVideo::isDirty() {
-  upan::mutex_guard g(_guiMutex);
+  upan::mutex_guard g(_fgProcessMutex);
 
   if (_needRefresh.get()) {
     _needRefresh.set(false);
@@ -287,10 +287,10 @@ bool GraphicsVideo::isDirty() {
 
   bool dirty = false;
 
-  for(auto pid : _processes) {
+  for(auto pid : _fgProcesses) {
     auto process = ProcessManager::Instance().GetProcess(pid);
     if (process.isEmpty()) {
-      removeGUIProcess(pid);
+      removeFGProcess(pid);
     } else {
       process.value().getGuiFrame().ifPresent([&dirty](RootFrame& f) {
         dirty |= f.isDirty();
@@ -301,14 +301,22 @@ bool GraphicsVideo::isDirty() {
   return dirty;
 }
 
-void GraphicsVideo::addGUIProcess(int pid) {
-  upan::mutex_guard g(_guiMutex);
-  _processes.push_back(pid);
+void GraphicsVideo::addFGProcess(int pid) {
+  upan::mutex_guard g(_fgProcessMutex);
+  _fgProcesses.push_back(pid);
 }
 
-void GraphicsVideo::removeGUIProcess(int pid) {
-  upan::mutex_guard g(_guiMutex);
-  _processes.erase(pid);
+void GraphicsVideo::removeFGProcess(int pid) {
+  upan::mutex_guard g(_fgProcessMutex);
+  _fgProcesses.erase(pid);
+}
+
+upan::option<int> GraphicsVideo::getActiveFGProcess() {
+  upan::mutex_guard g(_fgProcessMutex);
+  if (_fgProcesses.empty()) {
+    return upan::option<int>::empty();
+  }
+  return upan::option<int>(_fgProcesses[_fgProcesses.size() - 1]);
 }
 
 uint32_t GraphicsVideo::allocateFrameBuffer() {

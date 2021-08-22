@@ -74,3 +74,9 @@ void AutonomousProcess::DestroyThreads() {
   }
   _threadSchedulerList.clear();
 }
+
+void AutonomousProcess::dispatchKeyboardData(byte data) {
+  if (iodTable().isStreamedStdio()) {
+    iodTable().get(IODescriptorTable::STDIN).write((char*)&data, 1);
+  }
+}

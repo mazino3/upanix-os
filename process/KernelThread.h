@@ -30,14 +30,6 @@ public:
 
   void onLoad() override {}
 
-  upan::option<RootFrame&> getGuiFrame() override {
-    return _parent.getGuiFrame();
-  }
-
-  void initGuiFrame() override {
-    _parent.initGuiFrame();
-  }
-
 private:
   void DeAllocateResources() override;
   uint32_t AllocateAddressSpace();

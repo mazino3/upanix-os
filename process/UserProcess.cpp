@@ -532,7 +532,7 @@ void UserProcess::allocateGUIFramebuffer() {
   //let processes write to stdout of the parent for debugging purpose.
   //_iodTable.setupNullStdOut();
 
-  GraphicsVideo::Instance().addGUIProcess(processID());
+  GraphicsVideo::Instance().addFGProcess(processID());
 }
 
 void UserProcess::initGuiFrame() {
@@ -547,6 +547,6 @@ void UserProcess::DeAllocateGUIFramebuffer() {
     DMM_DeAllocateForKernel((uint32_t)_frame->frameBuffer().buffer());
     const auto guiFramebufferPTEAddress = ((unsigned *) (_taskState.CR3_PDBR - GLOBAL_DATA_SEGMENT_BASE))[PROCESS_GUI_FRAMEBUFFER_PDE_ID] & 0xFFFFF000;
     MemManager::Instance().DeAllocatePhysicalPage(guiFramebufferPTEAddress / PAGE_SIZE);
-    GraphicsVideo::Instance().removeGUIProcess(processID());
+    GraphicsVideo::Instance().removeFGProcess(processID());
   }
 }

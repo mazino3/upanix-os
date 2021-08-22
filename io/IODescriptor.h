@@ -23,7 +23,7 @@
 
 class IODescriptor {
 protected:
-  IODescriptor(int pid, int id, byte mode) : _pid(pid), _id(id), _mode(mode), _refCount(1) {
+  IODescriptor(int pid, int id, uint32_t mode) : _pid(pid), _id(id), _mode(mode), _refCount(1) {
   }
 
 public:
@@ -45,7 +45,7 @@ public:
     return upan::option<IODescriptor&>::empty();
   }
 
-  byte getMode() const {
+  uint32_t getMode() const {
     return _mode;
   }
 
@@ -72,6 +72,6 @@ public:
 private:
   const int _pid;
   const int _id;
-  byte _mode;
+  uint32_t _mode;
   int _refCount;
 };

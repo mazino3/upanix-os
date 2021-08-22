@@ -85,13 +85,11 @@ void UpanixMain_KernelProcess() {
   GraphicsVideo::Instance().CreateRefreshTask();
 
   KC::MConsole().StartCursorBlink();
+  KeyboardHandler::Instance().StartDispatcher();
 
 	while(true) {
     const int pid = ProcessManager::Instance().CreateKernelProcess("console", (unsigned) &Console_StartUpanixConsole,
                                                                    ProcessManager::GetCurrentProcessID(), true, upan::vector<uint32_t>());
-//	ProcessManager_CreateKernelImage((unsigned)&FloatProcess, ProcessManager::GetCurrentProcessID(), false, NULL, NULL, &pid, "float") ;
-//	ProcessManager_CreateKernelImage((unsigned)&FloatProcess, ProcessManager::GetCurrentProcessID(), false, NULL, NULL, &pid, "float1") ;
-//	ProcessManager_CreateKernelImage((unsigned)&SessionManager_StartSession, NO_PROCESS_ID, true, NULL, NULL, &pid, "sesman") ;
 //	SessionManager_SetSessionIDMap(SessionManager_KeyToSessionIDMap(Keyboard_F1), pid) ;
     ProcessManager::Instance().WaitOnChild(pid);
   }

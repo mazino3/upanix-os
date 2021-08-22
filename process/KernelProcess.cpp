@@ -70,13 +70,13 @@ void KernelProcess::initGuiFrame() {
     //let processes write to stdout of the parent for debugging purpose.
     //_iodTable.setupNullStdOut();
 
-    GraphicsVideo::Instance().addGUIProcess(_processID);
+    GraphicsVideo::Instance().addFGProcess(_processID);
   }
 }
 
 void KernelProcess::DeAllocateGUIFramebuffer() {
   if (_frame.get() != nullptr) {
     DMM_DeAllocateForKernel((uint32_t)_frame->frameBuffer().buffer());
-    GraphicsVideo::Instance().removeGUIProcess(_processID);
+    GraphicsVideo::Instance().removeFGProcess(_processID);
   }
 }

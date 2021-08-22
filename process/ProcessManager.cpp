@@ -665,11 +665,6 @@ bool ProcessManager::WakeupProcessOnInterrupt(SchedulableProcess& p)
 	if(irq == StdIRQ::Instance().NO_IRQ)
 		return true ;
 
-	if(irq == StdIRQ::Instance().KEYBOARD_IRQ) {
-    if(!(p.processGroup()->IsFGProcess(p.processID()) && p.processGroup()->IsFGProcessGroup()))
-			return false;
-	}
-	
 	if(irq.Consume()) {
 		p.setStatus(RUN);
 		return true;

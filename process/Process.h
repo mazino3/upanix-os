@@ -90,6 +90,10 @@ public:
     throw upan::exception(XLOC, "setAUTAddress unsupported");
   }
 
+  virtual void dispatchKeyboardData(byte data) {
+    throw upan::exception(XLOC, "dispatchKeyboardData unsupported");
+  }
+
   virtual void initGuiFrame() = 0;
 
   virtual upan::option<RootFrame&> getGuiFrame() = 0;

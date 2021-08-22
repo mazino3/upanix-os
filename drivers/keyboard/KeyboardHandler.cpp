@@ -21,6 +21,7 @@
 #include <ProcessManager.h>
 #include <MemUtil.h>
 #include <PS2KeyboardDriver.h>
+#include <GraphicsVideo.h>
 
 KeyboardHandler::KeyboardHandler() : _qBuffer(1024)
 {
@@ -59,4 +60,33 @@ void KeyboardHandler::Getch()
 {
   byte ch;
   while(!GetCharInNonBlockMode(ch));
+}
+
+static void Keyboard_Event_Dispatcher() {
+  try {
+    while(true) {
+      byte data = KeyboardHandler::Instance().GetCharInBlockMode();
+      GraphicsVideo::Instance().getActiveFGProcess().ifPresent([&data](int pid) {
+        ProcessSwitchLock pLock;
+        auto process = ProcessManager::Instance().GetProcess(pid);
+        process.ifPresent([&](Process& p) {
+          p.dispatchKeyboardData(data);
+        });
+      });
+    }
+  } catch(upan::exception& e) {
+    printf("\n Error in KB event dispatcher: %s", e.Error().Msg().c_str());
+  }
+  ProcessManager_Exit();
+}
+
+void KeyboardHandler::StartDispatcher() {
+  static bool started = false;
+  if (started) {
+    return;
+  }
+  started = true;
+  ProcessManager::Instance().CreateKernelProcess("kbed", (unsigned) &Keyboard_Event_Dispatcher,
+                                                 ProcessManager::GetCurrentProcessID(), false, upan::vector<uint32_t>());
+
 }
