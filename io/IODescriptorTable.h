@@ -44,7 +44,6 @@ public:
   void dup2(int oldFD, int newFD);
   IODescriptor& getRealNonDupped(int fd);
   IODescriptor& get(int fd);
-  bool isStreamedStdio();
   void setupStreamedStdio();
   void setupNullStdio();
 

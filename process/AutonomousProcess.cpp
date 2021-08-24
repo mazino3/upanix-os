@@ -18,10 +18,11 @@
 
 #include <AutonomousProcess.h>
 #include <Thread.h>
+#include <StreamBufferDescriptor.h>
 #include "ProcessManager.h"
 
 AutonomousProcess::AutonomousProcess(const upan::string& name, int parentID, bool isFGProcess)
-  : SchedulableProcess(name, parentID, isFGProcess), _nextThreadIt(_threadSchedulerList.begin()) {
+  : SchedulableProcess(name, parentID, isFGProcess), _nextThreadIt(_threadSchedulerList.begin()), _uiType(Process::UIType::NA) {
 }
 
 SchedulableProcess& AutonomousProcess::forSchedule() {
@@ -76,7 +77,33 @@ void AutonomousProcess::DestroyThreads() {
 }
 
 void AutonomousProcess::dispatchKeyboardData(byte data) {
-  if (iodTable().isStreamedStdio()) {
-    iodTable().get(IODescriptorTable::STDIN).write((char*)&data, 1);
+  switch (_uiType) {
+    case Process::TTY:
+      iodTable().get(IODescriptorTable::STDIN).write((char*)&data, 1);
+      break;
+
+    case Process::GUI:
+      break;
+
+    case Process::NA:
+      break;
   }
+}
+
+void AutonomousProcess::setupAsTtyProcess() {
+  if (_uiType != Process::UIType::NA) {
+    throw upan::exception(XLOC, "Process %d is already initiazed with UIType %d", _processID, _uiType);
+  }
+  iodTable().setupStreamedStdio();
+  _uiType = Process::UIType::TTY;
+}
+
+int AutonomousProcess::setupAsGuiProcess() {
+  if (_uiType != Process::UIType::NA) {
+    throw upan::exception(XLOC, "Process %d is already initiazed with UIType %d", _processID, _uiType);
+  }
+  _uiType = Process::UIType::GUI;
+  return iodTable().allocate([&](int fd) {
+    return new StreamBufferDescriptor(_processID, fd, 4096, O_WR_NONBLOCK);
+  }).id();
 }

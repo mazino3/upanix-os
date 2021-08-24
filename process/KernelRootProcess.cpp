@@ -31,7 +31,5 @@ void KernelRootProcess::initGuiFrame() {
 }
 
 void KernelRootProcess::dispatchKeyboardData(byte data) {
-  if (iodTable().isStreamedStdio()) {
-    iodTable().get(IODescriptorTable::STDIN).write((char*)&data, 1);
-  }
+  iodTable().get(IODescriptorTable::STDIN).write((char*)&data, 1);
 }

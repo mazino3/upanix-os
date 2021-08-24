@@ -48,6 +48,18 @@ public:
     _parent.dispatchKeyboardData(data);
   }
 
+  UIType getUIType() override {
+    return _parent.getUIType();
+  }
+
+  void setupAsTtyProcess() override {
+    _parent.setupAsTtyProcess();
+  }
+
+  int setupAsGuiProcess() override {
+    return _parent.setupAsGuiProcess();
+  }
+
 protected:
   AutonomousProcess& _parent;
 };

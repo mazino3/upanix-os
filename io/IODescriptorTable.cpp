@@ -45,10 +45,6 @@ IODescriptorTable::~IODescriptorTable() noexcept {
   }
 }
 
-bool IODescriptorTable::isStreamedStdio() {
-  return typeid(*_iodMap[STDIN]) == typeid(StreamBufferDescriptor);
-}
-
 void IODescriptorTable::setupStreamedStdio() {
   upan::mutex_guard g(_fdMutex);
   delete _iodMap[STDOUT];

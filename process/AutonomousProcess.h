@@ -32,8 +32,16 @@ public:
   void addToThreadScheduler(Thread& thread);
   void dispatchKeyboardData(byte data) override;
 
+  UIType getUIType() override {
+    return _uiType;
+  }
+
+  void setupAsTtyProcess() override;
+  int setupAsGuiProcess() override;
+
 private:
   typedef upan::list<Thread*> ThreadSchedulerList;
   ThreadSchedulerList _threadSchedulerList;
   ThreadSchedulerList::iterator _nextThreadIt;
+  UIType _uiType;
 };

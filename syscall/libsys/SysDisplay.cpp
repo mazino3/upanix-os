@@ -66,17 +66,23 @@ void SysDisplay_RawCharacterArea(const MChar* src, uint32_t rows, uint32_t cols,
   SysCallDisplay_Handle(&iRetStatus, SYS_CALL_DISPLAY_RAW_CHAR_AREA, false, (uint32_t)src, rows, cols, curPos, 5, 6, 7, 8, 9);
 }
 
-void SysDisplay_InitGui(FrameBufferInfo* frameBufferInfo) {
+void SysDisplay_InitGuiFrame(FrameBufferInfo* frameBufferInfo) {
   int iRetStatus;
-  SysCallDisplay_Handle(&iRetStatus, SYS_CALL_DISPLAY_INIT_GUI, false, (uint32_t)frameBufferInfo, 2, 3, 4, 5, 6, 7, 8, 9);
+  SysCallDisplay_Handle(&iRetStatus, SYS_CALL_DISPLAY_INIT_GUI_FRAME, false, (uint32_t)frameBufferInfo, 2, 3, 4, 5, 6, 7, 8, 9);
 }
 
 void SysDisplay_FrameTouch() {
   int iRetStatus;
-  SysCallDisplay_Handle(&iRetStatus, SYS_CALL_DISPLAY_FRAME_TOUCH, false, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+  SysCallDisplay_Handle(&iRetStatus, SYS_CALL_DISPLAY_GUI_FRAME_TOUCH, false, 1, 2, 3, 4, 5, 6, 7, 8, 9);
 }
 
 void SysDisplay_InitTermConsole() {
   int iRetStatus;
   SysCallDisplay_Handle(&iRetStatus, SYS_CALL_DISPLAY_INIT_TERM_CONSOLE, false, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+}
+
+int SysDisplay_InitGuiEventStream() {
+  int iRetStatus;
+  SysCallDisplay_Handle(&iRetStatus, SYS_CALL_DISPLAY_INIT_GUI_EVENT_STREAM, false, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+  return iRetStatus;
 }

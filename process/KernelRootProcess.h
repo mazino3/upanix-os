@@ -119,6 +119,9 @@ public:
     return upan::option<RootFrame&>(RootGUIConsole::Instance().frame());
   }
 
+  UIType getUIType() override {
+    return Process::UIType::NA;
+  }
   void initGuiFrame() override;
   void dispatchKeyboardData(byte data) override;
 

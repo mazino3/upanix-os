@@ -31,6 +31,8 @@ class IODescriptorTable;
 
 class Process {
 public:
+  enum UIType { NA, TTY, GUI };
+
   virtual bool isKernelProcess() const = 0;
   virtual bool isFGProcessGroup() const = 0;
   virtual int driveID() const = 0;
@@ -94,7 +96,13 @@ public:
     throw upan::exception(XLOC, "dispatchKeyboardData unsupported");
   }
 
+  virtual UIType getUIType() = 0;
   virtual void initGuiFrame() = 0;
-
   virtual upan::option<RootFrame&> getGuiFrame() = 0;
+  virtual void setupAsTtyProcess() {
+    throw upan::exception(XLOC, "setupAsTtyProcess unsupported");
+  }
+  virtual int setupAsGuiProcess() {
+    throw upan::exception(XLOC, "setupAsGuiProcess unsupported");
+  }
 };

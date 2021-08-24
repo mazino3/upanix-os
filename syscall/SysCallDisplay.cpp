@@ -111,7 +111,7 @@ __volatile__ unsigned uiP9)
       }
       break;
 
-	  case SYS_CALL_DISPLAY_INIT_GUI:
+	  case SYS_CALL_DISPLAY_INIT_GUI_FRAME:
 	    // P1 => Return address of FramebufferInfo
     {
       auto& process = ProcessManager::Instance().GetCurrentPAS();
@@ -130,7 +130,7 @@ __volatile__ unsigned uiP9)
     }
     break;
 
-	  case SYS_CALL_DISPLAY_FRAME_TOUCH:
+	  case SYS_CALL_DISPLAY_GUI_FRAME_TOUCH:
 	  {
 	    ProcessManager::Instance().GetCurrentPAS().getGuiFrame().ifPresent([](RootFrame& f) { f.touch(); });
 	  }
@@ -138,7 +138,13 @@ __volatile__ unsigned uiP9)
 
 	  case SYS_CALL_DISPLAY_INIT_TERM_CONSOLE:
 	  {
-      ProcessManager::Instance().GetCurrentPAS().iodTable().setupStreamedStdio();
+      ProcessManager::Instance().GetCurrentPAS().setupAsTtyProcess();
+	  }
+	  break;
+
+	  case SYS_CALL_DISPLAY_INIT_GUI_EVENT_STREAM:
+	  {
+	    *piRetVal = ProcessManager::Instance().GetCurrentPAS().setupAsGuiProcess();
 	  }
 	  break;
 	}
