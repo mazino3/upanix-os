@@ -218,7 +218,7 @@ __volatile__ unsigned uiP9)
 			// P2 => Write buffer address
 			// P3 => Byte to write 
 			{
-				const char* szBufferAddr = (bDoAddrTranslation) ? KERNEL_ADDR(bDoAddrTranslation, const char*, uiP2) : (const char*)uiP2 ;
+				const char* szBufferAddr = KERNEL_ADDR(bDoAddrTranslation, const char*, uiP2);
 
 				*piRetVal = 0 ;
         try
@@ -234,6 +234,26 @@ __volatile__ unsigned uiP9)
 			}
 			break ;
 
+	  case SYS_CALL_FILE_SELECT:
+	    // P1 => Input IO Descriptors to wait on
+	    // P2 => Output IO Descriptors that are ready
+	    {
+	      io_descriptor* in_waitIODescriptors = KERNEL_ADDR(bDoAddrTranslation, io_descriptor*, uiP1);
+	      io_descriptor* out_readyIODescriptors = KERNEL_ADDR(bDoAddrTranslation, io_descriptor*, uiP2);
+
+	      upan::vector<io_descriptor> waitIODescriptors;
+	      for(int i = 0; in_waitIODescriptors[i]._fd >= 0; ++i) {
+	        waitIODescriptors.push_back(in_waitIODescriptors[i]);
+	      }
+
+	      const auto& readyIODescriptors = ProcessManager::Instance().GetCurrentPAS().iodTable().select(waitIODescriptors);
+	      int i;
+	      for(i = 0; i < readyIODescriptors.size(); ++i) {
+	        out_readyIODescriptors[i] = readyIODescriptors[i];
+	      }
+	      out_readyIODescriptors[i]._fd = -1;
+	    }
+	    break;
 		case SYS_CALL_FILE_SEEK:
 			// P1 => File Desc
 			// P2 => Offset

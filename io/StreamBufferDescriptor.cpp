@@ -37,7 +37,7 @@ int StreamBufferDescriptor::read(char* buffer, int len) {
     if (getMode() & O_RD_NONBLOCK) {
       return 0;
     }
-    ProcessManager::Instance().WaitOnIODescriptor(id(), ProcessStateInfo::Read);
+    ProcessManager::Instance().WaitOnIODescriptor(id(), IO_OP_TYPES::IO_Read);
   }
 }
 
@@ -61,7 +61,7 @@ int StreamBufferDescriptor::write(const char* buffer, int len) {
       if (getMode() & O_WR_NONBLOCK) {
         return 0;
       }
-      ProcessManager::Instance().WaitOnIODescriptor(id(), ProcessStateInfo::Write);
+      ProcessManager::Instance().WaitOnIODescriptor(id(), IO_OP_TYPES::IO_Write);
     }
   }
 }

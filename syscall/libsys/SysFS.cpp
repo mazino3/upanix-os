@@ -90,6 +90,11 @@ int SysFS_FileWrite(int fd, const char* buf, int len)
 	return iRetStatus ;
 }
 
+void SysFS_FileSelect(io_descriptor* waitIODescriptors, io_descriptor* readyIODescriptors) {
+  int iRetStatus ;
+  SysCallFile_Handle(&iRetStatus, SYS_CALL_FILE_SELECT, false, (uint32_t)waitIODescriptors, (uint32_t)readyIODescriptors, 3, 4, 5, 6, 7, 8, 9) ;
+}
+
 int SysFS_FileSeek(int fd, int offSet, int seekType)
 {
 	int iRetStatus ;
@@ -134,6 +139,10 @@ int read(int fd, char* buf, int len)
 int write(int fd, const char* buf, int len)
 {
 	return SysFS_FileWrite(fd, buf, len) ;
+}
+
+void select(io_descriptor* waitIODescriptors, io_descriptor* readyIODescriptors) {
+  return SysFS_FileSelect(waitIODescriptors, readyIODescriptors);
 }
 
 int lseek(int fd, int offset, int seekType)

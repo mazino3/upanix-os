@@ -37,11 +37,13 @@ public:
   }
 
   void setupAsTtyProcess() override;
-  int setupAsGuiProcess() override;
+  void setupAsGuiProcess(int fdList[]) override;
 
 private:
   typedef upan::list<Thread*> ThreadSchedulerList;
   ThreadSchedulerList _threadSchedulerList;
   ThreadSchedulerList::iterator _nextThreadIt;
   UIType _uiType;
+  IODescriptor* _uiKeyboardEventStreamFD;
+  IODescriptor* _uiMouseEventStreamFD;
 };

@@ -56,8 +56,8 @@ public:
     _parent.setupAsTtyProcess();
   }
 
-  int setupAsGuiProcess() override {
-    return _parent.setupAsGuiProcess();
+  void setupAsGuiProcess(int fdList[]) override {
+    return _parent.setupAsGuiProcess(fdList);
   }
 
 protected:

@@ -100,7 +100,8 @@ class ProcessManager
     bool IsDMMOn(int iProcessID);
     void WaitOnChild(int iChildProcessID);
     void WaitOnResource(RESOURCE_KEYS uiResourceType);
-    void WaitOnIODescriptor(const int fd, const ProcessStateInfo::IOOpType opType);
+    void WaitOnIODescriptor(int fd, IO_OP_TYPES waitType);
+    void WaitOnIODescriptors(const upan::vector<io_descriptor>& waitIODescriptors);
     void WaitOnKernelService();
     bool IsKernelProcess(int iProcessID);
     void BuildCallGate(unsigned short usGateSelector, unsigned uiOffset, unsigned short usSelector, byte bParameterCount);

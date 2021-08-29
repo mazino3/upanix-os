@@ -232,17 +232,14 @@ void ProcessManager::DoContextSwitch(SchedulableProcess& process) {
     }
     break;
 
-	  case WAIT_IO:
+    case WAIT_IO_DESCRIPTORS:
 	  {
-      const auto& ioDescriptorId = process.stateInfo().WaitIODescriptorId();
-      auto& ioDescriptor = process.iodTable().get(ioDescriptorId.first);
-      if (
-          (ioDescriptorId.second == ProcessStateInfo::Read && ioDescriptor.canRead()) ||
-          (ioDescriptorId.second == ProcessStateInfo::Write && ioDescriptor.canWrite())) {
-        process.setStatus(RUN);
-      } else {
-        return;
-      }
+	    const auto& result = process.iodTable().selectCheck(process.stateInfo().GetIODescriptors());
+	    if (result.empty()) {
+	      return;
+	    }
+      process.stateInfo().SetIODescriptors(result);
+      process.setStatus(RUN);
 	  }
 	  break;
 
@@ -439,14 +436,23 @@ void ProcessManager::WaitOnResource(RESOURCE_KEYS resourceKey)
 	ProcessManager_Yield() ;
 }
 
-void ProcessManager::WaitOnIODescriptor(const int fd, const ProcessStateInfo::IOOpType opType) {
+void ProcessManager::WaitOnIODescriptor(int fd, IO_OP_TYPES waitType) {
+  upan::vector<io_descriptor> waitIODescriptors;
+  io_descriptor waitIODescriptor;
+  waitIODescriptor._fd = fd;
+  waitIODescriptor._ioType = waitType;
+  waitIODescriptors.push_back(waitIODescriptor);
+  WaitOnIODescriptors(waitIODescriptors);
+}
+
+void ProcessManager::WaitOnIODescriptors(const upan::vector<io_descriptor>& waitIODescriptors) {
   if(GetCurProcId() < 0)
     return ;
 
   ProcessManager::DisableTaskSwitch() ;
 
-  GetCurrentPAS().stateInfo().WaitIODescriptorId(fd, opType);
-  GetCurrentPAS().setStatus(WAIT_IO);
+  GetCurrentPAS().stateInfo().SetIODescriptors(waitIODescriptors);
+  GetCurrentPAS().setStatus(WAIT_IO_DESCRIPTORS);
 
   ProcessManager_Yield() ;
 }

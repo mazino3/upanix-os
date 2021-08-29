@@ -105,6 +105,7 @@ include_directories(${UPANLIB_SOURCE_DIR}/libcxxrt)
 
 include_directories(${UPANLIB_SOURCE_DIR}/libupanui)
 include_directories(${UPANLIB_SOURCE_DIR}/libupanui/image)
+include_directories(${UPANLIB_SOURCE_DIR}/libupanui/events)
 include_directories(${UPANLIB_SOURCE_DIR}/libupanui/text/default)
 include_directories(${UPANLIB_SOURCE_DIR}/libupanui/text/usfn)
 include_directories(${UPANLIB_SOURCE_DIR}/libupanui/text)

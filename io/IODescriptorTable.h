@@ -25,6 +25,8 @@
 #include <mutex.h>
 #include <IODescriptor.h>
 #include <function.h>
+#include <mosstd.h>
+#include <vector.h>
 
 class IODescriptorTable {
 public:
@@ -46,6 +48,8 @@ public:
   IODescriptor& get(int fd);
   void setupStreamedStdio();
   void setupNullStdio();
+  upan::vector<io_descriptor> select(const upan::vector<io_descriptor>& ioDescriptors);
+  upan::vector<io_descriptor> selectCheck(const upan::vector<io_descriptor>& ioDescriptors);
 
 private:
   IODMap::iterator getItr(int fd);

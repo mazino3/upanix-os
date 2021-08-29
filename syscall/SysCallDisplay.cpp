@@ -144,7 +144,8 @@ __volatile__ unsigned uiP9)
 
 	  case SYS_CALL_DISPLAY_INIT_GUI_EVENT_STREAM:
 	  {
-	    *piRetVal = ProcessManager::Instance().GetCurrentPAS().setupAsGuiProcess();
+	    int* fdList = KERNEL_ADDR(bDoAddrTranslation, int*, uiP1);
+	    ProcessManager::Instance().GetCurrentPAS().setupAsGuiProcess(fdList);
 	  }
 	  break;
 	}

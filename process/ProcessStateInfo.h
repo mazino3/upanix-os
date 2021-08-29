@@ -40,12 +40,11 @@ public:
   RESOURCE_KEYS WaitResourceId() const { return _waitResourceId; }
   void WaitResourceId(const RESOURCE_KEYS id) { _waitResourceId = id; }
 
-  const IODescriptorId& WaitIODescriptorId() const {
-    return _waitIODescriptorId;
+  const upan::vector<io_descriptor>& GetIODescriptors() const {
+    return _ioDescriptors;
   }
-  void WaitIODescriptorId(const int fd, const IOOpType opType) {
-    _waitIODescriptorId.first = fd;
-    _waitIODescriptorId.second = opType;
+  void SetIODescriptors(const upan::vector<io_descriptor>& ioDescriptors) {
+    _ioDescriptors = ioDescriptors;
   }
 
   bool IsKernelServiceComplete() const { return _kernelServiceComplete; }
@@ -62,7 +61,7 @@ private:
   const IRQ*     _irq;
   int            _waitChildProcId ;
   RESOURCE_KEYS  _waitResourceId;
-  IODescriptorId _waitIODescriptorId;
   upan::atomic::integral<bool> _eventCompleted;
   bool           _kernelServiceComplete ;
+  upan::vector<io_descriptor> _ioDescriptors;
 };

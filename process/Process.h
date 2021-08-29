@@ -102,7 +102,7 @@ public:
   virtual void setupAsTtyProcess() {
     throw upan::exception(XLOC, "setupAsTtyProcess unsupported");
   }
-  virtual int setupAsGuiProcess() {
+  virtual void setupAsGuiProcess(int fdList[]) {
     throw upan::exception(XLOC, "setupAsGuiProcess unsupported");
   }
 };

@@ -18,7 +18,7 @@
 
 #include <IODescriptorTable.h>
 #include <mutex.h>
-#include <typeinfo.h>
+#include <mosstd.h>
 #include <ProcessManager.h>
 #include <RedirectDescriptor.h>
 #include <StreamBufferDescriptor.h>
@@ -119,3 +119,30 @@ void IODescriptorTable::dup2(int oldFD, int newFD) {
   _iodMap.insert(IODMap::value_type(newFD, new RedirectDescriptor(_pid, newFD, oldF)));
 }
 
+upan::vector<io_descriptor> IODescriptorTable::select(const upan::vector<io_descriptor>& ioDescriptors) {
+  const auto& result = selectCheck(ioDescriptors);
+  if (result.empty()) {
+    ProcessManager::Instance().WaitOnIODescriptors(ioDescriptors);
+  }
+  return ProcessManager::Instance().GetCurrentPAS().stateInfo().GetIODescriptors();
+}
+
+upan::vector<io_descriptor> IODescriptorTable::selectCheck(const upan::vector<io_descriptor>& ioDescriptors) {
+  upan::vector<io_descriptor> result;
+  for(const auto& ioDescriptor : ioDescriptors) {
+    auto& d = get(ioDescriptor._fd);
+    switch(ioDescriptor._ioType) {
+      case IO_OP_TYPES::IO_Read:
+        if (d.canRead()) {
+          result.push_back(ioDescriptor);
+        }
+        break;
+      case IO_OP_TYPES::IO_Write:
+        if (d.canWrite()) {
+          result.push_back(ioDescriptor);
+        }
+        break;
+    }
+  }
+  return result;
+}

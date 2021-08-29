@@ -19,10 +19,12 @@
 #include <AutonomousProcess.h>
 #include <Thread.h>
 #include <StreamBufferDescriptor.h>
-#include "ProcessManager.h"
+#include <ProcessManager.h>
+#include <RawKeyboardData.h>
 
 AutonomousProcess::AutonomousProcess(const upan::string& name, int parentID, bool isFGProcess)
-  : SchedulableProcess(name, parentID, isFGProcess), _nextThreadIt(_threadSchedulerList.begin()), _uiType(Process::UIType::NA) {
+  : SchedulableProcess(name, parentID, isFGProcess), _nextThreadIt(_threadSchedulerList.begin()),
+    _uiType(Process::UIType::NA), _uiKeyboardEventStreamFD(nullptr), _uiMouseEventStreamFD(nullptr) {
 }
 
 SchedulableProcess& AutonomousProcess::forSchedule() {
@@ -83,6 +85,9 @@ void AutonomousProcess::dispatchKeyboardData(byte data) {
       break;
 
     case Process::GUI:
+      upanui::RawKeyboardData rawKeyboardData;
+      rawKeyboardData._data = data;
+      _uiKeyboardEventStreamFD->write((char*)&rawKeyboardData, sizeof(upanui::RawKeyboardData));
       break;
 
     case Process::NA:
@@ -92,18 +97,26 @@ void AutonomousProcess::dispatchKeyboardData(byte data) {
 
 void AutonomousProcess::setupAsTtyProcess() {
   if (_uiType != Process::UIType::NA) {
-    throw upan::exception(XLOC, "Process %d is already initiazed with UIType %d", _processID, _uiType);
+    throw upan::exception(XLOC, "Process %d is already initialized with UIType %d", _processID, _uiType);
   }
   iodTable().setupStreamedStdio();
   _uiType = Process::UIType::TTY;
 }
 
-int AutonomousProcess::setupAsGuiProcess() {
+void AutonomousProcess::setupAsGuiProcess(int fdList[]) {
   if (_uiType != Process::UIType::NA) {
-    throw upan::exception(XLOC, "Process %d is already initiazed with UIType %d", _processID, _uiType);
+    throw upan::exception(XLOC, "Process %d is already initialized with UIType %d", _processID, _uiType);
   }
+
   _uiType = Process::UIType::GUI;
-  return iodTable().allocate([&](int fd) {
-    return new StreamBufferDescriptor(_processID, fd, 4096, O_WR_NONBLOCK);
-  }).id();
+  _uiKeyboardEventStreamFD = &iodTable().allocate([&](int fd) {
+    return new StreamBufferDescriptor(_processID, fd, 4096, O_WR_NONBLOCK | O_RD_NONBLOCK);
+  });
+
+  _uiMouseEventStreamFD = &iodTable().allocate([&](int fd) {
+    return new StreamBufferDescriptor(_processID, fd, 4096, O_WR_NONBLOCK | O_RD_NONBLOCK);
+  });
+
+  fdList[0] = _uiKeyboardEventStreamFD->id();
+  fdList[1] = _uiMouseEventStreamFD->id();
 }
