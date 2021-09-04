@@ -252,6 +252,7 @@ void DiskDrive::RawRead(unsigned uiStartSector, unsigned uiNoOfSectors, byte* bD
 
 void DiskDrive::Write(unsigned uiStartSector, unsigned uiNoOfSectors, byte* bDataBuffer)
 {
+  upan::mutex_guard g(_driveMutex);
 	uiStartSector += LBAStartSector();
 	
 	if(!_bEnableDiskCache)
