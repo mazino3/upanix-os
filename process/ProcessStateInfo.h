@@ -26,9 +26,6 @@ class IRQ;
 class ProcessStateInfo
 {
 public:
-  enum IOOpType { Read, Write };
-  typedef upan::pair<int, IOOpType> IODescriptorId;
-
   ProcessStateInfo();
 
   uint32_t SleepTime() const { return _sleepTime; }
