@@ -30,7 +30,7 @@ public:
     return getParentDescriptor().value().getRealDescriptor();
   }
 
-  int read(char* buffer, int len) override {
+  int read(void* buffer, int len) override {
     return getParentDescriptor().value().read(buffer, len);
   }
 
@@ -38,7 +38,7 @@ public:
     return getParentDescriptor().value().canRead();
   }
 
-  int write(const char* buffer, int len) override {
+  int write(const void* buffer, int len) override {
     return getParentDescriptor().value().write(buffer, len);
   }
 

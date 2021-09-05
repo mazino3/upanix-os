@@ -61,9 +61,9 @@ public:
     ++_refCount;
   }
 
-  virtual int read(char* buffer, int len) = 0;
+  virtual int read(void* buffer, int len) = 0;
   virtual bool canRead() = 0;
-  virtual int write(const char* buffer, int len) = 0;
+  virtual int write(const void* buffer, int len) = 0;
   virtual bool canWrite() = 0;
   virtual void seek(int seekType, int offset) = 0;
   virtual uint32_t getOffset() const = 0;

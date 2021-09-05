@@ -31,11 +31,11 @@ public:
       _lastReadSectorNo(startSectorID) {
   }
 
-  int read(char* buffer, int len) override;
+  int read(void* buffer, int len) override;
   bool canRead() override {
     return true;
   }
-  int write(const char* buffer, int len) override;
+  int write(const void* buffer, int len) override;
   bool canWrite() override {
     return true;
   }

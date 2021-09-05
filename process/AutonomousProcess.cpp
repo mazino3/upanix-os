@@ -81,7 +81,7 @@ void AutonomousProcess::DestroyThreads() {
 void AutonomousProcess::dispatchKeyboardData(byte data) {
   switch (_uiType) {
     case Process::TTY:
-      iodTable().get(IODescriptorTable::STDIN).write((char*)&data, 1);
+      iodTable().get(IODescriptorTable::STDIN).write(&data, 1);
       break;
 
     case Process::GUI:

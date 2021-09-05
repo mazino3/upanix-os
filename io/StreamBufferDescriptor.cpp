@@ -26,12 +26,12 @@ StreamBufferDescriptor::StreamBufferDescriptor(int pid, int id, uint32_t bufSize
   : IODescriptor(pid, id, O_APPEND | mode), _queue(bufSize) {
 }
 
-int StreamBufferDescriptor::read(char* buffer, int len) {
+int StreamBufferDescriptor::read(void* buffer, int len) {
   while(true) {
     {
       upan::mutex_guard g(_ioSync);
       if (!_queue.empty()) {
-        return _queue.read(buffer, len);
+        return _queue.read((uint8_t*)buffer, len);
       }
     }
     if (getMode() & O_RD_NONBLOCK) {
@@ -46,16 +46,16 @@ bool StreamBufferDescriptor::canRead() {
   return !_queue.empty();
 }
 
-int StreamBufferDescriptor::write(const char* buffer, int len) {
+int StreamBufferDescriptor::write(const void* buffer, int len) {
   if (getPid() == NO_PROCESS_ID && id() == IODescriptorTable::STDOUT) {
-    KC::MConsole().nMessage(buffer, len, upanui::CharStyle::WHITE_ON_BLACK());
+    KC::MConsole().nMessage((char*)buffer, len, upanui::CharStyle::WHITE_ON_BLACK());
     return len;
   } else {
     while(true) {
       {
         upan::mutex_guard g(_ioSync);
         if (!_queue.full()) {
-          return _queue.write(buffer, len);
+          return _queue.write((uint8_t*)buffer, len);
         }
       }
       if (getMode() & O_WR_NONBLOCK) {

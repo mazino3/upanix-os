@@ -27,9 +27,9 @@ class StreamBufferDescriptor : public IODescriptor {
 public:
   StreamBufferDescriptor(int pid, int id, uint32_t bufSize, uint32_t mode);
 
-  int read(char* buffer, int len) override;
+  int read(void* buffer, int len) override;
   bool canRead() override;
-  int write(const char* buffer, int len) override;
+  int write(const void* buffer, int len) override;
   bool canWrite() override;
 
   void seek(int seekType, int offset) override {
@@ -45,6 +45,6 @@ public:
   }
 
 private:
-  upan::queue<char> _queue;
+  upan::queue<uint8_t> _queue;
   upan::mutex _ioSync;
 };

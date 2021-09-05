@@ -67,8 +67,6 @@ void SysCall_Initialize()
 	
 	SysCall_InitializeHandler(&SysCall_Handlers[SysCall_NoOfHandlers++], &SysCallMem_IsPresent, &SysCallMem_Handle) ;
 
-	SysCall_InitializeHandler(&SysCall_Handlers[SysCall_NoOfHandlers++], &SysCallKB_IsPresent, &SysCallKB_Handle) ;
-
 	SysCall_InitializeHandler(&SysCall_Handlers[SysCall_NoOfHandlers++], &SysCallDrive_IsPresent, &SysCallDrive_Handle) ;
 
 	SysCall_InitializeHandler(&SysCall_Handlers[SysCall_NoOfHandlers++], &SysCallUtil_IsPresent, &SysCallUtil_Handle) ;

@@ -32,7 +32,6 @@
 
 #include <SysCallDisplay.h>
 #include <SysCallFile.h>
-#include <SysCallKB.h>
 #include <SysCallMem.h>
 #include <SysCallProc.h>
 #include <SysCallDrive.h>

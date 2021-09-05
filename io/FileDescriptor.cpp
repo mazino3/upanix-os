@@ -23,7 +23,7 @@
 #include <DeviceDrive.h>
 #include <Directory.h>
 
-int FileDescriptor::read(char* buffer, int len) {
+int FileDescriptor::read(void* buffer, int len) {
   Process* pPAS = &ProcessManager::Instance().GetCurrentPAS();
 
   DiskDrive* pDiskDrive = DiskDriveManager::Instance().GetByID(_driveID, true).goodValueOrThrow(XLOC);
@@ -50,7 +50,7 @@ int FileDescriptor::read(char* buffer, int len) {
   return readLen;
 }
 
-int FileDescriptor::write(const char* buffer, int len) {
+int FileDescriptor::write(const void* buffer, int len) {
   Process* pPAS = &ProcessManager::Instance().GetCurrentPAS();
 
   if( !(getMode() & O_WRONLY || getMode() & O_RDWR || getMode() & O_APPEND) )
