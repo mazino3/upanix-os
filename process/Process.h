@@ -25,6 +25,7 @@
 #include <ProcessStateInfo.h>
 #include <ProcessDLLInfo.h>
 #include <RootFrame.h>
+#include <KeyboardData.h>
 
 class ProcessGroup;
 class IODescriptorTable;
@@ -92,7 +93,7 @@ public:
     throw upan::exception(XLOC, "setAUTAddress unsupported");
   }
 
-  virtual void dispatchKeyboardData(byte data) {
+  virtual void dispatchKeyboardData(const upanui::KeyboardData& data) {
     throw upan::exception(XLOC, "dispatchKeyboardData unsupported");
   }
 

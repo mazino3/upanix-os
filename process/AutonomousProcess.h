@@ -30,7 +30,7 @@ public:
   SchedulableProcess& forSchedule() override;
   void DestroyThreads() override;
   void addToThreadScheduler(Thread& thread);
-  void dispatchKeyboardData(byte data) override;
+  void dispatchKeyboardData(const upanui::KeyboardData& data) override;
 
   UIType getUIType() override {
     return _uiType;

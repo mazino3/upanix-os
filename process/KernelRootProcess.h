@@ -123,7 +123,7 @@ public:
     return Process::UIType::NA;
   }
   void initGuiFrame() override;
-  void dispatchKeyboardData(byte data) override;
+  void dispatchKeyboardData(const upanui::KeyboardData& data) override;
 
 private:
   upan::mutex _envMutex;

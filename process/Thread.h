@@ -44,7 +44,7 @@ public:
     _parent.initGuiFrame();
   }
 
-  void dispatchKeyboardData(byte data) override {
+  void dispatchKeyboardData(const upanui::KeyboardData& data) override {
     _parent.dispatchKeyboardData(data);
   }
 

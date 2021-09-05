@@ -21,6 +21,6 @@
 # include <Global.h>
 # include <KeyboardHandler.h>
 
-bool KBInputHandler_Process(byte ch) ;
+bool KBInputHandler_Process(upanui::KeyboardData data) ;
 
 #endif

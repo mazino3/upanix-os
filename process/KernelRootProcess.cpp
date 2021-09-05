@@ -18,6 +18,7 @@
 
 #include <KernelRootProcess.h>
 #include <GraphicsVideo.h>
+#include <KeyboardHandler.h>
 
 void KernelRootProcess::initGuiFrame() {
   static bool initialized = false;
@@ -30,6 +31,7 @@ void KernelRootProcess::initGuiFrame() {
   GraphicsVideo::Instance().addFGProcess(NO_PROCESS_ID);
 }
 
-void KernelRootProcess::dispatchKeyboardData(byte data) {
-  iodTable().get(IODescriptorTable::STDIN).write((char*)&data, 1);
+void KernelRootProcess::dispatchKeyboardData(const upanui::KeyboardData& data) {
+  const auto ch = (uint8_t)KeyboardHandler::Instance().mapToTTYKey(data);
+  iodTable().get(IODescriptorTable::STDIN).write((void*)&ch, 1);
 }

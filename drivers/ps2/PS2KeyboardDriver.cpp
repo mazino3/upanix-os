@@ -45,46 +45,21 @@ static void KBDriver_Handler()
 static const byte EXTRA_KEYS = 224;
 static const int MAX_KEYBOARD_CHARS = 84;
 
-static const byte Keyboard_GENERIC_KEY_MAP[MAX_KEYBOARD_CHARS] = { Keyboard_NA_CHAR,
-  Keyboard_ESC, '1', '2', '3', '4', '5', '6', '7', '8', '9',
+static const KeyboardKeys Keyboard_GENERIC_KEY_MAP[MAX_KEYBOARD_CHARS] = { Keyboard_NA_CHAR,
 
-  '0', '-', '=', Keyboard_BACKSPACE, '\t', 'q', 'w', 'e', 'r',
+  Keyboard_ESC, Keyboard_1, Keyboard_2, Keyboard_3, Keyboard_4, Keyboard_5, Keyboard_6, Keyboard_7, Keyboard_8, Keyboard_9,
 
-  't', 'y', 'u', 'i', 'o', 'p', '[', ']', Keyboard_ENTER,
+  Keyboard_0, Keyboard_MINUS, Keyboard_EQUAL, Keyboard_BACKSPACE, Keyboard_TAB, Keyboard_q, Keyboard_w, Keyboard_e, Keyboard_r,
 
-  Keyboard_LEFT_CTRL, 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k',
+  Keyboard_t, Keyboard_y, Keyboard_u, Keyboard_i, Keyboard_o, Keyboard_p, Keyboard_OPEN_BRACKET, Keyboard_CLOSE_BRACKET, Keyboard_ENTER,
 
-  'l', ';', '\'', '`', Keyboard_LEFT_SHIFT, '\\', 'z', 'x', 'c',
+  Keyboard_LEFT_CTRL, Keyboard_a, Keyboard_s, Keyboard_d, Keyboard_f, Keyboard_g, Keyboard_h, Keyboard_j, Keyboard_k,
 
-  'v', 'b', 'n', 'm', ',', '.', '/', Keyboard_RIGHT_SHIFT, '*',
+  Keyboard_l, Keyboard_SEMICOLON, Keyboard_SINGLEQUOTE, Keyboard_BACKQUOTE, Keyboard_LEFT_SHIFT, Keyboard_BACKSLASH, Keyboard_z, Keyboard_x, Keyboard_c,
 
-  Keyboard_LEFT_ALT, ' ', Keyboard_CAPS_LOCK, Keyboard_F1, Keyboard_F2,
+  Keyboard_v, Keyboard_b, Keyboard_n, Keyboard_m, Keyboard_COMMA, Keyboard_FULLSTOP, Keyboard_SLASH_DIVIDE, Keyboard_RIGHT_SHIFT, Keyboard_STAR_MULTIPLY,
 
-  Keyboard_F3, Keyboard_F4, Keyboard_F5, Keyboard_F6, Keyboard_F7,
-
-  Keyboard_F8, Keyboard_F9, Keyboard_F10, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_KEY_HOME,
-
-  Keyboard_KEY_UP, Keyboard_KEY_PG_UP, Keyboard_NA_CHAR, Keyboard_KEY_LEFT, Keyboard_NA_CHAR,
-
-  Keyboard_KEY_RIGHT, Keyboard_NA_CHAR, Keyboard_KEY_END, Keyboard_KEY_DOWN,
-
-  Keyboard_KEY_PG_DOWN, Keyboard_KEY_INST, Keyboard_KEY_DEL
-};
-
-static const byte Keyboard_GENERIC_SHIFTED_KEY_MAP[MAX_KEYBOARD_CHARS] = { Keyboard_NA_CHAR,
-  Keyboard_ESC, '!', '@', '#', '$', '%', '^', '&', '*', '(',
-
-  ')', '_', '+', Keyboard_BACKSPACE, '\t', 'Q', 'W', 'E', 'R',
-
-  'T', 'Y', 'U', 'I', 'O', 'P', '{', '}', Keyboard_ENTER,
-
-  Keyboard_LEFT_CTRL, 'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K',
-
-  'L', ':', '"', '~', Keyboard_LEFT_SHIFT, '|', 'Z', 'X', 'C',
-
-  'V', 'B', 'N', 'M', '<', '>', '?', Keyboard_RIGHT_SHIFT, '*',
-
-  Keyboard_LEFT_ALT, ' ', Keyboard_CAPS_LOCK, Keyboard_F1, Keyboard_F2,
+  Keyboard_LEFT_ALT, Keyboard_SPACE, Keyboard_CAPS_LOCK, Keyboard_F1, Keyboard_F2,
 
   Keyboard_F3, Keyboard_F4, Keyboard_F5, Keyboard_F6, Keyboard_F7,
 
@@ -110,66 +85,20 @@ PS2KeyboardDriver::PS2KeyboardDriver() : _isShiftKey(false), _isCapsLock(false),
   KC::MConsole().LoadMessage("PS2 Keyboard Driver Initialization", Success);
 }
 
-void PS2KeyboardDriver::Process(byte rawKey)
-{
-  byte kbKey = Decode(rawKey);
-  if (kbKey == Keyboard_NA_CHAR)
-    return;
+void PS2KeyboardDriver::Process(byte rawKey) {
+  KeyboardKeys key = Keyboard_NA_CHAR;
+  bool isKeyReleased = false;
 
-  if (_isCtrlKey)
-    kbKey += CTRL_VALUE;
+  if (rawKey != EXTRA_KEYS) {
+    isKeyReleased = rawKey & 0x80;
+    if (isKeyReleased)
+      rawKey -= 0x80;
 
-  if(!KBInputHandler_Process(kbKey))
-  {
-    KeyboardHandler::Instance().PutToQueueBuffer(kbKey);
-    StdIRQ::Instance().KEYBOARD_IRQ.Signal();
-  }
-}
-
-byte PS2KeyboardDriver::Decode(byte rawKey)
-{
-  if (rawKey == EXTRA_KEYS)
-    return Keyboard_NA_CHAR;
-
-  const bool keyRelease = rawKey & 0x80;
-  if (keyRelease)
-    rawKey -= 0x80;
-
-  if (rawKey >= MAX_KEYBOARD_CHARS)
-    return Keyboard_NA_CHAR;
-
-  byte mappedKey = Keyboard_GENERIC_KEY_MAP[rawKey];
-
-  if (keyRelease)
-  {
-    if(mappedKey == Keyboard_LEFT_SHIFT || mappedKey == Keyboard_RIGHT_SHIFT)
-      _isShiftKey = false;
-    else if(mappedKey == Keyboard_LEFT_CTRL)
-      _isCtrlKey = false;
-  }
-  else
-  {
-    if(mappedKey == Keyboard_LEFT_SHIFT || mappedKey == Keyboard_RIGHT_SHIFT)
-      _isShiftKey = true;
-    else if(mappedKey == Keyboard_CAPS_LOCK)
-      _isCapsLock = !_isCapsLock;
-    else if(mappedKey == Keyboard_LEFT_CTRL)
-      _isCtrlKey = true;
-    else
-    {
-      if(_isShiftKey)
-      {
-        if(mappedKey >= 'a' && mappedKey <= 'z' && _isCapsLock)
-          return mappedKey;
-        return Keyboard_GENERIC_SHIFTED_KEY_MAP[rawKey];
-      }
-      else
-      {
-        if(mappedKey >= 'a' && mappedKey <= 'z' && _isCapsLock)
-          return Keyboard_GENERIC_SHIFTED_KEY_MAP[rawKey];
-        return mappedKey;
-      }
+    if (rawKey < MAX_KEYBOARD_CHARS) {
+      key = Keyboard_GENERIC_KEY_MAP[rawKey];
     }
   }
-  return Keyboard_NA_CHAR;
+
+  KeyboardHandler::Instance().Process(key, isKeyReleased);
+  StdIRQ::Instance().KEYBOARD_IRQ.Signal();
 }

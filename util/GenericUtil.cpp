@@ -72,7 +72,8 @@ void GenericUtil_ReadInput(char* szInputBuffer, const int iMaxReadLength, byte b
 
 	while(SUCCESS)
 	{
-    auto ch = KeyboardHandler::Instance().GetCharInBlockMode();
+    const auto& data = KeyboardHandler::Instance().GetCharInBlockMode();
+    uint8_t ch = data.getCh();
 
 		switch(ch)
 		{

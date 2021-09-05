@@ -20,7 +20,7 @@
 #include <Thread.h>
 #include <StreamBufferDescriptor.h>
 #include <ProcessManager.h>
-#include <RawKeyboardData.h>
+#include <KeyboardHandler.h>
 
 AutonomousProcess::AutonomousProcess(const upan::string& name, int parentID, bool isFGProcess)
   : SchedulableProcess(name, parentID, isFGProcess), _nextThreadIt(_threadSchedulerList.begin()),
@@ -78,16 +78,18 @@ void AutonomousProcess::DestroyThreads() {
   _threadSchedulerList.clear();
 }
 
-void AutonomousProcess::dispatchKeyboardData(byte data) {
+void AutonomousProcess::dispatchKeyboardData(const upanui::KeyboardData& data) {
   switch (_uiType) {
-    case Process::TTY:
-      iodTable().get(IODescriptorTable::STDIN).write(&data, 1);
-      break;
+    case Process::TTY: {
+      const auto ch = (uint8_t)KeyboardHandler::Instance().mapToTTYKey(data);
+      if (ch != Keyboard_NA_CHAR) {
+        iodTable().get(IODescriptorTable::STDIN).write((void*)&ch, 1);
+      }
+    }
+    break;
 
     case Process::GUI:
-      upanui::RawKeyboardData rawKeyboardData;
-      rawKeyboardData._data = data;
-      _uiKeyboardEventStreamFD->write((char*)&rawKeyboardData, sizeof(upanui::RawKeyboardData));
+      _uiKeyboardEventStreamFD->write((void*)&data, sizeof(upanui::KeyboardData));
       break;
 
     case Process::NA:

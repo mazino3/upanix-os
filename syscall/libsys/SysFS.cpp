@@ -76,14 +76,14 @@ int SysFS_FileClose(int fd)
 	return iRetStatus ;
 }
 
-int SysFS_FileRead(int fd, char* buf, int len)
+int SysFS_FileRead(int fd, void* buf, int len)
 {
 	int iRetStatus ;
 	SysCallFile_Handle(&iRetStatus, SYS_CALL_FILE_READ, false, fd, (unsigned)buf, len, 4, 5, 6, 7, 8, 9) ;
 	return iRetStatus ;
 }
 
-int SysFS_FileWrite(int fd, const char* buf, int len)
+int SysFS_FileWrite(int fd, const void* buf, int len)
 {
 	int iRetStatus ;
 	SysCallFile_Handle(&iRetStatus, SYS_CALL_FILE_WRITE, false, fd, (unsigned)buf, len, 4, 5, 6, 7, 8, 9) ;
@@ -131,12 +131,12 @@ int SysFS_FileStatFD(int iFD, struct stat* pFileStat)
 	return iRetStatus ;
 }
 
-int read(int fd, char* buf, int len)
+int read(int fd, void* buf, int len)
 {
 	return SysFS_FileRead(fd, buf, len) ;
 }
 
-int write(int fd, const char* buf, int len)
+int write(int fd, const void* buf, int len)
 {
 	return SysFS_FileWrite(fd, buf, len) ;
 }

@@ -52,11 +52,10 @@ public:
   USBKeyboardDriver(const upan::string& name);
   static void Register();
   static USBKeyboardDriver& Instance();
-  void Process(byte rawKey);
+  void Process(byte rawKey, bool isKeyReleased);
   void ProcessSpecialKeys(byte report);
 
 private:
-  byte Decode(byte rawKey);
   bool AddDevice(USBDevice*);
   void RemoveDevice(USBDevice*);
   int MatchingInterfaceIndex(USBDevice*);

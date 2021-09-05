@@ -18,35 +18,42 @@
 #ifndef _KB_DRIVER_H_
 #define _KB_DRIVER_H_
 
-#include <Global.h>
 #include <queue.h>
-#include <kb.h>
-
-#define CTRL_VALUE 100
-#define CTRL(v, c) (v == CTRL_VALUE + c)
+#include <KeyboardData.h>
 
 class KeyboardHandler
 {
   private:
     KeyboardHandler();
   public:
-    static KeyboardHandler& Instance()
-    {
+    static KeyboardHandler& Instance() {
       static KeyboardHandler instance;
       return instance;
     }
 
-    byte GetCharInBlockMode();
-    bool GetCharInNonBlockMode(byte& data);
-    bool PutToQueueBuffer(byte data);
+    KeyboardKeys mapToTTYKey(const upanui::KeyboardData& data);
+
+    upanui::KeyboardData GetCharInBlockMode();
+    upan::option<upanui::KeyboardData> GetCharInNonBlockMode();
+    bool Process(const KeyboardKeys key, const bool isKeyReleased);
 
     void Getch();
 
     void StartDispatcher();
   private:
-    bool GetFromQueueBuffer(byte& data);
+    KeyboardKeys getShiftKey(const KeyboardKeys key);
+    KeyboardKeys getCtrlKey(const KeyboardKeys key);
+    upan::option<upanui::KeyboardData> GetFromQueueBuffer();
 
-    upan::queue<byte> _qBuffer;
+    upan::queue<upanui::KeyboardData> _qBuffer;
+    bool _isShift;
+    bool _isAlt;
+    bool _isCtrl;
+    bool _isCaps;
+
+    static const int MAX_KEYS = 256;
+    KeyboardKeys _shiftedKeyMap[MAX_KEYS];
+    KeyboardKeys _ctrlKeyMap[MAX_KEYS];
 };
 
 #endif

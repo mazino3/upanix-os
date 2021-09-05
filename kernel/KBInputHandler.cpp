@@ -41,11 +41,10 @@ byte KBInputHandler_InRegList(byte key)
 
 /***************************************************************/
 
-bool KBInputHandler_Process(byte key)
-{
-	if(KBInputHandler_InRegList(key))
+bool KBInputHandler_Process(upanui::KeyboardData data) {
+	if(KBInputHandler_InRegList(data.getCh()))
 	{
-		SessionManager_SwitchToSession(SessionManager_KeyToSessionIDMap(key)) ;
+	  SessionManager_SwitchToSession(SessionManager_KeyToSessionIDMap(data.getCh())) ;
 		return true ;
 	}
 	return false ;

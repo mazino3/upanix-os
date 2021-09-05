@@ -28,17 +28,20 @@
 #include <newalloc.h>
 #include <Bit.h>
 
-static const byte Keyboard_USB_GENERIC_KEY_MAP[] =
-{
+static const KeyboardKeys Keyboard_USB_GENERIC_KEY_MAP[] = {
   Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR,
 
-  'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l',
+  Keyboard_a, Keyboard_b, Keyboard_c, Keyboard_d, Keyboard_e, Keyboard_f, Keyboard_g, Keyboard_h, Keyboard_i, Keyboard_j, Keyboard_k, Keyboard_l,
 
-  'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '1', '2',
+  Keyboard_m, Keyboard_n, Keyboard_o, Keyboard_p, Keyboard_q, Keyboard_r, Keyboard_s, Keyboard_t, Keyboard_u, Keyboard_v, Keyboard_w, Keyboard_x, Keyboard_y, Keyboard_z,
 
-  '3', '4', '5', '6', '7', '8', '9', '0', Keyboard_ENTER, Keyboard_ESC, Keyboard_BACKSPACE,
+  Keyboard_1, Keyboard_2, Keyboard_3, Keyboard_4, Keyboard_5, Keyboard_6, Keyboard_7, Keyboard_8, Keyboard_9, Keyboard_0,
 
-  '\t', ' ', '-', '=', '[', ']', '\\', Keyboard_NA_CHAR, ';', '\'', '`', ',', '.', '/', Keyboard_CAPS_LOCK,
+  Keyboard_ENTER, Keyboard_ESC, Keyboard_BACKSPACE, Keyboard_TAB, Keyboard_SPACE, Keyboard_MINUS, Keyboard_EQUAL,
+
+  Keyboard_OPEN_BRACKET, Keyboard_CLOSE_BRACKET, Keyboard_BACKSLASH, Keyboard_NA_CHAR, Keyboard_SEMICOLON, Keyboard_SINGLEQUOTE, Keyboard_BACKQUOTE,
+
+  Keyboard_COMMA, Keyboard_FULLSTOP, Keyboard_SLASH_DIVIDE, Keyboard_CAPS_LOCK,
 
   Keyboard_F1, Keyboard_F2, Keyboard_F3, Keyboard_F4, Keyboard_F5, Keyboard_F6, Keyboard_F7,
 
@@ -48,7 +51,9 @@ static const byte Keyboard_USB_GENERIC_KEY_MAP[] =
 
   Keyboard_KEY_PG_DOWN, Keyboard_KEY_RIGHT, Keyboard_KEY_LEFT, Keyboard_KEY_DOWN, Keyboard_KEY_UP, Keyboard_KEY_NUM,
 
-  '/', '*', '-', '+', Keyboard_ENTER, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '.',
+  Keyboard_SLASH_DIVIDE, Keyboard_STAR_MULTIPLY, Keyboard_MINUS, Keyboard_PLUS, Keyboard_ENTER,
+
+  Keyboard_1, Keyboard_2, Keyboard_3, Keyboard_4, Keyboard_5, Keyboard_6, Keyboard_7, Keyboard_8, Keyboard_9, Keyboard_0, Keyboard_FULLSTOP,
 
   Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR,
 
@@ -96,76 +101,6 @@ static const byte Keyboard_USB_GENERIC_KEY_MAP[] =
 
   Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR
 };
-
-static const byte Keyboard_USB_SHIFTED_KEY_MAP[] =
-{
-  Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR,
-
-  'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L',
-
-  'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '!', '@',
-
-  '#', '$', '%', '^', '&', '*', '(', ')', Keyboard_ENTER, Keyboard_ESC, Keyboard_BACKSPACE,
-
-  '\t', ' ', '_', '+', '{', '}', '|', Keyboard_NA_CHAR, ':', '"', '~', '<', '>', '?', Keyboard_CAPS_LOCK,
-
-  Keyboard_F1, Keyboard_F2, Keyboard_F3, Keyboard_F4, Keyboard_F5, Keyboard_F6, Keyboard_F7,
-
-  Keyboard_F8, Keyboard_F9, Keyboard_F10, Keyboard_F11, Keyboard_F12, Keyboard_NA_CHAR/*print*/, Keyboard_NA_CHAR/*scroll*/, Keyboard_NA_CHAR/*pause*/,
-
-  Keyboard_KEY_INST, Keyboard_KEY_HOME, Keyboard_KEY_PG_UP, Keyboard_KEY_DEL, Keyboard_KEY_END,
-
-  Keyboard_KEY_PG_DOWN, Keyboard_KEY_RIGHT, Keyboard_KEY_LEFT, Keyboard_KEY_DOWN, Keyboard_KEY_UP, Keyboard_KEY_NUM,
-
-  '/', '*', '-', '+', Keyboard_ENTER, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '.',
-
-  Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR,
-
-  Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR,
-
-  Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR,
-
-  Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR,
-
-  Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR,
-
-  Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR,
-
-  Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR,
-
-  Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR,
-
-  Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR,
-
-  Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR,
-
-  Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR,
-
-  Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR,
-
-  Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR,
-
-  Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR,
-
-  Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR,
-
-  Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR,
-
-  Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR,
-
-  Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR,
-
-  Keyboard_LEFT_CTRL, Keyboard_LEFT_SHIFT, Keyboard_LEFT_ALT, Keyboard_NA_CHAR, Keyboard_RIGHT_CTRL, Keyboard_RIGHT_SHIFT, Keyboard_RIGHT_ALT,
-
-  Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR,
-
-  Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR,
-
-  Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR,
-
-  Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR, Keyboard_NA_CHAR
-};
-
 
 USBKeyboardDriver* USBKeyboardDriver::_instance = nullptr;
 
@@ -229,50 +164,16 @@ void USBKeyboardDriver::RemoveDevice(USBDevice* pUSBDevice)
   }
 }
 
-void USBKeyboardDriver::Process(byte rawKey)
-{
-  byte kbKey = Decode(rawKey);
-  if (kbKey == Keyboard_NA_CHAR)
-    return;
+void USBKeyboardDriver::Process(byte rawKey, bool isKeyReleased) {
+  KeyboardKeys key = Keyboard_USB_GENERIC_KEY_MAP[rawKey];
 
-  if(_isCtrlKey)
-    kbKey += CTRL_VALUE;
-
-  if(!KBInputHandler_Process(kbKey))
-  {
-    KeyboardHandler::Instance().PutToQueueBuffer(kbKey);
-    StdIRQ::Instance().KEYBOARD_IRQ.Signal();
-  }
+  KeyboardHandler::Instance().Process(key, isKeyReleased);
+  StdIRQ::Instance().KEYBOARD_IRQ.Signal();
 }
 
-void USBKeyboardDriver::ProcessSpecialKeys(byte report)
-{
+void USBKeyboardDriver::ProcessSpecialKeys(byte report) {
   _isShiftKey = Bit::IsSet(report, 0x2) || Bit::IsSet(report, 0x20);
   _isCtrlKey = Bit::IsSet(report, 0x1) || Bit::IsSet(report, 0x10);
-}
-
-byte USBKeyboardDriver::Decode(byte rawKey)
-{
-  byte mappedKey = Keyboard_USB_GENERIC_KEY_MAP[rawKey];
-
-  if(mappedKey == Keyboard_CAPS_LOCK)
-  {
-    _isCapsLock = !_isCapsLock;
-    return Keyboard_NA_CHAR;
-  }
-
-  if(_isShiftKey)
-  {
-    if(mappedKey >= 'a' && mappedKey <= 'z' && _isCapsLock)
-      return mappedKey;
-    return Keyboard_USB_SHIFTED_KEY_MAP[rawKey];
-  }
-  else
-  {
-    if(mappedKey >= 'a' && mappedKey <= 'z' && _isCapsLock)
-      return Keyboard_USB_SHIFTED_KEY_MAP[rawKey];
-    return mappedKey;
-  }
 }
 
 USBKeyboard::USBKeyboard(USBDevice& device, int interfaceIndex) : _device(device), _currentReportIndex(0)
@@ -322,17 +223,17 @@ void USBKeyboard::Handle(uint32_t data)
 
   USBKeyboardDriver::Instance().ProcessSpecialKeys(report[0]);
 
-  for(auto k = _pressedKeys.begin(); k != _pressedKeys.end();)
-  {
+  for(auto k = _pressedKeys.begin(); k != _pressedKeys.end();) {
     bool found = false;
-    for(int i = 2; i < 8 && report[i] != 0; ++i)
-    {
+    for(int i = 2; i < 8 && report[i] != 0; ++i) {
       found = report[i] == *k;
       if(found)
         break;
     }
-    if(!found)
+    if(!found) {
+      USBKeyboardDriver::Instance().Process(*k, true);
       _pressedKeys.erase(k++);
+    }
     else
       ++k;
   }
@@ -343,6 +244,6 @@ void USBKeyboard::Handle(uint32_t data)
     if(_pressedKeys.exists(report[i]))
       continue;
     _pressedKeys.insert(report[i]);
-    USBKeyboardDriver::Instance().Process(report[i]);
+    USBKeyboardDriver::Instance().Process(report[i], false);
   }
 }
