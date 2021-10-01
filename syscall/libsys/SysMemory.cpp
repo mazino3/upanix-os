@@ -1,6 +1,10 @@
 /*
  *  Mother Operating System - An x86 based Operating System
- *  Copyright (C) 2011 'Prajwala Prabhakar' 'srinivasa_prajwal@yahoo.co.in'
+ *  Copyright (C) 2011 'Prajwala Prabhakar' 'srinivasa.prajwal@gmail.com'
+ *
+ *  I am making my contributions/submissions to this project solely in
+ *  my personal capacity and am not conveying any rights to any
+ *  intellectual property of any third parties.
  *                                                                          
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
