@@ -30,13 +30,14 @@
 #include <ProcessDLLInfo.h>
 #include <RootFrame.h>
 #include <KeyboardData.h>
+#include <MouseData.h>
 
 class ProcessGroup;
 class IODescriptorTable;
 
 class Process {
 public:
-  enum UIType { NA, TTY, GUI };
+  enum UIType { NA, TTY, GUI, REDIRECT_TTY };
 
   virtual bool isKernelProcess() const = 0;
   virtual bool isFGProcessGroup() const = 0;
@@ -101,11 +102,18 @@ public:
     throw upan::exception(XLOC, "dispatchKeyboardData unsupported");
   }
 
+  virtual void dispatchMouseData(const upanui::MouseData& data) {
+    throw upan::exception(XLOC, "dispatchMouseData unsupported");
+  }
+
   virtual UIType getUIType() = 0;
   virtual void initGuiFrame() = 0;
   virtual upan::option<RootFrame&> getGuiFrame() = 0;
   virtual void setupAsTtyProcess() {
     throw upan::exception(XLOC, "setupAsTtyProcess unsupported");
+  }
+  virtual void setupAsRedirectTtyProcess() {
+    throw upan::exception(XLOC, "setupAsRedirectTtyProcess unsupported");
   }
   virtual void setupAsGuiProcess(int fdList[]) {
     throw upan::exception(XLOC, "setupAsGuiProcess unsupported");

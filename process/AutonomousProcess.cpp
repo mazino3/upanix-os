@@ -84,6 +84,7 @@ void AutonomousProcess::DestroyThreads() {
 
 void AutonomousProcess::dispatchKeyboardData(const upanui::KeyboardData& data) {
   switch (_uiType) {
+    case Process::REDIRECT_TTY:
     case Process::TTY: {
       const auto ch = (uint8_t)KeyboardHandler::Instance().mapToTTYKey(data);
       if (ch != Keyboard_NA_CHAR) {
@@ -101,12 +102,22 @@ void AutonomousProcess::dispatchKeyboardData(const upanui::KeyboardData& data) {
   }
 }
 
+void AutonomousProcess::dispatchMouseData(const upanui::MouseData& mouseData) {
+}
+
 void AutonomousProcess::setupAsTtyProcess() {
   if (_uiType != Process::UIType::NA) {
     throw upan::exception(XLOC, "Process %d is already initialized with UIType %d", _processID, _uiType);
   }
   iodTable().setupStreamedStdio();
   _uiType = Process::UIType::TTY;
+}
+
+void AutonomousProcess::setupAsRedirectTtyProcess() {
+  if (_uiType != Process::UIType::NA) {
+    throw upan::exception(XLOC, "Process %d is already initialized with UIType %d", _processID, _uiType);
+  }
+  _uiType = Process::UIType::REDIRECT_TTY;
 }
 
 void AutonomousProcess::setupAsGuiProcess(int fdList[]) {

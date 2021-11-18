@@ -26,6 +26,8 @@
 #include <PS2MouseDriver.h>
 #include <PS2Controller.h>
 #include <GraphicsVideo.h>
+#include <MouseData.h>
+#include <ProcessManager.h>
 
 PS2MouseDriver::PS2MouseDriver() {
   _dataCounter = 0;
@@ -58,7 +60,7 @@ void PS2MouseDriver::Handler() {
 	AsmUtil_SET_KERNEL_DATA_SEGMENTS
 
 	try {
-    PS2MouseDriver::Instance().Process();
+	  PS2MouseDriver::Instance().HandleEvent();
   } catch (const upan::exception& e) {
 	  printf("\n Failed to get interrupt data from mouse IRQ handler: %s", e.ErrorMsg().c_str());
 	}
@@ -85,8 +87,7 @@ upan::option<uint8_t> PS2MouseDriver::ReceiveIRQData() {
 	return upan::option<uint8_t>::empty();
 }
 
-void PS2MouseDriver::Process()
-{
+void PS2MouseDriver::HandleEvent() {
   try {
     ReceiveIRQData().ifPresent([this](uint8_t data) {
       _packetData[_dataCounter] = data;
@@ -100,22 +101,27 @@ void PS2MouseDriver::Process()
         const auto xMov = static_cast<int8_t>(_packetData[1]);
         const auto yMov = static_cast<int8_t>(_packetData[2]);
 
-        /*
-        //Middle button
-        if(b1 & 0x4)
-          ;
-        //Right button
-        if(b1 & 0x2)
-          ;
-        //Left button
-        if(b1 & 0x1)
-          ;
-        */
+        bool isMiddlePressed = status & 0x4;
+        bool isRightPressed = status & 0x2;
+        bool isLeftPressed = status & 0x1;
 
         int iX = GraphicsVideo::Instance().GetMouseX() + xMov;
         int iY = GraphicsVideo::Instance().GetMouseY() - yMov;
 
         GraphicsVideo::Instance().SetMouseCursorPos(iX, iY);
+        //TODO: Bug: non-stop flow of mouse events without any changes to packet-data (once activated in qemu)
+        //printf("%d:%d\n", iX, iY);
+        if (isMiddlePressed || isRightPressed || isLeftPressed) {
+          GraphicsVideo::Instance().switchFGProcessOnMouseClick();
+        }
+
+        upanui::MouseData mouseData(iX, iY, isMiddlePressed, isRightPressed, isLeftPressed);
+        GraphicsVideo::Instance().getActiveFGProcess().ifPresent([&mouseData](int pid) {
+          //ProcessSwitchLock pLock --> This is required if dispatch logic is moved to a separate process (like a timer) out of this interrupt handler.
+          ProcessManager::Instance().GetProcess(pid).ifPresent([&mouseData](Process& p) {
+            p.dispatchMouseData(mouseData);
+          });
+        });
         //printf("\n (%d, %d, %d, %d)", GraphicsVideo::Instance().GetMouseX(), GraphicsVideo::Instance().GetMouseY(), xMov, yMov);
       }
     });

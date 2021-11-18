@@ -52,12 +52,20 @@ public:
     _parent.dispatchKeyboardData(data);
   }
 
+  void dispatchMouseData(const upanui::MouseData& mouseData) override {
+    _parent.dispatchMouseData(mouseData);
+  }
+
   UIType getUIType() override {
     return _parent.getUIType();
   }
 
   void setupAsTtyProcess() override {
     _parent.setupAsTtyProcess();
+  }
+
+  void setupAsRedirectTtyProcess() override {
+    _parent.setupAsRedirectTtyProcess();
   }
 
   void setupAsGuiProcess(int fdList[]) override {

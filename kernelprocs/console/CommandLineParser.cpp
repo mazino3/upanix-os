@@ -59,7 +59,7 @@ void CommandLineParser_Copy(int index, const char* src, int len, void* np)
   else if (len > 0)
   {
     //TODO: options are not handled properly yet
-    if (src[0] == '-')
+    if (src[0] == '-' && (len == 1 || !isdigit(src[1])))
       CommandLineParser::Instance()._options.insert(token);
     else
       CommandLineParser::Instance()._params.push_back(Expand(token));

@@ -162,10 +162,30 @@ bool GraphicsVideo::TimerTrigger() {
   if(isDirty()) {
     upan::mutex_guard g(_fgProcessMutex);
     ProcessSwitchLock p;
-    for(int i = 0; i < _fgProcesses.size(); ++i) {
+    for(auto i = 0u; i < _fgProcesses.size(); ++i) {
       auto process = ProcessManager::Instance().GetProcess(_fgProcesses[i]);
       process.ifPresent([&](Process& p) {
-        optimized_memcpy(_zBuffer, (uint32_t)p.getGuiFrame().value().frameBuffer().buffer(), _lfbSize);
+        const auto& frame = p.getGuiFrame().value();
+        const auto& viewport = frame.viewport();
+        const auto buffer = (uint32_t)frame.frameBuffer().buffer();
+        if (viewport.x1() == 0 && viewport.y1() == 0 && viewport.width() == _width && viewport.height() == _height) {
+          optimized_memcpy(_zBuffer, (uint32_t)buffer, _lfbSize);
+        } else {
+          int x1 = upan::max(viewport.x1(), 0);
+          int y1 = upan::max(viewport.y1(), 0);
+          int x2 = upan::min(viewport.x2(), (int)(_width - 1));
+          int y2 = upan::min(viewport.y2(), (int)(_height - 1));
+
+          if (x1 >= 0 && x2 < (int)_width && y1 >= 0 && y2 < (int)_height) {
+            auto xoffset = x1 * _bytesPerPixel;
+            auto bytesPerLine = (x2 - x1 + 1) * _bytesPerPixel;
+            for(int y = y1, sy = 0; y <= y2; ++y, ++sy) {
+              auto destOffset = y * _pitch + xoffset;
+              auto srcOffset = sy * _pitch;
+              memcpy((void*)(_zBuffer + destOffset), (void*)(buffer + srcOffset), bytesPerLine);
+            }
+          }
+        }
       });
     }
     optimized_memcpy(_mappedLFBAddress, _zBuffer, _lfbSize);
@@ -227,6 +247,34 @@ void GraphicsVideo::SetMouseCursorPos(int x, int y) {
     _mouseY = newY;
     NeedRefresh();
   }
+}
+
+bool GraphicsVideo::switchFGProcessOnMouseClick() {
+  for(auto it = _fgProcesses.rbegin(); it != _fgProcesses.rend(); ++it) {
+    const auto pid = *it;
+    printf("\n Switch check: %d\n", pid);
+    auto process = ProcessManager::Instance().GetProcess(pid);
+    if (process.isEmpty()) {
+      removeFGProcess(pid);
+    } else {
+      if (!process.value().getGuiFrame().isEmpty()) {
+        const auto& f = process.value().getGuiFrame().value();
+        printf("%d:%d:%d:%d:%d:%d\n", f.viewport().x1(), f.viewport().x2(), f.viewport().y1(), f.viewport().y2(), _mouseX, _mouseY);
+        if (f.viewport().x1() <= _mouseX && _mouseX <= f.viewport().x2()
+          && f.viewport().y1() <= _mouseY && _mouseY <= f.viewport().y2()) {
+          if (pid == _fgProcesses.back() || pid == NO_PROCESS_ID) {
+            return false;
+          } else {
+            _fgProcesses.erase(it);
+            _fgProcesses.push_back(pid);
+            printf("\n FG Process: %d", pid);
+            return true;
+          }
+        }
+      }
+    }
+  }
+  return false;
 }
 
 void GraphicsVideo::ExperimentWithMouseCursor(int i) {

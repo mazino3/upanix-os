@@ -128,6 +128,7 @@ public:
   }
   void initGuiFrame() override;
   void dispatchKeyboardData(const upanui::KeyboardData& data) override;
+  void dispatchMouseData(const upanui::MouseData& mouseData) override;
 
 private:
   upan::mutex _envMutex;

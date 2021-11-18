@@ -59,6 +59,7 @@
 #include <NetworkManager.h>
 #include <ARPHandler.h>
 #include <GraphicsVideo.h>
+#include <GraphicsContext.h>
 
 /**** Command Fucntion Declarations  *****/
 static void ConsoleCommands_ChangeDrive() ;
@@ -886,8 +887,35 @@ void ConsoleCommands_InitMountManager()
 		printf("\n MountManager already initialized") ;
 }
 
+void graphics_test_process(int x, int y) {
+  FrameBufferInfo info;
+  init_gui_frame(&info);
+  auto& process = ProcessManager::Instance().GetCurrentPAS();
+  process.setupAsRedirectTtyProcess();
+  auto& frame = process.getGuiFrame().value();
+  frame.updateViewport(x, y, 100, 100);
+
+  bool toggle = true;
+  while(true) {
+    frame.fillRect(0, 0, 100, 100, ColorPalettes::CP256::Get(toggle ? 100 : 200));
+    toggle = !toggle;
+    sleepms(250);
+  }
+  exit(0);
+}
+
+int testg_id = 0;
 void ConsoleCommands_TestGraphics() {
-  //GraphicsVideo::Instance().InitSFN();
+  if (CommandLineParser::Instance().GetNoOfParameters() != 2) {
+    throw upan::exception(XLOC, "parameters x & y required");
+  }
+  upan::vector<uint32_t> params;
+  params.push_back(atoi(CommandLineParser::Instance().GetParameterAt(0)));
+  params.push_back(atoi(CommandLineParser::Instance().GetParameterAt(1)));
+
+  upan::string pname("testg");
+  pname += upan::string::to_string(testg_id++);
+  ProcessManager::Instance().CreateKernelProcess(pname, (unsigned) &graphics_test_process, NO_PROCESS_ID, true, params);
 }
 
 extern void TestMTerm() ;

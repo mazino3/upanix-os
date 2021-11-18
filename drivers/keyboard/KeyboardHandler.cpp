@@ -23,8 +23,6 @@
 #include <PIC.h>
 #include <IDT.h>
 #include <ProcessManager.h>
-#include <MemUtil.h>
-#include <PS2KeyboardDriver.h>
 #include <GraphicsVideo.h>
 #include <KBInputHandler.h>
 

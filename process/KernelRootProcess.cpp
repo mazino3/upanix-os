@@ -39,3 +39,7 @@ void KernelRootProcess::dispatchKeyboardData(const upanui::KeyboardData& data) {
   const auto ch = (uint8_t)KeyboardHandler::Instance().mapToTTYKey(data);
   iodTable().get(IODescriptorTable::STDIN).write((void*)&ch, 1);
 }
+
+void KernelRootProcess::dispatchMouseData(const upanui::MouseData& mouseData) {
+  //no-op
+}

@@ -85,8 +85,17 @@ void SysDisplay_InitTermConsole() {
   SysCallDisplay_Handle(&iRetStatus, SYS_CALL_DISPLAY_INIT_TERM_CONSOLE, false, 1, 2, 3, 4, 5, 6, 7, 8, 9);
 }
 
-int SysDisplay_InitGuiEventStream() {
+void SysDisplay_InitGuiEventStream(int fdList[]) {
   int iRetStatus;
-  SysCallDisplay_Handle(&iRetStatus, SYS_CALL_DISPLAY_INIT_GUI_EVENT_STREAM, false, 1, 2, 3, 4, 5, 6, 7, 8, 9);
-  return iRetStatus;
+  SysCallDisplay_Handle(&iRetStatus, SYS_CALL_DISPLAY_INIT_GUI_EVENT_STREAM, false, (uint32_t)fdList, 2, 3, 4, 5, 6, 7, 8, 9);
+}
+
+void SysDisplay_SetViewport(const ViewportInfo* viewportInfo) {
+  int iRetStatus;
+  SysCallDisplay_Handle(&iRetStatus, SYS_CALL_DISPLAY_SET_VIEWPORT, false, (uint32_t)viewportInfo, 2, 3, 4, 5, 6, 7, 8, 9);
+}
+
+void SysDisplay_GetViewport(ViewportInfo* viewportInfo) {
+  int iRetStatus;
+  SysCallDisplay_Handle(&iRetStatus, SYS_CALL_DISPLAY_GET_VIEWPORT, false, (uint32_t)viewportInfo, 2, 3, 4, 5, 6, 7, 8, 9);
 }

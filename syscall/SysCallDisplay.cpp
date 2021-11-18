@@ -152,5 +152,23 @@ __volatile__ unsigned uiP9)
 	    ProcessManager::Instance().GetCurrentPAS().setupAsGuiProcess(fdList);
 	  }
 	  break;
+
+	  case SYS_CALL_DISPLAY_SET_VIEWPORT:
+	  {
+	    const auto* viewportInfo = KERNEL_ADDR(bDoAddrTranslation, ViewportInfo*, uiP1);
+	    ProcessManager::Instance().GetCurrentPAS().getGuiFrame().value().updateViewport(*viewportInfo);
+	  }
+	  break;
+
+	  case SYS_CALL_DISPLAY_GET_VIEWPORT:
+	  {
+	    auto* viewportInfo = KERNEL_ADDR(bDoAddrTranslation, ViewportInfo*, uiP1);
+	    const auto& viewport = ProcessManager::Instance().GetCurrentPAS().getGuiFrame().value().viewport();
+	    viewportInfo->_x = viewport.x1();
+	    viewportInfo->_y = viewport.y1();
+	    viewportInfo->_width = viewport.width();
+	    viewportInfo->_height = viewport.height();
+	  }
+	  break;
 	}
 }

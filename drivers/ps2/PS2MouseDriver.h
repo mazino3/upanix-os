@@ -30,7 +30,7 @@ class PS2MouseDriver
       static PS2MouseDriver instance;
       return instance;
     }
-		void Process() ;
+		void HandleEvent() ;
 
 	private:
 		PS2MouseDriver() ;

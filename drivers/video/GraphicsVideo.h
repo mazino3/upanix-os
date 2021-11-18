@@ -26,7 +26,7 @@
 #include <usfncontext.h>
 #include <BmpImage.h>
 #include <atomicop.h>
-#include <vector.h>
+#include <list.h>
 #include <mutex.h>
 
 class GraphicsVideo : protected KernelUtil::TimerTask
@@ -58,6 +58,7 @@ class GraphicsVideo : protected KernelUtil::TimerTask
       return _mouseY;
     }
     void SetMouseCursorPos(int x, int y);
+    bool switchFGProcessOnMouseClick();
     void ExperimentWithMouseCursor(int i);
 
     void addFGProcess(int pid);
@@ -94,6 +95,6 @@ class GraphicsVideo : protected KernelUtil::TimerTask
     int _mouseX;
     int _mouseY;
     upan::uniq_ptr<upanui::Image> _mouseCursorImg;
-    upan::vector<int> _fgProcesses;
+    upan::list<int> _fgProcesses;
     upan::mutex _fgProcessMutex;
 };

@@ -35,12 +35,14 @@ public:
   void DestroyThreads() override;
   void addToThreadScheduler(Thread& thread);
   void dispatchKeyboardData(const upanui::KeyboardData& data) override;
+  void dispatchMouseData(const upanui::MouseData& mouseData) override;
 
   UIType getUIType() override {
     return _uiType;
   }
 
   void setupAsTtyProcess() override;
+  void setupAsRedirectTtyProcess() override;
   void setupAsGuiProcess(int fdList[]) override;
 
 private:
