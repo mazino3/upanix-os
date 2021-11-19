@@ -252,22 +252,19 @@ void GraphicsVideo::SetMouseCursorPos(int x, int y) {
 bool GraphicsVideo::switchFGProcessOnMouseClick() {
   for(auto it = _fgProcesses.rbegin(); it != _fgProcesses.rend(); ++it) {
     const auto pid = *it;
-    printf("\n Switch check: %d\n", pid);
     auto process = ProcessManager::Instance().GetProcess(pid);
     if (process.isEmpty()) {
       removeFGProcess(pid);
     } else {
       if (!process.value().getGuiFrame().isEmpty()) {
         const auto& f = process.value().getGuiFrame().value();
-        printf("%d:%d:%d:%d:%d:%d\n", f.viewport().x1(), f.viewport().x2(), f.viewport().y1(), f.viewport().y2(), _mouseX, _mouseY);
         if (f.viewport().x1() <= _mouseX && _mouseX <= f.viewport().x2()
           && f.viewport().y1() <= _mouseY && _mouseY <= f.viewport().y2()) {
-          if (pid == _fgProcesses.back() || pid == NO_PROCESS_ID) {
+          if (pid == _fgProcesses.back() || process.value().isGuiBase()) {
             return false;
           } else {
             _fgProcesses.erase(it);
             _fgProcesses.push_back(pid);
-            printf("\n FG Process: %d", pid);
             return true;
           }
         }

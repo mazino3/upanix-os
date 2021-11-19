@@ -28,7 +28,8 @@
 
 AutonomousProcess::AutonomousProcess(const upan::string& name, int parentID, bool isFGProcess)
   : SchedulableProcess(name, parentID, isFGProcess), _nextThreadIt(_threadSchedulerList.begin()),
-    _uiType(Process::UIType::NA), _uiKeyboardEventStreamFD(nullptr), _uiMouseEventStreamFD(nullptr) {
+    _uiType(Process::UIType::NA), _uiKeyboardEventStreamFD(nullptr), _uiMouseEventStreamFD(nullptr),
+    _guiBase(false) {
 }
 
 SchedulableProcess& AutonomousProcess::forSchedule() {

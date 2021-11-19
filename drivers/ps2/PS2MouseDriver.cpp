@@ -105,17 +105,22 @@ void PS2MouseDriver::HandleEvent() {
         bool isRightPressed = status & 0x2;
         bool isLeftPressed = status & 0x1;
 
-        int iX = GraphicsVideo::Instance().GetMouseX() + xMov;
-        int iY = GraphicsVideo::Instance().GetMouseY() - yMov;
+        int iX = _prevMouseData.x() + xMov;
+        int iY = _prevMouseData.y() - yMov;
+        upanui::MouseData mouseData(iX, iY, isMiddlePressed, isRightPressed, isLeftPressed);
+
+        if (mouseData == _prevMouseData) {
+          return;
+        }
+        _prevMouseData = mouseData;
 
         GraphicsVideo::Instance().SetMouseCursorPos(iX, iY);
         //TODO: Bug: non-stop flow of mouse events without any changes to packet-data (once activated in qemu)
         //printf("%d:%d\n", iX, iY);
-        if (isMiddlePressed || isRightPressed || isLeftPressed) {
+        if (mouseData.anyButtonPressed()) {
           GraphicsVideo::Instance().switchFGProcessOnMouseClick();
         }
 
-        upanui::MouseData mouseData(iX, iY, isMiddlePressed, isRightPressed, isLeftPressed);
         GraphicsVideo::Instance().getActiveFGProcess().ifPresent([&mouseData](int pid) {
           //ProcessSwitchLock pLock --> This is required if dispatch logic is moved to a separate process (like a timer) out of this interrupt handler.
           ProcessManager::Instance().GetProcess(pid).ifPresent([&mouseData](Process& p) {

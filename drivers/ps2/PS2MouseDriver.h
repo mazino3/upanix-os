@@ -22,6 +22,7 @@
 #pragma once
 
 #include <option.h>
+#include <MouseData.h>
 
 class PS2MouseDriver
 {
@@ -43,6 +44,7 @@ class PS2MouseDriver
 		uint32_t _dataCounter;
 		uint32_t _packetSize;
 		uint8_t _packetData[10];
+		upanui::MouseData _prevMouseData;
 
 	friend class KC ;
 } ;

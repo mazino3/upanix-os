@@ -72,6 +72,14 @@ public:
     return _parent.setupAsGuiProcess(fdList);
   }
 
+  bool isGuiBase() const override {
+    return _parent.isGuiBase();
+  }
+
+  void setGuiBaseFlag(bool v) override {
+    _parent.setGuiBaseFlag(v);
+  }
+
 protected:
   AutonomousProcess& _parent;
 };

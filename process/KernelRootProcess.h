@@ -130,6 +130,14 @@ public:
   void dispatchKeyboardData(const upanui::KeyboardData& data) override;
   void dispatchMouseData(const upanui::MouseData& mouseData) override;
 
+  bool isGuiBase() const override {
+    return true;
+  }
+
+  void setGuiBaseFlag(bool v) override {
+    throw upan::exception(XLOC, "KernelRootProcess is always GuiBase process - can't modify this flag");
+  }
+
 private:
   upan::mutex _envMutex;
   IODescriptorTable _iodTable;

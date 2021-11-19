@@ -118,4 +118,6 @@ public:
   virtual void setupAsGuiProcess(int fdList[]) {
     throw upan::exception(XLOC, "setupAsGuiProcess unsupported");
   }
+  virtual bool isGuiBase() const = 0;
+  virtual void setGuiBaseFlag(bool) = 0;
 };

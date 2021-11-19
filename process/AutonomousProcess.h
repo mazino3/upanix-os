@@ -45,6 +45,14 @@ public:
   void setupAsRedirectTtyProcess() override;
   void setupAsGuiProcess(int fdList[]) override;
 
+  bool isGuiBase() const override {
+    return _guiBase;
+  }
+
+  void setGuiBaseFlag(bool v) override {
+    _guiBase = v;
+  }
+
 private:
   typedef upan::list<Thread*> ThreadSchedulerList;
   ThreadSchedulerList _threadSchedulerList;
@@ -52,4 +60,5 @@ private:
   UIType _uiType;
   IODescriptor* _uiKeyboardEventStreamFD;
   IODescriptor* _uiMouseEventStreamFD;
+  bool _guiBase;
 };
