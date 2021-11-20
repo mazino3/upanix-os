@@ -25,6 +25,7 @@
 #include <KernelThread.h>
 #include <vector.h>
 #include <BaseFrame.h>
+#include <GraphicsContext.h>
 
 //A KernelProcess is similar to a Thread in that they all share same address space (page tables), heap but different stack
 //But it is a process in that if the parent process dies before child, then child kernel process will continue to execute under the root kernel process
@@ -54,6 +55,14 @@ public:
     return _frame.toOption();
   }
 
+  upanui::GraphicsContext* getGraphicsContext() override {
+    return _graphicsContext;
+  }
+
+  void setGraphicsContext(upanui::GraphicsContext* graphicsContext) override {
+    _graphicsContext = graphicsContext;
+  }
+
 private:
   void DeAllocateResources() override;
   uint32_t AllocateAddressSpace();
@@ -65,4 +74,6 @@ private:
   upan::uniq_ptr<RootFrame> _frame;
   //common mutex for all kernel processes
   static upan::mutex _envMutex;
+  //interop variable
+  upanui::GraphicsContext* _graphicsContext;
 };

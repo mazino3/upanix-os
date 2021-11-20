@@ -30,7 +30,7 @@
 upan::mutex KernelProcess::_envMutex;
 
 KernelProcess::KernelProcess(const upan::string& name, uint32_t taskAddress, int parentID, bool isFGProcess, const upan::vector<uint32_t>& params)
-    : AutonomousProcess(name, parentID, isFGProcess), _iodTable(_processID, parentID) {
+  : AutonomousProcess(name, parentID, isFGProcess), _iodTable(_processID, parentID), _graphicsContext(nullptr) {
   _mainThreadID = _processID;
   ProcessEnv_InitializeForKernelProcess() ;
   _processBase = GLOBAL_DATA_SEGMENT_BASE;
@@ -56,6 +56,7 @@ uint32_t KernelProcess::AllocateAddressSpace() {
 void KernelProcess::DeAllocateResources() {
   MemManager::Instance().DeAllocateKernelStack(kernelStackBlockId);
   DeAllocateGUIFramebuffer();
+  upanui::GraphicsContext::Destroy();
 }
 
 void KernelProcess::initGuiFrame() {

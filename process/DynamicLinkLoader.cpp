@@ -30,10 +30,7 @@
 #include <ElfDynamicSection.h>
 #include <DMM.h>
 #include <ProcessLoader.h>
-#include <StringUtil.h>
 #include <MemUtil.h>
-#include <IODescriptorTable.h>
-#include <FileOperations.h>
 #include <BufferedReader.h>
 #include <ProcessEnv.h>
 #include <MountManager.h>

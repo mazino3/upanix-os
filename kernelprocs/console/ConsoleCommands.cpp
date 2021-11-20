@@ -125,6 +125,7 @@ static void ConsoleCommands_TestCPP() ;
 static void ConsoleCommands_TestGraphics() ;
 static void ConsoleCommands_Beep();
 static void ConsoleCommands_Sleep();
+static void ConsoleCommands_Kill();
 
 /*****************************************/
 
@@ -195,6 +196,7 @@ static const ConsoleCommand ConsoleCommands_CommandList[] = {
 	{ "testcpp", &ConsoleCommands_TestCPP },
 	{ "beep", &ConsoleCommands_Beep },
 	{ "sleep", &ConsoleCommands_Sleep },
+	{ "kill", &ConsoleCommands_Kill },
 	{ "\0",			NULL }
 } ;
 
@@ -888,12 +890,11 @@ void ConsoleCommands_InitMountManager()
 }
 
 void graphics_test_process(int x, int y) {
-  FrameBufferInfo info;
-  init_gui_frame(&info);
+  upanui::GraphicsContext::Init();
   auto& process = ProcessManager::Instance().GetCurrentPAS();
   process.setupAsRedirectTtyProcess();
-  auto& frame = process.getGuiFrame().value();
-  frame.updateViewport(x, y, 100, 100);
+  auto& frame = upanui::GraphicsContext::Instance().frame();
+  upanui::GraphicsContext::Instance().updateViewport(x, y, 100, 100);
 
   bool toggle = true;
   while(true) {
@@ -1127,4 +1128,17 @@ void ConsoleCommands_Sleep()
 {
   uint32_t t = atoi(CommandLineParser::Instance().GetParameterAt(0));
   ProcessManager::Instance().Sleep(t * 1000);
+}
+
+void ConsoleCommands_Kill() {
+  if(CommandLineParser::Instance().GetNoOfParameters() == 0) {
+    throw upan::exception(XLOC, "required parameter pid");
+  }
+
+  for(int i = 0; i < CommandLineParser::Instance().GetNoOfParameters(); ++i) {
+    int pid = atoi(CommandLineParser::Instance().GetParameterAt(i));
+    if (pid > 2) {
+      ProcessManager::Instance().Kill(pid);
+    }
+  }
 }

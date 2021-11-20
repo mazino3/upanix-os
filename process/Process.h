@@ -31,6 +31,7 @@
 #include <RootFrame.h>
 #include <KeyboardData.h>
 #include <MouseData.h>
+#include <GraphicsContext.h>
 
 class ProcessGroup;
 class IODescriptorTable;
@@ -120,4 +121,11 @@ public:
   }
   virtual bool isGuiBase() const = 0;
   virtual void setGuiBaseFlag(bool) = 0;
+
+  virtual upanui::GraphicsContext* getGraphicsContext() {
+    throw upan::exception(XLOC, "getGraphicsContext unsupported");
+  }
+  virtual void setGraphicsContext(upanui::GraphicsContext*) {
+    throw upan::exception(XLOC, "setGraphicsContext unsupported");
+  }
 };

@@ -22,6 +22,7 @@
 #pragma once
 
 #include <Thread.h>
+
 class KernelProcess;
 
 class KernelThread : public Thread {
@@ -30,6 +31,14 @@ public:
 
   bool isKernelProcess() const override {
     return true;
+  }
+
+  upanui::GraphicsContext* getGraphicsContext() override {
+    return _parent.getGraphicsContext();
+  }
+
+  void setGraphicsContext(upanui::GraphicsContext* graphicsContext) override {
+    _parent.setGraphicsContext(graphicsContext);
   }
 
   void onLoad() override {}
