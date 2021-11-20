@@ -625,11 +625,13 @@ int ProcessManager::GetCurProcId()
 
 void ProcessManager::Kill(int iProcessID) {
   GetSchedulableProcess(iProcessID).ifPresent([this, iProcessID](SchedulableProcess& process) {
-    if (iProcessID == GetCurProcId()) {
-      process.setStatus(TERMINATED);
-      ProcessManager_Yield();
-    } else {
-      process.Destroy();
+    if (process.status() != TERMINATED && process.status() != RELEASED) {
+      if (iProcessID == GetCurProcId()) {
+        process.setStatus(TERMINATED);
+        ProcessManager_Yield();
+      } else {
+        process.Destroy();
+      }
     }
   });
 }
