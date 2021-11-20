@@ -293,16 +293,16 @@ void GraphicsVideo::ExperimentWithMouseCursor(int i) {
 
   upanui::BmpImage image(img, ColorPalettes::CP16::Get(ColorPalettes::CP16::FGColor::FG_RED));
   image.DebugPrint();
-  CopyArea(10, 160, image.width(), image.height(), image.dataBuffer(), false);
+  CopyArea(10, 160, image.width(), image.height(), image.data(), false);
 
   uint32_t s = btime();
   upanui::RawImage rawImage(image, 16, 16);
   printf("\n Time Taken: %u", btime() - s);
-  CopyArea(420, 160, rawImage.width(), rawImage.height(), rawImage.dataBuffer(), false);
+  CopyArea(420, 160, rawImage.width(), rawImage.height(), rawImage.data(), false);
 }
 
 void GraphicsVideo::DrawMouseCursor() {
-  CopyArea(_mouseX, _mouseY, _mouseCursorImg->width(), _mouseCursorImg->height(), _mouseCursorImg->dataBuffer(), true);
+  CopyArea(_mouseX, _mouseY, _mouseCursorImg->width(), _mouseCursorImg->height(), _mouseCursorImg->data(), true);
 }
 
 void GraphicsVideo::CopyArea(unsigned sx, unsigned sy, uint32_t width, uint32_t height, const uint32_t* src, bool directWrite) {
