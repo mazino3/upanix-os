@@ -891,14 +891,13 @@ void ConsoleCommands_InitMountManager()
 
 void graphics_test_process(int x, int y) {
   upanui::GraphicsContext::Init();
+  auto& rootCanvas = upanui::GraphicsContext::Instance().initRootCanvas(x, y, 100, 100);
   auto& process = ProcessManager::Instance().GetCurrentPAS();
   process.setupAsRedirectTtyProcess();
-  auto& frame = upanui::GraphicsContext::Instance().frame();
-  upanui::GraphicsContext::Instance().updateViewport(x, y, 100, 100);
 
   bool toggle = true;
   while(true) {
-    frame.fillRect(0, 0, 100, 100, ColorPalettes::CP256::Get(toggle ? 100 : 200));
+    //frame.fillRect(0, 0, 100, 100, ColorPalettes::CP256::Get(toggle ? 100 : 200));
     toggle = !toggle;
     sleepms(250);
   }
@@ -1067,15 +1066,15 @@ void aThread(void* x) {
 int thread_id = 0;
 void ConsoleCommands_Testv()
 {
-  if (thread_id != 0) {
-    waitpid(thread_id);
-  }
+//  if (thread_id != 0) {
+//    waitpid(thread_id);
+//  }
+//  thread_id = exect(aThread, 10);
+
 	//_DisplayReadStat() ;
 	//printf("\n RAM SIZE: %u", MemManager::Instance().GetRamSize()) ;
 	//VM86_Test() ;
 	//KC::MDisplay().SetMouseCursorPos(KC::MDisplay().GetMouseCursorPos() + 70) ;
-	//GraphicsVideo::Instance().ExperimentWithMouseCursor(atoi(CommandLineParser::Instance().GetParameterAt(0)));
-  thread_id = exect(aThread, 10);
 }
 
 void ConsoleCommands_TestNet()

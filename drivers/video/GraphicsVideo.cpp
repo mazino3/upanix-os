@@ -81,8 +81,6 @@ GraphicsVideo::GraphicsVideo(const framebuffer_info_t& fbinfo)
   _lfbPageCount = ((_lfbSize - 1) / PAGE_SIZE) + 1;
   _xCharScale = 8;
   _yCharScale = 16;
-  _mouseX = 0;
-  _mouseY = 0;
 
   FillRect(0, 0, _width, _height, 0x0);
 }
@@ -104,8 +102,9 @@ void GraphicsVideo::Initialize() {
   }
 
   printf("\n Initializing mouse cursor image");
-  upanui::BmpImage mouseCursorBmp(&_binary_mouse_cursor_bmp_start, ColorPalettes::CP16::Get(ColorPalettes::CP16::FGColor::FG_RED));
-  _mouseCursorImg.reset(new upanui::RawImage(mouseCursorBmp, 16, 16));
+  upanui::BmpImage& mouseCursorBmp = upanui::BmpImage::create(&_binary_mouse_cursor_bmp_start, 0, 0,
+                                                              ColorPalettes::CP16::Get(ColorPalettes::CP16::FGColor::FG_RED));
+  _mouseCursorImg = new upanui::RawImage(mouseCursorBmp, 16, 16);
 
   // You can as well read a .sfn file in a buffer and call ssfn_load on the same
   // In here, the .sfn file was included as part of the kernel binary
@@ -242,9 +241,9 @@ void GraphicsVideo::SetMouseCursorPos(int x, int y) {
     newY = y;
   }
 
-  if (newX != _mouseX || newY != _mouseY) {
-    _mouseX = newX;
-    _mouseY = newY;
+  if (newX != _mouseCursorImg->x() || newY != _mouseCursorImg->y()) {
+    _mouseCursorImg->x(newX);
+    _mouseCursorImg->y(newY);
     NeedRefresh();
   }
 }
@@ -258,8 +257,8 @@ bool GraphicsVideo::switchFGProcessOnMouseClick() {
     } else {
       if (!process.value().getGuiFrame().isEmpty()) {
         const auto& f = process.value().getGuiFrame().value();
-        if (f.viewport().x1() <= _mouseX && _mouseX <= f.viewport().x2()
-          && f.viewport().y1() <= _mouseY && _mouseY <= f.viewport().y2()) {
+        if (f.viewport().x1() <= _mouseCursorImg->x() && _mouseCursorImg->x() <= f.viewport().x2()
+          && f.viewport().y1() <= _mouseCursorImg->y() && _mouseCursorImg->y() <= f.viewport().y2()) {
           if (pid == _fgProcesses.back() || process.value().isGuiBase()) {
             return false;
           } else {
@@ -274,35 +273,8 @@ bool GraphicsVideo::switchFGProcessOnMouseClick() {
   return false;
 }
 
-void GraphicsVideo::ExperimentWithMouseCursor(int i) {
-  void* img;
-  if (i == 0) {
-    img = &_binary_mouse_cursor_bmp_start;
-  } else if (i == 1) {
-    img = &_binary_p16_bmp_start;
-  } else if (i == 2) {
-    img = &_binary_p256_bmp_start;
-  } else if (i == 3) {
-    img = &_binary_p24_bmp_start;
-  } else if (i == 4) {
-    img = &_binary_s24_bmp_start;
-  } else {
-    printf("\n pass in the image id");
-    return;
-  }
-
-  upanui::BmpImage image(img, ColorPalettes::CP16::Get(ColorPalettes::CP16::FGColor::FG_RED));
-  image.DebugPrint();
-  CopyArea(10, 160, image.width(), image.height(), image.data(), false);
-
-  uint32_t s = btime();
-  upanui::RawImage rawImage(image, 16, 16);
-  printf("\n Time Taken: %u", btime() - s);
-  CopyArea(420, 160, rawImage.width(), rawImage.height(), rawImage.data(), false);
-}
-
 void GraphicsVideo::DrawMouseCursor() {
-  CopyArea(_mouseX, _mouseY, _mouseCursorImg->width(), _mouseCursorImg->height(), _mouseCursorImg->data(), true);
+  CopyArea(_mouseCursorImg->x(), _mouseCursorImg->y(), _mouseCursorImg->width(), _mouseCursorImg->height(), _mouseCursorImg->data(), true);
 }
 
 void GraphicsVideo::CopyArea(unsigned sx, unsigned sy, uint32_t width, uint32_t height, const uint32_t* src, bool directWrite) {

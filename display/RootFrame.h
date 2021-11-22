@@ -48,6 +48,10 @@ public:
     _isDirty.set(false);
   }
 
+  void updateViewport(const ViewportInfo& info) {
+    upanui::BaseFrame::_updateViewport(info._x, info._y, info._width, info._height);
+  }
+
 private:
   upan::atomic::integral<bool> _isDirty;
 };

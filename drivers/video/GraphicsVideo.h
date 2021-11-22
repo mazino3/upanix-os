@@ -51,15 +51,8 @@ class GraphicsVideo : protected KernelUtil::TimerTask
     void CreateRefreshTask();
     void Initialize();
 
-    int GetMouseX() {
-      return _mouseX;
-    }
-    int GetMouseY() {
-      return _mouseY;
-    }
     void SetMouseCursorPos(int x, int y);
     bool switchFGProcessOnMouseClick();
-    void ExperimentWithMouseCursor(int i);
 
     void addFGProcess(int pid);
     void removeFGProcess(int pid);
@@ -92,9 +85,7 @@ class GraphicsVideo : protected KernelUtil::TimerTask
     bool     _initialized;
     uint32_t _xCharScale;
     uint32_t _yCharScale;
-    int _mouseX;
-    int _mouseY;
-    upan::uniq_ptr<upanui::Image> _mouseCursorImg;
+    upanui::Image* _mouseCursorImg;
     upan::list<int> _fgProcesses;
     upan::mutex _fgProcessMutex;
 };
