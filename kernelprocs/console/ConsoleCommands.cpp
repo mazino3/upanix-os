@@ -897,7 +897,7 @@ void graphics_test_process(int x, int y) {
 
   bool toggle = true;
   while(true) {
-    //frame.fillRect(0, 0, 100, 100, ColorPalettes::CP256::Get(toggle ? 100 : 200));
+    rootCanvas.backgroundColor(ColorPalettes::CP256::Get(toggle ? 100 : 200));
     toggle = !toggle;
     sleepms(250);
   }

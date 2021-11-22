@@ -28,6 +28,7 @@
 #include <atomicop.h>
 #include <list.h>
 #include <mutex.h>
+#include <MouseCursor.h>
 
 class GraphicsVideo : protected KernelUtil::TimerTask
 {
@@ -85,7 +86,7 @@ class GraphicsVideo : protected KernelUtil::TimerTask
     bool     _initialized;
     uint32_t _xCharScale;
     uint32_t _yCharScale;
-    upanui::Image* _mouseCursorImg;
+    upan::uniq_ptr<upanui::MouseCursor> _mouseCursor;
     upan::list<int> _fgProcesses;
     upan::mutex _fgProcessMutex;
 };
