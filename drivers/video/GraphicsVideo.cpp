@@ -251,7 +251,9 @@ void GraphicsVideo::SetMouseCursorPos(int x, int y) {
   }
 }
 
-bool GraphicsVideo::switchFGProcessOnMouseClick() {
+upan::option<int> GraphicsVideo::getFGProcessUnderMouseCursor() {
+  upan::mutex_guard g(_fgProcessMutex);
+
   for(auto it = _fgProcesses.rbegin(); it != _fgProcesses.rend(); ++it) {
     const auto pid = *it;
     auto process = ProcessManager::Instance().GetProcess(pid);
@@ -261,19 +263,27 @@ bool GraphicsVideo::switchFGProcessOnMouseClick() {
       if (!process.value().getGuiFrame().isEmpty()) {
         const auto& f = process.value().getGuiFrame().value();
         if (f.viewport().x1() <= _mouseCursor->x() && _mouseCursor->x() <= f.viewport().x2()
-          && f.viewport().y1() <= _mouseCursor->y() && _mouseCursor->y() <= f.viewport().y2()) {
-          if (pid == _fgProcesses.back() || process.value().isGuiBase()) {
-            return false;
-          } else {
-            _fgProcesses.erase(it);
-            _fgProcesses.push_back(pid);
-            return true;
-          }
+        && f.viewport().y1() <= _mouseCursor->y() && _mouseCursor->y() <= f.viewport().y2()) {
+          return upan::option<int>(pid);
         }
       }
     }
   }
-  return false;
+  return upan::option<int>::empty();
+}
+
+void GraphicsVideo::switchFGProcess(int pid) {
+  upan::mutex_guard g(_fgProcessMutex);
+
+  auto process = ProcessManager::Instance().GetProcess(pid);
+  if (process.isEmpty()) {
+    removeFGProcess(pid);
+  } else {
+    if (pid != _fgProcesses.back() && !process.value().isGuiBase()) {
+      _fgProcesses.erase(pid);
+      _fgProcesses.push_back(pid);
+    }
+  }
 }
 
 void GraphicsVideo::DrawMouseCursor() {

@@ -30,8 +30,7 @@
 #include <mutex.h>
 #include <MouseCursor.h>
 
-class GraphicsVideo : protected KernelUtil::TimerTask
-{
+class GraphicsVideo : protected KernelUtil::TimerTask {
   private:
     GraphicsVideo(const framebuffer_info_t&);
 
@@ -53,7 +52,8 @@ class GraphicsVideo : protected KernelUtil::TimerTask
     void Initialize();
 
     void SetMouseCursorPos(int x, int y);
-    bool switchFGProcessOnMouseClick();
+    upan::option<int> getFGProcessUnderMouseCursor();
+    void switchFGProcess(int pid);
 
     void addFGProcess(int pid);
     void removeFGProcess(int pid);

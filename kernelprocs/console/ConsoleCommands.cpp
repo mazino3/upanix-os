@@ -891,7 +891,7 @@ void ConsoleCommands_InitMountManager()
 
 void graphics_test_process(int x, int y) {
   upanui::GraphicsContext::Init();
-  auto& rootCanvas = upanui::GraphicsContext::Instance().initRootCanvas(x, y, 100, 100);
+  auto& rootCanvas = upanui::GraphicsContext::Instance().initRootCanvas(x, y, 100, 100, true);
   auto& process = ProcessManager::Instance().GetCurrentPAS();
   process.setupAsRedirectTtyProcess();
 
