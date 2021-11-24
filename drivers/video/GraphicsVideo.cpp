@@ -81,6 +81,7 @@ GraphicsVideo::GraphicsVideo(const framebuffer_info_t& fbinfo)
   _lfbPageCount = ((_lfbSize - 1) / PAGE_SIZE) + 1;
   _xCharScale = 8;
   _yCharScale = 16;
+  _inputEventFGProcess = NO_PROCESS_ID;
 
   FillRect(0, 0, _width, _height, 0x0);
 }
@@ -283,6 +284,7 @@ void GraphicsVideo::switchFGProcess(int pid) {
       _fgProcesses.erase(pid);
       _fgProcesses.push_back(pid);
     }
+    _inputEventFGProcess = pid;
   }
 }
 
@@ -342,14 +344,22 @@ bool GraphicsVideo::isDirty() {
 void GraphicsVideo::addFGProcess(int pid) {
   upan::mutex_guard g(_fgProcessMutex);
   _fgProcesses.push_back(pid);
+  _inputEventFGProcess = pid;
 }
 
 void GraphicsVideo::removeFGProcess(int pid) {
   upan::mutex_guard g(_fgProcessMutex);
   _fgProcesses.erase(pid);
+  if (pid == _inputEventFGProcess) {
+    if (_fgProcesses.size() > 0) {
+      _inputEventFGProcess = _fgProcesses.back();
+    } else {
+      _inputEventFGProcess = NO_PROCESS_ID;
+    }
+  }
 }
 
-upan::option<int> GraphicsVideo::getActiveFGProcess() {
+upan::option<int> GraphicsVideo::getDisplayFGProcess() {
   upan::mutex_guard g(_fgProcessMutex);
   if (_fgProcesses.empty()) {
     return upan::option<int>::empty();

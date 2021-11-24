@@ -57,7 +57,10 @@ class GraphicsVideo : protected KernelUtil::TimerTask {
 
     void addFGProcess(int pid);
     void removeFGProcess(int pid);
-    upan::option<int> getActiveFGProcess();
+    upan::option<int> getDisplayFGProcess();
+    int getInputEventFGProcess() {
+      return _inputEventFGProcess;
+    }
 
     uint32_t allocateFrameBuffer();
 
@@ -88,5 +91,6 @@ class GraphicsVideo : protected KernelUtil::TimerTask {
     uint32_t _yCharScale;
     upan::uniq_ptr<upanui::MouseCursor> _mouseCursor;
     upan::list<int> _fgProcesses;
+    int _inputEventFGProcess;
     upan::mutex _fgProcessMutex;
 };

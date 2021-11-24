@@ -60,6 +60,7 @@
 #include <ARPHandler.h>
 #include <GraphicsVideo.h>
 #include <GraphicsContext.h>
+#include <MouseEventHandler.h>
 
 /**** Command Fucntion Declarations  *****/
 static void ConsoleCommands_ChangeDrive() ;
@@ -889,18 +890,28 @@ void ConsoleCommands_InitMountManager()
 		printf("\n MountManager already initialized") ;
 }
 
+class TestMouseHandler : public upanui::MouseEventHandler {
+public:
+  void onEvent(upanui::UIObject& uiObject, const upanui::MouseEvent& event) override {
+    const upanui::MouseData& data = event.getData();
+    if (data.leftButtonState() == upanui::MouseData::HOLD) {
+      uiObject.x(uiObject.x() + data.deltaX());
+      uiObject.y(uiObject.y() - data.deltaY());
+    }
+  }
+};
+
 void graphics_test_process(int x, int y) {
   upanui::GraphicsContext::Init();
-  auto& rootCanvas = upanui::GraphicsContext::Instance().initRootCanvas(x, y, 100, 100, true);
-  auto& process = ProcessManager::Instance().GetCurrentPAS();
-  process.setupAsRedirectTtyProcess();
+  auto& gc = upanui::GraphicsContext::Instance();
+  auto& rootCanvas = gc.initRootCanvas(x, y, 100, 100, true);
+  rootCanvas.backgroundColor(ColorPalettes::CP256::Get(100));
 
-  bool toggle = true;
-  while(true) {
-    rootCanvas.backgroundColor(ColorPalettes::CP256::Get(toggle ? 100 : 200));
-    toggle = !toggle;
-    sleepms(250);
-  }
+  TestMouseHandler mouseHandler;
+  rootCanvas.addMouseEventHandler(mouseHandler);
+
+  gc.eventManager().startEventLoop();
+
   exit(0);
 }
 

@@ -286,13 +286,12 @@ static void Keyboard_Event_Dispatcher() {
   try {
     while(true) {
       const auto& data = KeyboardHandler::Instance().GetCharInBlockMode();
-      GraphicsVideo::Instance().getActiveFGProcess().ifPresent([&data](int pid) {
+      {
         ProcessSwitchLock pLock;
-        auto process = ProcessManager::Instance().GetProcess(pid);
-        process.ifPresent([&](Process& p) {
+        ProcessManager::Instance().GetProcess(GraphicsVideo::Instance().getInputEventFGProcess()).ifPresent([&](Process& p) {
           p.dispatchKeyboardData(data);
         });
-      });
+      }
     }
   } catch(upan::exception& e) {
     printf("\n Error in KB event dispatcher: %s", e.Error().Msg().c_str());

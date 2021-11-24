@@ -104,6 +104,9 @@ void AutonomousProcess::dispatchKeyboardData(const upanui::KeyboardData& data) {
 }
 
 void AutonomousProcess::dispatchMouseData(const upanui::MouseData& mouseData) {
+  if (_uiType == Process::GUI) {
+    _uiMouseEventStreamFD->write((void*)&mouseData, sizeof(upanui::MouseData));
+  }
 }
 
 void AutonomousProcess::setupAsTtyProcess() {

@@ -98,29 +98,30 @@ void PS2MouseDriver::HandleEvent() {
         if (!(status & 0x8) || (status & 0xC0) == 0xC0)
           return;
 
-        const auto xMov = static_cast<int8_t>(_packetData[1]);
-        const auto yMov = static_cast<int8_t>(_packetData[2]);
+        const auto deltaX = static_cast<int8_t>(_packetData[1]);
+        const auto deltaY = static_cast<int8_t>(_packetData[2]);
 
-        bool isMiddlePressed = status & 0x4;
-        bool isRightPressed = status & 0x2;
-        bool isLeftPressed = status & 0x1;
-
-        int iX = _prevMouseData.x() + xMov;
-        int iY = _prevMouseData.y() - yMov;
-        upanui::MouseData mouseData(iX, iY, isMiddlePressed, isRightPressed, isLeftPressed);
+        bool leftPressed = status & 0x1;
+        bool rightPressed = status & 0x2;
+        bool middlePressed = status & 0x4;
+        const upanui::MouseData mouseData = _prevMouseData.transition(deltaX, deltaY, leftPressed, rightPressed, middlePressed);
 
         if (mouseData == _prevMouseData) {
           return;
         }
         _prevMouseData = mouseData;
 
-        GraphicsVideo::Instance().SetMouseCursorPos(iX, iY);
+        GraphicsVideo::Instance().SetMouseCursorPos(mouseData.x(), mouseData.y());
 
         GraphicsVideo::Instance().getFGProcessUnderMouseCursor().ifPresent([&mouseData](int pid) {
           if (mouseData.anyButtonPressed()) {
             GraphicsVideo::Instance().switchFGProcess(pid);
           }
-          ProcessManager::Instance().GetProcess(pid).ifPresent([&mouseData](Process& p) {
+          //when a UI process is pressed and held and then the mouse is moved around fast, then the mouse pointer may
+          //go outside the viewport of the held process. In such a case, the mouse events must still be dispatched to the
+          //held process and not to the process under the mouse cursor.
+          int eventPid = mouseData.anyButtonHeld() ? GraphicsVideo::Instance().getInputEventFGProcess() : pid;
+          ProcessManager::Instance().GetProcess(eventPid).ifPresent([&mouseData](Process& p) {
             p.dispatchMouseData(mouseData);
           });
         });
