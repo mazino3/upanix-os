@@ -904,11 +904,11 @@ public:
 void graphics_test_process(int x, int y) {
   upanui::GraphicsContext::Init();
   auto& gc = upanui::GraphicsContext::Instance();
-  auto& rootCanvas = gc.initRootCanvas(x, y, 100, 100, true);
-  rootCanvas.backgroundColor(ColorPalettes::CP256::Get(100));
+  auto& uiRoot = gc.initUIRoot(x, y, 100, 100, true);
+  uiRoot.backgroundColor(ColorPalettes::CP256::Get(100));
 
   TestMouseHandler mouseHandler;
-  rootCanvas.addMouseEventHandler(mouseHandler);
+  uiRoot.addMouseEventHandler(mouseHandler);
 
   gc.eventManager().startEventLoop();
 

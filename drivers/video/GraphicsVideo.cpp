@@ -174,17 +174,22 @@ bool GraphicsVideo::TimerTrigger() {
         if (viewport.x1() == 0 && viewport.y1() == 0 && viewport.width() == _width && viewport.height() == _height) {
           optimized_memcpy(_zBuffer, (uint32_t)buffer, _lfbSize);
         } else {
-          int x1 = upan::max(viewport.x1(), 0);
-          int y1 = upan::max(viewport.y1(), 0);
-          int x2 = upan::min(viewport.x2(), (int)(_width - 1));
-          int y2 = upan::min(viewport.y2(), (int)(_height - 1));
+          int destX1 = upan::min(upan::max(viewport.x1(), 0), (int)_width);
+          int destX2 = upan::min(upan::max(viewport.x2(), 0), (int)_width);
 
-          if (x1 >= 0 && x2 < (int)_width && y1 >= 0 && y2 < (int)_height) {
-            auto xoffset = x1 * _bytesPerPixel;
-            auto bytesPerLine = (x2 - x1 + 1) * _bytesPerPixel;
-            for(int y = y1, sy = 0; y <= y2; ++y, ++sy) {
-              auto destOffset = y * _pitch + xoffset;
-              auto srcOffset = sy * _pitch;
+          int destY1 = upan::min(upan::max(viewport.y1(), 0), (int)_height);
+          int destY2 = upan::min(upan::max(viewport.y2(), 0), (int)_height);
+
+          if (destX1 < destX2 && destY1 < destY2) {
+            int srcX1 = destX1 - viewport.x1();
+            int srcY1 = destY1 - viewport.y1();
+
+            auto destXOffset = destX1 * _bytesPerPixel;
+            auto srcXOffset = srcX1 * _bytesPerPixel;
+            auto bytesPerLine = (destX2 - destX1) * _bytesPerPixel;
+            for(int sy = srcY1, dy = destY1; dy < destY2; ++sy, ++dy) {
+              auto destOffset = dy * _pitch + destXOffset;
+              auto srcOffset = sy * _pitch + srcXOffset;
               memcpy((void*)(_zBuffer + destOffset), (void*)(buffer + srcOffset), bytesPerLine);
             }
           }
@@ -263,8 +268,8 @@ upan::option<int> GraphicsVideo::getFGProcessUnderMouseCursor() {
     } else {
       if (!process.value().getGuiFrame().isEmpty()) {
         const auto& f = process.value().getGuiFrame().value();
-        if (f.viewport().x1() <= _mouseCursor->x() && _mouseCursor->x() <= f.viewport().x2()
-        && f.viewport().y1() <= _mouseCursor->y() && _mouseCursor->y() <= f.viewport().y2()) {
+        if (f.viewport().x1() <= _mouseCursor->x() && _mouseCursor->x() < f.viewport().x2()
+        && f.viewport().y1() <= _mouseCursor->y() && _mouseCursor->y() < f.viewport().y2()) {
           return upan::option<int>(pid);
         }
       }

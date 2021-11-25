@@ -113,17 +113,20 @@ void PS2MouseDriver::HandleEvent() {
 
         GraphicsVideo::Instance().SetMouseCursorPos(mouseData.x(), mouseData.y());
 
-        GraphicsVideo::Instance().getFGProcessUnderMouseCursor().ifPresent([&mouseData](int pid) {
-          if (mouseData.anyButtonPressed()) {
-            GraphicsVideo::Instance().switchFGProcess(pid);
-          }
-          //when a UI process is pressed and held and then the mouse is moved around fast, then the mouse pointer may
-          //go outside the viewport of the held process. In such a case, the mouse events must still be dispatched to the
-          //held process and not to the process under the mouse cursor.
-          int eventPid = mouseData.anyButtonHeld() ? GraphicsVideo::Instance().getInputEventFGProcess() : pid;
-          ProcessManager::Instance().GetProcess(eventPid).ifPresent([&mouseData](Process& p) {
-            p.dispatchMouseData(mouseData);
+        //when a UI process is pressed and held and then the mouse is moved around fast, then the mouse pointer may
+        //go outside the viewport of the held process. In such a case, the mouse events must still be dispatched to the
+        //held process and not to the process under the mouse cursor.
+        int eventPid = GraphicsVideo::Instance().getInputEventFGProcess();
+        if (!mouseData.anyButtonHeld()) {
+          GraphicsVideo::Instance().getFGProcessUnderMouseCursor().ifPresent([&mouseData, &eventPid](int pid) {
+            if (mouseData.anyButtonPressed()) {
+              GraphicsVideo::Instance().switchFGProcess(pid);
+            }
+            eventPid = pid;
           });
+        }
+        ProcessManager::Instance().GetProcess(eventPid).ifPresent([&mouseData](Process& p) {
+          p.dispatchMouseData(mouseData);
         });
       }
     });
