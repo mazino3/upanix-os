@@ -32,6 +32,7 @@ class PS2MouseDriver
       return instance;
     }
 		void HandleEvent() ;
+    void ResetMousePosition();
 
 	private:
 		PS2MouseDriver() ;

@@ -135,3 +135,7 @@ void PS2MouseDriver::HandleEvent() {
     throw e;
   }
 }
+
+void PS2MouseDriver::ResetMousePosition() {
+  _prevMouseData = upanui::MouseData();
+}

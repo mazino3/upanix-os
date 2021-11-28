@@ -61,6 +61,8 @@
 #include <GraphicsVideo.h>
 #include <GraphicsContext.h>
 #include <MouseEventHandler.h>
+#include <Button.h>
+#include <UIObjectFactory.h>
 
 /**** Command Fucntion Declarations  *****/
 static void ConsoleCommands_ChangeDrive() ;
@@ -127,6 +129,7 @@ static void ConsoleCommands_TestGraphics() ;
 static void ConsoleCommands_Beep();
 static void ConsoleCommands_Sleep();
 static void ConsoleCommands_Kill();
+static void ConsoleCommands_ResetMouse();
 
 /*****************************************/
 
@@ -198,6 +201,7 @@ static const ConsoleCommand ConsoleCommands_CommandList[] = {
 	{ "beep", &ConsoleCommands_Beep },
 	{ "sleep", &ConsoleCommands_Sleep },
 	{ "kill", &ConsoleCommands_Kill },
+	{ "resetmouse", &ConsoleCommands_ResetMouse },
 	{ "\0",			NULL }
 } ;
 
@@ -904,11 +908,46 @@ public:
 void graphics_test_process(int x, int y) {
   upanui::GraphicsContext::Init();
   auto& gc = upanui::GraphicsContext::Instance();
-  auto& uiRoot = gc.initUIRoot(x, y, 100, 100, true);
+  auto& uiRoot = gc.initUIRoot(x, y, 400, 400, true);
   uiRoot.backgroundColor(ColorPalettes::CP256::Get(100));
+
+  const uint32_t btpColor = ColorPalettes::CP256::Get(10);
+
+  auto& bp1 = upanui::UIObjectFactory::createButton(uiRoot, 50, 50, 100, 100);
+  bp1.backgroundColor(btpColor);
+
+  const uint32_t btColor = ColorPalettes::CP256::Get(25);
+  auto& b1 = upanui::UIObjectFactory::createButton(bp1, 50, 50, 30, 20);
+  b1.backgroundColor(btColor);
+
+  auto& b2 = upanui::UIObjectFactory::createButton(bp1, 0, 50, 30, 20);
+  b2.backgroundColor(btColor);
+
+  auto& b3 = upanui::UIObjectFactory::createButton(bp1, 50, 0, 30, 20);
+  b3.backgroundColor(btColor);
+
+  auto& b4 = upanui::UIObjectFactory::createButton(bp1, -10, 10, 30, 20);
+  b4.backgroundColor(btColor);
+
+  auto& b5 = upanui::UIObjectFactory::createButton(bp1, 65, -10, 30, 20);
+  b5.backgroundColor(btColor);
+
+  auto& b6 = upanui::UIObjectFactory::createButton(bp1, 80, -10, 30, 20);
+  b6.backgroundColor(btColor);
+
+  auto& b7 = upanui::UIObjectFactory::createButton(bp1, 80, 50, 30, 20);
+  b7.backgroundColor(btColor);
+
+  auto& b8 = upanui::UIObjectFactory::createButton(bp1, 80, 90, 30, 20);
+  b8.backgroundColor(btColor);
+
+  auto& b9 = upanui::UIObjectFactory::createButton(bp1, 30, 90, 30, 20);
+  b9.backgroundColor(btColor);
 
   TestMouseHandler mouseHandler;
   uiRoot.addMouseEventHandler(mouseHandler);
+  bp1.addMouseEventHandler(mouseHandler);
+  b1.addMouseEventHandler(mouseHandler);
 
   gc.eventManager().startEventLoop();
 
@@ -1151,4 +1190,8 @@ void ConsoleCommands_Kill() {
       ProcessManager::Instance().Kill(pid);
     }
   }
+}
+
+void ConsoleCommands_ResetMouse() {
+  PS2MouseDriver::Instance().ResetMousePosition();
 }
