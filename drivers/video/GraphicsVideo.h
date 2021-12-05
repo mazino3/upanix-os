@@ -69,7 +69,11 @@ class GraphicsVideo : protected KernelUtil::TimerTask {
     bool TimerTrigger() override;
     void NeedRefresh();
     void DrawUSFNChar(byte ch, unsigned x, unsigned y, unsigned fg, unsigned bg);
-    void CopyArea(unsigned sx, unsigned sy, uint32_t width, uint32_t height, const uint32_t* src, bool directWrite);
+    void CopyArea(const uint32_t destX, const uint32_t destY,
+                  const uint32_t srcX, const uint32_t srcY,
+                  const uint32_t srcBufferWidth,
+                  const uint32_t drawWidth, const uint32_t drawHeight,
+                  const uint32_t* src, const uint32_t alphaThresholdForTransparency);
     void DrawMouseCursor();
 
     static GraphicsVideo* _instance;

@@ -141,34 +141,22 @@ bool GraphicsVideo::TimerTrigger() {
       process.ifPresent([&](Process& p) {
         const auto& frame = p.getGuiFrame().value();
         const auto& viewport = frame.viewport();
-        const auto buffer = (uint32_t)frame.frameBuffer().buffer();
-        if (viewport.x1() == 0 && viewport.y1() == 0 && viewport.width() == _width && viewport.height() == _height) {
-          optimized_memcpy(_zBuffer, (uint32_t)buffer, _lfbSize);
-        } else {
-          int destX1 = upan::min(upan::max(viewport.x1(), 0), (int)_width);
-          int destX2 = upan::min(upan::max(viewport.x2(), 0), (int)_width);
+        const auto buffer = frame.frameBuffer().buffer();
+        int destX1 = upan::min(upan::max(viewport.x1(), 0), (int)_width);
+        int destX2 = upan::min(upan::max(viewport.x2(), 0), (int)_width);
 
-          int destY1 = upan::min(upan::max(viewport.y1(), 0), (int)_height);
-          int destY2 = upan::min(upan::max(viewport.y2(), 0), (int)_height);
+        int destY1 = upan::min(upan::max(viewport.y1(), 0), (int)_height);
+        int destY2 = upan::min(upan::max(viewport.y2(), 0), (int)_height);
 
-          if (destX1 < destX2 && destY1 < destY2) {
-            int srcX1 = destX1 - viewport.x1();
-            int srcY1 = destY1 - viewport.y1();
-
-            auto destXOffset = destX1 * _bytesPerPixel;
-            auto srcXOffset = srcX1 * _bytesPerPixel;
-            auto bytesPerLine = (destX2 - destX1) * _bytesPerPixel;
-            for(int sy = srcY1, dy = destY1; dy < destY2; ++sy, ++dy) {
-              auto destOffset = dy * _pitch + destXOffset;
-              auto srcOffset = sy * _pitch + srcXOffset;
-              memcpy((void*)(_zBuffer + destOffset), (void*)(buffer + srcOffset), bytesPerLine);
-            }
-          }
+        if (destX1 < destX2 && destY1 < destY2) {
+          int srcX1 = destX1 - viewport.x1();
+          int srcY1 = destY1 - viewport.y1();
+          CopyArea(destX1, destY1, srcX1, srcY1, _width, (destX2 - destX1), (destY2 - destY1), buffer, 0x00);
         }
       });
     }
-    optimized_memcpy(_mappedLFBAddress, _zBuffer, _lfbSize);
     DrawMouseCursor();
+    optimized_memcpy(_mappedLFBAddress, _zBuffer, _lfbSize);
   }
   return true;
 }
@@ -265,31 +253,28 @@ void GraphicsVideo::switchFGProcess(int pid) {
 }
 
 void GraphicsVideo::DrawMouseCursor() {
-  CopyArea(_mouseCursor->x(), _mouseCursor->y(), _mouseCursor->width(), _mouseCursor->height(), _mouseCursor->data(), true);
-  //printf("\n%d:%d:%d:%d", _mouseCursor->x(), _mouseCursor->y(), _mouseCursor->width(), _mouseCursor->height());
-  //_needRefresh.set(false);
+  CopyArea(_mouseCursor->x(), _mouseCursor->y(),
+           0, 0, _mouseCursor->width(),
+           _mouseCursor->width(), _mouseCursor->height(),
+           _mouseCursor->data(), 0xAA);
 }
 
-void GraphicsVideo::CopyArea(unsigned sx, unsigned sy, uint32_t width, uint32_t height, const uint32_t* src, bool directWrite) {
-  const uint32_t frameBuffer = directWrite ? _mappedLFBAddress : _zBuffer;
-  for(unsigned y = sy; y < (sy + height) && y < _height; ++y) {
-    const auto y_offset = y * _pitch;
-    const auto src_y_offset = (y - sy) * width;
-    for(unsigned x = sx; x < (sx + width) && x < _width; ++x) {
-      auto p = (unsigned*)(frameBuffer + y_offset + x * _bytesPerPixel);
-      auto v = src[src_y_offset + (x - sx)];
-
+void GraphicsVideo::CopyArea(const uint32_t destX, const uint32_t destY,
+                             const uint32_t srcX, const uint32_t srcY,
+                             const uint32_t srcBufferWidth,
+                             const uint32_t drawWidth, const uint32_t drawHeight,
+                             const uint32_t* src, const uint32_t alphaThresholdForTransparency) {
+  for(auto sy = srcY, dy = destY; dy < (destY + drawHeight) && dy < _height; ++dy, ++sy) {
+    const auto destOffset = dy * _width;
+    const auto srcOffset = sy * srcBufferWidth;
+    for(auto sx = srcX, dx = destX; sx < (srcX + drawWidth) && dx < _width; ++sx, ++dx) {
+      const auto v = src[sx + srcOffset];
       //transparent color alpha --> TODO: blend with alpha of the underlying canvas
       const auto alpha = v >> 24;
-      if (alpha < 0xAA)
-        continue;
-
-      *p = v;
+      if (alpha > alphaThresholdForTransparency) {
+        ((uint32_t*)_zBuffer)[dx + destOffset] = v;
+      }
     }
-  }
-
-  if (!directWrite) {
-    NeedRefresh();
   }
 }
 

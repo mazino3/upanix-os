@@ -85,6 +85,7 @@ void RootGUIConsole::scrollDown() {
 
 void RootGUIConsole::resetFrameBuffer(uint32_t frameBufferAddress) {
   _frame.resetFrameBufferAddress((uint32_t*)frameBufferAddress);
+  _frame.fillRect(0, 0, _frame.viewport().width(), _frame.viewport().height(), 0xFF000000);
 }
 
 void RootGUIConsole::StartCursorBlink() {

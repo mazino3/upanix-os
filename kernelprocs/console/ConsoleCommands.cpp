@@ -910,11 +910,13 @@ void graphics_test_process(int x, int y) {
   auto& gc = upanui::GraphicsContext::Instance();
   auto& uiRoot = gc.initUIRoot(x, y, 400, 400, true);
   uiRoot.backgroundColor(ColorPalettes::CP256::Get(100));
+  //uiRoot.backgroundColorAlpha(0);
 
   const uint32_t btpColor = ColorPalettes::CP256::Get(10);
 
   auto& bp1 = upanui::UIObjectFactory::createButton(uiRoot, 50, 50, 100, 100);
   bp1.backgroundColor(btpColor);
+  //bp1.backgroundColorAlpha(0);
 
   const uint32_t btColor = ColorPalettes::CP256::Get(25);
   auto& b1 = upanui::UIObjectFactory::createButton(bp1, 50, 50, 30, 20);
@@ -945,9 +947,9 @@ void graphics_test_process(int x, int y) {
   b9.backgroundColor(btColor);
 
   TestMouseHandler mouseHandler;
-  uiRoot.addMouseEventHandler(mouseHandler);
-  bp1.addMouseEventHandler(mouseHandler);
-  b1.addMouseEventHandler(mouseHandler);
+  uiRoot.onDrag(mouseHandler);
+//  bp1.addMouseEventHandler(mouseHandler);
+  //b1.addMouseEventHandler(mouseHandler);
 
   gc.eventManager().startEventLoop();
 
