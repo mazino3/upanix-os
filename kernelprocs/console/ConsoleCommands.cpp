@@ -912,6 +912,26 @@ void graphics_test_process(int x, int y) {
   uiRoot.backgroundColor(ColorPalettes::CP256::Get(100));
   //uiRoot.backgroundColorAlpha(0);
 
+  auto& cp1 = upanui::UIObjectFactory::createCanvas(uiRoot, 200, 200, 100, 100);
+  cp1.backgroundColor(ColorPalettes::CP256::Get(10));
+
+  auto& ci1 = upanui::UIObjectFactory::createButton(cp1, 40, 10, 50, 30);
+  ci1.backgroundColor(ColorPalettes::CP256::Get(25));
+  auto& ci2 = upanui::UIObjectFactory::createButton(ci1, 10, 2, 30, 6);
+  ci2.backgroundColor(ColorPalettes::CP256::Get(85));
+
+  auto& c1 = upanui::UIObjectFactory::createButton(cp1, -50, 30, 80, 50);
+  c1.backgroundColor(ColorPalettes::CP256::Get(25));
+  auto& c2 = upanui::UIObjectFactory::createButton(c1, 10, 10, 30, 10);
+  c2.backgroundColor(ColorPalettes::CP256::Get(45));
+  auto& c3 = upanui::UIObjectFactory::createButton(c1, 10, 10, 50, 10);
+  c3.backgroundColor(ColorPalettes::CP256::Get(65));
+  auto& c4 = upanui::UIObjectFactory::createButton(c1, 60, 20, 20, 10);
+  c4.backgroundColor(ColorPalettes::CP256::Get(85));
+  auto& c5 = upanui::UIObjectFactory::createButton(c1, -10, 35, 80, 10);
+  c5.backgroundColor(ColorPalettes::CP256::Get(75));
+
+
   const uint32_t btpColor = ColorPalettes::CP256::Get(10);
 
   auto& bp1 = upanui::UIObjectFactory::createButton(uiRoot, 50, 50, 100, 100);
