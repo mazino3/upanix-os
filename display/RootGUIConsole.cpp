@@ -25,6 +25,7 @@
 #include <ColorPalettes.h>
 #include <exception.h>
 #include <Viewport.h>
+#include <GCoreFunctions.h>
 
 RootGUIConsole* RootGUIConsole::_instance = nullptr;
 
@@ -85,7 +86,7 @@ void RootGUIConsole::scrollDown() {
 
 void RootGUIConsole::resetFrameBuffer(uint32_t frameBufferAddress) {
   _frame.resetFrameBufferAddress((uint32_t*)frameBufferAddress);
-  _frame.fillRect(0, 0, _frame.viewport().width(), _frame.viewport().height(), 0xFF000000);
+  _frame.fillRect(0, 0, _frame.viewport().width(), _frame.viewport().height(), upanui::GCoreFunctions::ALPHA_MASK);
 }
 
 void RootGUIConsole::StartCursorBlink() {

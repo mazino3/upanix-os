@@ -34,7 +34,7 @@
 #include <BmpImage.h>
 #include <ColorPalettes.h>
 #include <RootGUIConsole.h>
-#include <ImageAlgo.h>
+#include <GCoreFunctions.h>
 
 extern unsigned _binary_mouse_cursor_bmp_start;
 //make below extern as you load bmp files during testing
@@ -107,7 +107,7 @@ void GraphicsVideo::Initialize() {
   upanui::BmpImage::Header header;
   upanui::BmpImage::InfoHeader infoHeader;
   auto rawImgBuffer = upanui::BmpImage::parse(&_binary_mouse_cursor_bmp_start, header, infoHeader, ColorPalettes::CP16::Get(ColorPalettes::CP16::FGColor::FG_RED));
-  auto mouseImgBuffer = upanui::ImageAlgo::resize(rawImgBuffer, infoHeader._width, infoHeader._height, 16, 16);
+  auto mouseImgBuffer = upanui::GCoreFunctions::resize(rawImgBuffer, infoHeader._width, infoHeader._height, 16, 16);
   _mouseCursor.reset(new upanui::MouseCursor(mouseImgBuffer, 0, 0, 16, 16));
   delete rawImgBuffer;
 
@@ -136,22 +136,23 @@ bool GraphicsVideo::TimerTrigger() {
   if(isDirty()) {
     upan::mutex_guard g(_fgProcessMutex);
     ProcessSwitchLock p;
+    memset((void*)_zBuffer, 0, _lfbSize);
     for(auto i = 0u; i < _fgProcesses.size(); ++i) {
       auto process = ProcessManager::Instance().GetProcess(_fgProcesses[i]);
       process.ifPresent([&](Process& p) {
         const auto& frame = p.getGuiFrame().value();
         const auto& viewport = frame.viewport();
         const auto buffer = frame.frameBuffer().buffer();
-        int destX1 = upan::min(upan::max(viewport.x1(), 0), (int)_width);
-        int destX2 = upan::min(upan::max(viewport.x2(), 0), (int)_width);
+        const int destX1 = upan::min(upan::max(viewport.x1(), 0), (int)_width);
+        const int destX2 = upan::min(upan::max(viewport.x2(), 0), (int)_width);
 
-        int destY1 = upan::min(upan::max(viewport.y1(), 0), (int)_height);
-        int destY2 = upan::min(upan::max(viewport.y2(), 0), (int)_height);
+        const int destY1 = upan::min(upan::max(viewport.y1(), 0), (int)_height);
+        const int destY2 = upan::min(upan::max(viewport.y2(), 0), (int)_height);
 
         if (destX1 < destX2 && destY1 < destY2) {
-          int srcX1 = destX1 - viewport.x1();
-          int srcY1 = destY1 - viewport.y1();
-          CopyArea(destX1, destY1, srcX1, srcY1, _width, (destX2 - destX1), (destY2 - destY1), buffer, 0x00);
+          const int srcX1 = destX1 - viewport.x1();
+          const int srcY1 = destY1 - viewport.y1();
+          CopyArea(destX1, destY1, srcX1, srcY1, _width, (destX2 - destX1), (destY2 - destY1), buffer);
         }
       });
     }
@@ -170,7 +171,7 @@ void GraphicsVideo::SetPixel(unsigned x, unsigned y, unsigned color)
   if(y >= _height || x >= _width)
     return;
   auto p = (unsigned*)(_zBuffer + y * _pitch + x * _bytesPerPixel);
-  *p = (color | 0xFF000000);
+  *p = (color | upanui::GCoreFunctions::ALPHA_MASK);
 
   NeedRefresh();
 }
@@ -183,7 +184,7 @@ void GraphicsVideo::FillRect(unsigned sx, unsigned sy, unsigned width, unsigned 
     for(unsigned x = sx; x < (sx + width) && x < _width; ++x)
     {
       auto p = (unsigned*)(_zBuffer + y_offset + x * _bytesPerPixel);
-      *p = (color | 0xFF000000);
+      *p = (color | upanui::GCoreFunctions::ALPHA_MASK);
     }
   }
 
@@ -256,24 +257,19 @@ void GraphicsVideo::DrawMouseCursor() {
   CopyArea(_mouseCursor->x(), _mouseCursor->y(),
            0, 0, _mouseCursor->width(),
            _mouseCursor->width(), _mouseCursor->height(),
-           _mouseCursor->data(), 0xAA);
+           _mouseCursor->data());
 }
 
 void GraphicsVideo::CopyArea(const uint32_t destX, const uint32_t destY,
                              const uint32_t srcX, const uint32_t srcY,
                              const uint32_t srcBufferWidth,
                              const uint32_t drawWidth, const uint32_t drawHeight,
-                             const uint32_t* src, const uint32_t alphaThresholdForTransparency) {
+                             const uint32_t* src) {
   for(auto sy = srcY, dy = destY; dy < (destY + drawHeight) && dy < _height; ++dy, ++sy) {
     const auto destOffset = dy * _width;
     const auto srcOffset = sy * srcBufferWidth;
     for(auto sx = srcX, dx = destX; sx < (srcX + drawWidth) && dx < _width; ++sx, ++dx) {
-      const auto v = src[sx + srcOffset];
-      //transparent color alpha --> TODO: blend with alpha of the underlying canvas
-      const auto alpha = v >> 24;
-      if (alpha > alphaThresholdForTransparency) {
-        ((uint32_t*)_zBuffer)[dx + destOffset] = v;
-      }
+      upanui::GCoreFunctions::setPixel(((uint32_t*)_zBuffer)[dx + destOffset], src[sx + srcOffset]);
     }
   }
 }

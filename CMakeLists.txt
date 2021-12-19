@@ -103,6 +103,9 @@ include_directories(${UPANLIB_SOURCE_DIR}/libustd/ds)
 include_directories(${UPANLIB_SOURCE_DIR}/libustd/mem)
 include_directories(${UPANLIB_SOURCE_DIR}/libustd/mthread)
 
+include_directories(${UPANLIB_SOURCE_DIR}/libm/include)
+include_directories(${UPANLIB_SOURCE_DIR}/libm/include/bits)
+
 include_directories(${PROJECT_SOURCE_DIR}/libmcpp/cal)
 
 include_directories(${UPANLIB_SOURCE_DIR}/libcxxrt)
@@ -161,10 +164,10 @@ add_dependencies(${TARGET_BIN} images)
 target_link_libraries(${TARGET_BIN} ${UPANLIB_OUT_DIR}/libcxxrt.a)
 target_link_libraries(${TARGET_BIN} mcpp)
 target_link_libraries(${TARGET_BIN} ${UPANLIB_OUT_DIR}/libusfn.a)
-target_link_libraries(${TARGET_BIN} ${UPANLIB_OUT_DIR}/libm.a)
 target_link_libraries(${TARGET_BIN} ${UPANLIB_OUT_DIR}/libgcceh.a)
 target_link_libraries(${TARGET_BIN} ${UPANLIB_OUT_DIR}/libustd.a)
 target_link_libraries(${TARGET_BIN} ${UPANLIB_OUT_DIR}/libupanui_interop.a)
+target_link_libraries(${TARGET_BIN} ${UPANLIB_OUT_DIR}/libm.a)
 target_link_libraries(${TARGET_BIN} ${UPANLIB_OUT_DIR}/libc.a)
 
 set_source_files_properties(${OTHER_OBJS} PROPERTIES EXTERNAL_OBJECT true GENERATED true)

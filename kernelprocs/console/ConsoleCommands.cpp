@@ -63,6 +63,7 @@
 #include <MouseEventHandler.h>
 #include <Button.h>
 #include <UIObjectFactory.h>
+#include <RoundCanvas.h>
 
 /**** Command Fucntion Declarations  *****/
 static void ConsoleCommands_ChangeDrive() ;
@@ -909,11 +910,26 @@ void graphics_test_process(int x, int y) {
   upanui::GraphicsContext::Init();
   auto& gc = upanui::GraphicsContext::Instance();
   auto& uiRoot = gc.initUIRoot(x, y, 400, 400, true);
-  uiRoot.backgroundColor(ColorPalettes::CP256::Get(100));
-  //uiRoot.backgroundColorAlpha(0);
+  uiRoot.backgroundColor(ColorPalettes::CP256::Get(15));
+  uiRoot.backgroundColorAlpha(50);
 
-  auto& cp1 = upanui::UIObjectFactory::createCanvas(uiRoot, 200, 200, 100, 100);
-  cp1.backgroundColor(ColorPalettes::CP256::Get(10));
+  auto& cc1 = upanui::UIObjectFactory::createRoundCanvas(uiRoot, 200, 50, 60, 60);
+  cc1.backgroundColor(ColorPalettes::CP256::Get(10));
+
+  auto& cp1c1 = upanui::UIObjectFactory::createRectangleCanvas(uiRoot, 180, 180, 130, 40);
+  cp1c1.backgroundColor(ColorPalettes::CP256::Get(0));
+  cp1c1.backgroundColorAlpha(25);
+
+  auto& cp1c2 = upanui::UIObjectFactory::createRectangleCanvas(uiRoot, 180, 220, 130, 40);
+  cp1c2.backgroundColor(ColorPalettes::CP256::Get(10));
+
+  auto& cp1c3 = upanui::UIObjectFactory::createRectangleCanvas(uiRoot, 180, 260, 130, 40);
+  cp1c3.backgroundColor(ColorPalettes::CP256::Get(20));
+  cp1c3.backgroundColorAlpha(25);
+
+  auto& cp1 = upanui::UIObjectFactory::createRectangleCanvas(uiRoot, 200, 200, 100, 100);
+  cp1.backgroundColorAlpha(70);
+  cp1.backgroundColor(ColorPalettes::CP256::Get(25));
 
   auto& ci1 = upanui::UIObjectFactory::createButton(cp1, 40, 10, 50, 30);
   ci1.backgroundColor(ColorPalettes::CP256::Get(25));
