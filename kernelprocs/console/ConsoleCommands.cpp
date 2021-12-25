@@ -912,6 +912,7 @@ void graphics_test_process(int x, int y) {
   auto& uiRoot = gc.initUIRoot(x, y, 400, 400, true);
   uiRoot.backgroundColor(ColorPalettes::CP256::Get(15));
   uiRoot.backgroundColorAlpha(50);
+  uiRoot.borderThickness(5);
 
   auto& cc1 = upanui::UIObjectFactory::createRoundCanvas(uiRoot, 200, 50, 60, 60);
   cc1.backgroundColor(ColorPalettes::CP256::Get(10));
