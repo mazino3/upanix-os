@@ -269,7 +269,7 @@ void GraphicsVideo::CopyArea(const uint32_t destX, const uint32_t destY,
     const auto destOffset = dy * _width;
     const auto srcOffset = sy * srcBufferWidth;
     for(auto sx = srcX, dx = destX; sx < (srcX + drawWidth) && dx < _width; ++sx, ++dx) {
-      upanui::GCoreFunctions::setPixel(((uint32_t*)_zBuffer)[dx + destOffset], src[sx + srcOffset]);
+      upanui::GCoreFunctions::setPixel(((uint32_t*)_zBuffer)[dx + destOffset], src[sx + srcOffset], false);
     }
   }
 }

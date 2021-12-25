@@ -914,8 +914,21 @@ void graphics_test_process(int x, int y) {
   uiRoot.backgroundColorAlpha(50);
   uiRoot.borderThickness(5);
 
-  auto& cc1 = upanui::UIObjectFactory::createRoundCanvas(uiRoot, 200, 50, 60, 60);
-  cc1.backgroundColor(ColorPalettes::CP256::Get(10));
+  auto& cc1 = upanui::UIObjectFactory::createRoundCanvas(uiRoot, 180, 20, 150, 150);
+  cc1.backgroundColor(ColorPalettes::CP256::Get(230));
+  cc1.borderColor(ColorPalettes::CP256::Get(177));
+  cc1.borderThickness(3);
+
+  auto& cpt = upanui::UIObjectFactory::createRectangleCanvas(uiRoot, -10, 180, 100, 100);
+  cpt.backgroundColor(ColorPalettes::CP256::Get(30));
+  cpt.backgroundColorAlpha(50);
+
+  auto& cpt1 = upanui::UIObjectFactory::createRectangleCanvas(cpt, -10, 20, 60, 60);
+  cpt1.backgroundColor(ColorPalettes::CP256::Get(0));
+  cpt1.borderColor(ColorPalettes::CP256::Get(255));
+  cpt1.borderThickness(2);
+  cpt1.backgroundColorAlpha(50);
+  cpt1.borderColorAlpha(50);
 
   auto& cp1c1 = upanui::UIObjectFactory::createRectangleCanvas(uiRoot, 180, 180, 130, 40);
   cp1c1.backgroundColor(ColorPalettes::CP256::Get(0));
