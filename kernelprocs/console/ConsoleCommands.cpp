@@ -953,6 +953,7 @@ void graphics_test_process(int x, int y) {
   auto& bp1 = upanui::UIObjectFactory::createButton(uiRoot, 50, 50, 100, 100);
   bp1.backgroundColor(btpColor);
   //bp1.backgroundColorAlpha(0);
+  bp1.borderThickness(3);
 
   const uint32_t btColor = ColorPalettes::CP256::Get(25);
   auto& b1 = upanui::UIObjectFactory::createButton(bp1, 50, 50, 30, 20);
@@ -960,6 +961,9 @@ void graphics_test_process(int x, int y) {
 
   auto& b2 = upanui::UIObjectFactory::createButton(bp1, 0, 50, 30, 20);
   b2.backgroundColor(btColor);
+
+  auto& b2a = upanui::UIObjectFactory::createButton(bp1, bp1.borderThickness(), 75, 30, 20);
+  b2a.backgroundColor(btColor);
 
   auto& b3 = upanui::UIObjectFactory::createButton(bp1, 50, 0, 30, 20);
   b3.backgroundColor(btColor);
@@ -976,7 +980,7 @@ void graphics_test_process(int x, int y) {
   auto& b7 = upanui::UIObjectFactory::createButton(bp1, 80, 50, 30, 20);
   b7.backgroundColor(btColor);
 
-  auto& b8 = upanui::UIObjectFactory::createButton(bp1, 80, 90, 30, 20);
+  auto& b8 = upanui::UIObjectFactory::createButton(bp1, 80, 85, 30, 20);
   b8.backgroundColor(btColor);
 
   auto& b9 = upanui::UIObjectFactory::createButton(bp1, 30, 90, 30, 20);
