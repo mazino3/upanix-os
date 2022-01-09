@@ -914,10 +914,19 @@ void graphics_test_process(int x, int y) {
   uiRoot.backgroundColorAlpha(50);
   uiRoot.borderThickness(5);
 
-  auto& cc1 = upanui::UIObjectFactory::createRoundCanvas(uiRoot, 180, 20, 150, 150);
+  auto& cc1 = upanui::UIObjectFactory::createRoundCanvas(uiRoot, 120, 10, 120, 120);
   cc1.backgroundColor(ColorPalettes::CP256::Get(230));
+  cc1.backgroundColorAlpha(80);
   cc1.borderColor(ColorPalettes::CP256::Get(177));
-  cc1.borderThickness(3);
+  cc1.borderColorAlpha(100);
+  cc1.borderThickness(10);
+
+  auto& cc2 = upanui::UIObjectFactory::createRoundCanvas(uiRoot, 250, 10, 120, 120);
+  cc2.backgroundColor(ColorPalettes::CP256::Get(230));
+  cc2.backgroundColorAlpha(100);
+  cc2.borderColor(ColorPalettes::CP256::Get(177));
+  cc2.borderColorAlpha(100);
+  cc2.borderThickness(10);
 
   auto& cpt = upanui::UIObjectFactory::createRectangleCanvas(uiRoot, -10, 180, 100, 100);
   cpt.backgroundColor(ColorPalettes::CP256::Get(30));
@@ -964,7 +973,7 @@ void graphics_test_process(int x, int y) {
 
   const uint32_t btpColor = ColorPalettes::CP256::Get(10);
 
-  auto& bp1 = upanui::UIObjectFactory::createButton(uiRoot, 50, 50, 100, 100);
+  auto& bp1 = upanui::UIObjectFactory::createButton(uiRoot, 10, 50, 100, 100);
   bp1.backgroundColor(btpColor);
   //bp1.backgroundColorAlpha(0);
   bp1.borderThickness(3);
