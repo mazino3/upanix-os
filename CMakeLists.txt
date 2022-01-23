@@ -95,8 +95,6 @@ include_directories(${UPANLIB_SOURCE_DIR}/libc/stdio)
 include_directories(${UPANLIB_SOURCE_DIR}/libc/sysdeps/mos/common/)
 include_directories(${UPANLIB_SOURCE_DIR}/libc/sysdeps/mos/common/bits)
 
-include_directories(${UPANLIB_SOURCE_DIR}/libusfn)
-
 include_directories(${UPANLIB_SOURCE_DIR}/libustd/infra)
 include_directories(${UPANLIB_SOURCE_DIR}/libustd/algo)
 include_directories(${UPANLIB_SOURCE_DIR}/libustd/ds)
@@ -164,7 +162,6 @@ add_dependencies(${TARGET_BIN} images)
 
 target_link_libraries(${TARGET_BIN} ${UPANLIB_OUT_DIR}/libcxxrt.a)
 target_link_libraries(${TARGET_BIN} mcpp)
-target_link_libraries(${TARGET_BIN} ${UPANLIB_OUT_DIR}/libusfn.a)
 target_link_libraries(${TARGET_BIN} ${UPANLIB_OUT_DIR}/libgcceh.a)
 target_link_libraries(${TARGET_BIN} ${UPANLIB_OUT_DIR}/libustd.a)
 target_link_libraries(${TARGET_BIN} ${UPANLIB_OUT_DIR}/libupanui_interop.a)

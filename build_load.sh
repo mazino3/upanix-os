@@ -94,14 +94,14 @@ fi
 echo "BIN FILE: `ls -l bin/upanix.elf`"
 
 sleep 2
-echo $SUDO_PW | sudo -S mount /dev/mapper/$MOUNTP usb_boot/MntUSB
+echo $SUDO_PW | sudo -S mount /dev/mapper/$MOUNTP USBImage/mnt
 
 if [ $? -ne 0 ]
 then
   exit 100
 fi
 
-echo $SUDO_PW | sudo -S cp -f bin/upanix.elf usb_boot/MntUSB/efi/boot/
+echo $SUDO_PW | sudo -S cp -f bin/upanix.elf USBImage/mnt/efi/boot/
 sleep 2
 echo $SUDO_PW | sudo -S umount /dev/mapper/$MOUNTP
 
