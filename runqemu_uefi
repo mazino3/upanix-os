@@ -71,7 +71,7 @@ sleep 1
 
 qemu-system-x86_64 \
 -serial file:serial_debug.log \
--L $UPANIX_HOME/ovmf.$OVMF_VERSION \
+-L $UPANIX_TOOLS/ovmf.$OVMF_VERSION \
 -bios OVMF.fd \
 -m 256 \
 -smp 1 \
