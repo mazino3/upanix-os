@@ -19,6 +19,9 @@
 #	 You should have received a copy of the GNU General Public License
 #	 along with this program.  If not, see <http://www.gnu.org/licenses/
 
+gateway=`ip route | grep "^default via" | cut -d" " -f3`
+echo "gateway ip $gateway"
+
 sudo brctl addbr br0
 echo "created bridge br0"
 
@@ -45,9 +48,6 @@ echo "assigned ipconfig of eth0 to br0"
 
 sudo ifconfig eth0 0.0.0.0
 echo "remove ip for eth0"
-
-gateway=`ip route | grep "^default via" | cut -d" " -f3`
-echo "gateway ip $gateway"
 
 sudo ip route add default via $gateway dev br0
 echo "added default route for br0 via gateway $gateway"
