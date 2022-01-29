@@ -46,8 +46,8 @@ echo "assigned ipconfig of eth0 to br0"
 sudo ifconfig eth0 0.0.0.0
 echo "remove ip for eth0"
 
-dns=`cat /etc/resolv.conf | grep name | cut -d" " -f2`
-echo "dns ip $dns"
+gateway=`ip route | grep "^default via" | cut -d" " -f3
+echo "gateway ip $gateway"
 
-sudo ip route add default via $dns dev br0
-echo "added default route for br0 via dns $dns"
+sudo ip route add default via $gateway dev br0
+echo "added default route for br0 via gateway $gateway"
