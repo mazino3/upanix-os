@@ -46,7 +46,7 @@ echo "assigned ipconfig of eth0 to br0"
 sudo ifconfig eth0 0.0.0.0
 echo "remove ip for eth0"
 
-gateway=`ip route | grep "^default via" | cut -d" " -f3
+gateway=`ip route | grep "^default via" | cut -d" " -f3`
 echo "gateway ip $gateway"
 
 sudo ip route add default via $gateway dev br0
