@@ -20,28 +20,18 @@
 #	 along with this program.  If not, see <http://www.gnu.org/licenses/
 . setup.sh
 
-SUDO_PW=""
-if [ -f ~/.sudopw ]
-then
-  SUDO_PW=`cat ~/.sudopw`
-else
-  echo "Don't find .sudopw file. Create a (secure) file .sudopw containing sudo password"
-  exit 1
-fi
-
 #BOOT_FLOPPY_IMG=GrubFloppy_ext.img
 if [ "$BOOT_FLOPPY_IMG" != "" ]
 then
-  echo $SUDO_PW | sudo -S mount floppy/${BOOT_FLOPPY_IMG} floppy/MntFloppy -o loop 
+  sudo mount floppy/${BOOT_FLOPPY_IMG} floppy/MntFloppy -o loop 
 
   if [ $? -ne 0 ]
   then
     exit 100
   fi
 
-  echo $SUDO_PW | sudo -S cp -f bin/upanix.elf floppy/MntFloppy/boot
-
-  echo $SUDO_PW | sudo -S umount floppy/MntFloppy 
+  sudo cp -f bin/upanix.elf floppy/MntFloppy/boot
+  sudo umount floppy/MntFloppy 
 fi
 
 if [ "$BOOT_USB_DEVICE_NAME" = "" -a "$BOOT_USB_DEVICE_ID" != "" ]
@@ -86,23 +76,23 @@ fi
 
 if [ "$LOOP_DEVICE" = "" ]
 then
-  echo $SUDO_PW | sudo -S kpartx -d "$DEV"
-  MOUNTP=`echo $SUDO_PW | sudo -S kpartx -av "$DEV" | head -1 | cut -d" " -f3`
+  sudo kpartx -d "$DEV"
+  MOUNTP=`sudo kpartx -av "$DEV" | head -1 | cut -d" " -f3`
   echo "Create new device mount: $MOUNTP"
 fi
 
 echo "BIN FILE: `ls -l bin/upanix.elf`"
 
 sleep 2
-echo $SUDO_PW | sudo -S mount /dev/mapper/$MOUNTP USBImage/mnt
+sudo mount /dev/mapper/$MOUNTP USBImage/mnt
 
 if [ $? -ne 0 ]
 then
   exit 100
 fi
 
-echo $SUDO_PW | sudo -S cp -f bin/upanix.elf USBImage/mnt/efi/boot/
+sudo cp -f bin/upanix.elf USBImage/mnt/efi/boot/
 sleep 2
-echo $SUDO_PW | sudo -S umount /dev/mapper/$MOUNTP
+sudo umount /dev/mapper/$MOUNTP
 
 echo "installed..."
