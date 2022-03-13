@@ -64,6 +64,7 @@
 #include <Button.h>
 #include <UIObjectFactory.h>
 #include <RoundCanvas.h>
+#include <Line.h>
 
 /**** Command Fucntion Declarations  *****/
 static void ConsoleCommands_ChangeDrive() ;
@@ -906,7 +907,7 @@ public:
   }
 };
 
-void graphics_test_process(int x, int y) {
+void graphics_test_process_canvas(int x, int y) {
   upanui::GraphicsContext::Init();
   auto& gc = upanui::GraphicsContext::Instance();
   auto& uiRoot = gc.initUIRoot(x, y, 400, 400, true);
@@ -970,13 +971,12 @@ void graphics_test_process(int x, int y) {
   auto& c5 = upanui::UIObjectFactory::createButton(c1, -10, 35, 80, 10);
   c5.backgroundColor(ColorPalettes::CP256::Get(75));
 
-
   const uint32_t btpColor = ColorPalettes::CP256::Get(10);
 
   auto& bp1 = upanui::UIObjectFactory::createButton(uiRoot, 10, 50, 100, 100);
   bp1.backgroundColor(btpColor);
   //bp1.backgroundColorAlpha(0);
-  bp1.borderThickness(3);
+  bp1.borderThickness(5);
 
   const uint32_t btColor = ColorPalettes::CP256::Get(25);
   auto& b1 = upanui::UIObjectFactory::createButton(bp1, 50, 50, 30, 20);
@@ -1019,18 +1019,62 @@ void graphics_test_process(int x, int y) {
   exit(0);
 }
 
+void graphics_test_process_line(int x, int y) {
+  upanui::GraphicsContext::Init();
+  auto& gc = upanui::GraphicsContext::Instance();
+  auto& uiRoot = gc.initUIRoot(x, y, 400, 400, true);
+  uiRoot.backgroundColor(ColorPalettes::CP256::Get(15));
+  uiRoot.backgroundColorAlpha(50);
+  uiRoot.borderThickness(5);
+
+  auto& line1 = upanui::UIObjectFactory::createLine(uiRoot, 10, 10, 200, 300);
+  line1.backgroundColor(ColorPalettes::CP256::Get(230));
+  line1.borderThickness(10);
+
+  auto& line2 = upanui::UIObjectFactory::createLine(uiRoot, 200, 10, 20, 300);
+  line2.backgroundColor(ColorPalettes::CP256::Get(190));
+  line2.borderThickness(10);
+
+  auto& line3 = upanui::UIObjectFactory::createLine(uiRoot, 20, 200, 200, 220);
+  line3.backgroundColor(ColorPalettes::CP256::Get(190));
+  line3.borderThickness(10);
+
+  auto& line4 = upanui::UIObjectFactory::createLine(uiRoot, 20, 250, 200, 230);
+  line4.backgroundColor(ColorPalettes::CP256::Get(190));
+  line4.borderThickness(10);
+
+  auto& line5 = upanui::UIObjectFactory::createLine(uiRoot, 100, 300, 200, 200);
+  line5.backgroundColor(ColorPalettes::CP256::Get(100));
+  line5.borderThickness(10);
+
+  TestMouseHandler mouseHandler;
+  uiRoot.onDrag(mouseHandler);
+//  bp1.addMouseEventHandler(mouseHandler);
+  //b1.addMouseEventHandler(mouseHandler);
+
+  gc.eventManager().startEventLoop();
+
+  exit(0);
+}
+
 int testg_id = 0;
 void ConsoleCommands_TestGraphics() {
-  if (CommandLineParser::Instance().GetNoOfParameters() != 2) {
-    throw upan::exception(XLOC, "parameters x & y required");
+  if (CommandLineParser::Instance().GetNoOfParameters() != 3) {
+    throw upan::exception(XLOC, "parameters type, x & y are required");
   }
+
+  int type = atoi(CommandLineParser::Instance().GetParameterAt(0));
   upan::vector<uint32_t> params;
-  params.push_back(atoi(CommandLineParser::Instance().GetParameterAt(0)));
   params.push_back(atoi(CommandLineParser::Instance().GetParameterAt(1)));
+  params.push_back(atoi(CommandLineParser::Instance().GetParameterAt(2)));
 
   upan::string pname("testg");
   pname += upan::string::to_string(testg_id++);
-  ProcessManager::Instance().CreateKernelProcess(pname, (unsigned) &graphics_test_process, NO_PROCESS_ID, true, params);
+  if (type == 1) {
+    ProcessManager::Instance().CreateKernelProcess(pname, (unsigned) &graphics_test_process_canvas, NO_PROCESS_ID, true, params);
+  } else {
+    ProcessManager::Instance().CreateKernelProcess(pname, (unsigned) &graphics_test_process_line, NO_PROCESS_ID, true, params);
+  }
 }
 
 extern void TestMTerm() ;
@@ -1170,7 +1214,7 @@ void _DisplayReadStat()
 }
 
 void aThread(void* x) {
-  uint32_t n = (uint32_t)x;
+  const int n = (int)x;
   printf("\n Running thread: %u", n);
   for(int i = 0; i < n; ++i) {
     printf("\nCounter: %d", i);
