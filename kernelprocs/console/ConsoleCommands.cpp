@@ -1022,30 +1022,90 @@ void graphics_test_process_canvas(int x, int y) {
 void graphics_test_process_line(int x, int y) {
   upanui::GraphicsContext::Init();
   auto& gc = upanui::GraphicsContext::Instance();
-  auto& uiRoot = gc.initUIRoot(x, y, 400, 400, true);
+  auto& uiRoot = gc.initUIRoot(x, y, 500, 400, true);
   uiRoot.backgroundColor(ColorPalettes::CP256::Get(15));
   uiRoot.backgroundColorAlpha(50);
   uiRoot.borderThickness(5);
 
-  auto& line1 = upanui::UIObjectFactory::createLine(uiRoot, 10, 10, 200, 300);
-  line1.backgroundColor(ColorPalettes::CP256::Get(230));
-  line1.borderThickness(10);
+  auto& lineh = upanui::UIObjectFactory::createLine(uiRoot, 10, 20, 100, 20);
+  lineh.backgroundColor(ColorPalettes::CP256::Get(190));
+  lineh.borderThickness(10);
 
-  auto& line2 = upanui::UIObjectFactory::createLine(uiRoot, 200, 10, 20, 300);
+  auto& linev = upanui::UIObjectFactory::createLine(uiRoot, 110, 10, 110, 50);
+  linev.backgroundColor(ColorPalettes::CP256::Get(190));
+  linev.borderThickness(10);
+
+  auto& line2 = upanui::UIObjectFactory::createLine(uiRoot, 320, 10, 340, 300);
   line2.backgroundColor(ColorPalettes::CP256::Get(190));
-  line2.borderThickness(10);
+  line2.borderThickness(25);
+  line2.backgroundColorAlpha(100);
+
+  auto& line2a = upanui::UIObjectFactory::createLine(uiRoot, 350, 10, 370, 300);
+  line2a.backgroundColor(ColorPalettes::CP256::Get(190));
+  line2a.borderThickness(25);
+  line2a.backgroundColorAlpha(50);
+
+  auto& line2o = upanui::UIObjectFactory::createLine(uiRoot, 430, 10, 410, 300);
+  line2o.backgroundColor(ColorPalettes::CP256::Get(190));
+  line2o.borderThickness(25);
+  line2o.backgroundColorAlpha(100);
+
+  auto& line2oa = upanui::UIObjectFactory::createLine(uiRoot, 460, 10, 440, 300);
+  line2oa.backgroundColor(ColorPalettes::CP256::Get(190));
+  line2oa.borderThickness(25);
+  line2oa.backgroundColorAlpha(50);
+
+  auto& line21 = upanui::UIObjectFactory::createLine(uiRoot, 260, 10, 280, 300);
+  line21.backgroundColor(ColorPalettes::CP256::Get(190));
+  line21.borderThickness(2);
+
+  auto& line21o = upanui::UIObjectFactory::createLine(uiRoot, 310, 10, 290, 300);
+  line21o.backgroundColor(ColorPalettes::CP256::Get(190));
+  line21o.borderThickness(2);
+
+  auto& line22 = upanui::UIObjectFactory::createLine(uiRoot, 200, 10, 220, 300);
+  line22.backgroundColor(ColorPalettes::CP256::Get(190));
+  line22.borderThickness(1);
+
+  auto& line22o = upanui::UIObjectFactory::createLine(uiRoot, 250, 10, 230, 300);
+  line22o.backgroundColor(ColorPalettes::CP256::Get(190));
+  line22o.borderThickness(1);
 
   auto& line3 = upanui::UIObjectFactory::createLine(uiRoot, 20, 200, 200, 220);
   line3.backgroundColor(ColorPalettes::CP256::Get(190));
-  line3.borderThickness(10);
+  line3.borderThickness(25);
+  line3.backgroundColorAlpha(100);
 
-  auto& line4 = upanui::UIObjectFactory::createLine(uiRoot, 20, 250, 200, 230);
-  line4.backgroundColor(ColorPalettes::CP256::Get(190));
-  line4.borderThickness(10);
+  auto& line3a = upanui::UIObjectFactory::createLine(uiRoot, 20, 230, 200, 250);
+  line3a.backgroundColor(ColorPalettes::CP256::Get(190));
+  line3a.borderThickness(25);
+  line3a.backgroundColorAlpha(50);
 
-  auto& line5 = upanui::UIObjectFactory::createLine(uiRoot, 100, 300, 200, 200);
-  line5.backgroundColor(ColorPalettes::CP256::Get(100));
-  line5.borderThickness(10);
+  auto& line3o = upanui::UIObjectFactory::createLine(uiRoot, 20, 350, 200, 330);
+  line3o.backgroundColor(ColorPalettes::CP256::Get(190));
+  line3o.borderThickness(25);
+  line3o.backgroundColorAlpha(100);
+
+  auto& line3oa = upanui::UIObjectFactory::createLine(uiRoot, 20, 380, 200, 360);
+  line3oa.backgroundColor(ColorPalettes::CP256::Get(190));
+  line3oa.borderThickness(25);
+  line3oa.backgroundColorAlpha(50);
+
+  auto& line31 = upanui::UIObjectFactory::createLine(uiRoot, 20, 50, 200, 70);
+  line31.backgroundColor(ColorPalettes::CP256::Get(190));
+  line31.borderThickness(1);
+
+  auto& line31o = upanui::UIObjectFactory::createLine(uiRoot, 20, 100, 200, 80);
+  line31o.backgroundColor(ColorPalettes::CP256::Get(190));
+  line31o.borderThickness(1);
+
+  auto& line32 = upanui::UIObjectFactory::createLine(uiRoot, 20, 110, 200, 130);
+  line32.backgroundColor(ColorPalettes::CP256::Get(190));
+  line32.borderThickness(2);
+
+  auto& line32o = upanui::UIObjectFactory::createLine(uiRoot, 20, 160, 200, 140);
+  line32o.backgroundColor(ColorPalettes::CP256::Get(190));
+  line32o.borderThickness(2);
 
   TestMouseHandler mouseHandler;
   uiRoot.onDrag(mouseHandler);
