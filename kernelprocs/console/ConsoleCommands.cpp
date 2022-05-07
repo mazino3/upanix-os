@@ -65,6 +65,7 @@
 #include <UIObjectFactory.h>
 #include <RoundCanvas.h>
 #include <Line.h>
+#include <GCoreFunctions.h>
 
 /**** Command Fucntion Declarations  *****/
 static void ConsoleCommands_ChangeDrive() ;
@@ -1099,6 +1100,156 @@ void graphics_test_process_line(int x, int y) {
   exit(0);
 }
 
+void graphics_test_flag(int x, int y) {
+  upanui::GraphicsContext::Init();
+  auto& gc = upanui::GraphicsContext::Instance();
+  auto& uiRoot = gc.initUIRoot(x, y, 450, 300, true);
+  uiRoot.backgroundColor(ColorPalettes::CP256::Get(15));
+
+  auto& orange = upanui::UIObjectFactory::createRectangleCanvas(uiRoot, 0, 0, 450, 100);
+  orange.backgroundColor(0xFF9933);
+
+  auto& white = upanui::UIObjectFactory::createRectangleCanvas(uiRoot, 0, 100, 450, 100);
+  white.backgroundColor(ColorPalettes::CP256::Get(255));
+
+  auto& green = upanui::UIObjectFactory::createRectangleCanvas(uiRoot, 0, 200, 450, 100);
+  green.backgroundColor(0x138808);
+
+  int r = 45;
+  int cx = 225;
+  int cy = 150;
+  float spokeXf[] = { 0.13053, 0.38268, 0.60876};
+  float spokeYf[] = { 0.99144, 0.92388, 0.7933 };
+
+  int spokeX[24], spokeY[24];
+  for(int i = 0; i < 3; ++i) {
+    spokeX[i] = roundtoi(spokeXf[i] * r);
+    spokeY[i] = roundtoi(spokeYf[i] * r);
+
+    spokeX[5 - i] = spokeY[i];
+    spokeY[5 - i] = spokeX[i];
+
+    spokeX[6 + i] = spokeX[5 - i];
+    spokeY[6 + i] = -spokeY[5 - i];
+
+    spokeX[17 - i] = -spokeX[5 - i];
+    spokeY[17 - i] = -spokeY[5 - i];
+
+    spokeX[18 + i] = -spokeX[5 - i];
+    spokeY[18 + i] = spokeY[5 - i];
+
+    spokeX[11 - i] = spokeX[i];
+    spokeY[11 - i] = -spokeY[i];
+
+    spokeX[12 + i] = -spokeX[i];
+    spokeY[12 + i] = -spokeY[i];
+
+    spokeX[23 - i] = -spokeX[i];
+    spokeY[23 - i] = spokeY[i];
+  }
+
+  for(int i = 0; i < 24; ++i) {
+    const auto x = cx + spokeX[i];
+    const auto y = cy - spokeY[i];
+    auto& line = upanui::UIObjectFactory::createLine(uiRoot, cx, cy, x, y, 1);
+    line.backgroundColor(ColorPalettes::CP256::Get(4));
+  }
+
+  auto& wheel = upanui::UIObjectFactory::createRoundCanvas(uiRoot, cx - r - 1, cy - r - 1, 2 * (r + 1), 2 * (r + 1));
+  wheel.borderColor(ColorPalettes::CP256::Get(4));
+  wheel.borderThickness(5);
+  wheel.backgroundColorAlpha(0);
+
+  TestMouseHandler mouseHandler;
+  uiRoot.onDrag(mouseHandler);
+//  bp1.addMouseEventHandler(mouseHandler);
+  //b1.addMouseEventHandler(mouseHandler);
+
+  gc.eventManager().startEventLoop();
+
+  exit(0);
+}
+
+int secondsX[60], secondsY[60];
+void seconds_thread(void* pLine) {
+  upanui::Line& line = *static_cast<upanui::Line*>(pLine);
+  int i = 0;
+  int cx = 200;
+  int cy = 200;
+  while(true) {
+    const auto x = cx + secondsX[i];
+    const auto y = cy - secondsY[i];
+    line.updateXY(cx, cy, x, y);
+    i = (i + 1) % 60;
+    sleepms(1000);
+  }
+}
+
+void graphics_test_clock(int x, int y) {
+  upanui::GraphicsContext::Init();
+  auto& gc = upanui::GraphicsContext::Instance();
+  auto& uiRoot = gc.initUIRoot(x, y, 400, 400, true);
+  uiRoot.backgroundColor(ColorPalettes::CP256::Get(15));
+  uiRoot.backgroundColorAlpha(50);
+  uiRoot.borderThickness(5);
+
+  int r = 100;
+  int cx = 200;
+  int cy = 200;
+  float secondsXf[] = { 0.0, 0.10453, 0.20791, 0.30901, 0.40673, 0.5, 0.5878, 0.66913 };
+  float secondsYf[] = { 1.0, 0.99452, 0.97815, 0.95105, 0.91354, 0.86602, 0.80901, 0.74314 };
+
+  for(int i = 0; i < 8; ++i) {
+    secondsX[i] = roundtoi(secondsXf[i] * r);
+    secondsY[i] = roundtoi(secondsYf[i] * r);
+
+    if (i == 0) {
+      secondsX[i + 15] = secondsY[i];
+      secondsY[i + 15] = secondsX[i];
+
+      secondsX[i + 30] = secondsX[i];
+      secondsY[i + 30] = -secondsY[i];
+
+      secondsX[i + 45] = -secondsX[i + 15];
+      secondsY[i + 45] = secondsY[i + 15];
+    } else {
+      secondsX[15 - i] = secondsY[i];
+      secondsY[15 - i] = secondsX[i];
+
+      secondsX[15 + i] = secondsX[15 - i];
+      secondsY[15 + i] = -secondsY[15 - i];
+
+      secondsX[45 - i] = -secondsX[15 - i];
+      secondsY[45 - i] = -secondsY[15 - i];
+
+      secondsX[45 + i] = -secondsX[15 - i];
+      secondsY[45 + i] = secondsY[15 - i];
+
+      secondsX[30 - i] = secondsX[i];
+      secondsY[30 - i] = -secondsY[i];
+
+      secondsX[30 + i] = -secondsX[i];
+      secondsY[30 + i] = -secondsY[i];
+
+      secondsX[60 - i] = -secondsX[i];
+      secondsY[60 - i] = secondsY[i];
+    }
+  }
+
+  auto& line = upanui::UIObjectFactory::createLine(uiRoot, cx, cy, cx + secondsX[0], cy - secondsY[0], 1);
+  line.backgroundColor(ColorPalettes::CP256::Get(190));
+  auto thread_id = exect(seconds_thread, &line);
+
+  TestMouseHandler mouseHandler;
+  uiRoot.onDrag(mouseHandler);
+//  bp1.addMouseEventHandler(mouseHandler);
+  //b1.addMouseEventHandler(mouseHandler);
+
+  gc.eventManager().startEventLoop();
+
+  exit(0);
+}
+
 int testg_id = 0;
 void ConsoleCommands_TestGraphics() {
   if (CommandLineParser::Instance().GetNoOfParameters() != 3) {
@@ -1112,10 +1263,29 @@ void ConsoleCommands_TestGraphics() {
 
   upan::string pname("testg");
   pname += upan::string::to_string(testg_id++);
-  if (type == 1) {
-    ProcessManager::Instance().CreateKernelProcess(pname, (unsigned) &graphics_test_process_canvas, NO_PROCESS_ID, true, params);
-  } else {
-    ProcessManager::Instance().CreateKernelProcess(pname, (unsigned) &graphics_test_process_line, NO_PROCESS_ID, true, params);
+  switch(type) {
+    case 1: {
+      ProcessManager::Instance().CreateKernelProcess(pname, (unsigned) &graphics_test_process_canvas, NO_PROCESS_ID, true, params);
+    }
+    break;
+
+    case 2: {
+      ProcessManager::Instance().CreateKernelProcess(pname, (unsigned) &graphics_test_process_line, NO_PROCESS_ID, true, params);
+    }
+    break;
+
+    case 3: {
+      ProcessManager::Instance().CreateKernelProcess(pname, (unsigned) &graphics_test_clock, NO_PROCESS_ID, true, params);
+    }
+    break;
+
+    case 4: {
+      ProcessManager::Instance().CreateKernelProcess(pname, (unsigned) &graphics_test_flag, NO_PROCESS_ID, true, params);
+    }
+    break;
+
+    default:
+      printf("\n Invalid graphics test id: %d", type);
   }
 }
 
