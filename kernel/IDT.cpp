@@ -205,7 +205,7 @@ IDT::IDT()
 	IDT::IDTRegister IDTR ;
 
 	IDTR.limit = MAX_IDT_ENTRIES * sizeof(IDT::IDTEntry) ;
-	IDTR.base = MEM_IDT_START ;
+	IDTR.base = IDT_BASE_ADDR ;
 
 	__asm__ __volatile__("LIDT (%0)" : : "r"(&IDTR)) ;
   KC::MConsole().LoadMessage("IDT Initialization", Success) ;
@@ -252,7 +252,7 @@ void IDT::LoadDefaultHadlers()
 
 void IDT::LoadEntry(unsigned uiIDTNo, unsigned uiOffset, unsigned short usSelector, byte bOptions)
 {
-	IDT::IDTEntry* idtEntry = (IDT::IDTEntry*)(MEM_IDT_START) + uiIDTNo ;
+	IDT::IDTEntry* idtEntry = (IDT::IDTEntry*)(IDT_BASE_ADDR) + uiIDTNo ;
 	
 	__asm__ __volatile__("push %ds") ;
 	MemUtil_SetDS(SYS_LINEAR_SELECTOR_DEFINED) ;

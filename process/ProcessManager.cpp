@@ -57,7 +57,7 @@ ProcessManager::ProcessManager() {
 
   PIT_SetContextSwitch(false) ;
 
-	TaskState* sysTSS = (TaskState*)(MEM_SYS_TSS_START - GLOBAL_DATA_SEGMENT_BASE) ;
+	TaskState* sysTSS = (TaskState*)(SYS_TSS_BASE_ADDR - GLOBAL_DATA_SEGMENT_BASE) ;
   memset(sysTSS, 0, sizeof(TaskState));
 	sysTSS->CR3_PDBR = MEM_PDBR ;
 	sysTSS->DEBUG_T_BIT = 0 ;
@@ -116,7 +116,7 @@ Process& ProcessManager::GetCurrentPAS() {
 
 void ProcessManager::BuildCallGate(unsigned short usGateSelector, unsigned uiOffset, unsigned short usSelector, byte bParameterCount)
 {
-	GateDescriptor* gateEntry = (GateDescriptor*)(MEM_GDT_START + usGateSelector) ;
+	GateDescriptor* gateEntry = (GateDescriptor*)(GDT_BASE_ADDR + usGateSelector) ;
 	
 	__asm__ __volatile__("push %ds") ;
 	MemUtil_SetDS(SYS_LINEAR_SELECTOR_DEFINED) ;
@@ -132,7 +132,7 @@ void ProcessManager::BuildCallGate(unsigned short usGateSelector, unsigned uiOff
 
 void ProcessManager::BuildIntGate(unsigned short usGateSelector, unsigned uiOffset, unsigned short usSelector, byte bParameterCount)
 {
-	GateDescriptor* gateEntry = (GateDescriptor*)(MEM_GDT_START + usGateSelector) ;
+	GateDescriptor* gateEntry = (GateDescriptor*)(GDT_BASE_ADDR + usGateSelector) ;
 	
 	__asm__ __volatile__("push %ds") ;
 	MemUtil_SetDS(SYS_LINEAR_SELECTOR_DEFINED) ;

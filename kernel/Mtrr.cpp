@@ -23,9 +23,11 @@
 #include <Mtrr.h>
 #include <stdio.h>
 #include <Pat.h>
+#include "PortCom.h"
+#include "ConsoleCommands.h"
 
 Mtrr::Mtrr() {
-  _isSupported = Cpu::Instance().HasSupport(CF_MSR) && Cpu::Instance().HasSupport(CF_MTTR);
+  _isSupported = Cpu::Instance().HasSupport(CF_MSR) && Cpu::Instance().HasSupport(CF_MTRR);
   if (_isSupported) {
     printf("\nMTRR is supported");
     _capReg = static_cast<CapReg>(Cpu::Instance().MSRread(IA32_MTRR_CAP));
@@ -34,12 +36,23 @@ Mtrr::Mtrr() {
     _defType = static_cast<DefType>(Cpu::Instance().MSRread(IA32_MTRR_DEF_TYPE));
     _defType.Print();
 
-    for(uint32_t i = 0; i < _capReg.noOfVariableSizeRangeRegisters(); ++i) {
-      const auto base = Cpu::Instance().MSRread(IA32_MTRR_PHY_BASEn + i * 2);
-      const auto mask = Cpu::Instance().MSRread(IA32_MTRR_PHY_MASKn + i * 2);
-      VarRR varRR(base, mask);
-      varRR.Print();
-      _varRRs.push_back(varRR);
+    if(_defType.isMTRREnabled()) {
+      if (_defType.isFixedRangeMTRREnabled()) {
+        _fixedR._fixed64 = Cpu::Instance().MSRread(IA32_MTRR_FIXED64K);
+        _fixedR._fixed16[0] = Cpu::Instance().MSRread(IA32_MTRR_FIXED16K);
+        _fixedR._fixed16[1] = Cpu::Instance().MSRread(IA32_MTRR_FIXED16K + 1);
+        for (int i = 0; i < 8; ++i) {
+          _fixedR._fixed4[i] = Cpu::Instance().MSRread(IA32_MTRR_FIXED4K + i);
+        }
+      }
+
+      for (uint32_t i = 0; i < _capReg.noOfVariableSizeRangeRegisters(); ++i) {
+        const auto base = Cpu::Instance().MSRread(IA32_MTRR_PHY_BASEn + i * 2);
+        const auto mask = Cpu::Instance().MSRread(IA32_MTRR_PHY_MASKn + i * 2);
+        VarRR varRR(base, mask);
+        varRR.Print();
+        _varRRs.push_back(varRR);
+      }
     }
 
     if (_capReg.isWriteCombiningMemTypeSupported() && Pat::Instance().isSupported()) {

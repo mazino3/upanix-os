@@ -48,7 +48,7 @@ void Acpi::ReadRootTable(const Acpi::Rsdp& rsdp, upan::list<uint32_t>& headerAdd
 {
   printf("\n ACPI Revision: %d", rsdp.Revision());
   printf("\n ACPI Root SysTable Addr: %x", rsdp.RootSystemTableAddr());
-  uint32_t mappedAddr = MapAcpiArea(rsdp.RootSystemTableAddr());
+  uint32_t mappedAddr = rsdp.RootSystemTableAddr();
   const Acpi::Header* table = reinterpret_cast<Acpi::Header*>(mappedAddr);
   if(!table->IsRootTable())
     return;
@@ -59,7 +59,8 @@ void Acpi::ReadRootTable(const Acpi::Rsdp& rsdp, upan::list<uint32_t>& headerAdd
 
 void Acpi::ReadHeader(uint32_t headerAddress)
 {
-  uint32_t mappedAddr = MapAcpiArea(headerAddress);
+  printf("\n ACPI Table Header Addr: %x", headerAddress);
+  uint32_t mappedAddr = headerAddress;
   const Acpi::Header* header = reinterpret_cast<Acpi::Header*>(mappedAddr);
   if(header->IsApicHeader())
     Parse(static_cast<const MadtHeader&>(*header));
@@ -81,7 +82,7 @@ void Acpi::Parse(const Acpi::MadtHeader& madtHeader)
         // ACPI Spec 5.2.12.2 Processor Local APIC Structure
         if(e.Length() != 8)
           throw upan::exception(XLOC, "Local APIC entry found with incorrect length: %d", e.Length());
-        const MadtLocalApicEntry& se = static_cast<const MadtLocalApicEntry&>(e);
+        auto& se = static_cast<const MadtLocalApicEntry&>(e);
         if(se.IsEnabled())
           _madt.AddLocalApic(se.ProcessorId(), se.Id());
       } 
@@ -90,7 +91,7 @@ void Acpi::Parse(const Acpi::MadtHeader& madtHeader)
         // ACPI Spec 5.2.12.3 I/O APIC Structure
         if(e.Length() != 12)
           throw upan::exception(XLOC, "IO APIC entry found with incorrect length: %d", e.Length());
-        const MadtIoApicEntry& se = static_cast<const MadtIoApicEntry&>(e);
+        auto& se = static_cast<const MadtIoApicEntry&>(e);
         _madt.AddIoApic(se.Id(), se.Addr(), se.InterruptBase());
       }
       break;
@@ -98,7 +99,7 @@ void Acpi::Parse(const Acpi::MadtHeader& madtHeader)
         // ACPI Spec 5.2.12.5 Interrupt Source Override Structure
         if(e.Length() != 10)
           throw upan::exception(XLOC, "Interrupt Source Override entry found with incorrect length: %d", e.Length());
-        const MadtIntOverrideEntry& se = static_cast<const MadtIntOverrideEntry&>(e);
+        auto& se = static_cast<const MadtIntOverrideEntry&>(e);
         _madt.AddIntSrcOverride(se.PicIrq(), se.ApicMappedIrq(), se.Flags());
       }
       break;
@@ -106,7 +107,7 @@ void Acpi::Parse(const Acpi::MadtHeader& madtHeader)
         // ACPI Spec 5.2.12.6 Non-Maskable Interrupt Source Structure
         if(e.Length() != 8)
           throw upan::exception(XLOC, "NMI entry found with incorrect length: %d", e.Length());
-        const MadtNmiEntry& se = static_cast<const MadtNmiEntry&>(e);
+        auto& se = static_cast<const MadtNmiEntry&>(e);
         _madt.AddNmi(se.Flags(), se.IntNo());
       }
       break;
@@ -114,7 +115,7 @@ void Acpi::Parse(const Acpi::MadtHeader& madtHeader)
         // ACPI Spec 5.2.12.7 Local APIC NMI Structure
         if(e.Length() != 6)
           throw upan::exception(XLOC, "Local APIC NMI entry found with incorrect length: %d", e.Length());
-        const MadtLocalApicNmiEntry& se = static_cast<const MadtLocalApicNmiEntry&>(e);
+        auto& se = static_cast<const MadtLocalApicNmiEntry&>(e);
         _madt.AddLocalApicNmi(se.ProcessorId(), se.Flags(), se.LintPin());
       }
       break;
@@ -122,40 +123,13 @@ void Acpi::Parse(const Acpi::MadtHeader& madtHeader)
         // ACPI Spec 5.2.12.8 Local APIC Address Override Structure
         if(e.Length() != 12)
           throw upan::exception(XLOC, "Local APIC Addr Override entry found with incorrect length: %d", e.Length());
-        const MadtLocalApicAddrOverrideEntry& se = static_cast<const MadtLocalApicAddrOverrideEntry&>(e);
+        auto& se = static_cast<const MadtLocalApicAddrOverrideEntry&>(e);
         _madt.LocalApicAddr(se.Addr());
       }
       break;
     }
   }
   _madt.DebugPrint();
-}
-
-uint32_t Acpi::MapAcpiArea(uint32_t actualAddress)
-{
-	unsigned uiPDEAddress = MEM_PDBR ;
-  unsigned memMapAddress = ACPI_MMAP_AREA_START;
-  const unsigned uiMappedAddr = KERNEL_VIRTUAL_ADDRESS(memMapAddress + (actualAddress % PAGE_SIZE));
-  const unsigned pagesToMap = (ACPI_MMAP_AREA_END - ACPI_MMAP_AREA_START) / PAGE_SIZE;
- 
-  for(unsigned i = 0; i < pagesToMap; ++i)
-  {
-  	unsigned uiPDEIndex = ((memMapAddress >> 22) & 0x3FF);
-	  unsigned uiPTEIndex = ((memMapAddress >> 12) & 0x3FF);
-	  unsigned uiPTEAddress = (((unsigned*)(KERNEL_VIRTUAL_ADDRESS(uiPDEAddress)))[uiPDEIndex]) & 0xFFFFF000;
-    // This page is a Read Only area for user process. 0x5 => 101 => User Domain, Read Only, Present Bit
-    ((unsigned*)(KERNEL_VIRTUAL_ADDRESS(uiPTEAddress)))[uiPTEIndex] = (actualAddress & 0xFFFFF000) | 0x5;
-
-    //Need not mark actual address page as allocated as all required information from mapped area are
-    //copied over to local area
-    //if(MemManager::Instance().MarkPageAsAllocated(actualAddress / PAGE_SIZE) != Success) { }
-
-    memMapAddress += PAGE_SIZE;
-    actualAddress += PAGE_SIZE;
-  }
-
-	Mem_FlushTLB();
-  return uiMappedAddr;
 }
 
 bool Acpi::Header::IsRootTable() const
@@ -172,13 +146,14 @@ bool Acpi::Header::IsApicHeader() const
 
 const Acpi::Rsdp* Acpi::Rsdp::Search()
 {
-  auto acpi_mmap = MultiBoot::Instance().GetMemMapArea(3);
+  auto acpi_mmap = MultiBoot::Instance().GetACPIInfoMemMap();
   if(!acpi_mmap)
   {
     printf("\n GRUB multiboot info doesn't have ACPI memory mapped area");
     return nullptr;
   }
 
+  printf("\n ACPI info base address: 0x%llx, len: %llu", acpi_mmap->base_addr, acpi_mmap->length);
   for(unsigned i = 0; i < (acpi_mmap->length + RSDP_SIG_LEN - 1); i += 16)
   {
     uint8_t* a = reinterpret_cast<uint8_t*>(acpi_mmap->base_addr + i);

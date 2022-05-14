@@ -37,7 +37,6 @@ class Acpi
     void ReadRootTable(const Acpi::Rsdp& rsdp, upan::list<uint32_t>& headerAddresses);
     void ReadHeader(uint32_t headerAddress);
     void Parse(const MadtHeader&);
-    uint32_t MapAcpiArea(uint32_t actualAddress);
   public:
     static Acpi& Instance()
     {

@@ -48,5 +48,6 @@ class StringDefTokenizer : public StringTokenizer
 
 void String_Tokenize(const char* src, char chToken, int* iListSize, StringTokenizer& strTkCopy) ;
 int String_Chr(const char* szStr, char ch) ;
+void String_FromNum(char* strNumber, uint32_t uiNumber);
 
 #endif

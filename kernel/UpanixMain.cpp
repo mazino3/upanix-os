@@ -155,6 +155,7 @@ void Initialize() {
 
   //KernelRootProcess must be initialized to setup kernel FD table with stdin/out/err before using stdio functions like printf.
   KernelRootProcess::Instance();
+  MultiBoot::Instance().Print();
   MemManager::Instance().PrintInitStatus();
 	//defined in osutils/crti.s - this is C++ init to call global objects' constructor
 	_cxx_global_init();

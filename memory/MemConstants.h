@@ -25,27 +25,27 @@
 #define SYS_LINEAR_SELECTOR_DEFINED 0x8 
 #define SYS_DATA_SELECTOR_DEFINED 0x18
 
-extern unsigned int GLOBAL_DATA_SEGMENT_BASE ;
+extern uint32_t GLOBAL_DATA_SEGMENT_BASE ;
 
-extern unsigned int SYS_CODE_SELECTOR ;
-extern unsigned int SYS_LINEAR_SELECTOR ;
-extern unsigned int SYS_DATA_SELECTOR ;
-extern unsigned int SYS_TSS_SELECTOR ;
-extern unsigned int USER_TSS_SELECTOR ;
-extern unsigned int INT_TSS_SELECTOR_SV ;
-extern unsigned int INT_TSS_SELECTOR_PF ;
-extern unsigned int CALL_GATE_SELECTOR ;
-extern unsigned int INT_GATE_SELECTOR ;
+extern uint32_t SYS_CODE_SELECTOR ;
+extern uint32_t SYS_LINEAR_SELECTOR ;
+extern uint32_t SYS_DATA_SELECTOR ;
+extern uint32_t SYS_TSS_SELECTOR ;
+extern uint32_t USER_TSS_SELECTOR ;
+extern uint32_t INT_TSS_SELECTOR_SV ;
+extern uint32_t INT_TSS_SELECTOR_PF ;
+extern uint32_t CALL_GATE_SELECTOR ;
+extern uint32_t INT_GATE_SELECTOR ;
 
-extern unsigned int SYS_TSS_LINEAR_ADDRESS ;
-extern unsigned int USER_TSS_LINEAR_ADDRESS ;
-extern unsigned int INT_TSS_LINEAR_ADDRESS_SV ;
-extern unsigned int INT_TSS_LINEAR_ADDRESS_PF ;
-extern unsigned int MULTIBOOT_INFO_ADDR ;
-extern unsigned int CR0_CONTENT ;
+extern uint32_t MULTIBOOT_INFO_ADDR ;
+extern uint32_t CR0_CONTENT ;
 extern byte CO_PROC_FPU_TYPE ;
 
-extern unsigned RAM_SIZE ;
+extern uint32_t GDT_BASE_ADDR;
+extern uint32_t LDT_BASE_ADDR;
+extern uint32_t IDT_BASE_ADDR;
+extern uint32_t SYS_TSS_BASE_ADDR;
+extern uint32_t USER_TSS_BASE_ADDR;
 
 #define MB * 1024 * 1024
 #define KB * 1024
@@ -70,27 +70,6 @@ extern unsigned RAM_SIZE ;
 #define MEM_DMA_FLOPPY_START	0x20000
 #define MEM_DMA_FLOPPY_END		0x30000 // 65536 -> 64 KB
 #define MEM_DMA_END				0x30000 
-
-//#define MEM_DMA_ATA_PRD_START	0x20000 // 131072 -> 128 KB
-//#define MEM_DMA_ATA_PRD_END		0x30000 // 196608 -> 192 KB
-
-#define MEM_GDT_START		0x82000 // 532480 -> 520 KB
-#define MEM_GDT_END			0x82800 // 534528 -> 522 KB
-
-#define MEM_LDT_START		0x83000 // 534528 -> 524 KB
-#define MEM_LDT_END			0x84800 // 542720 -> 530 KB
-
-#define MEM_IDT_START		0x85000 // 542720 -> 532 KB
-#define MEM_IDT_END			0x85800 // 544768 -> 534 KB
-
-#define MEM_SYS_TSS_START	0x86000 // 545792 -> 536 KB
-#define MEM_SYS_TSS_END		0x86800 // 546816 -> 538 KB
-
-#define MEM_USER_TSS_START	0x87000 // 546816 -> 540 KB
-#define MEM_USER_TSS_END	0x87400 // 547840 -> 541 KB
-
-#define MEM_INT_TSS_START	0x88000 // 547840 -> 544 KB
-#define MEM_INT_TSS_END		0x88400 // 548864 -> 545 KB
 
 #define MEM_VIDEO_START		0xB8000 // 753664
 #define MEM_VIDEO_END		0xB9400 // 0xB8000 + 0x1400 -> 5120 -> 5 KB
@@ -118,10 +97,6 @@ extern unsigned RAM_SIZE ;
 #define MEM_KERNEL_PAGE_POOL_MAP_START 0x1531000 // 21 MB + 196 KB
 #define MEM_KERNEL_PAGE_POOL_MAP_END   0x1533000 // 21 MB + 204 KB
 
-/* PGAS */
-#define MEM_PGAS_START		0x153C000 // 21 MB + 240 KB
-#define MEM_PGAS_END		0x153C400 // 21 MB + 241 KB
-
 #define PROCESS_KERNEL_SHARE_SPACE		0x153C400 // 21 MB + 241 KB
 
 // Mapped to Different Address Space
@@ -134,8 +109,7 @@ extern unsigned RAM_SIZE ;
 #define EHCI_MMIO_BASE_ADDR_END	0x1573000 // 48 pages
 #define XHCI_MMIO_BASE_ADDR		0x1573000 // 21 MB + 268 KB + 48 pages
 #define XHCI_MMIO_BASE_ADDR_END	0x15B3000 // 64 pages
-#define ACPI_MMAP_AREA_START 0x15B3000 // 21 MB + 179 pages
-#define ACPI_MMAP_AREA_END 0x15BB000 // + 8 pages
+
 #define MMAP_APIC_BASE 0x15BC000 // 12 MB + 187 pages + 1 page
 #define MMAP_IOAPIC_BASE 0x15BD000 // 12 MB + 188 pages + 1 page
 

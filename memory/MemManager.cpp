@@ -104,17 +104,16 @@ MemManager::MemManager() :
 	m_uiKernelAUTAddress(NULL),
 	RAM_SIZE(MultiBoot::Instance().GetRamSize())
 {
-  if(BuildRawPageMap())
-  {
-    if(BuildPageTable())
-    {
-        if(BuildPagePoolMap())
-        {
-          MemMapGraphicsLFB(0x0);
-          Mem_EnablePaging() ;
+  if(BuildRawPageMap()) {
+    if(BuildPageTable()) {
+        if(BuildPagePoolMap()) {
+          if (MarkACPIInfoRegionAsAllocated()) {
+            MemMapGraphicsLFB(0x0);
+            Mem_EnablePaging();
 
-          KC::MConsole().LoadMessage("Memory Manager Initialization", Success) ;
-          return;
+            KC::MConsole().LoadMessage("Memory Manager Initialization", Success);
+            return;
+          }
         }
     }
   }
@@ -127,6 +126,27 @@ void MemManager::PrintInitStatus() const {
   printf("\n\tRAM SIZE = %d", RAM_SIZE) ;
   printf("\n\tNo. of Pages = %d", m_uiNoOfPages) ;
   printf("\n\tNo. of Resv Pages = %d", m_uiNoOfResvPages) ;
+}
+
+bool MemManager::MarkACPIInfoRegionAsAllocated() {
+  auto acpiMmap = MultiBoot::Instance().GetACPIInfoMemMap();
+  if (!acpiMmap) {
+    return true;
+  }
+
+  const uint32_t noOfPages = ((acpiMmap->length + PAGE_SIZE) / PAGE_SIZE) - 1;
+  uint32_t addr = acpiMmap->base_addr;
+
+  ReturnCode markPageRetCode = Success;
+  for(int i = 0; i < noOfPages; ++i) {
+    markPageRetCode = MarkPageAsAllocated(addr / PAGE_SIZE, markPageRetCode);
+    if (markPageRetCode != Success) {
+      return false;
+    }
+    addr += PAGE_SIZE;
+  }
+
+  return true;
 }
 
 void MemManager::MemMapGraphicsLFB(uint32_t memTypeFlag)

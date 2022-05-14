@@ -32,6 +32,9 @@ private:
   static const int IA32_MTRR_DEF_TYPE = 0x2FF;
   static const int IA32_MTRR_PHY_BASEn = 0x200;
   static const int IA32_MTRR_PHY_MASKn = 0x201;
+  static const int IA32_MTRR_FIXED64K	= 0x250;	/* fixed size registers 64k */
+  static const int IA32_MTRR_FIXED16K	= 0x258;	/* fixed size registers 16K */
+  static const int IA32_MTRR_FIXED4K = 0x268;	/* fixed size registers 4K */
 
   Mtrr();
   Mtrr(const Mtrr&) = delete;
@@ -63,7 +66,7 @@ private:
     void Print();
   private:
     uint64_t _val;
-  };
+  } PACKED;
 
   class DefType {
   public:
@@ -88,6 +91,14 @@ private:
     void Print();
   private:
     uint64_t _val;
+  } PACKED;
+
+  // Fixed size registers
+  class FixedR {
+  public:
+    uint64_t _fixed64;
+    uint64_t _fixed16[2];
+    uint64_t _fixed4[8];
   };
 
   // Variable Sized Range Registers
@@ -118,7 +129,7 @@ private:
   private:
     uint64_t _base;
     uint64_t _mask;
-  };
+  } PACKED;
 public:
   static Mtrr& Instance() {
     static Mtrr mtrr;
@@ -133,5 +144,6 @@ private:
   bool _isSupported;
   CapReg _capReg;
   DefType _defType;
+  FixedR _fixedR;
   upan::vector<VarRR> _varRRs;
 };

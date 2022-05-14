@@ -48,7 +48,7 @@ enum CPU_FEATURE
   CF_X8           = CR_EDX|8,
   CF_APIC         = CR_EDX|9,
   CF_SYSENTEREXIT = CR_EDX|11,
-  CF_MTTR         = CR_EDX|12, // Memory-Type Range Registers
+  CF_MTRR         = CR_EDX|12, // Memory-Type Range Registers
   CF_PGE          = CR_EDX|13,
   CF_MCA          = CR_EDX|14,
   CF_CMOV         = CR_EDX|15,

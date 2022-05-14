@@ -63,3 +63,19 @@ int String_Chr(const char* szStr, char ch)
 
 	return -1 ;
 }
+
+void String_FromNum(char* strNumber, uint32_t uiNumber) {
+  strNumber[0] = '\0';
+  unsigned i = 0;
+
+  do {
+    strNumber[i++] = (uiNumber % 10) + 0x30;
+    uiNumber /= 10;
+    if(i == 128)
+      return;
+  }
+  while(uiNumber) ;
+
+  strNumber[i] = '\0';
+  strreverse(strNumber);
+}

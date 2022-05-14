@@ -112,7 +112,7 @@ typedef struct
   {
     aout_symbol_table_t aout_sym;
     elf_section_header_table_t elf_sec;
-  } u;
+  } PACKED u;
   unsigned mmap_length;
   unsigned mmap_addr;
   
@@ -136,7 +136,7 @@ typedef struct module
   unsigned long mod_end;
   unsigned long string;
   unsigned long reserved;
-} module_t;
+} PACKED module_t;
 
 /* The memory map. Be careful that the offset 0 is base_addr_low
    but no size.  */
@@ -146,7 +146,7 @@ typedef struct memory_map
   uint64_t base_addr;
   uint64_t length;
   uint32_t type;
-} memory_map_t;
+} PACKED memory_map_t;
 
 /********************** These are UPANIX Specific declarations ***********************/
 
@@ -166,12 +166,15 @@ class MultiBoot
 		byte GetBootDeviceID();
 		byte GetBootPartitionID();
     const framebuffer_info_t* VideoFrameBufferInfo() const;
-    const memory_map_t* GetMemMapArea(uint32_t type) const;
+    const memory_map_t* GetACPIInfoMemMap() const;
     void Print();
 	private:
-		multiboot_info_t* _pInfo;
-    uint64_t          _realRamSize;
-    unsigned          _ramSize;
+    static const int MAX_MMAP_ENTRIES = 20;
+
+		multiboot_info_t _info;
+    memory_map_t     _mmap[MAX_MMAP_ENTRIES];
+    uint64_t         _realRamSize;
+    unsigned         _ramSize;
 };
 
 #endif 

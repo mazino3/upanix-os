@@ -41,9 +41,7 @@ unsigned short MemUtil_GetFS() ;
 unsigned short MemUtil_GetGS() ;
 unsigned MemUtil_GetSP() ;
 
-extern unsigned RAM_SIZE ;
-
- void MemUtil_MoveByte(const unsigned short usSelector, const unsigned int uiOffset, const byte uiValue) ;
+void MemUtil_MoveByte(const unsigned short usSelector, const unsigned int uiOffset, const byte uiValue) ;
 
 #define MemUtil_SetDS(/*unsigned short*/ usSelector) \
 {\

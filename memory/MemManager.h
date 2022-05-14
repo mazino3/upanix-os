@@ -94,6 +94,7 @@ class MemManager
 		bool BuildRawPageMap() ;
 		bool BuildPagePoolMap();
 		bool BuildPageTable() ;
+    bool MarkACPIInfoRegionAsAllocated();
     int GetFreeKernelProcessStackBlockID() ;
 
 	private:
