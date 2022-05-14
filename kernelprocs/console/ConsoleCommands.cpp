@@ -66,6 +66,7 @@
 #include <RoundCanvas.h>
 #include <Line.h>
 #include <GCoreFunctions.h>
+#include <Point.h>
 
 /**** Command Fucntion Declarations  *****/
 static void ConsoleCommands_ChangeDrive() ;
@@ -1170,20 +1171,64 @@ void graphics_test_flag(int x, int y) {
   exit(0);
 }
 
-int secondsX[60], secondsY[60];
-void seconds_thread(void* pLine) {
-  upanui::Line& line = *static_cast<upanui::Line*>(pLine);
-  int i = 0;
-  int cx = 200;
-  int cy = 200;
-  while(true) {
-    const auto x = cx + secondsX[i];
-    const auto y = cy - secondsY[i];
-    line.updateXY(cx, cy, x, y);
-    i = (i + 1) % 60;
-    sleepms(1000);
+class DemoClock : public upan::thread {
+public:
+  DemoClock(upanui::UIRoot& uiRoot, const uint32_t csize)
+      : _uiRoot(uiRoot), _csize(csize),
+        _cx(csize / 2), _cy(csize / 2) {
+    const int r = _csize / 2 - BORDER_THICKNESS;
+    if (r < 0) {
+      throw upan::exception(XLOC, "csize (%u) is smaller than border size (%d)", csize, BORDER_THICKNESS);
+    }
+
+    for(int i = 0; i < X_Y_CO_SIZE; ++i) {
+      _seconds[i] = upanui::Point(roundtoi(SECONDS_X_CO[i] * r), roundtoi(SECONDS_Y_CO[i] * r));
+
+      if (i == 0) {
+        _seconds[i + 15] = upanui::Point(_seconds[i].y(), _seconds[i].x());
+        _seconds[i + 30] = upanui::Point(_seconds[i].x(), -_seconds[i].y());
+        _seconds[i + 45] = upanui::Point(-_seconds[i + 15].x(), _seconds[i + 15].y());
+      } else {
+        _seconds[15 - i] = upanui::Point(_seconds[i].y(), _seconds[i].x());
+        _seconds[15 + i] = upanui::Point(_seconds[15 - i].x(), -_seconds[15 - i].y());
+        _seconds[45 - i] = upanui::Point(-_seconds[15 - i].x(), -_seconds[15 - i].y());
+        _seconds[45 + i] = upanui::Point(-_seconds[15 - i].x(), _seconds[15 - i].y());
+        _seconds[30 - i] = upanui::Point(_seconds[i].x(), -_seconds[i].y());
+        _seconds[30 + i] = upanui::Point(-_seconds[i].x(), -_seconds[i].y());
+        _seconds[60 - i] = upanui::Point(-_seconds[i].x(), _seconds[i].y());
+      }
+    }
   }
-}
+
+  void run()  {
+    auto& line = upanui::UIObjectFactory::createLine(_uiRoot, _cx, _cy, _cx + _seconds[0].x(), _cy - _seconds[0].y(), 1);
+    line.backgroundColor(ColorPalettes::CP256::Get(190));
+    int i = 0;
+    while(true) {
+      const auto x = _cx + _seconds[i].x();
+      const auto y = _cy - _seconds[i].y();
+      line.updateXY(_cx, _cy, x, y);
+      i = (i + 1) % 60;
+      sleepms(1000);
+    }
+  }
+
+private:
+  upanui::UIRoot& _uiRoot;
+  const uint32_t _csize;
+  const int _cx;
+  const int _cy;
+  upanui::Point _seconds[60];
+
+public:
+  static const int BORDER_THICKNESS = 5;
+  static const int X_Y_CO_SIZE = 8;
+  static const float SECONDS_X_CO[];
+  static const float SECONDS_Y_CO[];
+};
+
+const float DemoClock::SECONDS_X_CO[] = { 0.0, 0.10453, 0.20791, 0.30901, 0.40673, 0.5, 0.5878, 0.66913 };
+const float DemoClock::SECONDS_Y_CO[] = { 1.0, 0.99452, 0.97815, 0.95105, 0.91354, 0.86602, 0.80901, 0.74314 };
 
 void graphics_test_clock(int x, int y) {
   upanui::GraphicsContext::Init();
@@ -1193,52 +1238,8 @@ void graphics_test_clock(int x, int y) {
   uiRoot.backgroundColorAlpha(50);
   uiRoot.borderThickness(5);
 
-  int r = 100;
-  int cx = 200;
-  int cy = 200;
-  float secondsXf[] = { 0.0, 0.10453, 0.20791, 0.30901, 0.40673, 0.5, 0.5878, 0.66913 };
-  float secondsYf[] = { 1.0, 0.99452, 0.97815, 0.95105, 0.91354, 0.86602, 0.80901, 0.74314 };
-
-  for(int i = 0; i < 8; ++i) {
-    secondsX[i] = roundtoi(secondsXf[i] * r);
-    secondsY[i] = roundtoi(secondsYf[i] * r);
-
-    if (i == 0) {
-      secondsX[i + 15] = secondsY[i];
-      secondsY[i + 15] = secondsX[i];
-
-      secondsX[i + 30] = secondsX[i];
-      secondsY[i + 30] = -secondsY[i];
-
-      secondsX[i + 45] = -secondsX[i + 15];
-      secondsY[i + 45] = secondsY[i + 15];
-    } else {
-      secondsX[15 - i] = secondsY[i];
-      secondsY[15 - i] = secondsX[i];
-
-      secondsX[15 + i] = secondsX[15 - i];
-      secondsY[15 + i] = -secondsY[15 - i];
-
-      secondsX[45 - i] = -secondsX[15 - i];
-      secondsY[45 - i] = -secondsY[15 - i];
-
-      secondsX[45 + i] = -secondsX[15 - i];
-      secondsY[45 + i] = secondsY[15 - i];
-
-      secondsX[30 - i] = secondsX[i];
-      secondsY[30 - i] = -secondsY[i];
-
-      secondsX[30 + i] = -secondsX[i];
-      secondsY[30 + i] = -secondsY[i];
-
-      secondsX[60 - i] = -secondsX[i];
-      secondsY[60 - i] = secondsY[i];
-    }
-  }
-
-  auto& line = upanui::UIObjectFactory::createLine(uiRoot, cx, cy, cx + secondsX[0], cy - secondsY[0], 1);
-  line.backgroundColor(ColorPalettes::CP256::Get(190));
-  auto thread_id = exect(seconds_thread, &line);
+  DemoClock demoClock(uiRoot, 200);
+  demoClock.start();
 
   TestMouseHandler mouseHandler;
   uiRoot.onDrag(mouseHandler);
