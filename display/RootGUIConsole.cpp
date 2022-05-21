@@ -62,7 +62,8 @@ RootGUIConsole& RootGUIConsole::Instance() {
 RootGUIConsole::RootGUIConsole(const upanui::FrameBuffer& frameBuffer, const upanui::Viewport& viewport)
   : RootConsole(frameBuffer.height() / 16, frameBuffer.width() / 8),
     _frame(frameBuffer, viewport),
-    _cursorPos(0), _cursorEnabled(false) {
+    _cursorPos(0), _cursorEnabled(false),
+    _consoleUIObject(_frame) {
   GraphicsVideo::Create();
 }
 
@@ -75,18 +76,19 @@ void RootGUIConsole::putChar(int iPos, byte ch, const upanui::CharStyle& style) 
   const unsigned x = (curPos % _consoleBuffer.maxColumns());
   const unsigned y = (curPos / _consoleBuffer.maxColumns());
 
-  _textWriter.drawChar(_frame, ch, x, y,
+  _textWriter.drawChar(_consoleUIObject, ch, x, y,
                        ColorPalettes::CP16::Get(style.getFGColor()),
                        ColorPalettes::CP16::Get(style.getBGColor() >> 4));
 }
 
 void RootGUIConsole::scrollDown() {
-  _textWriter.scrollDown(_frame);
+  _textWriter.scrollDown(_consoleUIObject);
 }
 
 void RootGUIConsole::resetFrameBuffer(uint32_t frameBufferAddress) {
   _frame.resetFrameBufferAddress((uint32_t*)frameBufferAddress);
   _frame.fillRect(0, 0, _frame.viewport().width(), _frame.viewport().height(), upanui::GCoreFunctions::ALPHA_MASK);
+  _consoleUIObject.drawBuffer().initLocal(_frame.frameBuffer());
 }
 
 void RootGUIConsole::StartCursorBlink() {
@@ -119,7 +121,7 @@ void RootGUIConsole::putCursor(bool show) {
   const auto x = (_cursorPos % _consoleBuffer.maxColumns());
   const auto y = (_cursorPos / _consoleBuffer.maxColumns());
 
-  _textWriter.drawCursor(_frame, x, y, color);
+  _textWriter.drawCursor(_consoleUIObject, x, y, color);
 }
 
 RootGUIConsole::CursorBlink::CursorBlink(RootGUIConsole& console) : upan::timer_thread(500), _console(console), _showCursorToggle(false) {

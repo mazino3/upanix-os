@@ -29,6 +29,15 @@
 #include <BaseFrame.h>
 #include <timer_thread.h>
 #include <RootFrame.h>
+#include <UIObject.h>
+#include <DrawBuffer.h>
+
+namespace upanui {
+  class MouseEvent;
+  class MouseEventHandler;
+  class KeyboardEvent;
+  class Layout;
+}
 
 class RootGUIConsole : public RootConsole {
 private:
@@ -60,12 +69,81 @@ private:
   };
   void StartCursorBlink() override;
 
+  class ConsoleUIObject : public upanui::UIObject {
+  public:
+    explicit ConsoleUIObject(RootFrame& frame) : _frame(frame) {
+      _drawBuffer.initLocal(frame.frameBuffer());
+    }
+    ~ConsoleUIObject() override = default;
+
+    upanui::DrawBuffer& drawBuffer() override { return _drawBuffer; }
+    void draw() override { _frame.touch(); }
+
+  private:
+    int x() const override { return 0; }
+    int y() const override { return 0; }
+    uint32_t width() const override { return _frame.frameBuffer().width(); }
+    uint32_t height() const override { return _frame.frameBuffer().height(); }
+    uint32_t backgroundColor() const override { return 0; }
+    uint32_t backgroundColorForDraw() const override { return 0; }
+    uint8_t  backgroundColorAlpha() const override { return 100; }
+    uint32_t borderColor() const override { return 0; }
+    uint8_t  borderColorAlpha() const { return 100; }
+    uint32_t borderThickness() const override { return 0; }
+
+    void x(const int) override {}
+    void y(const int) override {}
+    void width(const uint32_t) override {}
+    void height(const uint32_t) override {}
+    void backgroundColor(const uint32_t color) override {}
+    void backgroundColorAlpha(const uint8_t) override {}
+    void borderColor(const uint32_t) override {}
+    void borderColorAlpha(const uint8_t) override {}
+    void borderThickness(const uint32_t) override {}
+
+    UIObject& parent() const override {
+      throw upan::exception(XLOC, "unsupported parent()");
+    }
+    const upan::set<UIObject*>& children() override {
+      throw upan::exception(XLOC, "unsupported children()");
+    }
+    upanui::Layout& layout() override {
+      throw upan::exception(XLOC, "unsupported layout()");
+    }
+
+    void add(UIObject& child) override {}
+    void remove() override {}
+    void redraw() override {}
+
+    void registerMouseEventHandler(upanui::MouseEventHandler& handler) override {}
+    upan::option<UIObject&> uiObjectUnderCursor(const int x, const int y) override { return upan::option<UIObject&>::empty(); }
+
+    void onKeyboardEvent(const upanui::KeyboardEvent& event) override {}
+    void onMouseEvent(const upanui::MouseEvent& event) override {}
+    void onMouseFocus() override {}
+    void onLoseMouseFocus() override {}
+
+    int drawX() const override { return 0; }
+    int drawY() const override { return 0; }
+    void drawTopDown() override {}
+    void drawToTop() override {}
+
+    void positionChanged() override {}
+    void sizeChanged() override {}
+    void contentChanged() override {}
+
+  private:
+    RootFrame& _frame;
+    upanui::DrawBuffer _drawBuffer;
+  };
+
 private:
   upanui::TextWriter _textWriter;
   RootFrame _frame;
   int _cursorPos;
   bool _cursorEnabled;
   upan::mutex _cursorMutex;
+  ConsoleUIObject _consoleUIObject;
 
   friend class RootConsole;
   friend class MemManager;
