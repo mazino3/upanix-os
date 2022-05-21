@@ -22,8 +22,6 @@
 # include <ConsoleCommands.h>
 # include <CommandLineParser.h>
 
-#include <PS2KeyboardDriver.h>
-#include <StringUtil.h>
 #include <Floppy.h>
 #include <MemUtil.h>
 #include <ProcessManager.h>
@@ -31,15 +29,12 @@
 #include <Directory.h>
 #include <MemManager.h>
 #include <DMM.h>
-#include <ATADrive.h>
 #include <ATADeviceController.h>
 #include <PartitionManager.h>
-#include <IODescriptorTable.h>
 #include <FileOperations.h>
 #include <UserManager.h>
 #include <GenericUtil.h>
 #include <SessionManager.h>
-#include <KeyboardHandler.h>
 #include <DeviceDrive.h>
 #include <RTC.h>
 #include <MultiBoot.h>
@@ -49,7 +44,6 @@
 #include <EHCIManager.h>
 #include <XHCIManager.h>
 #include <BTree.h>
-#include <video.h>
 #include <PS2MouseDriver.h>
 #include <exception.h>
 #include <stdio.h>
@@ -58,7 +52,6 @@
 #include <typeinfo.h>
 #include <NetworkManager.h>
 #include <ARPHandler.h>
-#include <GraphicsVideo.h>
 #include <GraphicsContext.h>
 #include <MouseEventHandler.h>
 #include <Button.h>
@@ -909,6 +902,17 @@ public:
   }
 };
 
+class PassThroughMouseHandler : public upanui::MouseEventHandler {
+public:
+  void onEvent(upanui::UIObject& uiObject, const upanui::MouseEvent& event) override {
+    const upanui::MouseData& data = event.getData();
+    if (data.leftButtonState() == upanui::MouseData::HOLD) {
+      uiObject.parent().x(uiObject.parent().x() + data.deltaX());
+      uiObject.parent().y(uiObject.parent().y() - data.deltaY());
+    }
+  }
+};
+
 void graphics_test_process_canvas(int x, int y) {
   upanui::GraphicsContext::Init();
   auto& gc = upanui::GraphicsContext::Instance();
@@ -1012,7 +1016,10 @@ void graphics_test_process_canvas(int x, int y) {
   b9.backgroundColor(btColor);
 
   TestMouseHandler mouseHandler;
-  uiRoot.onDrag(mouseHandler);
+  uiRoot.registerMouseEventHandler(mouseHandler);
+  cc1.registerMouseEventHandler(mouseHandler);
+  PassThroughMouseHandler passThroughMouseHandler;
+  cc2.registerMouseEventHandler(passThroughMouseHandler);
 //  bp1.addMouseEventHandler(mouseHandler);
   //b1.addMouseEventHandler(mouseHandler);
 
@@ -1092,7 +1099,7 @@ void graphics_test_process_line(int x, int y) {
   line32o.backgroundColor(ColorPalettes::CP256::Get(190));
 
   TestMouseHandler mouseHandler;
-  uiRoot.onDrag(mouseHandler);
+  uiRoot.registerMouseEventHandler(mouseHandler);
 //  bp1.addMouseEventHandler(mouseHandler);
   //b1.addMouseEventHandler(mouseHandler);
 
@@ -1162,7 +1169,7 @@ void graphics_test_flag(int x, int y) {
   wheel.backgroundColorAlpha(0);
 
   TestMouseHandler mouseHandler;
-  uiRoot.onDrag(mouseHandler);
+  uiRoot.registerMouseEventHandler(mouseHandler);
 //  bp1.addMouseEventHandler(mouseHandler);
   //b1.addMouseEventHandler(mouseHandler);
 
@@ -1242,7 +1249,7 @@ void graphics_test_clock(int x, int y) {
   demoClock.start();
 
   TestMouseHandler mouseHandler;
-  uiRoot.onDrag(mouseHandler);
+  uiRoot.registerMouseEventHandler(mouseHandler);
 //  bp1.addMouseEventHandler(mouseHandler);
   //b1.addMouseEventHandler(mouseHandler);
 
