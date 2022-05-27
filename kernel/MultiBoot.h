@@ -169,7 +169,7 @@ class MultiBoot
     const memory_map_t* GetACPIInfoMemMap() const;
     void Print();
 	private:
-    static const int MAX_MMAP_ENTRIES = 20;
+    static const int MAX_MMAP_ENTRIES = 64;
 
 		multiboot_info_t _info;
     memory_map_t     _mmap[MAX_MMAP_ENTRIES];

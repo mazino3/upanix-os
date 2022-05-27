@@ -892,12 +892,10 @@ void ConsoleCommands_InitMountManager()
 }
 
 class TestMouseHandler : public upanui::MouseEventHandler {
-public:
   void onEvent(upanui::UIObject& uiObject, const upanui::MouseEvent& event) override {
     const upanui::MouseData& data = event.getData();
     if (data.leftButtonState() == upanui::MouseData::HOLD) {
-      uiObject.x(uiObject.x() + data.deltaX());
-      uiObject.y(uiObject.y() - data.deltaY());
+      uiObject.xy(uiObject.x() + data.deltaX(), uiObject.y() - data.deltaY());
     }
   }
 };
@@ -907,8 +905,7 @@ public:
   void onEvent(upanui::UIObject& uiObject, const upanui::MouseEvent& event) override {
     const upanui::MouseData& data = event.getData();
     if (data.leftButtonState() == upanui::MouseData::HOLD) {
-      uiObject.parent().x(uiObject.parent().x() + data.deltaX());
-      uiObject.parent().y(uiObject.parent().y() - data.deltaY());
+      uiObject.parent().xy(uiObject.parent().x() + data.deltaX(), uiObject.parent().y() - data.deltaY());
     }
   }
 };
@@ -1442,18 +1439,9 @@ void aThread(void* x) {
   }
 }
 
-int thread_id = 0;
-void ConsoleCommands_Testv()
-{
-//  if (thread_id != 0) {
-//    waitpid(thread_id);
-//  }
-//  thread_id = exect(aThread, 10);
-
-	//_DisplayReadStat() ;
-	//printf("\n RAM SIZE: %u", MemManager::Instance().GetRamSize()) ;
-	//VM86_Test() ;
-	//KC::MDisplay().SetMouseCursorPos(KC::MDisplay().GetMouseCursorPos() + 70) ;
+extern uint32_t dmm_alloc_count;
+void ConsoleCommands_Testv() {
+  printf("\n Alloc Count: %u", dmm_alloc_count);
 }
 
 void ConsoleCommands_TestNet()
