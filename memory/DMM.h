@@ -38,13 +38,14 @@
 
 typedef struct
 {
-	unsigned uiAllocatedAddress ;
-	unsigned uiReturnAddress ;
-	unsigned uiSize ;
+	uint32_t uiAllocatedAddress;
+  uint32_t uiReturnAddress;
+  uint32_t uiSize;
+  uint32_t uiCheckSum;
   union
   {
-  	unsigned uiNextAUTAddress;
-    unsigned uiByteStuffForAlign;
+    uint32_t uiNextAUTAddress;
+    uint32_t uiByteStuffForAlign;
   };
 } PACKED AllocationUnitTracker ; // AUT
 

@@ -54,6 +54,14 @@ void DMM_CheckAlignNumber(unsigned uiAlignNumber)
   throw upan::exception(XLOC, "%u is not 2^ power aligned address", uiAlignNumber);
 }
 
+static uint32_t calculateCheckSum(AllocationUnitTracker& aut) {
+  return aut.uiAllocatedAddress ^ aut.uiSize ^ aut.uiReturnAddress ^ aut.uiNextAUTAddress;
+}
+
+static void updateCheckSum(AllocationUnitTracker& aut) {
+  aut.uiCheckSum = calculateCheckSum(aut);
+}
+
 /***************************************************************/
 
 // old allocation algorithm which was maintaining a list of allocated chunks was 40 times slower
@@ -147,9 +155,11 @@ unsigned DMM_Allocate(Process* processAddressSpace, unsigned uiSizeInBytes, unsi
   throw upan::exception(XLOC, "out of memory!");
 }
 
+uint32_t dmm_alloc_count = 0;
 unsigned DMM_AllocateForKernel(unsigned uiSizeInBytes, unsigned uiAlignNumber)
 {
   IrqGuard g;
+  ++dmm_alloc_count;
 	DMM_CheckAlignNumber(uiAlignNumber);
 	AllocationUnitTracker *aut, *prevAut;
 	unsigned& uiAUTAddress = MemManager::Instance().GetKernelAUTAddress();
@@ -162,6 +172,7 @@ unsigned DMM_AllocateForKernel(unsigned uiSizeInBytes, unsigned uiAlignNumber)
 		aut->uiSize = MEM_KERNEL_HEAP_SIZE;
     aut->uiReturnAddress = NULL;
 		aut->uiNextAUTAddress = NULL;
+    updateCheckSum(*aut);
 		uiAUTAddress = uiHeapStartAddress;
 	}
 
@@ -173,10 +184,13 @@ unsigned DMM_AllocateForKernel(unsigned uiSizeInBytes, unsigned uiAlignNumber)
     unsigned uiNextAUTAddress = aut->uiNextAUTAddress;
     unsigned uiByteStuffForAlign = DMM_GetByteStuffForAlign(uiAddress + sizeof(AllocationUnitTracker), uiAlignNumber);
     unsigned uiSize = uiSizeInBytes + sizeof(AllocationUnitTracker) + uiByteStuffForAlign;
-
+    const uint32_t calcCheckSum = calculateCheckSum(*aut);
+    if (calcCheckSum != aut->uiCheckSum) {
+      throw upan::exception(XLOC,"heap corrupted!");
+    }
     if(uiSize <= uiMaxSize)
     {
-      AllocationUnitTracker* allocAUT = (AllocationUnitTracker*)(uiAddress + uiByteStuffForAlign);
+      auto allocAUT = (AllocationUnitTracker*)(uiAddress + uiByteStuffForAlign);
       allocAUT->uiAllocatedAddress = uiAddress;
       allocAUT->uiReturnAddress = uiAddress + sizeof(AllocationUnitTracker) + uiByteStuffForAlign;
       allocAUT->uiSize = uiSize;
@@ -185,7 +199,7 @@ unsigned DMM_AllocateForKernel(unsigned uiSizeInBytes, unsigned uiAlignNumber)
       unsigned uiRemaining = uiMaxSize - uiSize;
       if(uiRemaining > (sizeof(AllocationUnitTracker) + 1))
       {
-        AllocationUnitTracker* freeAUT = (AllocationUnitTracker*)(uiAddress + uiSize);
+        auto freeAUT = (AllocationUnitTracker*)(uiAddress + uiSize);
         freeAUT->uiAllocatedAddress = uiAddress + uiSize;
         freeAUT->uiReturnAddress = NULL;
         freeAUT->uiSize = uiRemaining;
@@ -195,6 +209,7 @@ unsigned DMM_AllocateForKernel(unsigned uiSizeInBytes, unsigned uiAlignNumber)
           uiAUTAddress = freeAUT->uiAllocatedAddress;
         else
           prevAut->uiNextAUTAddress = freeAUT->uiAllocatedAddress;
+        updateCheckSum(*freeAUT);
       }
       else
       {
@@ -204,9 +219,12 @@ unsigned DMM_AllocateForKernel(unsigned uiSizeInBytes, unsigned uiAlignNumber)
         else
           prevAut->uiNextAUTAddress = uiNextAUTAddress;
       }
+      if (prevAut != NULL) {
+        updateCheckSum(*prevAut);
+      }
+      updateCheckSum(*allocAUT);
       return allocAUT->uiReturnAddress;
     }
-
     prevAut = aut;
     aut = (AllocationUnitTracker*)uiNextAUTAddress;
   }
@@ -279,11 +297,19 @@ byte DMM_DeAllocateForKernel(unsigned uiAddress)
   AllocationUnitTracker* freeAUT = (AllocationUnitTracker*)(uiAddress - sizeof(AllocationUnitTracker));
   unsigned uiAllocatedAddress = uiAddress - sizeof(AllocationUnitTracker) - freeAUT->uiByteStuffForAlign;
   unsigned uiSize = freeAUT->uiSize;
+  const uint32_t calcCheckSum = calculateCheckSum(*freeAUT);
+  if (calcCheckSum != freeAUT->uiCheckSum) {
+    throw upan::exception(XLOC,"bad address dealloc %x", uiAddress);
+  }
+  if (freeAUT->uiReturnAddress == NULL) {
+    throw upan::exception(XLOC, "double delete %x", uiAddress);
+  }
   freeAUT = (AllocationUnitTracker*)uiAllocatedAddress;
   freeAUT->uiAllocatedAddress = uiAllocatedAddress;
   freeAUT->uiReturnAddress = NULL;
   freeAUT->uiSize = uiSize;
   freeAUT->uiNextAUTAddress = uiAUTAddress;
+  updateCheckSum(*freeAUT);
   uiAUTAddress = uiAllocatedAddress;
   return DMM_SUCCESS;
 }
