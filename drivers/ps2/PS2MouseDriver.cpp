@@ -122,6 +122,11 @@ void PS2MouseDriver::HandleEvent() {
             if (mouseData.anyButtonPressed()) {
               GraphicsVideo::Instance().switchFGProcess(pid);
             }
+            if (eventPid != pid) {
+              ProcessManager::Instance().GetProcess(eventPid).ifPresent([&mouseData](Process& p) {
+                p.dispatchMouseData(mouseData);
+              });
+            }
             eventPid = pid;
           });
         }
