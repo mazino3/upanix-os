@@ -1283,7 +1283,6 @@ public:
   }
 
   void run()  {
-    printf("\n %d, %d, %d", _cx, _cy, _csize);
     auto& clockCanvas = upanui::UIObjectFactory::createRoundCanvas(_uiRoot, PADDING, PADDING, _csize, _csize);
     clockCanvas.borderThickness(BORDER_THICKNESS);
     clockCanvas.backgroundColor(ColorPalettes::CP256::Get(50));
