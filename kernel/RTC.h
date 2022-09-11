@@ -28,15 +28,15 @@
 
 typedef struct
 {
-	byte bSecond ;
-	byte bMinute ;
-	byte bHour ;
+	uint8_t _second ;
+  uint8_t _minute ;
+  uint8_t _hour ;
 
-	byte bDayOfWeek ;
-	byte bDayOfMonth ;
-	byte bMonth ;
-	byte bCentury ;
-	byte bYear ;
+  uint8_t _dayOfWeek ;
+  uint8_t _dayOfMonth ;
+  uint8_t _month ;
+  uint8_t _century ;
+  uint8_t _year ;
 } RTCDateTime ;
 
 class RTC

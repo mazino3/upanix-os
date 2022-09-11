@@ -58,13 +58,13 @@ uint32_t SystemUtil_GetTimeOfDay()
 	RTC::GetDateTime(rtcTime) ;
 
 	mdate dt;
-	mdate_Set(&dt, rtcTime.bDayOfMonth, rtcTime.bMonth, rtcTime.bCentury * 100 + rtcTime.bYear) ;
+	mdate_Set(&dt, rtcTime._dayOfMonth, rtcTime._month, rtcTime._century * 100 + rtcTime._year) ;
 	
 	int days ;	
 	if(!mdate_SeedDateDifference(&dt, &days))
     throw upan::exception(XLOC, "invalid time");
 
-  return days * 24 * 60 * 60 + rtcTime.bHour * 60 * 60 + rtcTime.bMinute * 60 + rtcTime.bSecond ;
+  return days * 24 * 60 * 60 + rtcTime._hour * 60 * 60 + rtcTime._minute * 60 + rtcTime._second ;
 	//tv->uimSec = tv->tSec * 1000 ;
 }
 

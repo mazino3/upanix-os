@@ -77,29 +77,29 @@ void RTC::GetDateTime(RTCDateTime& rRTCDateTime)
 {
 	/* Read Date */
 	PortCom_SendByte(RTC_COMMAND_PORT, RTC_RGSTR_DAYOFWEEK) ;
-	rRTCDateTime.bDayOfWeek = PortCom_ReceiveByte(RTC_DATA_PORT) ;
+	rRTCDateTime._dayOfWeek = PortCom_ReceiveByte(RTC_DATA_PORT) ;
 
 	PortCom_SendByte(RTC_COMMAND_PORT, RTC_RGSTR_DAYOFMONTH) ;
-	rRTCDateTime.bDayOfMonth = BCD_TO_DECIMAL(PortCom_ReceiveByte(RTC_DATA_PORT)) ;
+	rRTCDateTime._dayOfMonth = BCD_TO_DECIMAL(PortCom_ReceiveByte(RTC_DATA_PORT)) ;
 
 	PortCom_SendByte(RTC_COMMAND_PORT, RTC_RGSTR_MONTH) ;
-	rRTCDateTime.bMonth = BCD_TO_DECIMAL(PortCom_ReceiveByte(RTC_DATA_PORT)) ;
+	rRTCDateTime._month = BCD_TO_DECIMAL(PortCom_ReceiveByte(RTC_DATA_PORT)) ;
 
 	PortCom_SendByte(RTC_COMMAND_PORT, RTC_RGSTR_YEAR) ;
-	rRTCDateTime.bYear = BCD_TO_DECIMAL(PortCom_ReceiveByte(RTC_DATA_PORT)) ;
+	rRTCDateTime._year = BCD_TO_DECIMAL(PortCom_ReceiveByte(RTC_DATA_PORT)) ;
 
 	PortCom_SendByte(RTC_COMMAND_PORT, RTC_RGSTR_CENTURY) ;
-	rRTCDateTime.bCentury = BCD_TO_DECIMAL(PortCom_ReceiveByte(RTC_DATA_PORT)) ;
+	rRTCDateTime._century = BCD_TO_DECIMAL(PortCom_ReceiveByte(RTC_DATA_PORT)) ;
 
 	/* Read Time */
 	PortCom_SendByte(RTC_COMMAND_PORT, RTC_RGSTR_SECOND) ;
-	rRTCDateTime.bSecond = BCD_TO_DECIMAL(PortCom_ReceiveByte(RTC_DATA_PORT)) ;
+	rRTCDateTime._second = BCD_TO_DECIMAL(PortCom_ReceiveByte(RTC_DATA_PORT)) ;
 
 	PortCom_SendByte(RTC_COMMAND_PORT, RTC_RGSTR_MINUTE) ;
-	rRTCDateTime.bMinute = BCD_TO_DECIMAL(PortCom_ReceiveByte(RTC_DATA_PORT)) ;
+	rRTCDateTime._minute = BCD_TO_DECIMAL(PortCom_ReceiveByte(RTC_DATA_PORT)) ;
 
 	PortCom_SendByte(RTC_COMMAND_PORT, RTC_RGSTR_HOUR) ;
-	rRTCDateTime.bHour = BCD_TO_DECIMAL(PortCom_ReceiveByte(RTC_DATA_PORT)) ;
+	rRTCDateTime._hour = BCD_TO_DECIMAL(PortCom_ReceiveByte(RTC_DATA_PORT)) ;
 }
 
 void RTC_Handler()

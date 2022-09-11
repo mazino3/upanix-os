@@ -60,6 +60,8 @@
 #include <Line.h>
 #include <GCoreFunctions.h>
 #include <Point.h>
+#include <BmpImage.h>
+#include <ImageCanvas.h>
 
 /**** Command Fucntion Declarations  *****/
 static void ConsoleCommands_ChangeDrive() ;
@@ -193,6 +195,7 @@ static const ConsoleCommand ConsoleCommands_CommandList[] = {
 	{ "initmntmgr",	&ConsoleCommands_InitMountManager },
 	{ "testg",		&ConsoleCommands_TestGraphics },
 	{ "testv",		&ConsoleCommands_Testv },
+  { "photos",		&ConsoleCommands_Testv },
 	{ "testn",		&ConsoleCommands_TestNet },
 	{ "testcpp", &ConsoleCommands_TestCPP },
 	{ "beep", &ConsoleCommands_Beep },
@@ -666,9 +669,9 @@ void ConsoleCommands_Date()
 	RTCDateTime rtcDateTime ;
 	RTC::GetDateTime(rtcDateTime) ;
 	
-	printf("\n %d/%d/%d - %d:%d:%d", rtcDateTime.bDayOfMonth, rtcDateTime.bMonth, 
-		rtcDateTime.bCentury * 100 + rtcDateTime.bYear, rtcDateTime.bHour, rtcDateTime.bMinute, 
-		rtcDateTime.bSecond) ;
+	printf("\n %d/%d/%d - %d:%d:%d", rtcDateTime._dayOfMonth, rtcDateTime._month,
+		rtcDateTime._century * 100 + rtcDateTime._year, rtcDateTime._hour, rtcDateTime._minute,
+		rtcDateTime._second) ;
 }
 
 void ConsoleCommands_MultiBootHeader()
@@ -746,13 +749,13 @@ void ConsoleCommands_ProbeUHCIUSB()
   UHCIManager::Instance().Probe();
 	RTC::GetDateTime(rtcStopTime) ;
 
-	printf("\n %d/%d/%d - %d:%d:%d", rtcStartTime.bDayOfMonth, rtcStartTime.bMonth, 
-		rtcStartTime.bCentury * 100 + rtcStartTime.bYear, rtcStartTime.bHour, rtcStartTime.bMinute, 
-		rtcStartTime.bSecond) ;
+	printf("\n %d/%d/%d - %d:%d:%d", rtcStartTime._dayOfMonth, rtcStartTime._month,
+		rtcStartTime._century * 100 + rtcStartTime._year, rtcStartTime._hour, rtcStartTime._minute,
+		rtcStartTime._second) ;
 	
-	printf("\n %d/%d/%d - %d:%d:%d", rtcStopTime.bDayOfMonth, rtcStopTime.bMonth, 
-		rtcStopTime.bCentury * 100 + rtcStopTime.bYear, rtcStopTime.bHour, rtcStopTime.bMinute, 
-		rtcStopTime.bSecond) ;
+	printf("\n %d/%d/%d - %d:%d:%d", rtcStopTime._dayOfMonth, rtcStopTime._month,
+		rtcStopTime._century * 100 + rtcStopTime._year, rtcStopTime._hour, rtcStopTime._minute,
+		rtcStopTime._second) ;
 }
 
 void ConsoleCommands_PerformECHIHandoff()
@@ -891,7 +894,7 @@ void ConsoleCommands_InitMountManager()
 		printf("\n MountManager already initialized") ;
 }
 
-class TestMouseHandler : public upanui::MouseEventHandler {
+class DragMouseHandler : public upanui::MouseEventHandler {
   void onEvent(upanui::UIObject& uiObject, const upanui::MouseEvent& event) override {
     const upanui::MouseData& data = event.getData();
     if (data.leftButtonState() == upanui::MouseData::HOLD) {
@@ -909,6 +912,75 @@ public:
     }
   }
 };
+
+class SlideShow : public upan::thread {
+public:
+  SlideShow(upanui::ImageCanvas& c, const upan::vector<upanui::Image*> images) : _c(c), _images(images) {
+  }
+
+  void run() override {
+    for(auto image : _images) {
+      _c.setImage(*image);
+      sleepms(5000);
+    }
+  }
+private:
+  upanui::ImageCanvas& _c;
+  upan::vector<upanui::Image*> _images;
+};
+
+void graphics_photos(int x, int y) {
+  FileSystem::Node* pDirList ;
+
+  int iListSize = 0 ;
+  const char* szListDirName = "usdb@/pictures/family/" ;
+
+  FileOperations_GetDirectoryContent(szListDirName, &pDirList, &iListSize);
+  FileOperations_ChangeDir("usdb@/pictures/family/");
+
+  upan::vector<upanui::Image*> images;
+  for(int i = 0; i < iListSize; i++) {
+    if (pDirList[i].IsFile()) {
+      auto fileSize = pDirList[i].Size();
+      auto& file = FileOperations_Open(pDirList[i].Name(), O_RDONLY);
+      file.seek(SEEK_SET, 0);
+      upan::uniq_ptr<char[]> buffer(new char[fileSize]);
+      file.read(buffer.get(), fileSize);
+      upanui::BmpImage& image = upanui::BmpImage::create(buffer.get());
+      images.push_back(&image);
+      FileOperations_Close(file.id());
+    }
+  }
+
+  if (images.empty()) {
+    printf("\n No images found");
+    while(1);
+    exit(0);
+  }
+
+  DMM_DeAllocateForKernel((unsigned)pDirList);
+
+  const int photoCanvasWidth = 500, photoCanvasHeight = 500;
+  upanui::GraphicsContext::Init();
+  auto& gc = upanui::GraphicsContext::Instance();
+  auto& uiRoot = gc.initUIRoot(x, y, photoCanvasWidth + 10, photoCanvasHeight + 10, true);
+  uiRoot.backgroundColor(ColorPalettes::CP256::Get(15));
+  uiRoot.borderThickness(5);
+
+  DragMouseHandler mouseHandler;
+  uiRoot.registerMouseEventHandler(mouseHandler);
+  PassThroughMouseHandler passThroughMouseHandler;
+
+  auto &ic = upanui::UIObjectFactory::createImageCanvas(uiRoot, *images[0], 0, 0, photoCanvasWidth, photoCanvasHeight);
+  ic.registerMouseEventHandler(passThroughMouseHandler);
+
+  SlideShow ss(ic, images);
+  ss.start();
+
+  gc.eventManager().startEventLoop();
+
+  exit(0);
+}
 
 void graphics_test_process_canvas(int x, int y) {
   upanui::GraphicsContext::Init();
@@ -1012,7 +1084,7 @@ void graphics_test_process_canvas(int x, int y) {
   auto& b9 = upanui::UIObjectFactory::createButton(bp1, 30, 90, 30, 20);
   b9.backgroundColor(btColor);
 
-  TestMouseHandler mouseHandler;
+  DragMouseHandler mouseHandler;
   uiRoot.registerMouseEventHandler(mouseHandler);
   cc1.registerMouseEventHandler(mouseHandler);
   PassThroughMouseHandler passThroughMouseHandler;
@@ -1036,22 +1108,22 @@ void graphics_test_process_line(int x, int y) {
   auto& lineh = upanui::UIObjectFactory::createLine(uiRoot, 10, 20, 100, 20, 10);
   lineh.backgroundColor(ColorPalettes::CP256::Get(190));
 
-  auto& linev = upanui::UIObjectFactory::createLine(uiRoot, 110, 10, 110, 50, 10);
+  auto& linev = upanui::UIObjectFactory::createLine(uiRoot, 120, 10, 120, 50, 10);
   linev.backgroundColor(ColorPalettes::CP256::Get(190));
 
-  auto& line2 = upanui::UIObjectFactory::createLine(uiRoot, 320, 10, 340, 300, 25);
+  auto& line2 = upanui::UIObjectFactory::createLine(uiRoot, 345, 10, 365, 300, 25);
   line2.backgroundColor(ColorPalettes::CP256::Get(190));
   line2.backgroundColorAlpha(100);
 
-  auto& line2a = upanui::UIObjectFactory::createLine(uiRoot, 350, 10, 370, 300, 25);
+  auto& line2a = upanui::UIObjectFactory::createLine(uiRoot, 375, 10, 395, 300, 25);
   line2a.backgroundColor(ColorPalettes::CP256::Get(190));
   line2a.backgroundColorAlpha(50);
 
-  auto& line2o = upanui::UIObjectFactory::createLine(uiRoot, 430, 10, 410, 300, 25);
+  auto& line2o = upanui::UIObjectFactory::createLine(uiRoot, 455, 10, 435, 300, 25);
   line2o.backgroundColor(ColorPalettes::CP256::Get(190));
   line2o.backgroundColorAlpha(100);
 
-  auto& line2oa = upanui::UIObjectFactory::createLine(uiRoot, 460, 10, 440, 300, 25);
+  auto& line2oa = upanui::UIObjectFactory::createLine(uiRoot, 485, 10, 465, 300, 25);
   line2oa.backgroundColor(ColorPalettes::CP256::Get(190));
   line2oa.backgroundColorAlpha(50);
 
@@ -1089,13 +1161,19 @@ void graphics_test_process_line(int x, int y) {
   auto& line31o = upanui::UIObjectFactory::createLine(uiRoot, 20, 100, 200, 80, 1);
   line31o.backgroundColor(ColorPalettes::CP256::Get(190));
 
-  auto& line32 = upanui::UIObjectFactory::createLine(uiRoot, 20, 110, 200, 130, 2);
+  auto& line32 = upanui::UIObjectFactory::createLine(uiRoot, 20, 110, 80, 170, 5);
   line32.backgroundColor(ColorPalettes::CP256::Get(190));
 
-  auto& line32o = upanui::UIObjectFactory::createLine(uiRoot, 20, 160, 200, 140, 2);
+//  auto& line32a = upanui::UIObjectFactory::createLine(uiRoot, 20, 110, 200, 130, 2);
+//  line32a.backgroundColor(ColorPalettes::CP256::Get(190));
+
+  auto& line32o = upanui::UIObjectFactory::createLine(uiRoot, 20, 160, 80, 100, 10);
   line32o.backgroundColor(ColorPalettes::CP256::Get(190));
 
-  TestMouseHandler mouseHandler;
+//  auto& line32oa = upanui::UIObjectFactory::createLine(uiRoot, 20, 160, 200, 140, 2);
+//  line32oa.backgroundColor(ColorPalettes::CP256::Get(190));
+
+  DragMouseHandler mouseHandler;
   uiRoot.registerMouseEventHandler(mouseHandler);
 //  bp1.addMouseEventHandler(mouseHandler);
   //b1.addMouseEventHandler(mouseHandler);
@@ -1165,7 +1243,7 @@ void graphics_test_flag(int x, int y) {
   wheel.borderThickness(5);
   wheel.backgroundColorAlpha(0);
 
-  TestMouseHandler mouseHandler;
+  DragMouseHandler mouseHandler;
   uiRoot.registerMouseEventHandler(mouseHandler);
 //  bp1.addMouseEventHandler(mouseHandler);
   //b1.addMouseEventHandler(mouseHandler);
@@ -1177,42 +1255,60 @@ void graphics_test_flag(int x, int y) {
 
 class DemoClock : public upan::thread {
 public:
-  DemoClock(upanui::UIRoot& uiRoot, const uint32_t csize)
-      : _uiRoot(uiRoot), _csize(csize),
-        _cx(csize / 2), _cy(csize / 2) {
-    const int r = _csize / 2 - BORDER_THICKNESS;
+  DemoClock(upanui::UIRoot& uiRoot)
+      : _uiRoot(uiRoot), _csize(uiRoot.width() - 40), _htomFactor(5.0f / 60),
+        _cx(_csize / 2), _cy(_csize / 2) {
+    const int r = _csize / 2 - BORDER_THICKNESS - LABEL_SPACE;
     if (r < 0) {
-      throw upan::exception(XLOC, "csize (%u) is smaller than border size (%d)", csize, BORDER_THICKNESS);
+      throw upan::exception(XLOC, "csize (%u) is smaller than border size (%d)", _csize, BORDER_THICKNESS);
     }
 
     for(int i = 0; i < X_Y_CO_SIZE; ++i) {
-      _seconds[i] = upanui::Point(roundtoi(SECONDS_X_CO[i] * r), roundtoi(SECONDS_Y_CO[i] * r));
+      _minuteSteps[i] = upanui::Point(roundtoi(MINUTES_X_CO[i] * r), roundtoi(MINUTES_Y_CO[i] * r));
 
       if (i == 0) {
-        _seconds[i + 15] = upanui::Point(_seconds[i].y(), _seconds[i].x());
-        _seconds[i + 30] = upanui::Point(_seconds[i].x(), -_seconds[i].y());
-        _seconds[i + 45] = upanui::Point(-_seconds[i + 15].x(), _seconds[i + 15].y());
+        _minuteSteps[i + 15] = upanui::Point(_minuteSteps[i].y(), _minuteSteps[i].x());
+        _minuteSteps[i + 30] = upanui::Point(_minuteSteps[i].x(), -_minuteSteps[i].y());
+        _minuteSteps[i + 45] = upanui::Point(-_minuteSteps[i + 15].x(), _minuteSteps[i + 15].y());
       } else {
-        _seconds[15 - i] = upanui::Point(_seconds[i].y(), _seconds[i].x());
-        _seconds[15 + i] = upanui::Point(_seconds[15 - i].x(), -_seconds[15 - i].y());
-        _seconds[45 - i] = upanui::Point(-_seconds[15 - i].x(), -_seconds[15 - i].y());
-        _seconds[45 + i] = upanui::Point(-_seconds[15 - i].x(), _seconds[15 - i].y());
-        _seconds[30 - i] = upanui::Point(_seconds[i].x(), -_seconds[i].y());
-        _seconds[30 + i] = upanui::Point(-_seconds[i].x(), -_seconds[i].y());
-        _seconds[60 - i] = upanui::Point(-_seconds[i].x(), _seconds[i].y());
+        _minuteSteps[15 - i] = upanui::Point(_minuteSteps[i].y(), _minuteSteps[i].x());
+        _minuteSteps[15 + i] = upanui::Point(_minuteSteps[15 - i].x(), -_minuteSteps[15 - i].y());
+        _minuteSteps[45 - i] = upanui::Point(-_minuteSteps[15 - i].x(), -_minuteSteps[15 - i].y());
+        _minuteSteps[45 + i] = upanui::Point(-_minuteSteps[15 - i].x(), _minuteSteps[15 - i].y());
+        _minuteSteps[30 - i] = upanui::Point(_minuteSteps[i].x(), -_minuteSteps[i].y());
+        _minuteSteps[30 + i] = upanui::Point(-_minuteSteps[i].x(), -_minuteSteps[i].y());
+        _minuteSteps[60 - i] = upanui::Point(-_minuteSteps[i].x(), _minuteSteps[i].y());
       }
     }
   }
 
   void run()  {
-    auto& line = upanui::UIObjectFactory::createLine(_uiRoot, _cx, _cy, _cx + _seconds[0].x(), _cy - _seconds[0].y(), 1);
-    line.backgroundColor(ColorPalettes::CP256::Get(190));
-    int i = 0;
+    auto& clockCanvas = upanui::UIObjectFactory::createRoundCanvas(_uiRoot, 20, 20, _csize, _csize);
+    clockCanvas.borderThickness(BORDER_THICKNESS);
+    clockCanvas.backgroundColor(ColorPalettes::CP256::Get(50));
+    clockCanvas.borderColor(ColorPalettes::CP256::Get(25));
+
+    PassThroughMouseHandler mouseHandler;
+    clockCanvas.registerMouseEventHandler(mouseHandler);
+
+    auto& secondHand = upanui::UIObjectFactory::createLine(clockCanvas, _cx, _cy, _cx + _minuteSteps[0].x(), _cy - _minuteSteps[0].y(), 2);
+    secondHand.backgroundColor(ColorPalettes::CP256::Get(190));
+
+    auto& minuteHand = upanui::UIObjectFactory::createLine(clockCanvas, _cx, _cy, _cx + _minuteSteps[0].x(), _cy - _minuteSteps[0].y(), 4);
+    minuteHand.backgroundColor(ColorPalettes::CP256::Get(150));
+
+    auto& hourHand = upanui::UIObjectFactory::createLine(clockCanvas, _cx, _cy, _cx + _minuteSteps[0].x(), _cy - _minuteSteps[0].y(), 6);
+    hourHand.backgroundColor(ColorPalettes::CP256::Get(120));
+
     while(true) {
-      const auto x = _cx + _seconds[i].x();
-      const auto y = _cy - _seconds[i].y();
-      line.updateXY(_cx, _cy, x, y);
-      i = (i + 1) % 60;
+      RTCDateTime dateTime;
+      RTC::GetDateTime(dateTime);
+      secondHand.updateXY(_cx, _cy, _cx + _minuteSteps[dateTime._second].x(), _cy - _minuteSteps[dateTime._second].y());
+      minuteHand.updateXY(_cx, _cy, _cx + _minuteSteps[dateTime._minute].x(), _cy - _minuteSteps[dateTime._minute].y());
+
+      const int h = (dateTime._hour * 5 + int(dateTime._minute * _htomFactor)) % 60;
+      hourHand.updateXY(_cx, _cy, _cx + _minuteSteps[h].x(), _cy - _minuteSteps[h].y());
+
       sleepms(1000);
     }
   }
@@ -1220,35 +1316,60 @@ public:
 private:
   upanui::UIRoot& _uiRoot;
   const uint32_t _csize;
+  const float _htomFactor;
   const int _cx;
   const int _cy;
-  upanui::Point _seconds[60];
+  upanui::Point _minuteSteps[60];
 
 public:
   static const int BORDER_THICKNESS = 5;
+  static const int LABEL_SPACE = 10;
   static const int X_Y_CO_SIZE = 8;
-  static const float SECONDS_X_CO[];
-  static const float SECONDS_Y_CO[];
+  static const float MINUTES_X_CO[];
+  static const float MINUTES_Y_CO[];
 };
 
-const float DemoClock::SECONDS_X_CO[] = { 0.0, 0.10453, 0.20791, 0.30901, 0.40673, 0.5, 0.5878, 0.66913 };
-const float DemoClock::SECONDS_Y_CO[] = { 1.0, 0.99452, 0.97815, 0.95105, 0.91354, 0.86602, 0.80901, 0.74314 };
+const float DemoClock::MINUTES_X_CO[] = {0.0, 0.10453, 0.20791, 0.30901, 0.40673, 0.5, 0.5878, 0.66913 };
+const float DemoClock::MINUTES_Y_CO[] = {1.0, 0.99452, 0.97815, 0.95105, 0.91354, 0.86602, 0.80901, 0.74314 };
 
 void graphics_test_clock(int x, int y) {
+  const int clockSize = 200;
   upanui::GraphicsContext::Init();
   auto& gc = upanui::GraphicsContext::Instance();
-  auto& uiRoot = gc.initUIRoot(x, y, 400, 400, true);
+  auto& uiRoot = gc.initUIRoot(x, y, clockSize, clockSize, true);
   uiRoot.backgroundColor(ColorPalettes::CP256::Get(15));
-  uiRoot.backgroundColorAlpha(50);
-  uiRoot.borderThickness(5);
+  uiRoot.backgroundColorAlpha(0);
 
-  DemoClock demoClock(uiRoot, 200);
+  DemoClock demoClock(uiRoot);
   demoClock.start();
 
-  TestMouseHandler mouseHandler;
-  uiRoot.registerMouseEventHandler(mouseHandler);
 //  bp1.addMouseEventHandler(mouseHandler);
   //b1.addMouseEventHandler(mouseHandler);
+
+  gc.eventManager().startEventLoop();
+
+  exit(0);
+}
+
+void graphics_window_app(int x, int y) {
+  const int appWidth = 600;
+  const int mainHeight = 500;
+  const int menuBarHeight = 30;
+  upanui::GraphicsContext::Init();
+  auto& gc = upanui::GraphicsContext::Instance();
+  auto& uiRoot = gc.initUIRoot(x, y, appWidth, mainHeight + menuBarHeight, true);
+
+  auto& uiMenuBar = upanui::UIObjectFactory::createRectangleCanvas(uiRoot, 0, 0, appWidth, menuBarHeight);
+  uiMenuBar.backgroundColor(0xA59E9D);
+
+  auto& closeBt = upanui::UIObjectFactory::createCloseIconButton(uiMenuBar, appWidth - menuBarHeight, 0, menuBarHeight, menuBarHeight);
+
+  auto& uiMain = upanui::UIObjectFactory::createRectangleCanvas(uiRoot, 0, menuBarHeight, appWidth, mainHeight);
+  uiMain.backgroundColor(0xEFE8E6);
+
+  DragMouseHandler mouseHandler;
+  PassThroughMouseHandler passThroughMouseHandler;
+  uiMenuBar.registerMouseEventHandler(passThroughMouseHandler);
 
   gc.eventManager().startEventLoop();
 
@@ -1286,6 +1407,11 @@ void ConsoleCommands_TestGraphics() {
 
     case 4: {
       ProcessManager::Instance().CreateKernelProcess(pname, (unsigned) &graphics_test_flag, NO_PROCESS_ID, true, params);
+    }
+    break;
+
+    case 5: {
+      ProcessManager::Instance().CreateKernelProcess(pname, (unsigned) &graphics_window_app, NO_PROCESS_ID, true, params);
     }
     break;
 
@@ -1441,7 +1567,12 @@ void aThread(void* x) {
 
 extern uint32_t dmm_alloc_count;
 void ConsoleCommands_Testv() {
-  printf("\n Alloc Count: %u", dmm_alloc_count);
+  //printf("\n Alloc Count: %u", dmm_alloc_count);
+  upan::vector<uint32_t> params;
+  params.push_back(0);
+  params.push_back(0);
+  upan::string pname("photos");
+  ProcessManager::Instance().CreateKernelProcess(pname, (unsigned) &graphics_photos, NO_PROCESS_ID, true, params);
 }
 
 void ConsoleCommands_TestNet()
