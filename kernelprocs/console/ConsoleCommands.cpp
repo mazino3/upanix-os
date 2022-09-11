@@ -1256,8 +1256,8 @@ void graphics_test_flag(int x, int y) {
 class DemoClock : public upan::thread {
 public:
   DemoClock(upanui::UIRoot& uiRoot)
-      : _uiRoot(uiRoot), _csize(uiRoot.width() - 40), _htomFactor(5.0f / 60),
-        _cx(_csize / 2), _cy(_csize / 2) {
+      : _uiRoot(uiRoot), _csize(uiRoot.width() - (PADDING * 2)), _htomFactor(5.0f / 60),
+        _cx(_csize / 2 - BORDER_THICKNESS), _cy(_csize / 2 - BORDER_THICKNESS) {
     const int r = _csize / 2 - BORDER_THICKNESS - LABEL_SPACE;
     if (r < 0) {
       throw upan::exception(XLOC, "csize (%u) is smaller than border size (%d)", _csize, BORDER_THICKNESS);
@@ -1283,7 +1283,8 @@ public:
   }
 
   void run()  {
-    auto& clockCanvas = upanui::UIObjectFactory::createRoundCanvas(_uiRoot, 20, 20, _csize, _csize);
+    printf("\n %d, %d, %d", _cx, _cy, _csize);
+    auto& clockCanvas = upanui::UIObjectFactory::createRoundCanvas(_uiRoot, PADDING, PADDING, _csize, _csize);
     clockCanvas.borderThickness(BORDER_THICKNESS);
     clockCanvas.backgroundColor(ColorPalettes::CP256::Get(50));
     clockCanvas.borderColor(ColorPalettes::CP256::Get(25));
@@ -1294,11 +1295,14 @@ public:
     auto& secondHand = upanui::UIObjectFactory::createLine(clockCanvas, _cx, _cy, _cx + _minuteSteps[0].x(), _cy - _minuteSteps[0].y(), 2);
     secondHand.backgroundColor(ColorPalettes::CP256::Get(190));
 
-    auto& minuteHand = upanui::UIObjectFactory::createLine(clockCanvas, _cx, _cy, _cx + _minuteSteps[0].x(), _cy - _minuteSteps[0].y(), 4);
+    auto& minuteHand = upanui::UIObjectFactory::createLine(clockCanvas, _cx, _cy, _cx + _minuteSteps[0].x(), _cy - _minuteSteps[0].y(), 3);
     minuteHand.backgroundColor(ColorPalettes::CP256::Get(150));
 
-    auto& hourHand = upanui::UIObjectFactory::createLine(clockCanvas, _cx, _cy, _cx + _minuteSteps[0].x(), _cy - _minuteSteps[0].y(), 6);
+    auto& hourHand = upanui::UIObjectFactory::createLine(clockCanvas, _cx, _cy, _cx + _minuteSteps[0].x(), _cy - _minuteSteps[0].y(), 4);
     hourHand.backgroundColor(ColorPalettes::CP256::Get(120));
+
+    auto& centerCircle = upanui::UIObjectFactory::createRoundCanvas(clockCanvas, _cx - 8, _cy - 8, 16, 16);
+    centerCircle.backgroundColor(ColorPalettes::CP256::Get(10));
 
     while(true) {
       RTCDateTime dateTime;
@@ -1322,8 +1326,10 @@ private:
   upanui::Point _minuteSteps[60];
 
 public:
+
   static const int BORDER_THICKNESS = 5;
-  static const int LABEL_SPACE = 10;
+  static const int LABEL_SPACE = 20;
+  static const int PADDING = 2;
   static const int X_Y_CO_SIZE = 8;
   static const float MINUTES_X_CO[];
   static const float MINUTES_Y_CO[];
@@ -1337,7 +1343,6 @@ void graphics_test_clock(int x, int y) {
   upanui::GraphicsContext::Init();
   auto& gc = upanui::GraphicsContext::Instance();
   auto& uiRoot = gc.initUIRoot(x, y, clockSize, clockSize, true);
-  uiRoot.backgroundColor(ColorPalettes::CP256::Get(15));
   uiRoot.backgroundColorAlpha(0);
 
   DemoClock demoClock(uiRoot);
