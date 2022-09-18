@@ -62,6 +62,7 @@
 #include <Point.h>
 #include <BmpImage.h>
 #include <ImageCanvas.h>
+#include <Label.h>
 
 /**** Command Fucntion Declarations  *****/
 static void ConsoleCommands_ChangeDrive() ;
@@ -1303,6 +1304,16 @@ public:
     auto& centerCircle = upanui::UIObjectFactory::createRoundCanvas(clockCanvas, _cx - 8, _cy - 8, 16, 16);
     centerCircle.backgroundColor(ColorPalettes::CP256::Get(10));
 
+    auto fgColor = ColorPalettes::CP16::Get(ColorPalettes::CP16::FG_RED);
+    auto& label = upanui::UIObjectFactory::createLabel(clockCanvas,
+                                                       _cx - 60, _cy - 40, 120, 20,
+                                                       "TESTing", fgColor,
+                                                       upanui::usfn::PreloadedFonts::VGA16,
+                                                       upanui::usfn::FAMILY_MONOSPACE, upanui::usfn::STYLE_REGULAR, 16);
+    label.backgroundColor(ColorPalettes::CP256::Get(88));
+    //label.backgroundColorAlpha(0);
+
+    bool t = false;
     while(true) {
       RTCDateTime dateTime;
       RTC::GetDateTime(dateTime);
@@ -1311,6 +1322,9 @@ public:
 
       const int h = (dateTime._hour * 5 + int(dateTime._minute * _htomFactor)) % 60;
       hourHand.updateXY(_cx, _cy, _cx + _minuteSteps[h].x(), _cy - _minuteSteps[h].y());
+
+      label.setFGColor(t ? 0x342345 : fgColor);
+      t = !t;
 
       sleepms(1000);
     }
