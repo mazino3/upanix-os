@@ -1260,30 +1260,46 @@ public:
       : _uiRoot(uiRoot), _csize(uiRoot.width() - (PADDING * 2)), _htomFactor(5.0f / 60),
         _cx(_csize / 2 - BORDER_THICKNESS), _cy(_csize / 2 - BORDER_THICKNESS) {
     const int r = _csize / 2 - BORDER_THICKNESS - LABEL_SPACE;
+    populateSteps(_secondSteps, r - 10);
+    populateSteps(_minuteSteps, r - 5);
+    populateSteps(_hourSteps, r - 20);
+    populateSteps(_labels, r + 3);
+  }
+
+  void populateSteps(upanui::Point (&steps)[60], const int r) {
     if (r < 0) {
-      throw upan::exception(XLOC, "csize (%u) is smaller than border size (%d)", _csize, BORDER_THICKNESS);
+      throw upan::exception(XLOC, "csize (%u) is smaller than minimum length", _csize);
     }
 
     for(int i = 0; i < X_Y_CO_SIZE; ++i) {
-      _minuteSteps[i] = upanui::Point(roundtoi(MINUTES_X_CO[i] * r), roundtoi(MINUTES_Y_CO[i] * r));
+      steps[i] = upanui::Point(roundtoi(X_CO[i] * r), roundtoi(Y_CO[i] * r));
 
       if (i == 0) {
-        _minuteSteps[i + 15] = upanui::Point(_minuteSteps[i].y(), _minuteSteps[i].x());
-        _minuteSteps[i + 30] = upanui::Point(_minuteSteps[i].x(), -_minuteSteps[i].y());
-        _minuteSteps[i + 45] = upanui::Point(-_minuteSteps[i + 15].x(), _minuteSteps[i + 15].y());
+        steps[15] = upanui::Point(steps[i].y(), steps[i].x());
+        steps[30] = upanui::Point(steps[i].x(), -steps[i].y());
+        steps[45] = upanui::Point(-steps[i + 15].x(), steps[i + 15].y());
       } else {
-        _minuteSteps[15 - i] = upanui::Point(_minuteSteps[i].y(), _minuteSteps[i].x());
-        _minuteSteps[15 + i] = upanui::Point(_minuteSteps[15 - i].x(), -_minuteSteps[15 - i].y());
-        _minuteSteps[45 - i] = upanui::Point(-_minuteSteps[15 - i].x(), -_minuteSteps[15 - i].y());
-        _minuteSteps[45 + i] = upanui::Point(-_minuteSteps[15 - i].x(), _minuteSteps[15 - i].y());
-        _minuteSteps[30 - i] = upanui::Point(_minuteSteps[i].x(), -_minuteSteps[i].y());
-        _minuteSteps[30 + i] = upanui::Point(-_minuteSteps[i].x(), -_minuteSteps[i].y());
-        _minuteSteps[60 - i] = upanui::Point(-_minuteSteps[i].x(), _minuteSteps[i].y());
+        steps[15 - i] = upanui::Point(steps[i].y(), steps[i].x());
+        steps[15 + i] = upanui::Point(steps[15 - i].x(), -steps[15 - i].y());
+        steps[45 - i] = upanui::Point(-steps[15 - i].x(), -steps[15 - i].y());
+        steps[45 + i] = upanui::Point(-steps[15 - i].x(), steps[15 - i].y());
+        steps[30 - i] = upanui::Point(steps[i].x(), -steps[i].y());
+        steps[30 + i] = upanui::Point(-steps[i].x(), -steps[i].y());
+        steps[60 - i] = upanui::Point(-steps[i].x(), steps[i].y());
       }
     }
   }
 
-  void run()  {
+  void run() {
+    try {
+      doRun();
+    } catch(const upan::exception& e) {
+      printf("App failed with error: %s", e.ErrorMsg().c_str());
+      exit(1);
+    }
+  }
+private:
+  void doRun() {
     auto& clockCanvas = upanui::UIObjectFactory::createRoundCanvas(_uiRoot, PADDING, PADDING, _csize, _csize);
     clockCanvas.borderThickness(BORDER_THICKNESS);
     clockCanvas.backgroundColor(ColorPalettes::CP256::Get(50));
@@ -1292,39 +1308,47 @@ public:
     PassThroughMouseHandler mouseHandler;
     clockCanvas.registerMouseEventHandler(mouseHandler);
 
-    auto& secondHand = upanui::UIObjectFactory::createLine(clockCanvas, _cx, _cy, _cx + _minuteSteps[0].x(), _cy - _minuteSteps[0].y(), 2);
+    auto& secondHand = upanui::UIObjectFactory::createLine(clockCanvas, _cx, _cy, _cx + _secondSteps[0].x(), _cy - _secondSteps[0].y(), 2);
     secondHand.backgroundColor(ColorPalettes::CP256::Get(190));
 
     auto& minuteHand = upanui::UIObjectFactory::createLine(clockCanvas, _cx, _cy, _cx + _minuteSteps[0].x(), _cy - _minuteSteps[0].y(), 3);
     minuteHand.backgroundColor(ColorPalettes::CP256::Get(150));
 
-    auto& hourHand = upanui::UIObjectFactory::createLine(clockCanvas, _cx, _cy, _cx + _minuteSteps[0].x(), _cy - _minuteSteps[0].y(), 4);
+    auto& hourHand = upanui::UIObjectFactory::createLine(clockCanvas, _cx, _cy, _cx + _hourSteps[0].x(), _cy - _hourSteps[0].y(), 4);
     hourHand.backgroundColor(ColorPalettes::CP256::Get(120));
 
     auto& centerCircle = upanui::UIObjectFactory::createRoundCanvas(clockCanvas, _cx - 8, _cy - 8, 16, 16);
     centerCircle.backgroundColor(ColorPalettes::CP256::Get(10));
 
-    auto fgColor = ColorPalettes::CP16::Get(ColorPalettes::CP16::FG_RED);
-    auto& label = upanui::UIObjectFactory::createLabel(clockCanvas,
-                                                       _cx - 60, _cy - 40, 120, 20,
-                                                       "TESTing", fgColor,
-                                                       upanui::usfn::PreloadedFonts::VGA16,
-                                                       upanui::usfn::FAMILY_MONOSPACE, upanui::usfn::STYLE_REGULAR, 16);
-    label.backgroundColor(ColorPalettes::CP256::Get(88));
-    //label.backgroundColorAlpha(0);
+    //VGA font --> 1 character is 8 width, 16 height with font size 16
+    const int labelSize = 16;
+    const int labelHeight = labelSize;
+    const int labelWidth1C = 8;
+    const int labelWidth2C = labelWidth1C * 2;
+    auto fgColor = ColorPalettes::CP16::Get(ColorPalettes::CP16::FG_WHITE);
+    for(int i = 0; i < 12; ++i) {
+      const int stepIndex = i * 5;
+      const int labelWidth = i == 0 || i > 9 ? labelWidth2C : labelWidth1C;
+      char buf[3];
+      sprintf(buf, "%d", i == 0 ? 12 : i);
+      auto& label = upanui::UIObjectFactory::createLabel(clockCanvas,
+                                                         _cx + _labels[stepIndex].x() - labelWidth / 2, _cy - _labels[stepIndex].y() - labelHeight / 2,
+                                                         labelWidth, labelHeight,
+                                                         buf, fgColor,
+                                                         upanui::usfn::PreloadedFonts::VGA16,
+                                                         upanui::usfn::FAMILY_MONOSPACE, upanui::usfn::STYLE_REGULAR, labelSize);
+      label.backgroundColor(0);
+      label.backgroundColorAlpha(0);
+    }
 
-    bool t = false;
     while(true) {
       RTCDateTime dateTime;
       RTC::GetDateTime(dateTime);
-      secondHand.updateXY(_cx, _cy, _cx + _minuteSteps[dateTime._second].x(), _cy - _minuteSteps[dateTime._second].y());
+      secondHand.updateXY(_cx, _cy, _cx + _secondSteps[dateTime._second].x(), _cy - _secondSteps[dateTime._second].y());
       minuteHand.updateXY(_cx, _cy, _cx + _minuteSteps[dateTime._minute].x(), _cy - _minuteSteps[dateTime._minute].y());
 
       const int h = (dateTime._hour * 5 + int(dateTime._minute * _htomFactor)) % 60;
-      hourHand.updateXY(_cx, _cy, _cx + _minuteSteps[h].x(), _cy - _minuteSteps[h].y());
-
-      label.setFGColor(t ? 0x342345 : fgColor);
-      t = !t;
+      hourHand.updateXY(_cx, _cy, _cx + _hourSteps[h].x(), _cy - _hourSteps[h].y());
 
       sleepms(1000);
     }
@@ -1336,7 +1360,10 @@ private:
   const float _htomFactor;
   const int _cx;
   const int _cy;
+  upanui::Point _secondSteps[60];
   upanui::Point _minuteSteps[60];
+  upanui::Point _hourSteps[60];
+  upanui::Point _labels[60];
 
 public:
 
@@ -1344,12 +1371,12 @@ public:
   static const int LABEL_SPACE = 20;
   static const int PADDING = 2;
   static const int X_Y_CO_SIZE = 8;
-  static const float MINUTES_X_CO[];
-  static const float MINUTES_Y_CO[];
+  static const float X_CO[];
+  static const float Y_CO[];
 };
 
-const float DemoClock::MINUTES_X_CO[] = {0.0, 0.10453, 0.20791, 0.30901, 0.40673, 0.5, 0.5878, 0.66913 };
-const float DemoClock::MINUTES_Y_CO[] = {1.0, 0.99452, 0.97815, 0.95105, 0.91354, 0.86602, 0.80901, 0.74314 };
+const float DemoClock::X_CO[] = { 0.0, 0.10453, 0.20791, 0.30901, 0.40673, 0.5, 0.5878, 0.66913 };
+const float DemoClock::Y_CO[] = { 1.0, 0.99452, 0.97815, 0.95105, 0.91354, 0.86602, 0.80901, 0.74314 };
 
 void graphics_test_clock(int x, int y) {
   const int clockSize = 200;

@@ -105,7 +105,7 @@ private:
     UIObject& parent() const override {
       throw upan::exception(XLOC, "unsupported parent()");
     }
-    const upan::set<UIObject*>& children() override {
+    const upan::list<UIObject*>& children() override {
       throw upan::exception(XLOC, "unsupported children()");
     }
     upanui::Layout& layout() override {
