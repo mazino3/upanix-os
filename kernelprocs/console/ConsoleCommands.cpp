@@ -1302,30 +1302,30 @@ private:
   void doRun() {
     auto& clockCanvas = upanui::UIObjectFactory::createRoundCanvas(_uiRoot, PADDING, PADDING, _csize, _csize);
     clockCanvas.borderThickness(BORDER_THICKNESS);
-    clockCanvas.backgroundColor(ColorPalettes::CP256::Get(50));
-    clockCanvas.borderColor(ColorPalettes::CP256::Get(25));
+    clockCanvas.backgroundColor(0xFFFEF2);
+    clockCanvas.borderColor(0x5A3828);
 
     PassThroughMouseHandler mouseHandler;
     clockCanvas.registerMouseEventHandler(mouseHandler);
 
     auto& secondHand = upanui::UIObjectFactory::createLine(clockCanvas, _cx, _cy, _cx + _secondSteps[0].x(), _cy - _secondSteps[0].y(), 2);
-    secondHand.backgroundColor(ColorPalettes::CP256::Get(190));
+    secondHand.backgroundColor(0x41394C);
 
     auto& minuteHand = upanui::UIObjectFactory::createLine(clockCanvas, _cx, _cy, _cx + _minuteSteps[0].x(), _cy - _minuteSteps[0].y(), 3);
-    minuteHand.backgroundColor(ColorPalettes::CP256::Get(150));
+    minuteHand.backgroundColor(0x524C4C);
 
     auto& hourHand = upanui::UIObjectFactory::createLine(clockCanvas, _cx, _cy, _cx + _hourSteps[0].x(), _cy - _hourSteps[0].y(), 4);
-    hourHand.backgroundColor(ColorPalettes::CP256::Get(120));
+    hourHand.backgroundColor(0x4B4B4C);
 
     auto& centerCircle = upanui::UIObjectFactory::createRoundCanvas(clockCanvas, _cx - 8, _cy - 8, 16, 16);
-    centerCircle.backgroundColor(ColorPalettes::CP256::Get(10));
+    centerCircle.backgroundColor(0xFADDBD);
 
     //VGA font --> 1 character is 8 width, 16 height with font size 16
     const int labelSize = 16;
     const int labelHeight = labelSize;
     const int labelWidth1C = 8;
     const int labelWidth2C = labelWidth1C * 2;
-    auto fgColor = ColorPalettes::CP16::Get(ColorPalettes::CP16::FG_WHITE);
+    auto fgColor = ColorPalettes::CP16::Get(ColorPalettes::CP16::FG_BLACK);
     for(int i = 0; i < 12; ++i) {
       const int stepIndex = i * 5;
       const int labelWidth = i == 0 || i > 9 ? labelWidth2C : labelWidth1C;
