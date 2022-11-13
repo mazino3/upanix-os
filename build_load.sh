@@ -92,6 +92,8 @@ then
 fi
 
 sudo cp -f bin/upanix.elf USBImage/mnt/efi/boot/
+sudo cp -f boot/grub.cfg USBImage/mnt/efi/boot/
+
 sleep 2
 sudo umount /dev/mapper/$MOUNTP
 
