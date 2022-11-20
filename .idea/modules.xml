@@ -2,9 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/Upanix.iml" filepath="$PROJECT_DIR$/.idea/Upanix.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/Upanix2.iml" filepath="$PROJECT_DIR$/.idea/Upanix2.iml" />
-      <module fileurl="file://$APPLICATION_HOME_DIR$/jbr/bin/wsl$/Ubuntu/home/prajwala/workspace/mosland/upanix/.idea/upanix.iml" filepath="$APPLICATION_HOME_DIR$/jbr/bin/wsl$/Ubuntu/home/prajwala/workspace/mosland/upanix/.idea/upanix.iml" />
     </modules>
   </component>
 </project>

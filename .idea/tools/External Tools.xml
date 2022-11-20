@@ -3,7 +3,7 @@
     <exec>
       <option name="COMMAND" value="make" />
       <option name="PARAMETERS" />
-      <option name="WORKING_DIRECTORY" value="//wsl$/Ubuntu/home/prajwala/workspace/mosland/upanix" />
+      <option name="WORKING_DIRECTORY" value="//wsl$/Ubuntu-22.04/home/prajwala/workspace/src/upanix" />
     </exec>
   </tool>
 </toolSet>
