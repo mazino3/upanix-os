@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Upanix Load &amp; Run " type="CMakeRunConfiguration" factoryName="Application" PROGRAM_PARAMS="-i ./runqemu_uefi 64 load" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" WORKING_DIR="file://$ProjectFileDir$" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Upanix" TARGET_NAME="upanix.elf" CONFIG_NAME="Release" RUN_PATH="$PROJECT_DIR$/../../../../../usr/bin/bash">
+  <configuration default="false" name="Upanix Load &amp; Run " type="CMakeRunConfiguration" factoryName="Application" PROGRAM_PARAMS="-i ./runqemu_uefi 64 load" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" WORKING_DIR="file://$ProjectFileDir$" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Upanix" TARGET_NAME="upanix.elf" CONFIG_NAME="Debug-WSL" RUN_PATH="$PROJECT_DIR$/../../../../../usr/bin/bash">
     <method v="2">
       <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
     </method>
