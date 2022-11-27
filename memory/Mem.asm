@@ -31,7 +31,8 @@ Mem_EnablePaging:
 	mov dword cr3, eax
 
 	mov dword eax, cr0
-	or eax, 0x80000000
+	or eax, 0x80000000 ; set PG - Paging Enabled bit
+	and eax, 0xFFFEFFFF ; unset WP - Write Protected bit - to allow Supervisor level (kernel) process to write to read-only memory like Graphics linear buffer
 	mov dword cr0, eax
 	mov dword [CR0_CONTENT], eax
 	
