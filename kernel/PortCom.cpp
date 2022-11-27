@@ -80,8 +80,11 @@ void COM::Write(byte data)
   PortCom_SendByte(_port, data);
 }
 
-void COM::Write(const upan::string& msg)
-{
-  for(int i = 0; i < msg.length(); ++i)
+void COM::Write(const upan::string& msg) {
+  Write(msg.c_str());
+}
+
+void COM::Write(const char* msg) {
+  for(int i = 0; msg[i] != '\0'; ++i)
     Write(msg[i]);
 }

@@ -37,6 +37,7 @@ class COM
   public:
     void Write(byte data);
     void Write(const upan::string& msg);
+    void Write(const char* msg);
 
   protected:
     byte IsTransmitReady();
