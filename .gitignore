@@ -21,5 +21,4 @@ bin
 Upanix.cbp
 /Makefile
 *.log
-.idea/workspace.xml
 .cmake
