@@ -16,16 +16,10 @@
     </configurations>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3c1b55fe-3232-4a89-b452-2fd4fbe06d67" name="Default Changelist" comment="config changed for higher display resolution">
+    <list default="true" id="3c1b55fe-3232-4a89-b452-2fd4fbe06d67" name="Default Changelist" comment="handle mouse events asynchronously">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/drivers/ps2/PS2MouseDriver.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/drivers/ps2/PS2MouseDriver.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/drivers/ps2/PS2MouseDriver.h" beforeDir="false" afterPath="$PROJECT_DIR$/drivers/ps2/PS2MouseDriver.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/drivers/keyboard/KeyboardHandler.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/drivers/keyboard/KeyboardHandler.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/drivers/video/GraphicsVideo.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/drivers/video/GraphicsVideo.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/drivers/video/GraphicsVideo.h" beforeDir="false" afterPath="$PROJECT_DIR$/drivers/video/GraphicsVideo.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/kernel/UpanixMain.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/kernel/UpanixMain.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/kernelprocs/console/ConsoleCommands.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/kernelprocs/console/ConsoleCommands.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/process/KernelProcess.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/process/KernelProcess.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/runqemu_uefi" beforeDir="false" afterPath="$PROJECT_DIR$/runqemu_uefi" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -88,7 +82,7 @@
       </method>
     </configuration>
     <configuration name="Upanix Load &amp; Run" type="ShConfigurationType">
-      <option name="SCRIPT_TEXT" value="make &amp;&amp; ./runqemu_uefi 64 load &amp;&amp; exit" />
+      <option name="SCRIPT_TEXT" value="make &amp;&amp; ./runqemu_uefi load &amp;&amp; exit" />
       <option name="INDEPENDENT_SCRIPT_PATH" value="true" />
       <option name="SCRIPT_PATH" value="" />
       <option name="SCRIPT_OPTIONS" value="" />
@@ -144,7 +138,8 @@
       <workItem from="1671280029527" duration="1658000" />
       <workItem from="1671282175337" duration="116000" />
       <workItem from="1671282492084" duration="896000" />
-      <workItem from="1671328730035" duration="4084000" />
+      <workItem from="1671328730035" duration="5450000" />
+      <workItem from="1671373903677" duration="1037000" />
     </task>
     <task id="LOCAL-00001" summary="clion config change">
       <created>1669380369207</created>
@@ -174,7 +169,14 @@
       <option name="project" value="LOCAL" />
       <updated>1669560206647</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="handle mouse events asynchronously">
+      <created>1671369129058</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1671369129058</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -197,7 +199,8 @@
     <MESSAGE value="explicitly unset WP bit in CRO when enabling paging to allow supervisor (kernel) level process to write to read-only pages like for example graphics linear framebuffer" />
     <MESSAGE value="support to write char* string to com ports" />
     <MESSAGE value="config changed for higher display resolution" />
-    <option name="LAST_COMMIT_MESSAGE" value="config changed for higher display resolution" />
+    <MESSAGE value="handle mouse events asynchronously" />
+    <option name="LAST_COMMIT_MESSAGE" value="handle mouse events asynchronously" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />
