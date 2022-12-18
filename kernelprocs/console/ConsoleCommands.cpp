@@ -63,6 +63,7 @@
 #include <BmpImage.h>
 #include <ImageCanvas.h>
 #include <Label.h>
+#include <GraphicsVideo.h>
 
 /**** Command Fucntion Declarations  *****/
 static void ConsoleCommands_ChangeDrive() ;
@@ -122,6 +123,7 @@ static void ConsoleCommands_ShowRawDiskList() ;
 static void ConsoleCommands_InitFloppyController() ;
 static void ConsoleCommands_InitATAController() ;
 static void ConsoleCommands_InitMountManager() ;
+static void ConsoleCommands_Test() ;
 static void ConsoleCommands_Testv() ;
 static void ConsoleCommands_TestNet() ;
 static void ConsoleCommands_TestCPP() ;
@@ -195,7 +197,7 @@ static const ConsoleCommand ConsoleCommands_CommandList[] = {
 	{ "initata",	&ConsoleCommands_InitATAController },
 	{ "initmntmgr",	&ConsoleCommands_InitMountManager },
 	{ "testg",		&ConsoleCommands_TestGraphics },
-	{ "testv",		&ConsoleCommands_Testv },
+	{ "test",		&ConsoleCommands_Test },
   { "photos",		&ConsoleCommands_Testv },
 	{ "testn",		&ConsoleCommands_TestNet },
 	{ "testcpp", &ConsoleCommands_TestCPP },
@@ -1608,6 +1610,10 @@ void aThread(void* x) {
     printf("\nCounter: %d", i);
     sleepms(500);
   }
+}
+
+void ConsoleCommands_Test() {
+  GraphicsVideo::Instance().DebugPrint();
 }
 
 extern uint32_t dmm_alloc_count;

@@ -27,6 +27,7 @@
 #include <BmpImage.h>
 #include <atomicop.h>
 #include <list.h>
+#include <vector.h>
 #include <mutex.h>
 #include <MouseCursor.h>
 
@@ -46,7 +47,6 @@ class GraphicsVideo : protected KernelUtil::TimerTask {
     unsigned LFBSize() const { return _lfbSize; }
     uint32_t LFBPageCount() const { return _lfbPageCount; }
 
-    void SetPixel(unsigned x, unsigned y, unsigned color);
     void FillRect(unsigned sx, unsigned sy, unsigned width, unsigned height, unsigned color);
     void CreateRefreshTask();
     void Initialize();
@@ -64,8 +64,15 @@ class GraphicsVideo : protected KernelUtil::TimerTask {
 
     uint32_t allocateFrameBuffer();
 
-  private:
-    bool isDirty();
+    void DebugPrint();
+
+    private:
+    typedef struct {
+      bool _processChanged;
+      bool _mouseChanged;
+    } RedrawInfo;
+
+    RedrawInfo isDirty();
     bool TimerTrigger() override;
     void NeedRefresh();
     void DrawUSFNChar(byte ch, unsigned x, unsigned y, unsigned fg, unsigned bg);
@@ -93,8 +100,12 @@ class GraphicsVideo : protected KernelUtil::TimerTask {
     bool     _initialized;
     uint32_t _xCharScale;
     uint32_t _yCharScale;
-    upan::uniq_ptr<upanui::MouseCursor> _mouseCursor;
     upan::list<int> _fgProcesses;
     int _inputEventFGProcess;
     upan::mutex _fgProcessMutex;
+
+    upan::uniq_ptr<upanui::MouseCursor> _mouseCursor;
+    int _mousePrevX;
+    int _mousePrevY;
+    upan::atomic::integral<bool> _mouseChange;
 };

@@ -22,9 +22,7 @@
 #Customized Qemu Run Script -- Self Written
 clear
 
-OVMF_VERSION=$1
-
-LOAD_BINARY=$2
+LOAD_BINARY=$1
 
 if [ "$LOAD_BINARY" = "load" ]
 then
@@ -52,7 +50,7 @@ else
 fi
 
 echo -e "\n\n*****************************************************************************\n\n"
-echo -e "					Booting from $OVMF_VERSION, `basename $BOOT_DRIVE`"
+echo -e "					Booting from `basename $BOOT_DRIVE`"
 echo -e "\n\n*****************************************************************************\n\n"
 
 sleep 1
@@ -72,7 +70,7 @@ sleep 1
 qemu-system-x86_64 \
 -serial file:serial_debug.log \
 -pflash $UPANIX_TOOLS/OVMF.fd \
--m 256 \
+-m 512 \
 -smp 1 \
 -net nic,model=e1000 \
 -net tap,ifname=tap0,script=no,downscript=no \

@@ -58,8 +58,9 @@
 # include <NetworkManager.h>
 # include <Mtrr.h>
 # include <Pat.h>
-#include <ps2/PS2Controller.h>
+#include <PS2Controller.h>
 #include <KernelRootProcess.h>
+#include <PS2MouseDriver.h>
 
 /**** Global Variable declaration/definition *****/
 byte KERNEL_MODE ;
@@ -90,6 +91,7 @@ void UpanixMain_KernelProcess() {
 
   KC::MConsole().StartCursorBlink();
   KeyboardHandler::Instance().StartDispatcher();
+  PS2MouseDriver::Instance().StartDispatcher();
 
 	while(true) {
     const int pid = ProcessManager::Instance().CreateKernelProcess("console", (unsigned) &Console_StartUpanixConsole,

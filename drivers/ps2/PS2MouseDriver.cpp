@@ -29,7 +29,7 @@
 #include <MouseData.h>
 #include <ProcessManager.h>
 
-PS2MouseDriver::PS2MouseDriver() {
+PS2MouseDriver::PS2MouseDriver() : _qBuffer(10240) {
   _dataCounter = 0;
   _packetSize = 3; //TODO: go with default - 3 bytes per mouse movement
 
@@ -110,29 +110,10 @@ void PS2MouseDriver::HandleEvent() {
           return;
         }
         _prevMouseData = mouseData;
-
-        GraphicsVideo::Instance().SetMouseCursorPos(mouseData.x(), mouseData.y());
-
-        //when a UI process is pressed and held and then the mouse is moved around fast, then the mouse pointer may
-        //go outside the viewport of the held process. In such a case, the mouse events must still be dispatched to the
-        //held process and not to the process under the mouse cursor.
-        int eventPid = GraphicsVideo::Instance().getInputEventFGProcess();
-        if (!mouseData.anyButtonHeld()) {
-          GraphicsVideo::Instance().getFGProcessUnderMouseCursor().ifPresent([&mouseData, &eventPid](int pid) {
-            if (mouseData.anyButtonPressed()) {
-              GraphicsVideo::Instance().switchFGProcess(pid);
-            }
-            if (eventPid != pid) {
-              ProcessManager::Instance().GetProcess(eventPid).ifPresent([&mouseData](Process& p) {
-                p.dispatchMouseData(mouseData);
-              });
-            }
-            eventPid = pid;
-          });
+        if (!_qBuffer.push_back(mouseData)) {
+          printf("\nMFULL");
         }
-        ProcessManager::Instance().GetProcess(eventPid).ifPresent([&mouseData](Process& p) {
-          p.dispatchMouseData(mouseData);
-        });
+        StdIRQ::Instance().MOUSE_IRQ.Signal();
       }
     });
   } catch(const upan::exception& e) {
@@ -141,6 +122,62 @@ void PS2MouseDriver::HandleEvent() {
   }
 }
 
+upanui::MouseData PS2MouseDriver::GetMouseData() {
+  while(true) {
+    if(_qBuffer.empty()) {
+      ProcessManager::Instance().WaitOnInterrupt(StdIRQ::Instance().MOUSE_IRQ);
+    } else {
+      const auto &data = _qBuffer.front();
+      _qBuffer.pop_front();
+      return data;
+    }
+  }
+}
+
 void PS2MouseDriver::ResetMousePosition() {
   _prevMouseData = upanui::MouseData();
+}
+
+static void Mouse_Event_Dispatcher() {
+  try {
+    while(true) {
+      const auto& mouseData = PS2MouseDriver::Instance().GetMouseData();
+
+      GraphicsVideo::Instance().SetMouseCursorPos(mouseData.x(), mouseData.y());
+
+      //when a UI process is pressed and held and then the mouse is moved around fast, then the mouse pointer may
+      //go outside the viewport of the held process. In such a case, the mouse events must still be dispatched to the
+      //held process and not to the process under the mouse cursor.
+      int eventPid = GraphicsVideo::Instance().getInputEventFGProcess();
+      if (!mouseData.anyButtonHeld()) {
+        GraphicsVideo::Instance().getFGProcessUnderMouseCursor().ifPresent([&mouseData, &eventPid](int pid) {
+          if (mouseData.anyButtonPressed()) {
+            GraphicsVideo::Instance().switchFGProcess(pid);
+          }
+          if (eventPid != pid) {
+            ProcessManager::Instance().GetProcess(eventPid).ifPresent([&mouseData](Process& p) {
+              p.dispatchMouseData(mouseData);
+            });
+          }
+          eventPid = pid;
+        });
+      }
+      ProcessManager::Instance().GetProcess(eventPid).ifPresent([&mouseData](Process& p) {
+        p.dispatchMouseData(mouseData);
+      });
+    }
+  } catch(upan::exception& e) {
+    printf("\n Error in Mouse event dispatcher: %s", e.Error().Msg().c_str());
+  }
+  ProcessManager_Exit();
+}
+
+void PS2MouseDriver::StartDispatcher() {
+  static bool started = false;
+  if (started) {
+    return;
+  }
+  started = true;
+  ProcessManager::Instance().CreateKernelProcess("moed", (unsigned) &Mouse_Event_Dispatcher,
+                                                 ProcessManager::GetCurrentProcessID(), false, upan::vector<uint32_t>());
 }

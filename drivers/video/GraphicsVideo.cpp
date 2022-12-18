@@ -23,7 +23,6 @@
 #include <mosstd.h>
 #include <MemManager.h>
 #include <GraphicsVideo.h>
-#include <GraphicsFont.h>
 #include <ProcessManager.h>
 #include <mutex.h>
 #include <DMM.h>
@@ -68,7 +67,8 @@ GraphicsVideo& GraphicsVideo::Instance() {
 }
 
 GraphicsVideo::GraphicsVideo(const framebuffer_info_t& fbinfo)
-  : _needRefresh(false), _initialized(false), _mouseCursor(nullptr) {
+  : _needRefresh(false), _initialized(false),
+    _mouseCursor(nullptr), _mouseChange(0), _mousePrevX(0), _mousePrevY(0) {
   _flatLFBAddress = fbinfo.framebuffer_addr;
   _mappedLFBAddress = fbinfo.framebuffer_addr;
   _zBuffer = fbinfo.framebuffer_addr;
@@ -126,28 +126,33 @@ void GraphicsVideo::Initialize() {
   _initialized = true;
 }
 
+
 void GraphicsVideo::CreateRefreshTask() {
   _zBuffer = KERNEL_VIRTUAL_ADDRESS(MEM_GRAPHICS_Z_BUFFER_START);
   memset((void*)_zBuffer, 0, _lfbSize);
-  KernelUtil::ScheduleTimedTask("xgrefresh", 50, *this);
+  KernelUtil::ScheduleTimedTask("xgrefresh", 10, *this);
 }
 
 bool GraphicsVideo::TimerTrigger() {
-  if(isDirty()) {
-    upan::mutex_guard g(_fgProcessMutex);
-    ProcessSwitchLock p;
-    memset((void*)_zBuffer, 0, _lfbSize);
-    for(auto i = 0u; i < _fgProcesses.size(); ++i) {
-      auto process = ProcessManager::Instance().GetProcess(_fgProcesses[i]);
-      process.ifPresent([&](Process& p) {
-        const auto& frame = p.getGuiFrame().value();
-        const auto& viewport = frame.viewport();
-        const auto buffer = frame.frameBuffer().buffer();
-        const int destX1 = upan::min(upan::max(viewport.x1(), 0), (int)_width);
-        const int destX2 = upan::min(upan::max(viewport.x2(), 0), (int)_width);
+  RedrawInfo redrawInfo = isDirty();
+  if (!redrawInfo._processChanged && !redrawInfo._mouseChanged) {
+    return true;
+  }
 
-        const int destY1 = upan::min(upan::max(viewport.y1(), 0), (int)_height);
-        const int destY2 = upan::min(upan::max(viewport.y2(), 0), (int)_height);
+  ProcessSwitchLock p;
+  if (redrawInfo._processChanged) {
+    memset((void *) _zBuffer, 0, _lfbSize);
+    for (auto i = 0u; i < _fgProcesses.size(); ++i) {
+      auto process = ProcessManager::Instance().GetProcess(_fgProcesses[i]);
+      process.ifPresent([&](Process &p) {
+        const auto &frame = p.getGuiFrame().value();
+        const auto &viewport = frame.viewport();
+        const auto buffer = frame.frameBuffer().buffer();
+        const int destX1 = upan::min(upan::max(viewport.x1(), 0), (int) _width);
+        const int destX2 = upan::min(upan::max(viewport.x2(), 0), (int) _width);
+
+        const int destY1 = upan::min(upan::max(viewport.y1(), 0), (int) _height);
+        const int destY2 = upan::min(upan::max(viewport.y2(), 0), (int) _height);
 
         if (destX1 < destX2 && destY1 < destY2) {
           const int srcX1 = destX1 - viewport.x1();
@@ -156,24 +161,48 @@ bool GraphicsVideo::TimerTrigger() {
         }
       });
     }
-    DrawMouseCursor();
-    optimized_memcpy(_mappedLFBAddress, _zBuffer, _lfbSize);
+  } else if (redrawInfo._mouseChanged) {
+    const int drawMinX = upan::min(_mousePrevX, _mouseCursor->x());
+    const int drawMaxX = upan::max(_mousePrevX, _mouseCursor->x()) + _mouseCursor->width();
+
+    const int drawMinY = upan::min(_mousePrevY, _mouseCursor->y());
+    const int drawMaxY = upan::max(_mousePrevY, _mouseCursor->y()) + _mouseCursor->height();
+
+    for (auto i = 0u; i < _fgProcesses.size(); ++i) {
+      auto process = ProcessManager::Instance().GetProcess(_fgProcesses[i]);
+      process.ifPresent([&](Process& p) {
+        const auto& frame = p.getGuiFrame().value();
+        const auto& viewport = frame.viewport();
+        const auto buffer = frame.frameBuffer().buffer();
+        const int destX1 = upan::min(upan::max(upan::max(viewport.x1(), 0), drawMinX), (int)_width);
+        const int destX2 = upan::min(upan::min(upan::max(viewport.x2(), 0), drawMaxX), (int)_width);
+
+        const int destY1 = upan::min(upan::max(upan::max(viewport.y1(), 0), drawMinY), (int)_height);
+        const int destY2 = upan::min(upan::min(upan::max(viewport.y2(), 0), drawMaxY), (int)_height);
+
+        if (destX1 < destX2 && destY1 < destY2) {
+          const int srcX1 = destX1 - viewport.x1();
+          const int srcY1 = destY1 - viewport.y1();
+          CopyArea(destX1, destY1, srcX1, srcY1, _width, (destX2 - destX1), (destY2 - destY1), buffer);
+        }
+      });
+    }
   }
+
+  _mousePrevX = _mouseCursor->x();
+  _mousePrevY = _mouseCursor->y();
+
+  DrawMouseCursor();
+  optimized_memcpy(_mappedLFBAddress, _zBuffer, _lfbSize);
+
   return true;
+}
+
+void GraphicsVideo::DebugPrint() {
 }
 
 void GraphicsVideo::NeedRefresh() {
   _needRefresh.set(true);
-}
-
-void GraphicsVideo::SetPixel(unsigned x, unsigned y, unsigned color)
-{
-  if(y >= _height || x >= _width)
-    return;
-  auto p = (unsigned*)(_zBuffer + y * _pitch + x * _bytesPerPixel);
-  *p = (color | upanui::GCoreFunctions::ALPHA_MASK);
-
-  NeedRefresh();
 }
 
 void GraphicsVideo::FillRect(unsigned sx, unsigned sy, unsigned width, unsigned height, unsigned color) {
@@ -213,15 +242,16 @@ void GraphicsVideo::SetMouseCursorPos(int x, int y) {
   if (newX != _mouseCursor->x() || newY != _mouseCursor->y()) {
     _mouseCursor->x(newX);
     _mouseCursor->y(newY);
-    NeedRefresh();
+    _mouseChange.set(true);
   }
 }
 
 upan::option<int> GraphicsVideo::getFGProcessUnderMouseCursor() {
   upan::mutex_guard g(_fgProcessMutex);
 
-  for(auto it = _fgProcesses.rbegin(); it != _fgProcesses.rend(); ++it) {
+  for(auto it = _fgProcesses.rbegin(); it != _fgProcesses.rend();) {
     const auto pid = *it;
+    ++it;
     auto process = ProcessManager::Instance().GetProcess(pid);
     if (process.isEmpty()) {
       removeFGProcess(pid);
@@ -274,28 +304,33 @@ void GraphicsVideo::CopyArea(const uint32_t destX, const uint32_t destY,
   }
 }
 
-bool GraphicsVideo::isDirty() {
+GraphicsVideo::RedrawInfo GraphicsVideo::isDirty() {
   upan::mutex_guard g(_fgProcessMutex);
+  RedrawInfo redrawInfo;
 
-  if (_needRefresh.get()) {
-    _needRefresh.set(false);
-    return true;
+  redrawInfo._mouseChanged = _mouseChange.set(false);
+  redrawInfo._processChanged = _needRefresh.set(false);
+  if (redrawInfo._processChanged) {
+    return redrawInfo;
   }
 
   bool dirty = false;
 
-  for(auto pid : _fgProcesses) {
+  for(auto it = _fgProcesses.begin(); it != _fgProcesses.end();) {
+    const auto pid = *it;
+    ++it;
     auto process = ProcessManager::Instance().GetProcess(pid);
     if (process.isEmpty()) {
       removeFGProcess(pid);
     } else {
-      process.value().getGuiFrame().ifPresent([&dirty](RootFrame& f) {
+      process.value().getGuiFrame().ifPresent([&dirty](RootFrame &f) {
         dirty |= f.isDirty();
         f.clean();
       });
     }
   }
-  return dirty;
+  redrawInfo._processChanged = dirty;
+  return redrawInfo;
 }
 
 void GraphicsVideo::addFGProcess(int pid) {

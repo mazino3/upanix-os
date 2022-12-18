@@ -23,6 +23,7 @@
 
 #include <option.h>
 #include <MouseData.h>
+#include <queue.h>
 
 class PS2MouseDriver
 {
@@ -31,7 +32,9 @@ class PS2MouseDriver
       static PS2MouseDriver instance;
       return instance;
     }
-		void HandleEvent() ;
+		void HandleEvent();
+    void StartDispatcher();
+    upanui::MouseData GetMouseData();
     void ResetMousePosition();
 
 	private:
@@ -46,6 +49,7 @@ class PS2MouseDriver
 		uint32_t _packetSize;
 		uint8_t _packetData[10];
 		upanui::MouseData _prevMouseData;
+    upan::queue<upanui::MouseData> _qBuffer;
 
 	friend class KC ;
 } ;
