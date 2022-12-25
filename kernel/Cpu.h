@@ -104,7 +104,12 @@ class Cpu
       UNCACHED = 7
     } MEM_TYPE;
 
+    typedef enum {
+      CR0, CR1, CR2, CR3, CR4
+    } Register;
+
     static const char* memTypeToStr(MEM_TYPE memType);
+    static uint32_t GetRegValue(Cpu::Register reg);
 
   private:
     void EnableSSE();

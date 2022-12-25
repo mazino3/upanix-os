@@ -22,6 +22,7 @@
 
 #include <Cpu.h>
 #include <stdio.h>
+#include <exception.h>
 
 Cpu::Cpu()
 {
@@ -114,8 +115,32 @@ void Cpu::EnableSSE() {
     printf("\n SSE/SSE2 enabled");
   } else {
     printf("\n SSE/SSE2 is not supported!!");
-    while(1);
+    while (1);
   }
+}
+
+uint32_t Cpu::GetRegValue(Cpu::Register reg) {
+  uint32_t val;
+  switch(reg) {
+    case Register::CR0:
+      __asm__ __volatile__("mov %%cr0, %0" :  "=r"(val) : );
+      break;
+    case Register::CR1:
+      __asm__ __volatile__("mov %%cr1, %0" :  "=r"(val) : );
+      break;
+    case Register::CR2:
+      __asm__ __volatile__("mov %%cr2, %0" :  "=r"(val) : );
+      break;
+    case Register::CR3:
+      __asm__ __volatile__("mov %%cr3, %0" :  "=r"(val) : );
+      break;
+    case Register::CR4:
+      __asm__ __volatile__("mov %%cr4, %0" :  "=r"(val) : );
+      break;
+    default:
+      throw upan::exception(XLOC, "Unrecognized register: %d", reg);
+  }
+  return val;
 }
 
 const char* Cpu::memTypeToStr(MEM_TYPE memType) {
