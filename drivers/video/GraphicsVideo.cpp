@@ -34,6 +34,7 @@
 #include <ColorPalettes.h>
 #include <RootGUIConsole.h>
 #include <GCoreFunctions.h>
+#include <metrics.h>
 
 extern unsigned _binary_mouse_cursor_bmp_start;
 //make below extern as you load bmp files during testing
@@ -140,6 +141,9 @@ bool GraphicsVideo::TimerTrigger() {
   }
 
   ProcessSwitchLock p;
+  auto& gvtStats = upan::metrics::instance().get("gvt");
+  auto& lfbStats = upan::metrics::instance().get("lfb");
+  gvtStats.start();
   if (redrawInfo._processChanged) {
     memset((void *) _zBuffer, 0, _lfbSize);
     for (auto i = 0u; i < _fgProcesses.size(); ++i) {
@@ -193,7 +197,10 @@ bool GraphicsVideo::TimerTrigger() {
   _mousePrevY = _mouseCursor->y();
 
   DrawMouseCursor();
+  lfbStats.start();
   optimized_memcpy(_mappedLFBAddress, _zBuffer, _lfbSize);
+  lfbStats.end();
+  gvtStats.end();
 
   return true;
 }
@@ -295,11 +302,27 @@ void GraphicsVideo::CopyArea(const uint32_t destX, const uint32_t destY,
                              const uint32_t srcBufferWidth,
                              const uint32_t drawWidth, const uint32_t drawHeight,
                              const uint32_t* src) {
+  upanui::GCoreFunctions::PixelCache pixelCache;
+
   for(auto sy = srcY, dy = destY; dy < (destY + drawHeight) && dy < _height; ++dy, ++sy) {
     const auto destOffset = dy * _width;
     const auto srcOffset = sy * srcBufferWidth;
+
+    bool hasTransparentPixel = false;
     for(auto sx = srcX, dx = destX; sx < (srcX + drawWidth) && dx < _width; ++sx, ++dx) {
-      upanui::GCoreFunctions::setPixel(((uint32_t*)_zBuffer)[dx + destOffset], src[sx + srcOffset], false);
+      if (src[sx + srcOffset] != upanui::GCoreFunctions::ALPHA_MASK) {
+        hasTransparentPixel = true;
+        break;
+      }
+    }
+
+    if (hasTransparentPixel) {
+      for (auto sx = srcX, dx = destX; sx < (srcX + drawWidth) && dx < _width; ++sx, ++dx) {
+        upanui::GCoreFunctions::setPixel(((uint32_t *) _zBuffer)[dx + destOffset], src[sx + srcOffset], pixelCache, false);
+      }
+    } else {
+      const auto lineWidth = upan::min(_width - destX, drawWidth) * _bytesPerPixel;
+      memcpy(&((uint32_t *) _zBuffer)[destX + destOffset], &src[srcX + srcOffset], lineWidth);
     }
   }
 }

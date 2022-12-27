@@ -61,6 +61,7 @@
 #include <PS2Controller.h>
 #include <KernelRootProcess.h>
 #include <PS2MouseDriver.h>
+#include <metrics.h>
 
 /**** Global Variable declaration/definition *****/
 byte KERNEL_MODE ;
@@ -164,6 +165,8 @@ void Initialize() {
 
 	//	TestException(); while(1);
   try {
+    upan::metrics::create();
+
     IDT::Instance();
     Cpu::Instance();
     Acpi::Instance();

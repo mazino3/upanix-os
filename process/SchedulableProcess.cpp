@@ -140,7 +140,7 @@ void SchedulableProcess::FXSave() {
   __asm__ __volatile__("clts");
   /* Below will not work because fxsave will then access _sseRegs like a pointer - in which case, it will require
    * both the address of _sseRegs and the address pointed by _sseRegs to be 16-byte aligned
-   * However, only the address pointed by _sseRegs will 16 byte aligned and the address of _sseRegs could
+   * However, only the address pointed by _sseRegs will be 16 byte aligned and the address of _sseRegs could
    * potentially be a non 16 byte aligned address - so, below code will cause a General Protection Fault --> Exception 13 (0xD)
    * __asm__ __volatile__("fxsave %0" : : "m"(_sseRegs));
    */

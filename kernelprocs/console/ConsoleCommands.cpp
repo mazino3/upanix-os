@@ -64,6 +64,7 @@
 #include <ImageCanvas.h>
 #include <Label.h>
 #include <GraphicsVideo.h>
+#include <metrics.h>
 
 /**** Command Fucntion Declarations  *****/
 static void ConsoleCommands_ChangeDrive() ;
@@ -1613,7 +1614,8 @@ void aThread(void* x) {
 }
 
 void ConsoleCommands_Test() {
-  GraphicsVideo::Instance().DebugPrint();
+  printf("\n Avg time for graphics plot: %lf", upan::metrics::instance().avg("gvt"));
+  printf("\n Avg time for LFB copy: %lf", upan::metrics::instance().avg("lfb"));
 }
 
 extern uint32_t dmm_alloc_count;
