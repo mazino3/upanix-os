@@ -28,7 +28,7 @@
 class RootFrame : public upanui::BaseFrame {
 public:
   RootFrame(const upanui::FrameBuffer& frameBuffer, const upanui::Viewport& viewport) :
-    BaseFrame(frameBuffer, viewport), _isDirty(false), _hasAlpha(false) {
+    BaseFrame(frameBuffer, viewport), _isDirty(false), _hasAlpha(false), _hasDoubleBuffer(false), _doubleBuffer(nullptr) {
   }
 
   void resetFrameBufferAddress(uint32_t* frameAddr) {
@@ -36,9 +36,7 @@ public:
     touch();
   }
 
-  void touch() override {
-    _isDirty.set(true);
-  }
+  void touch() override;
 
   bool hasAlpha() const {
     return _hasAlpha;
@@ -56,11 +54,23 @@ public:
     _isDirty.set(false);
   }
 
-  void updateViewport(const ViewportInfo& info) {
-    upanui::BaseFrame::_updateViewport(info._x, info._y, info._width, info._height);
+  uint32_t* buffer() {
+    return _doubleBuffer ? _doubleBuffer : frameBuffer().buffer();
   }
+
+  uint32_t bufferLineWidth() const {
+    return _hasDoubleBuffer && _doubleBuffer ? viewport().width() : frameBuffer().width();
+  }
+
+  void enableDoubleBuffer(bool enable);
+  void updateViewport(const ViewportInfo& info);
+
+private:
+  void copyToDoubleBuffer();
 
 private:
   upan::atomic::integral<bool> _isDirty;
   bool _hasAlpha;
+  bool _hasDoubleBuffer;
+  uint32_t* _doubleBuffer;
 };

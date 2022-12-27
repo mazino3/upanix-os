@@ -151,7 +151,9 @@ bool GraphicsVideo::TimerTrigger() {
       process.ifPresent([&](Process &p) {
         const auto &frame = p.getGuiFrame().value();
         const auto &viewport = frame.viewport();
-        const auto buffer = frame.frameBuffer().buffer();
+        const auto buffer = frame.buffer();
+        const auto srcBufferWidth = frame.bufferLineWidth();
+
         const int destX1 = upan::min(upan::max(viewport.x1(), 0), (int) _width);
         const int destX2 = upan::min(upan::max(viewport.x2(), 0), (int) _width);
 
@@ -161,7 +163,7 @@ bool GraphicsVideo::TimerTrigger() {
         if (destX1 < destX2 && destY1 < destY2) {
           const int srcX1 = destX1 - viewport.x1();
           const int srcY1 = destY1 - viewport.y1();
-          CopyArea(destX1, destY1, srcX1, srcY1, _width, (destX2 - destX1), (destY2 - destY1), buffer, frame.hasAlpha());
+          CopyArea(destX1, destY1, srcX1, srcY1, srcBufferWidth, (destX2 - destX1), (destY2 - destY1), buffer, frame.hasAlpha());
         }
       });
     }
@@ -177,7 +179,9 @@ bool GraphicsVideo::TimerTrigger() {
       process.ifPresent([&](Process& p) {
         const auto& frame = p.getGuiFrame().value();
         const auto& viewport = frame.viewport();
-        const auto buffer = frame.frameBuffer().buffer();
+        const auto buffer = frame.buffer();
+        const auto srcBufferWidth = frame.bufferLineWidth();
+
         const int destX1 = upan::min(upan::max(upan::max(viewport.x1(), 0), drawMinX), (int)_width);
         const int destX2 = upan::min(upan::min(upan::max(viewport.x2(), 0), drawMaxX), (int)_width);
 
@@ -187,7 +191,7 @@ bool GraphicsVideo::TimerTrigger() {
         if (destX1 < destX2 && destY1 < destY2) {
           const int srcX1 = destX1 - viewport.x1();
           const int srcY1 = destY1 - viewport.y1();
-          CopyArea(destX1, destY1, srcX1, srcY1, _width, (destX2 - destX1), (destY2 - destY1), buffer, frame.hasAlpha());
+          CopyArea(destX1, destY1, srcX1, srcY1, srcBufferWidth, (destX2 - destX1), (destY2 - destY1), buffer, frame.hasAlpha());
         }
       });
     }

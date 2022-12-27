@@ -70,7 +70,9 @@ void KernelProcess::initGuiFrame() {
     frameBufferInfo._frameBuffer = (uint32_t*)GraphicsVideo::Instance().allocateFrameBuffer();
     upanui::FrameBuffer frameBuffer(frameBufferInfo);
     upanui::Viewport viewport(0, 0, frameBufferInfo._width, frameBufferInfo._height);
-    _frame.reset(new RootFrame(frameBuffer, viewport));
+    auto rootFrame = new RootFrame(frameBuffer, viewport);
+    rootFrame->enableDoubleBuffer(true);
+    _frame.reset(rootFrame);
 
     //let processes write to stdout of the parent for debugging purpose.
     //_iodTable.setupNullStdOut();
