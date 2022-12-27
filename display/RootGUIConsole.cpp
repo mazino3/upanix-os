@@ -86,9 +86,11 @@ void RootGUIConsole::scrollDown() {
 }
 
 void RootGUIConsole::resetFrameBuffer(uint32_t frameBufferAddress) {
-  _frame.resetFrameBufferAddress((uint32_t*)frameBufferAddress);
-  _frame.fillRect(0, 0, _frame.viewport().width(), _frame.viewport().height(), upanui::GCoreFunctions::ALPHA_MASK);
-  _consoleUIObject.drawBuffer().initLocal(_frame.frameBuffer());
+  if ((uint32_t)_frame.frameBuffer().buffer() != frameBufferAddress) {
+    _frame.resetFrameBufferAddress((uint32_t *) frameBufferAddress);
+    _frame.fillRect(0, 0, _frame.viewport().width(), _frame.viewport().height(), upanui::GCoreFunctions::ALPHA_MASK);
+    _consoleUIObject.drawBuffer().initLocal(_frame.frameBuffer());
+  }
 }
 
 void RootGUIConsole::StartCursorBlink() {
