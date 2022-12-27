@@ -161,7 +161,7 @@ bool GraphicsVideo::TimerTrigger() {
         if (destX1 < destX2 && destY1 < destY2) {
           const int srcX1 = destX1 - viewport.x1();
           const int srcY1 = destY1 - viewport.y1();
-          CopyArea(destX1, destY1, srcX1, srcY1, _width, (destX2 - destX1), (destY2 - destY1), buffer);
+          CopyArea(destX1, destY1, srcX1, srcY1, _width, (destX2 - destX1), (destY2 - destY1), buffer, frame.hasAlpha());
         }
       });
     }
@@ -187,7 +187,7 @@ bool GraphicsVideo::TimerTrigger() {
         if (destX1 < destX2 && destY1 < destY2) {
           const int srcX1 = destX1 - viewport.x1();
           const int srcY1 = destY1 - viewport.y1();
-          CopyArea(destX1, destY1, srcX1, srcY1, _width, (destX2 - destX1), (destY2 - destY1), buffer);
+          CopyArea(destX1, destY1, srcX1, srcY1, _width, (destX2 - destX1), (destY2 - destY1), buffer, frame.hasAlpha());
         }
       });
     }
@@ -294,29 +294,31 @@ void GraphicsVideo::DrawMouseCursor() {
   CopyArea(_mouseCursor->x(), _mouseCursor->y(),
            0, 0, _mouseCursor->width(),
            _mouseCursor->width(), _mouseCursor->height(),
-           _mouseCursor->data());
+           _mouseCursor->data(), true);
 }
 
 void GraphicsVideo::CopyArea(const uint32_t destX, const uint32_t destY,
                              const uint32_t srcX, const uint32_t srcY,
                              const uint32_t srcBufferWidth,
                              const uint32_t drawWidth, const uint32_t drawHeight,
-                             const uint32_t* src) {
+                             const uint32_t* src, const bool checkAlpha) {
   upanui::GCoreFunctions::PixelCache pixelCache;
 
   for(auto sy = srcY, dy = destY; dy < (destY + drawHeight) && dy < _height; ++dy, ++sy) {
     const auto destOffset = dy * _width;
     const auto srcOffset = sy * srcBufferWidth;
 
-    bool hasTransparentPixel = false;
-    for(auto sx = srcX, dx = destX; sx < (srcX + drawWidth) && dx < _width; ++sx, ++dx) {
-      if (src[sx + srcOffset] != upanui::GCoreFunctions::ALPHA_MASK) {
-        hasTransparentPixel = true;
-        break;
+    bool hasAlpha = false;
+    if (checkAlpha) {
+      for (auto sx = srcX, dx = destX; sx < (srcX + drawWidth) && dx < _width; ++sx, ++dx) {
+        if (src[sx + srcOffset] >> 24 != upanui::GCoreFunctions::MAX_ALPHA) {
+          hasAlpha = true;
+          break;
+        }
       }
     }
 
-    if (hasTransparentPixel) {
+    if (hasAlpha) {
       for (auto sx = srcX, dx = destX; sx < (srcX + drawWidth) && dx < _width; ++sx, ++dx) {
         upanui::GCoreFunctions::setPixel(((uint32_t *) _zBuffer)[dx + destOffset], src[sx + srcOffset], pixelCache, false);
       }

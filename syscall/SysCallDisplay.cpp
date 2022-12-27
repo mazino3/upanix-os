@@ -140,7 +140,13 @@ __volatile__ unsigned uiP9)
 	  }
 	  break;
 
-	  case SYS_CALL_DISPLAY_INIT_TERM_CONSOLE:
+    case SYS_CALL_DISPLAY_GUI_FRAME_HAS_ALPHA:
+    {
+      ProcessManager::Instance().GetCurrentPAS().getGuiFrame().ifPresent([uiP1](RootFrame& f) { f.hasAlpha((bool)uiP1); });
+    }
+    break;
+
+    case SYS_CALL_DISPLAY_INIT_TERM_CONSOLE:
 	  {
       ProcessManager::Instance().GetCurrentPAS().setupAsTtyProcess();
 	  }

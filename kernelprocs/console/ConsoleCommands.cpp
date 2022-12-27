@@ -1260,7 +1260,7 @@ void graphics_test_flag(int x, int y) {
 class DemoClock : public upan::thread {
 public:
   DemoClock(upanui::UIRoot& uiRoot)
-      : _uiRoot(uiRoot), _csize(uiRoot.width() - (PADDING * 2)), _htomFactor(5.0f / 60),
+      : _uiRoot(uiRoot), _csize(uiRoot.width() - (PADDING * 2) - (uiRoot.borderThickness() * 2)), _htomFactor(5.0f / 60),
         _cx(_csize / 2 - BORDER_THICKNESS), _cy(_csize / 2 - BORDER_THICKNESS) {
     const int r = _csize / 2 - BORDER_THICKNESS - LABEL_SPACE;
     populateSteps(_secondSteps, r - 10);
@@ -1344,6 +1344,7 @@ private:
       label.backgroundColorAlpha(0);
     }
 
+    int c = 0;
     while(true) {
       RTCDateTime dateTime;
       RTC::GetDateTime(dateTime);
@@ -1354,6 +1355,20 @@ private:
       hourHand.updateXY(_cx, _cy, _cx + _hourSteps[h].x(), _cy - _hourSteps[h].y());
 
       sleepms(1000);
+      c = (c + 1) % 20;
+      if (c >= 5 && c < 10) {
+        _uiRoot.backgroundColorAlpha(50);
+        _uiRoot.borderColorAlpha(50);
+      } else if (c >= 10 && c < 15){
+        _uiRoot.backgroundColorAlpha(0);
+        _uiRoot.borderColorAlpha(0);
+      } else if (c >= 15 && c < 20) {
+        clockCanvas.backgroundColorAlpha(80);
+      } else {
+        clockCanvas.backgroundColorAlpha(100);
+        _uiRoot.backgroundColorAlpha(100);
+        _uiRoot.borderColorAlpha(100);
+      }
     }
   }
 
@@ -1386,7 +1401,10 @@ void graphics_test_clock(int x, int y) {
   upanui::GraphicsContext::Init();
   auto& gc = upanui::GraphicsContext::Instance();
   auto& uiRoot = gc.initUIRoot(x, y, clockSize, clockSize, true);
-  uiRoot.backgroundColorAlpha(0);
+  //uiRoot.backgroundColorAlpha(0);
+  uiRoot.borderThickness(10);
+  uiRoot.borderColor(0xf0fff0);
+  uiRoot.backgroundColor(0xf0f0ff);
 
   DemoClock demoClock(uiRoot);
   demoClock.start();

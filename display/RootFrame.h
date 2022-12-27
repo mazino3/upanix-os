@@ -28,7 +28,7 @@
 class RootFrame : public upanui::BaseFrame {
 public:
   RootFrame(const upanui::FrameBuffer& frameBuffer, const upanui::Viewport& viewport) :
-    BaseFrame(frameBuffer, viewport), _isDirty(false) {
+    BaseFrame(frameBuffer, viewport), _isDirty(false), _hasAlpha(false) {
   }
 
   void resetFrameBufferAddress(uint32_t* frameAddr) {
@@ -38,6 +38,14 @@ public:
 
   void touch() override {
     _isDirty.set(true);
+  }
+
+  bool hasAlpha() const {
+    return _hasAlpha;
+  }
+
+  void hasAlpha(bool hasAlpha) {
+    _hasAlpha = hasAlpha;
   }
 
   bool isDirty() {
@@ -54,4 +62,5 @@ public:
 
 private:
   upan::atomic::integral<bool> _isDirty;
+  bool _hasAlpha;
 };

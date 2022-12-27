@@ -117,6 +117,7 @@ private:
     void redraw() override {}
 
     void registerMouseEventHandler(upanui::MouseEventHandler& handler) override {}
+    bool hasAlpha() override { return false; }
     upan::option<UIObject&> uiObjectUnderCursor(const int x, const int y) override { return upan::option<UIObject&>::empty(); }
 
     void onKeyboardEvent(const upanui::KeyboardEvent& event) override {}
