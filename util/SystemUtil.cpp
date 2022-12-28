@@ -68,7 +68,7 @@ uint32_t SystemUtil_GetTimeOfDay()
 	//tv->uimSec = tv->tSec * 1000 ;
 }
 
-void SystemUtil_GetRTCTimeFromTime(RTCTime* pRTCTime, const struct timeval* tv)
+void SystemUtil_GetRTCTimeFromTime(RTCDateTime* rtcDateTime, const struct timeval* tv)
 {
 	mdate d1 ;
 	mdate_GetSeedDate(&d1) ;
@@ -76,16 +76,16 @@ void SystemUtil_GetRTCTimeFromTime(RTCTime* pRTCTime, const struct timeval* tv)
 	int days = tv->tSec / (HRS_IN_DAY) ;
 	mdate_AddDays(&d1, days) ;
 
-	pRTCTime->bDayOfMonth = d1.dayOfMonth ;
-	pRTCTime->bMonth = d1.month ;
-	pRTCTime->bYear = d1.year % 100 ;
-	pRTCTime->bCentury = d1.year / 100 ;
+  rtcDateTime->_dayOfMonth = d1.dayOfMonth ;
+  rtcDateTime->_month = d1.month ;
+  rtcDateTime->_year = d1.year % 100 ;
+  rtcDateTime->_century = d1.year / 100 ;
 
 	int resi = tv->tSec % HRS_IN_DAY ;
-	pRTCTime->bHour = resi / 3600 ;
+  rtcDateTime->_hour = resi / 3600 ;
 
 	int resh = resi % 3600 ;
-	pRTCTime->bMinute = resh / 60 ;
-	pRTCTime->bSecond = resh % 60 ;
+  rtcDateTime->_minute = resh / 60 ;
+  rtcDateTime->_second = resh % 60 ;
 }
 

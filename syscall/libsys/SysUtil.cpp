@@ -22,10 +22,10 @@
 # include <SysCall.h>
 # include <dtime.h>
 
-void SysUtil_GetDateTime(RTCTime* pRTCTime)
+void SysUtil_GetDateTime(RTCDateTime* rtcDateTime)
 {
 	int iRetStatus ;
-	SysCallUtil_Handle(&iRetStatus, SYS_CALL_UTIL_DTIME, false, (unsigned)pRTCTime, 2, 3, 4, 5, 6, 7, 8, 9);
+	SysCallUtil_Handle(&iRetStatus, SYS_CALL_UTIL_DTIME, false, (unsigned)rtcDateTime, 2, 3, 4, 5, 6, 7, 8, 9);
 }
 
 void SysUtil_Reboot()

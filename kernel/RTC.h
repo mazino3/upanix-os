@@ -22,22 +22,8 @@
 #ifndef _RTC_H_
 #define _RTC_H_
 
-# include <Global.h>
-
-#define RTC_SUCCESS 0
-
-typedef struct
-{
-	uint8_t _second ;
-  uint8_t _minute ;
-  uint8_t _hour ;
-
-  uint8_t _dayOfWeek ;
-  uint8_t _dayOfMonth ;
-  uint8_t _month ;
-  uint8_t _century ;
-  uint8_t _year ;
-} RTCDateTime ;
+#include <Global.h>
+#include <dtime.h>
 
 class RTC
 {

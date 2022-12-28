@@ -28,6 +28,6 @@
 
 void SystemUtil_Reboot() ;
 uint32_t SystemUtil_GetTimeOfDay();
-void SystemUtil_GetRTCTimeFromTime(RTCTime* pRTCTime, const struct timeval* tv) ;
+void SystemUtil_GetRTCTimeFromTime(RTCDateTime* rtcDateTime, const struct timeval* tv) ;
 
 #endif
