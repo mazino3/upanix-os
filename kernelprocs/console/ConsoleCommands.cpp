@@ -631,12 +631,14 @@ void ConsoleCommands_LoadExe() {
   argv[1] = (char *) &a2;
   argv[2] = (char *) &a3;
 
-  const int iChildProcessID = ProcessManager::Instance().Create(CommandLineParser::Instance().GetParameterAt(0),
+  auto& clp = CommandLineParser::Instance();
+  const auto runInBG = clp.GetNoOfParameters() > 1 && strcmp("&", clp.GetParameterAt(1)) == 0;
+  const int iChildProcessID = ProcessManager::Instance().Create(clp.GetParameterAt(0),
                                                                 ProcessManager::GetCurrentProcessID(), true,
                                                                 DERIVE_FROM_PARENT, 3, argv);
   if (iChildProcessID < 0) {
     printf("\n Load User Process Failed: %d", iChildProcessID);
-  } else {
+  } else if (!runInBG) {
     ProcessManager::Instance().WaitOnChild(iChildProcessID);
   }
 }
