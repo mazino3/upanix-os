@@ -305,6 +305,9 @@ void GraphicsVideo::removeGuiBase(int pid) {
   if (!_guiBaseStack.empty()) {
     _fgProcesses.push_front(_guiBaseStack.back());
     _guiBaseStack.pop_back();
+    if (_inputEventFGProcess == pid) {
+      _inputEventFGProcess = _fgProcesses.front();
+    }
   }
 }
 
@@ -399,7 +402,10 @@ void GraphicsVideo::addFGProcess(int pid) {
 
 void GraphicsVideo::removeFGProcess(int pid) {
   upan::mutex_guard g(_fgProcessMutex);
-  removeGuiBase(pid);
+
+  if (ProcessManager::Instance().GetProcess(pid).map<bool>([](Process& p) { return p.isGuiBase(); }).valueOrElse(false)) {
+    removeGuiBase(pid);
+  }
   _fgProcesses.erase(pid);
   if (pid == _inputEventFGProcess) {
     if (_fgProcesses.size() > 0) {
