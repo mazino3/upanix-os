@@ -234,13 +234,14 @@ unsigned DMM_AllocateForKernel(unsigned uiSizeInBytes, unsigned uiAlignNumber)
 byte DMM_DeAllocate(Process* processAddressSpace, unsigned uiAddress)
 {
   upan::mutex_guard g(processAddressSpace->heapMutex().value());
-  uiAddress = PROCESS_REAL_ALLOCATED_ADDRESS(uiAddress) ;
-  unsigned uiHeapStartAddress = PROCESS_HEAP_START_ADDRESS - GLOBAL_DATA_SEGMENT_BASE ;
-
+  // do this before converting the address to real address (by adding PROCESS_BASE)
   if(uiAddress == NULL)
     return DMM_SUCCESS ;
 
-  if(uiAddress == uiHeapStartAddress)
+  uiAddress = PROCESS_REAL_ALLOCATED_ADDRESS(uiAddress) ;
+  unsigned uiHeapStartAddress = PROCESS_HEAP_START_ADDRESS - GLOBAL_DATA_SEGMENT_BASE ;
+
+  if(uiAddress <= uiHeapStartAddress)
     return DMM_BAD_DEALLOC ;
 
   AllocationUnitTracker* freeAUT = (AllocationUnitTracker*)(uiAddress - sizeof(AllocationUnitTracker));
@@ -291,7 +292,7 @@ byte DMM_DeAllocateForKernel(unsigned uiAddress)
 	if(uiAddress == NULL)
 		return DMM_SUCCESS ;
 
-	if(uiAddress == uiHeapStartAddress)
+	if(uiAddress <= uiHeapStartAddress)
 		return DMM_BAD_DEALLOC ;
 
   AllocationUnitTracker* freeAUT = (AllocationUnitTracker*)(uiAddress - sizeof(AllocationUnitTracker));
