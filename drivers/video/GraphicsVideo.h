@@ -53,6 +53,8 @@ class GraphicsVideo : protected KernelUtil::TimerTask {
 
     void SetMouseCursorPos(int x, int y);
     upan::option<int> getFGProcessUnderMouseCursor();
+    void addGuiBase(int pid);
+    void removeGuiBase(int pid);
     void switchFGProcess(int pid);
 
     void addFGProcess(int pid);
@@ -101,6 +103,7 @@ class GraphicsVideo : protected KernelUtil::TimerTask {
     uint32_t _xCharScale;
     uint32_t _yCharScale;
     upan::list<int> _fgProcesses;
+    upan::list<int> _guiBaseStack;
     int _inputEventFGProcess;
     upan::mutex _fgProcessMutex;
 

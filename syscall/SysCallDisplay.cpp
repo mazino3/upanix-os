@@ -146,6 +146,12 @@ __volatile__ unsigned uiP9)
     }
     break;
 
+	  case SYS_CALL_DISPLAY_SET_GUI_BASE:
+    {
+      ProcessManager::Instance().GetCurrentPAS().setGuiBase((bool)uiP1);
+    }
+    break;
+
     case SYS_CALL_DISPLAY_INIT_TERM_CONSOLE:
 	  {
       ProcessManager::Instance().GetCurrentPAS().setupAsTtyProcess();

@@ -120,7 +120,7 @@ public:
     throw upan::exception(XLOC, "setupAsGuiProcess unsupported");
   }
   virtual bool isGuiBase() const = 0;
-  virtual void setGuiBaseFlag(bool) = 0;
+  virtual void setGuiBase(bool) = 0;
 
   virtual upanui::GraphicsContext* getGraphicsContext() {
     throw upan::exception(XLOC, "getGraphicsContext unsupported");

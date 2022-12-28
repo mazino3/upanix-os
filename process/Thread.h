@@ -76,8 +76,8 @@ public:
     return _parent.isGuiBase();
   }
 
-  void setGuiBaseFlag(bool v) override {
-    _parent.setGuiBaseFlag(v);
+  void setGuiBase(bool v) override {
+    _parent.setGuiBase(v);
   }
 
 protected:

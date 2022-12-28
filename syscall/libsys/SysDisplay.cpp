@@ -85,6 +85,11 @@ void SysDisplay_FrameHasAlpha(bool hasAlpha) {
   SysCallDisplay_Handle(&iRetStatus, SYS_CALL_DISPLAY_GUI_FRAME_HAS_ALPHA, false, hasAlpha, 2, 3, 4, 5, 6, 7, 8, 9);
 }
 
+void SysDisplay_SetGuiBase(bool isGuiBase) {
+  int iRetStatus;
+  SysCallDisplay_Handle(&iRetStatus, SYS_CALL_DISPLAY_SET_GUI_BASE, false, isGuiBase, 2, 3, 4, 5, 6, 7, 8, 9);
+}
+
 void SysDisplay_InitTermConsole() {
   int iRetStatus;
   SysCallDisplay_Handle(&iRetStatus, SYS_CALL_DISPLAY_INIT_TERM_CONSOLE, false, 1, 2, 3, 4, 5, 6, 7, 8, 9);

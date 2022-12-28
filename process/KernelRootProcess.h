@@ -134,7 +134,7 @@ public:
     return true;
   }
 
-  void setGuiBaseFlag(bool v) override {
+  void setGuiBase(bool v) override {
     throw upan::exception(XLOC, "KernelRootProcess is always GuiBase process - can't modify this flag");
   }
 

@@ -25,11 +25,12 @@
 #include <StreamBufferDescriptor.h>
 #include <ProcessManager.h>
 #include <KeyboardHandler.h>
+#include <GraphicsVideo.h>
 
 AutonomousProcess::AutonomousProcess(const upan::string& name, int parentID, bool isFGProcess)
   : SchedulableProcess(name, parentID, isFGProcess), _nextThreadIt(_threadSchedulerList.begin()),
     _uiType(Process::UIType::NA), _uiKeyboardEventStreamFD(nullptr), _uiMouseEventStreamFD(nullptr),
-    _guiBase(false) {
+    _isGuiBase(false) {
 }
 
 SchedulableProcess& AutonomousProcess::forSchedule() {
@@ -140,4 +141,23 @@ void AutonomousProcess::setupAsGuiProcess(int fdList[]) {
 
   fdList[0] = _uiKeyboardEventStreamFD->id();
   fdList[1] = _uiMouseEventStreamFD->id();
+}
+
+void AutonomousProcess::setGuiBase(bool val) {
+  if (getGuiFrame().isEmpty()) {
+    throw upan::exception(XLOC, "can not set non-GUI process as GUI base");
+  }
+
+  if (_isGuiBase == val) {
+    return;
+  }
+
+  ProcessSwitchLock pLock;
+  _isGuiBase = val;
+  if (_isGuiBase) {
+    GraphicsVideo::Instance().addGuiBase(_processID);
+  } else {
+    GraphicsVideo::Instance().removeGuiBase(_processID);
+  }
+  getGuiFrame().value().touch();
 }

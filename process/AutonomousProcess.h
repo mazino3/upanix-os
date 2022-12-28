@@ -46,12 +46,10 @@ public:
   void setupAsGuiProcess(int fdList[]) override;
 
   bool isGuiBase() const override {
-    return _guiBase;
+    return _isGuiBase;
   }
 
-  void setGuiBaseFlag(bool v) override {
-    _guiBase = v;
-  }
+  void setGuiBase(bool v) override;
 
 private:
   typedef upan::list<Thread*> ThreadSchedulerList;
@@ -60,5 +58,5 @@ private:
   UIType _uiType;
   IODescriptor* _uiKeyboardEventStreamFD;
   IODescriptor* _uiMouseEventStreamFD;
-  bool _guiBase;
+  bool _isGuiBase;
 };

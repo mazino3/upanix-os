@@ -279,6 +279,35 @@ upan::option<int> GraphicsVideo::getFGProcessUnderMouseCursor() {
   return upan::option<int>::empty();
 }
 
+void GraphicsVideo::addGuiBase(int pid) {
+  upan::mutex_guard g(_fgProcessMutex);
+
+  const auto firstPid = _fgProcesses.front();
+
+  ProcessManager::Instance().GetProcess(firstPid).ifPresent([&](Process& p) {
+    if (p.isGuiBase()) {
+      _guiBaseStack.push_back(firstPid);
+      if (_inputEventFGProcess == firstPid) {
+        _inputEventFGProcess = pid;
+      }
+      _fgProcesses.pop_front();
+    }
+  });
+
+  _fgProcesses.erase(pid);
+  _fgProcesses.push_front(pid);
+}
+
+void GraphicsVideo::removeGuiBase(int pid) {
+  upan::mutex_guard g(_fgProcessMutex);
+
+  _guiBaseStack.erase(pid);
+  if (!_guiBaseStack.empty()) {
+    _fgProcesses.push_front(_guiBaseStack.back());
+    _guiBaseStack.pop_back();
+  }
+}
+
 void GraphicsVideo::switchFGProcess(int pid) {
   upan::mutex_guard g(_fgProcessMutex);
 
@@ -370,6 +399,7 @@ void GraphicsVideo::addFGProcess(int pid) {
 
 void GraphicsVideo::removeFGProcess(int pid) {
   upan::mutex_guard g(_fgProcessMutex);
+  removeGuiBase(pid);
   _fgProcesses.erase(pid);
   if (pid == _inputEventFGProcess) {
     if (_fgProcesses.size() > 0) {
