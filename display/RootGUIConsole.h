@@ -120,6 +120,12 @@ private:
     bool hasAlpha() override { return false; }
     upan::option<UIObject&> uiObjectUnderCursor(const int x, const int y) override { return upan::option<UIObject&>::empty(); }
 
+    bool captureMouseEvents() const override {
+      return true;
+    }
+
+    void captureMouseEvents(bool) {}
+
     void onKeyboardEvent(const upanui::KeyboardEvent& event) override {}
     void onMouseEvent(const upanui::MouseEvent& event) override {}
     void onMouseFocus() override {}
